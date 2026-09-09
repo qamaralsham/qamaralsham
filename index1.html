@@ -778,6 +778,12 @@
                 currentUser.avatarFrame = savedAvatarFrame;
             }
             
+            // قراءة صورة البروفايل
+            const profileAvatar = localStorage.getItem('profile_avatar');
+            if (profileAvatar) {
+                currentUser.avatar = profileAvatar;
+            }
+            
             // حفظ البيانات المحدثة
             localStorage.setItem('qamar_user', JSON.stringify(currentUser));
         }
@@ -1156,8 +1162,30 @@
             document.getElementById('profile-frame-container').style.display = 'block';
         }
         
+        // ====== إغلاق البروفايل وتحديث الشات ======
         function closeProfileFrame() {
             document.getElementById('profile-frame-container').style.display = 'none';
+            
+            // إعادة قراءة بيانات البروفايل وتطبيقها على الشات
+            applyProfileToChat();
+            
+            // تحديث اسم المستخدم في الواجهة
+            if (currentUser && currentUser.name) {
+                document.getElementById('profile-name').innerText = currentUser.name;
+            }
+            
+            // إعادة تحميل الرسائل لتطبيق التأثيرات الجديدة
+            const messagesContainer = document.getElementById('messages');
+            const savedMessages = JSON.parse(localStorage.getItem('qamar_messages_' + currentRoom) || '[]');
+            messagesContainer.innerHTML = '';
+            
+            if (savedMessages.length === 0) {
+                addSystemMessage(`📢 تم فتح ${document.getElementById('room-title').innerText}`);
+            } else {
+                savedMessages.forEach(msg => {
+                    addMessageWithAvatar(msg.sender, msg.text, currentUser.color, msg.avatar);
+                });
+            }
         }
         
         // ====== شريط التنقل ======
