@@ -575,8 +575,7 @@
         #mega-frames-modal button.cancel-btn { background: rgba(255,255,255,0.15); color: #fff; }
     </style>
 </head>
-<body>
-    <input type="file" id="cover-file-input" accept="image/*" style="display: none;">
+<body><input type="file" id="cover-file-input" accept="image/*" style="display: none;">
 <input type="file" id="avatar-file-input" accept="image/*" style="display: none;">
 <input type="file" id="status-file-input" accept="image/*,video/*" style="display: none;">
 <input type="file" id="name-gif-input" accept="image/*" style="display: none;">
@@ -851,7 +850,14 @@
                         <span class="info-label" style="color: #ef5350;">تسجيل خروج</span>
                         <span class="info-value"><span class="action-link" style="color: #ef5350;" id="btn-logout">خروج</span></span>
                     </div>
-    <!-- نافذة منبثقة تفاعلية -->
+                </div>
+            </div>
+
+        </div>
+        
+    </div>
+
+</div><!-- نافذة منبثقة تفاعلية -->
 <div class="custom-modal" id="app-modal">
     <div class="modal-content">
         <h3 id="modal-title">تنبيه</h3>
@@ -1147,8 +1153,7 @@
 
         styleSheet.innerHTML = cssRules;
         document.head.appendChild(styleSheet);
-        console.log("تم تحديث الحركات إلى نظام الألوان الداخلية بدون تحريك الحرف!");
-                    // ====== بقية الكود ======
+        console.log("تم تحديث الحركات إلى نظام الألوان الداخلية بدون تحريك الحرف!");            // ====== بقية الكود ======
             const usernameEl = document.getElementById('profile-username');
             const bioEl = document.getElementById('profile-bio');
             const coverInput = document.getElementById('cover-file-input');
