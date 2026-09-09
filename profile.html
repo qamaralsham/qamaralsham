@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>قمر الشام 🌙 - التطبيق التفاعلي الفعلي</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <title>قمر الشام 🌙 - البروفايل</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" onerror="console.log('THREE.js failed to load')"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Amiri:wght@400;700&family=Reem+Kufi:wght@400;700&family=Aref+Ruqaa:wght@400;700&family=Lateef:wght@400;700&family=Scheherazade+New:wght@400;700&family=Markazi+Text:wght@400;700&family=Harmattan:wght@400;700&family=Jomhuria&family=Lalezar&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -235,7 +235,6 @@
         }
         .interaction-buttons button:hover { transform: scale(1.15); background: rgba(255, 215, 0, 0.2); border-color: var(--accent-color); }
         
-        /* تحسين التبويبات لمنع التداخل والضغط على الموبايل */
         .profile-tabs {
             background: rgba(0, 0, 0, 0.4); 
             display: flex;
@@ -304,7 +303,6 @@
         .info-value .action-link { color: #64b5f6; text-decoration: none; cursor: pointer; transition: 0.2s; }
         .info-value .action-link:hover { opacity: 0.8; text-decoration: underline; }
 
-        /* الحالة اليومية */
         .statuses-scroll-box {
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
@@ -423,7 +421,6 @@
         /* ====== إضافات جديدة (بدون تغيير الأصلي) ====== */
         /* ============================================ */
 
-        /* الحاوية الأساسية للبروز ثلاثي الأبعاد */
         #avatar-box {
             position: relative;
             overflow: visible !important;
@@ -432,7 +429,6 @@
             margin: 0 auto;
         }
 
-        /* القاعدة العامة لجميع الإطارات المجسمة */
         .dynamic-frame-wrapper {
             position: absolute;
             inset: -10px;
@@ -442,7 +438,6 @@
             box-sizing: border-box;
         }
 
-        /* شارة أعلى الإطار */
         .frame-badge-top {
             position: absolute;
             top: -22px;
@@ -454,13 +449,11 @@
             z-index: 30;
         }
 
-        /* حركة الشارة العائمة */
         @keyframes badgeFloat {
             0%, 100% { transform: translateX(-50%) translateY(0); }
             50% { transform: translateX(-50%) translateY(-5px); }
         }
 
-        /* الحركات المخصصة للإطارات */
         @keyframes neonPulse {
             0%, 100% { opacity: 0.7; filter: brightness(1); }
             50% { opacity: 1; filter: brightness(1.4); }
@@ -471,7 +464,6 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* ====== إضافات لعرض القائمة المصغرة ====== */
         .frames-preview-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -544,7 +536,6 @@
             transform: scale(1.05);
         }
 
-        /* نافذة منبثقة جديدة لعرض الإطارات */
         #mega-frames-modal {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -585,585 +576,579 @@
     </style>
 </head>
 <body>
-
     <input type="file" id="cover-file-input" accept="image/*" style="display: none;">
-    <input type="file" id="avatar-file-input" accept="image/*" style="display: none;">
-    <input type="file" id="status-file-input" accept="image/*,video/*" style="display: none;">
-    <input type="file" id="name-gif-input" accept="image/*" style="display: none;">
+<input type="file" id="avatar-file-input" accept="image/*" style="display: none;">
+<input type="file" id="status-file-input" accept="image/*,video/*" style="display: none;">
+<input type="file" id="name-gif-input" accept="image/*" style="display: none;">
 
-    <div class="profile">
-        <div id="stardust-canvas"></div>
-        
-        <div class="top-buttons">
-            <button id="btn-close" title="إغلاق">✕</button>
-            <div class="owner-top-actions">
-                <button title="الكاميرا">📷</button>
-                <button title="الإبلاغ">🚩</button>
-                <button title="إعجاب عام">👍</button>
-                <button title="تمييز">⭐</button>
-            </div>
+<div class="profile">
+    <div id="stardust-canvas"></div>
+    
+    <div class="top-buttons">
+        <button id="btn-close" title="إغلاق">✕</button>
+        <div class="owner-top-actions">
+            <button title="الكاميرا">📷</button>
+            <button title="الإبلاغ">🚩</button>
+            <button title="إعجاب عام">👍</button>
+            <button title="تمييز">⭐</button>
         </div>
-        
-        <div class="cover" id="profile-cover-box">
-            <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600" class="cover-img" id="profile-cover-img">
-            
-            <div class="cover-edit-btns">
-                <button class="btn-del-cov" id="btn-remove-cover">✕ غلاف</button>
-                <button id="btn-change-cover">📷 غلاف</button>
-            </div>
-            
-            <div class="avatar-container">
-                <!-- إضافة جديدة: حاوية الصورة الدائرية مع الإطار -->
-                <div class="avatar-box" id="avatar-box">
-                    <div class="avatar has-status" id="avatar-status-ring">
-                        <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200" class="avatar-img" id="profile-avatar-img">
-                    </div>
-                    <div id="activeAvatarFrame" class="avatar-frame"></div>
-                </div>
-                <!-- نهاية الإضافة -->
-
-                <div class="avatar-edit-btns">
-                    <span class="del-av" id="btn-remove-avatar" title="إزالة الصورة">✕</span>
-                    <span id="btn-change-avatar" title="تغيير الصورة">📷</span>
-                </div>
-            </div>
-            
-            <div class="header">
-                <div class="role" id="display-role">Owner 👑</div>
-                <div class="username-container">
-                    <div class="username" id="profile-username">قمر الشام</div>
-                    <span class="edit-pen" id="btn-edit-username" title="تعديل الاسم">✏️</span>
-                </div>
-                <div class="username-container">
-                    <div class="bio" id="profile-bio">damascus_moon@</div>
-                    <span class="edit-pen" id="btn-edit-bio" title="تعديل النبذة">✏️</span>
-                </div>
-            </div>
-        </div> 
-
-        <div class="main-content-area">
-            
-            <div class="interaction-buttons">
-                <button class="btn-heart" title="إعجاب">❤️</button>
-                <button class="btn-mail" title="مراسلة">💌</button>
-                <button class="btn-friends" title="الأصدقاء">👥</button>
-                <button class="btn-block" title="حظر">🚫</button>
-            </div>
-            
-            <div class="profile-tabs">
-                <div class="tab-item active" data-target="settings-tab">إعدادات الحساب</div>
-                <div class="tab-item" data-target="privacy-tab">الخصوصية والأمان</div>
-                <div class="tab-item" data-target="appearance-tab">المظهر البصري</div>
-                <div class="tab-item" data-target="status-tab">الحالة</div>
-                <div class="tab-item" data-target="info-tab">المعلومات</div>
-                <div class="tab-item" data-target="commands-tab">الأوامر</div>
-                <div class="tab-item" data-target="friends-tab">الأصدقاء</div>
-                <div class="tab-item" data-target="more-tab">المزيد</div>
-            </div>
-            
-            <div class="tab-scroll-box">
-                
-                <div id="settings-tab" class="tab-content active">
-                    <div class="info-card">
-                        <div class="info-row">
-                            <span class="info-label">البريد الإلكتروني</span>
-                            <span class="info-value"><span class="action-link" id="settings-email" style="color: #64b5f6;">damascus.moon@gmail.com</span></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">رقم الهاتف المحمول</span>
-                            <span class="info-value"><span class="action-link" id="settings-phone" style="color: #81c784;">+963 999 000 000</span></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">كلمة المرور والأمان</span>
-                            <span class="info-value"><span class="action-link" id="settings-password" style="color: #ffb74d;">تغيير كلمة المرور</span></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">توثيق الحساب</span>
-                            <span class="info-value"><span class="action-link" id="settings-verify" style="color: #ffd700;">طلب توثيق الحساب</span></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">لغة الحساب</span>
-                            <span class="info-value"><span class="action-link" id="settings-lang" style="color: #ba68c8;">العربية (افتراضي)</span></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">المنطقة الزمنية</span>
-                            <span class="info-value"><span class="action-link" id="settings-timezone" style="color: #4db6ac;">دمشق / مكة المكرمة (GMT+3)</span></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">نوع الحساب</span>
-                            <span class="info-value"><span class="action-link" id="settings-acctype" style="color: #e57373;">حساب صانع محتوى (Creator)</span></span>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="privacy-tab" class="tab-content">
-                    <div class="info-card">
-                        <div class="info-row">
-                            <span class="info-label">رؤية الملف الشخصي</span>
-                            <span class="info-value"><span class="action-link" id="priv-profile" style="color: #81c784;">الجميع (عام)</span></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">حالة النشاط</span>
-                            <span class="info-value"><span class="action-link" id="priv-status" style="color: #64b5f6;">نشط الآن (مفعل)</span></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">استقبال الرسائل</span>
-                            <span class="info-value"><span class="action-link" id="priv-messages" style="color: #ffb74d;">الأصدقاء والمتابعون</span></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">المصادقة الثنائية (2FA)</span>
-                            <span class="info-value"><span class="action-link" id="priv-2fa" style="color: #ffd700;">غير مفعلة (تفعيل)</span></span>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="appearance-tab" class="tab-content">
-                    <div class="info-card">
-                        <div class="info-row">
-                            <span class="info-label">وضع الواجهة والسمة</span>
-                            <span class="info-value"><span class="action-link" id="app-mode" style="color: #ffd700;">فضاء عميق (ليلي ملكي)</span></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">سرعة النجوم (Stardust)</span>
-                            <span class="info-value"><span class="action-link" id="app-stars-speed" style="color: #81c784;">سرعة متوسطة (افتراضي)</span></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">كثافة النجوم المتحركة</span>
-                            <span class="info-value"><span class="action-link" id="app-stars-density" style="color: #64b5f6;">200 نجمة (عالي)</span></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">لون الثيم الأساسي والإطارات</span>
-                            <span class="info-value"><span class="action-link" id="app-theme-color" style="color: #ffb74d;">الذهبي الملكي 👑</span></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">حجم وتنسيق الخطوط</span>
-                            <span class="info-value"><span class="action-link" id="app-font-size" style="color: #ba68c8;">حجم مناسب ومتناسق</span></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">شفافية وتوهج الخلفية</span>
-                            <span class="info-value"><span class="action-link" id="app-opacity" style="color: #4db6ac;">توهج فخم وناعم</span></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">مدة العضوية</span>
-                            <span class="info-value"><span class="action-link" id="app-membership" style="color: #ffd700;">منذ 2022</span></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">لون الاسم</span>
-                            <span class="info-value"><span class="action-link" id="name-color" style="color: #ffffff;">أبيض</span></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">خط الاسم</span>
-                            <span class="info-value"><span class="action-link" id="name-font" style="color: #64b5f6;">Cairo</span></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">حركة الاسم</span>
-                            <span class="info-value"><span class="action-link" id="name-movement" style="color: #81c784;">نبض</span></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">خلفية GIF للاسم</span>
-                            <span class="info-value"><span class="action-link" id="name-gif" style="color: #ffb74d;">بدون GIF</span></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">إطار الاسم (في الشات فقط)</span>
-                            <span class="info-value"><span class="action-link" id="name-frame" style="color: #ba68c8;">بدون إطار</span></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">لون نيون للإطار</span>
-                            <span class="info-value"><span class="action-link" id="name-frame-neon" style="color: #4db6ac;">بدون</span></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">توهج الإطار</span>
-                            <span class="info-value"><span class="action-link" id="name-frame-glow" style="color: #e57373;">بدون</span></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">زر تحويل كيف يرى الزوار بروفايلي</span>
-                            <span class="info-value"><span class="action-link" id="btn-visitor-view" style="color: #81c784;">عرض كامل</span></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">إطارات متحركة للصورة الشخصية</span>
-                            <span class="info-value"><span class="action-link" id="avatar-frame-motion" style="color: #ffd700;">بدون</span></span>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="status-tab" class="tab-content">
-                    <div class="info-card">
-                        <div class="info-row">
-                            <span class="info-label">نشر حالة</span>
-                            <span class="info-value"><span class="action-link" id="btn-create-status" style="color: #81c784;">+ حالة جديدة</span></span>
-                        </div>
-                        
-                        <div class="info-row">
-                            <span class="info-label">من يمكنه رؤية حالتي</span>
-                            <span class="info-value"><span class="action-link" id="btn-status-privacy" style="color: #64b5f6;">الجميع</span></span>
-                        </div>
-                        
-                        <div class="info-row">
-                            <span class="info-label">قائمة مشاهدين الحالة</span>
-                            <span class="info-value"><span class="action-link" id="btn-status-viewers" style="color: #ffb74d;">المشاهدون</span></span>
-                        </div>
-                        
-                        <div class="info-row">
-                            <span class="info-label">من تفاعل مع الحالة</span>
-                            <span class="info-value"><span class="action-link" id="btn-status-reactors" style="color: #81c784;">التفاعلات</span></span>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="info-tab" class="tab-content">
-                    <div class="info-card">
-                        <div class="info-row">
-                            <span class="info-label">رابط الملف الشخصي</span>
-                            <span class="info-value"><span class="action-link" id="btn-copy">نسخ الرابط</span></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">العمر والجنس</span>
-                            <span class="info-value">43 سنة - ذكر</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">البلد</span>
-                            <span class="info-value">سوريا - دمشق 🇸🇾</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="commands-tab" class="tab-content">
-                    <div class="info-card">
-                        <div class="info-row">
-                            <span class="info-label">نكز العضو</span>
-                            <span class="info-value"><span class="action-link" style="color: #81c784;" id="btn-poke">نكز الآن</span></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">إرسال هدية</span>
-                            <span class="info-value"><span class="action-link" style="color: #ffb74d;" id="btn-gift">إرسال وردة 🌹</span></span>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="friends-tab" class="tab-content">
-                    <div class="info-card">
-                        <div class="info-row">
-                            <span class="info-label">قائمة الأصدقاء</span>
-                            <span class="info-value">15 صديق نشط</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">المتابعون</span>
-                            <span class="info-value">142 متابع</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="more-tab" class="tab-content">
-                    <div class="info-card">
-                        <div class="info-row">
-                            <span class="info-label">الدعم الفني</span>
-                            <span class="info-value"><span class="action-link" style="color: #4db6ac;" id="btn-support">تواصل معنا</span></span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label" style="color: #ef5350;">تسجيل خروج</span>
-                            <span class="info-value"><span class="action-link" style="color: #ef5350;" id="btn-logout">خروج</span></span>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-            
-        </div>
-
     </div>
+    
+    <div class="cover" id="profile-cover-box">
+        <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600" class="cover-img" id="profile-cover-img">
+        
+        <div class="cover-edit-btns">
+            <button class="btn-del-cov" id="btn-remove-cover">✕ غلاف</button>
+            <button id="btn-change-cover">📷 غلاف</button>
+        </div>
+        
+        <div class="avatar-container">
+            <div class="avatar-box" id="avatar-box">
+                <div class="avatar has-status" id="avatar-status-ring">
+                    <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200" class="avatar-img" id="profile-avatar-img">
+                </div>
+                <div id="activeAvatarFrame" class="avatar-frame"></div>
+            </div>
 
+            <div class="avatar-edit-btns">
+                <span class="del-av" id="btn-remove-avatar" title="إزالة الصورة">✕</span>
+                <span id="btn-change-avatar" title="تغيير الصورة">📷</span>
+            </div>
+        </div>
+        
+        <div class="header">
+            <div class="role" id="display-role">Owner 👑</div>
+            <div class="username-container">
+                <div class="username" id="profile-username">قمر الشام</div>
+                <span class="edit-pen" id="btn-edit-username" title="تعديل الاسم">✏️</span>
+            </div>
+            <div class="username-container">
+                <div class="bio" id="profile-bio">damascus_moon@</div>
+                <span class="edit-pen" id="btn-edit-bio" title="تعديل النبذة">✏️</span>
+            </div>
+        </div>
+    </div> 
+
+    <div class="main-content-area">
+        
+        <div class="interaction-buttons">
+            <button class="btn-heart" title="إعجاب">❤️</button>
+            <button class="btn-mail" title="مراسلة">💌</button>
+            <button class="btn-friends" title="الأصدقاء">👥</button>
+            <button class="btn-block" title="حظر">🚫</button>
+        </div>
+        
+        <div class="profile-tabs">
+            <div class="tab-item active" data-target="settings-tab">إعدادات الحساب</div>
+            <div class="tab-item" data-target="privacy-tab">الخصوصية والأمان</div>
+            <div class="tab-item" data-target="appearance-tab">المظهر البصري</div>
+            <div class="tab-item" data-target="status-tab">الحالة</div>
+            <div class="tab-item" data-target="info-tab">المعلومات</div>
+            <div class="tab-item" data-target="commands-tab">الأوامر</div>
+            <div class="tab-item" data-target="friends-tab">الأصدقاء</div>
+            <div class="tab-item" data-target="more-tab">المزيد</div>
+        </div>
+        
+        <div class="tab-scroll-box">
+            
+            <div id="settings-tab" class="tab-content active">
+                <div class="info-card">
+                    <div class="info-row">
+                        <span class="info-label">البريد الإلكتروني</span>
+                        <span class="info-value"><span class="action-link" id="settings-email" style="color: #64b5f6;">damascus.moon@gmail.com</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">رقم الهاتف المحمول</span>
+                        <span class="info-value"><span class="action-link" id="settings-phone" style="color: #81c784;">+963 999 000 000</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">كلمة المرور والأمان</span>
+                        <span class="info-value"><span class="action-link" id="settings-password" style="color: #ffb74d;">تغيير كلمة المرور</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">توثيق الحساب</span>
+                        <span class="info-value"><span class="action-link" id="settings-verify" style="color: #ffd700;">طلب توثيق الحساب</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">لغة الحساب</span>
+                        <span class="info-value"><span class="action-link" id="settings-lang" style="color: #ba68c8;">العربية (افتراضي)</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">المنطقة الزمنية</span>
+                        <span class="info-value"><span class="action-link" id="settings-timezone" style="color: #4db6ac;">دمشق / مكة المكرمة (GMT+3)</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">نوع الحساب</span>
+                        <span class="info-value"><span class="action-link" id="settings-acctype" style="color: #e57373;">حساب صانع محتوى (Creator)</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="privacy-tab" class="tab-content">
+                <div class="info-card">
+                    <div class="info-row">
+                        <span class="info-label">رؤية الملف الشخصي</span>
+                        <span class="info-value"><span class="action-link" id="priv-profile" style="color: #81c784;">الجميع (عام)</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">حالة النشاط</span>
+                        <span class="info-value"><span class="action-link" id="priv-status" style="color: #64b5f6;">نشط الآن (مفعل)</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">استقبال الرسائل</span>
+                        <span class="info-value"><span class="action-link" id="priv-messages" style="color: #ffb74d;">الأصدقاء والمتابعون</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">المصادقة الثنائية (2FA)</span>
+                        <span class="info-value"><span class="action-link" id="priv-2fa" style="color: #ffd700;">غير مفعلة (تفعيل)</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="appearance-tab" class="tab-content">
+                <div class="info-card">
+                    <div class="info-row">
+                        <span class="info-label">وضع الواجهة والسمة</span>
+                        <span class="info-value"><span class="action-link" id="app-mode" style="color: #ffd700;">فضاء عميق (ليلي ملكي)</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">سرعة النجوم (Stardust)</span>
+                        <span class="info-value"><span class="action-link" id="app-stars-speed" style="color: #81c784;">سرعة متوسطة (افتراضي)</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">كثافة النجوم المتحركة</span>
+                        <span class="info-value"><span class="action-link" id="app-stars-density" style="color: #64b5f6;">200 نجمة (عالي)</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">لون الثيم الأساسي والإطارات</span>
+                        <span class="info-value"><span class="action-link" id="app-theme-color" style="color: #ffb74d;">الذهبي الملكي 👑</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">حجم وتنسيق الخطوط</span>
+                        <span class="info-value"><span class="action-link" id="app-font-size" style="color: #ba68c8;">حجم مناسب ومتناسق</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">شفافية وتوهج الخلفية</span>
+                        <span class="info-value"><span class="action-link" id="app-opacity" style="color: #4db6ac;">توهج فخم وناعم</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">مدة العضوية</span>
+                        <span class="info-value"><span class="action-link" id="app-membership" style="color: #ffd700;">منذ 2022</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">لون الاسم</span>
+                        <span class="info-value"><span class="action-link" id="name-color" style="color: #ffffff;">أبيض</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">خط الاسم</span>
+                        <span class="info-value"><span class="action-link" id="name-font" style="color: #64b5f6;">Cairo</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">حركة الاسم</span>
+                        <span class="info-value"><span class="action-link" id="name-movement" style="color: #81c784;">نبض</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">خلفية GIF للاسم</span>
+                        <span class="info-value"><span class="action-link" id="name-gif" style="color: #ffb74d;">بدون GIF</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">إطار الاسم (في الشات فقط)</span>
+                        <span class="info-value"><span class="action-link" id="name-frame" style="color: #ba68c8;">بدون إطار</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">لون نيون للإطار</span>
+                        <span class="info-value"><span class="action-link" id="name-frame-neon" style="color: #4db6ac;">بدون</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">توهج الإطار</span>
+                        <span class="info-value"><span class="action-link" id="name-frame-glow" style="color: #e57373;">بدون</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">زر تحويل كيف يرى الزوار بروفايلي</span>
+                        <span class="info-value"><span class="action-link" id="btn-visitor-view" style="color: #81c784;">عرض كامل</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">إطارات متحركة للصورة الشخصية</span>
+                        <span class="info-value"><span class="action-link" id="avatar-frame-motion" style="color: #ffd700;">بدون</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="status-tab" class="tab-content">
+                <div class="info-card">
+                    <div class="info-row">
+                        <span class="info-label">نشر حالة</span>
+                        <span class="info-value"><span class="action-link" id="btn-create-status" style="color: #81c784;">+ حالة جديدة</span></span>
+                    </div>
+                    
+                    <div class="info-row">
+                        <span class="info-label">من يمكنه رؤية حالتي</span>
+                        <span class="info-value"><span class="action-link" id="btn-status-privacy" style="color: #64b5f6;">الجميع</span></span>
+                    </div>
+                    
+                    <div class="info-row">
+                        <span class="info-label">قائمة مشاهدين الحالة</span>
+                        <span class="info-value"><span class="action-link" id="btn-status-viewers" style="color: #ffb74d;">المشاهدون</span></span>
+                    </div>
+                    
+                    <div class="info-row">
+                        <span class="info-label">من تفاعل مع الحالة</span>
+                        <span class="info-value"><span class="action-link" id="btn-status-reactors" style="color: #81c784;">التفاعلات</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="info-tab" class="tab-content">
+                <div class="info-card">
+                    <div class="info-row">
+                        <span class="info-label">رابط الملف الشخصي</span>
+                        <span class="info-value"><span class="action-link" id="btn-copy">نسخ الرابط</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">العمر والجنس</span>
+                        <span class="info-value">43 سنة - ذكر</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">البلد</span>
+                        <span class="info-value">سوريا - دمشق 🇸🇾</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="commands-tab" class="tab-content">
+                <div class="info-card">
+                    <div class="info-row">
+                        <span class="info-label">نكز العضو</span>
+                        <span class="info-value"><span class="action-link" style="color: #81c784;" id="btn-poke">نكز الآن</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">إرسال هدية</span>
+                        <span class="info-value"><span class="action-link" style="color: #ffb74d;" id="btn-gift">إرسال وردة 🌹</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="friends-tab" class="tab-content">
+                <div class="info-card">
+                    <div class="info-row">
+                        <span class="info-label">قائمة الأصدقاء</span>
+                        <span class="info-value">15 صديق نشط</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">المتابعون</span>
+                        <span class="info-value">142 متابع</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="more-tab" class="tab-content">
+                <div class="info-card">
+                    <div class="info-row">
+                        <span class="info-label">الدعم الفني</span>
+                        <span class="info-value"><span class="action-link" style="color: #4db6ac;" id="btn-support">تواصل معنا</span></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label" style="color: #ef5350;">تسجيل خروج</span>
+                        <span class="info-value"><span class="action-link" style="color: #ef5350;" id="btn-logout">خروج</span></span>
+                    </div>
     <!-- نافذة منبثقة تفاعلية -->
-    <div class="custom-modal" id="app-modal">
-        <div class="modal-content">
-            <h3 id="modal-title">تنبيه</h3>
-            <p id="modal-text">تمت العملية بنجاح.</p>
-            <div id="modal-dynamic-container"></div>
-            <div class="modal-buttons">
-                <button id="modal-confirm-btn">حفظ وتطبيق</button>
-                <button class="cancel-btn" id="modal-cancel-btn">إلغاء</button>
-            </div>
+<div class="custom-modal" id="app-modal">
+    <div class="modal-content">
+        <h3 id="modal-title">تنبيه</h3>
+        <p id="modal-text">تمت العملية بنجاح.</p>
+        <div id="modal-dynamic-container"></div>
+        <div class="modal-buttons">
+            <button id="modal-confirm-btn">حفظ وتطبيق</button>
+            <button class="cancel-btn" id="modal-cancel-btn">إلغاء</button>
         </div>
     </div>
+</div>
 
-    <!-- نافذة منبثقة للحالة اليومية -->
-    <div class="custom-modal" id="status-modal">
-        <div class="modal-content">
-            <h3 id="status-modal-title">نشر حالة</h3>
-            <p id="status-modal-text">اكتب حالتك أو ارفع صورة/فيديو</p>
-            <div id="status-modal-dynamic-container">
-                <textarea id="status-text" placeholder="اكتب حالتك هنا..." rows="3"></textarea>
-                <button id="btn-status-upload-file" style="width: 100%; margin-top: 8px; background: rgba(255,255,255,0.15); color: white;">📷 رفع صورة أو فيديو</button>
-            </div>
-            <div class="modal-buttons">
-                <button id="status-confirm-btn">نشر</button>
-                <button class="cancel-btn" id="status-cancel-btn">إلغاء</button>
-            </div>
+<!-- نافذة منبثقة للحالة اليومية -->
+<div class="custom-modal" id="status-modal">
+    <div class="modal-content">
+        <h3 id="status-modal-title">نشر حالة</h3>
+        <p id="status-modal-text">اكتب حالتك أو ارفع صورة/فيديو</p>
+        <div id="status-modal-dynamic-container">
+            <textarea id="status-text" placeholder="اكتب حالتك هنا..." rows="3"></textarea>
+            <button id="btn-status-upload-file" style="width: 100%; margin-top: 8px; background: rgba(255,255,255,0.15); color: white;">📷 رفع صورة أو فيديو</button>
+        </div>
+        <div class="modal-buttons">
+            <button id="status-confirm-btn">نشر</button>
+            <button class="cancel-btn" id="status-cancel-btn">إلغاء</button>
         </div>
     </div>
+</div>
 
-    <!-- نافذة منبثقة للخصوصية -->
-    <div class="custom-modal" id="privacy-modal">
-        <div class="modal-content">
-            <h3>خصوصية الحالة</h3>
-            <p>من يمكنه رؤية حالتك؟</p>
-            <div id="privacy-modal-dynamic-container">
-                <select id="privacy-select">
-                    <option value="public">الجميع</option>
-                    <option value="friends">الأصدقاء فقط</option>
-                    <option value="custom">تخصيص أشخاص محددين</option>
-                    <option value="exclude">استبعاد أشخاص محددين</option>
-                </select>
-                <div id="privacy-custom-list" style="display: none; margin-top: 10px;">
-                    <p style="color: #aaa; font-size: 12px;">اختر الأشخاص:</p>
-                    <div id="privacy-people-list">
-                        <!-- سيتم تعبئتها بالأصدقاء -->
-                    </div>
+<!-- نافذة منبثقة للخصوصية -->
+<div class="custom-modal" id="privacy-modal">
+    <div class="modal-content">
+        <h3>خصوصية الحالة</h3>
+        <p>من يمكنه رؤية حالتك؟</p>
+        <div id="privacy-modal-dynamic-container">
+            <select id="privacy-select">
+                <option value="public">الجميع</option>
+                <option value="friends">الأصدقاء فقط</option>
+                <option value="custom">تخصيص أشخاص محددين</option>
+                <option value="exclude">استبعاد أشخاص محددين</option>
+            </select>
+            <div id="privacy-custom-list" style="display: none; margin-top: 10px;">
+                <p style="color: #aaa; font-size: 12px;">اختر الأشخاص:</p>
+                <div id="privacy-people-list">
+                    <!-- سيتم تعبئتها بالأصدقاء -->
                 </div>
             </div>
-            <div class="modal-buttons">
-                <button id="privacy-confirm-btn">حفظ</button>
-                <button class="cancel-btn" id="privacy-cancel-btn">إلغاء</button>
-            </div>
+        </div>
+        <div class="modal-buttons">
+            <button id="privacy-confirm-btn">حفظ</button>
+            <button class="cancel-btn" id="privacy-cancel-btn">إلغاء</button>
         </div>
     </div>
+</div>
 
-    <!-- نافذة منبثقة للمشاهدين والتفاعلات -->
-    <div class="custom-modal" id="viewers-modal">
-        <div class="modal-content">
-            <h3>قائمة المشاهدين والتفاعلات</h3>
-            <p>من شاهد وتفاعل مع حالتك</p>
-            <div id="viewers-modal-dynamic-container"></div>
-            <div class="modal-buttons">
-                <button id="viewers-close-btn">إغلاق</button>
-            </div>
+<!-- نافذة منبثقة للمشاهدين والتفاعلات -->
+<div class="custom-modal" id="viewers-modal">
+    <div class="modal-content">
+        <h3>قائمة المشاهدين والتفاعلات</h3>
+        <p>من شاهد وتفاعل مع حالتك</p>
+        <div id="viewers-modal-dynamic-container"></div>
+        <div class="modal-buttons">
+            <button id="viewers-close-btn">إغلاق</button>
         </div>
     </div>
+</div>
 
-    <!-- نافذة منبثقة للردود -->
-    <div class="custom-modal" id="reply-modal">
-        <div class="modal-content">
-            <h3>الرد على الحالة</h3>
-            <p>الرد سيتحول إلى رسالة خاصة</p>
-            <div id="reply-modal-dynamic-container">
-                <textarea id="reply-text" placeholder="اكتب ردك..." rows="3"></textarea>
-                <button id="btn-reply-upload" style="width: 100%; margin-top: 8px; background: rgba(255,255,255,0.15); color: white;">📷 إرفاق صورة / فيديو / مقطع صوتي</button>
-            </div>
-            <div class="modal-buttons">
-                <button id="reply-confirm-btn">إرسال</button>
-                <button class="cancel-btn" id="reply-cancel-btn">إلغاء</button>
-            </div>
+<!-- نافذة منبثقة للردود -->
+<div class="custom-modal" id="reply-modal">
+    <div class="modal-content">
+        <h3>الرد على الحالة</h3>
+        <p>الرد سيتحول إلى رسالة خاصة</p>
+        <div id="reply-modal-dynamic-container">
+            <textarea id="reply-text" placeholder="اكتب ردك..." rows="3"></textarea>
+            <button id="btn-reply-upload" style="width: 100%; margin-top: 8px; background: rgba(255,255,255,0.15); color: white;">📷 إرفاق صورة / فيديو / مقطع صوتي</button>
+        </div>
+        <div class="modal-buttons">
+            <button id="reply-confirm-btn">إرسال</button>
+            <button class="cancel-btn" id="reply-cancel-btn">إلغاء</button>
         </div>
     </div>
+</div>
 
-    <!-- نافذة منبثقة لاختيار GIF -->
-    <div class="custom-modal" id="gif-modal">
-        <div class="modal-content">
-            <h3>اختر خلفية GIF للاسم</h3>
-            <p>هذه الحركات المتنوعة لاسمك</p>
-            <div id="gif-options-list" style="max-height: 300px; overflow-y: auto; text-align: right; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px;">
-                <!-- سيتم تعبئتها بالجافاسكربت -->
-            </div>
-            <div class="modal-buttons">
-                <button id="gif-confirm-btn">تطبيق</button>
-                <button class="cancel-btn" id="gif-cancel-btn">إلغاء</button>
-            </div>
+<!-- نافذة منبثقة لاختيار GIF -->
+<div class="custom-modal" id="gif-modal">
+    <div class="modal-content">
+        <h3>اختر خلفية GIF للاسم</h3>
+        <p>هذه الحركات المتنوعة لاسمك</p>
+        <div id="gif-options-list" style="max-height: 300px; overflow-y: auto; text-align: right; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px;">
+            <!-- سيتم تعبئتها بالجافاسكربت -->
+        </div>
+        <div class="modal-buttons">
+            <button id="gif-confirm-btn">تطبيق</button>
+            <button class="cancel-btn" id="gif-cancel-btn">إلغاء</button>
         </div>
     </div>
+</div>
 
-    <!-- نافذة منبثقة جديدة للإطارات المتعددة -->
-    <div id="mega-frames-modal">
-        <div class="modal-content">
-            <h3>🎨 اختر إطارك المفضل</h3>
-            <p>أكثر من 100 إطار مجسم ومتحرك</p>
-            <div id="frames-list-container" class="frames-preview-grid">
-                <!-- سيتم تعبئتها بالجافاسكربت -->
-            </div>
-            <div class="modal-buttons">
-                <button id="mega-frames-close-btn">إغلاق</button>
-            </div>
+<!-- نافذة منبثقة جديدة للإطارات المتعددة -->
+<div id="mega-frames-modal">
+    <div class="modal-content">
+        <h3>🎨 اختر إطارك المفضل</h3>
+        <p>أكثر من 100 إطار مجسم ومتحرك</p>
+        <div id="frames-list-container" class="frames-preview-grid">
+            <!-- سيتم تعبئتها بالجافاسكربت -->
+        </div>
+        <div class="modal-buttons">
+            <button id="mega-frames-close-btn">إغلاق</button>
         </div>
     </div>
+</div>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            // ====== 1. توليد الأنماط ======
-            const styleSheet = document.createElement("style");
-            styleSheet.id = "dynamic-categorized-styles";
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // ====== قراءة اسم المستخدم من الشات ======
+        const savedUserName = localStorage.getItem('qamar_user_name');
+        const usernameEl = document.getElementById('profile-username');
+        if (savedUserName && usernameEl) {
+            usernameEl.innerText = savedUserName;
+        }
+        
+        // ====== توليد الأنماط ======
+        const styleSheet = document.createElement("style");
+        styleSheet.id = "dynamic-categorized-styles";
 
-            let cssRules = `
-                @keyframes slowVortex {
-                    0% { background-position: 0% 50%; filter: hue-rotate(0deg) contrast(130%); }
-                    50% { background-position: 100% 50%; filter: hue-rotate(180deg) contrast(160%); }
-                    100% { background-position: 0% 50%; filter: hue-rotate(360deg) contrast(130%); }
-                }
+        let cssRules = `
+            @keyframes slowVortex {
+                0% { background-position: 0% 50%; filter: hue-rotate(0deg) contrast(130%); }
+                50% { background-position: 100% 50%; filter: hue-rotate(180deg) contrast(160%); }
+                100% { background-position: 0% 50%; filter: hue-rotate(360deg) contrast(130%); }
+            }
 
-                @keyframes dizzyVortex {
-                    0% { background-position: 0% 50%; filter: hue-rotate(0deg) contrast(160%); }
-                    50% { background-position: 100% 50%; filter: hue-rotate(180deg) contrast(220%); }
-                    100% { background-position: 0% 50%; filter: hue-rotate(360deg) contrast(160%); }
-                }
+            @keyframes dizzyVortex {
+                0% { background-position: 0% 50%; filter: hue-rotate(0deg) contrast(160%); }
+                50% { background-position: 100% 50%; filter: hue-rotate(180deg) contrast(220%); }
+                100% { background-position: 0% 50%; filter: hue-rotate(360deg) contrast(160%); }
+            }
 
-                @keyframes circularSpin {
-                    0% { background-position: 0% 50%; filter: hue-rotate(0deg); }
-                    50% { background-position: 100% 50%; filter: hue-rotate(180deg); }
-                    100% { background-position: 0% 50%; filter: hue-rotate(360deg); }
-                }
+            @keyframes circularSpin {
+                0% { background-position: 0% 50%; filter: hue-rotate(0deg); }
+                50% { background-position: 100% 50%; filter: hue-rotate(180deg); }
+                100% { background-position: 0% 50%; filter: hue-rotate(360deg); }
+            }
 
-                @keyframes mediumCombinedAnim {
-                    0% { background-position: 0% 50%; filter: hue-rotate(0deg) saturate(160%); }
-                    50% { background-position: 100% 50%; filter: hue-rotate(180deg) saturate(200%); }
-                    100% { background-position: 0% 50%; filter: hue-rotate(360deg) saturate(160%); }
-                }
+            @keyframes mediumCombinedAnim {
+                0% { background-position: 0% 50%; filter: hue-rotate(0deg) saturate(160%); }
+                50% { background-position: 100% 50%; filter: hue-rotate(180deg) saturate(200%); }
+                100% { background-position: 0% 50%; filter: hue-rotate(360deg) saturate(160%); }
+            }
 
-                @keyframes generalGlow {
-                    0%, 100% { opacity: 0.95; }
-                    50% { opacity: 1; text-shadow: 0 0 15px currentColor; }
-                }
+            @keyframes generalGlow {
+                0%, 100% { opacity: 0.95; }
+                50% { opacity: 1; text-shadow: 0 0 15px currentColor; }
+            }
 
-                @keyframes pulseGlow {
-                    0%, 100% { filter: hue-rotate(0deg) brightness(1); }
-                    50% { filter: hue-rotate(180deg) brightness(1.3); }
-                }
+            @keyframes pulseGlow {
+                0%, 100% { filter: hue-rotate(0deg) brightness(1); }
+                50% { filter: hue-rotate(180deg) brightness(1.3); }
+            }
 
-                @keyframes waveStrip {
-                    0% { background-position: 0% 50%; }
-                    25% { background-position: 50% 100%; }
-                    50% { background-position: 100% 50%; }
-                    75% { background-position: 50% 0%; }
-                    100% { background-position: 0% 50%; }
-                }
+            @keyframes waveStrip {
+                0% { background-position: 0% 50%; }
+                25% { background-position: 50% 100%; }
+                50% { background-position: 100% 50%; }
+                75% { background-position: 50% 0%; }
+                100% { background-position: 0% 50%; }
+            }
 
-                @keyframes reverseVortex {
-                    0% { background-position: 0% 50%; filter: hue-rotate(360deg) contrast(120%); }
-                    50% { background-position: 100% 50%; filter: hue-rotate(180deg) contrast(180%); }
-                    100% { background-position: 0% 50%; filter: hue-rotate(0deg) contrast(120%); }
-                }
+            @keyframes reverseVortex {
+                0% { background-position: 0% 50%; filter: hue-rotate(360deg) contrast(120%); }
+                50% { background-position: 100% 50%; filter: hue-rotate(180deg) contrast(180%); }
+                100% { background-position: 0% 50%; filter: hue-rotate(0deg) contrast(120%); }
+            }
 
-                @keyframes radiantBlink {
-                    0%, 100% { opacity: 0.9; }
-                    25% { opacity: 1; }
-                    75% { opacity: 0.7; }
-                }
+            @keyframes radiantBlink {
+                0%, 100% { opacity: 0.9; }
+                25% { opacity: 1; }
+                75% { opacity: 0.7; }
+            }
 
-                @keyframes diagonalFlow {
-                    0% { background-position: 0% 0%; }
-                    50% { background-position: 100% 100%; }
-                    100% { background-position: 0% 0%; }
-                }
+            @keyframes diagonalFlow {
+                0% { background-position: 0% 0%; }
+                50% { background-position: 100% 100%; }
+                100% { background-position: 0% 0%; }
+            }
 
-                @keyframes crossLines {
-                    0% { background-position: 0% 0%, 100% 100%; }
-                    50% { background-position: 100% 100%, 0% 0%; }
-                    100% { background-position: 0% 0%, 100% 100%; }
+            @keyframes crossLines {
+                0% { background-position: 0% 0%, 100% 100%; }
+                50% { background-position: 100% 100%, 0% 0%; }
+                100% { background-position: 0% 0%, 100% 100%; }
+            }
+        `;
+
+        // 1. مولد الحركات البطيئة (50 حركة)
+        for (let i = 1; i <= 50; i++) {
+            let h1 = (i * 25) % 360;
+            let h2 = (h1 + 50) % 360;
+            let h3 = (h2 + 50) % 360;
+            let duration = 3.0 + ((i % 5) * 0.6);
+
+            cssRules += `
+                .ks-${i} {
+                    background-image: repeating-linear-gradient(${i * 15}deg, hsl(${h1}, 100%, 50%) 0px, hsl(${h2}, 100%, 60%) 6px, hsl(${h3}, 100%, 50%) 12px);
+                    background-size: 200% 200%;
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                    animation: slowVortex ${duration}s linear infinite, generalGlow 2s ease-in-out infinite;
                 }
             `;
+        }
 
-            // 1. مولد الحركات البطيئة (50 حركة)
-            for (let i = 1; i <= 50; i++) {
-                let h1 = (i * 25) % 360;
-                let h2 = (h1 + 50) % 360;
-                let h3 = (h2 + 50) % 360;
-                let duration = 3.0 + ((i % 5) * 0.6);
+        // 2. مولد الحركات السريعة (100 حركة)
+        for (let i = 1; i <= 100; i++) {
+            let h1 = (i * 23) % 360;
+            let h2 = (h1 + 45) % 360;
+            let h3 = (h2 + 45) % 360;
+            let duration = 0.4 + ((i % 6) * 0.1);
 
-                cssRules += `
-                    .ks-${i} {
-                        background-image: repeating-linear-gradient(${i * 15}deg, hsl(${h1}, 100%, 50%) 0px, hsl(${h2}, 100%, 60%) 6px, hsl(${h3}, 100%, 50%) 12px);
-                        background-size: 200% 200%;
-                        -webkit-background-clip: text;
-                        -webkit-text-fill-color: transparent;
-                        background-clip: text;
-                        animation: slowVortex ${duration}s linear infinite, generalGlow 2s ease-in-out infinite;
-                    }
-                `;
-            }
+            cssRules += `
+                .ka-${i} {
+                    background-image: repeating-linear-gradient(${i * 37}deg, hsl(${h1}, 100%, 50%) 0px, hsl(${h2}, 100%, 60%) 3px, hsl(${h3}, 100%, 50%) 6px);
+                    background-size: 200% 200%;
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                    animation: dizzyVortex ${duration}s linear infinite, generalGlow 0.8s ease-in-out infinite;
+                }
+            `;
+        }
 
-            // 2. مولد الحركات السريعة (100 حركة)
-            for (let i = 1; i <= 100; i++) {
-                let h1 = (i * 23) % 360;
-                let h2 = (h1 + 45) % 360;
-                let h3 = (h2 + 45) % 360;
-                let duration = 0.4 + ((i % 6) * 0.1);
+        // 3. مولد الحركات الدائرية (50 حركة)
+        for (let i = 1; i <= 50; i++) {
+            let h1 = (i * 40) % 360;
+            let h2 = (h1 + 70) % 360;
+            let duration = 1.2 + ((i % 5) * 0.3);
 
-                cssRules += `
-                    .ka-${i} {
-                        background-image: repeating-linear-gradient(${i * 37}deg, hsl(${h1}, 100%, 50%) 0px, hsl(${h2}, 100%, 60%) 3px, hsl(${h3}, 100%, 50%) 6px);
-                        background-size: 200% 200%;
-                        -webkit-background-clip: text;
-                        -webkit-text-fill-color: transparent;
-                        background-clip: text;
-                        animation: dizzyVortex ${duration}s linear infinite, generalGlow 0.8s ease-in-out infinite;
-                    }
-                `;
-            }
+            cssRules += `
+                .kc-${i} {
+                    background-image: radial-gradient(circle at ${30 + (i % 40)}% ${30 + (i % 40)}%, hsl(${h1}, 100%, 50%) 0%, hsl(${h2}, 100%, 60%) 50%, hsl(${h1}, 100%, 40%) 100%);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                    animation: circularSpin ${duration}s linear infinite, generalGlow 1s ease-in-out infinite;
+                    filter: drop-shadow(0 0 6px hsla(${h1}, 100%, 50%, 0.6));
+                }
+            `;
+        }
 
-            // 3. مولد الحركات الدائرية (50 حركة)
-            for (let i = 1; i <= 50; i++) {
-                let h1 = (i * 40) % 360;
-                let h2 = (h1 + 70) % 360;
-                let duration = 1.2 + ((i % 5) * 0.3);
+        // 4. مولد الدمج الشامل (100 حركة)
+        for (let i = 1; i <= 100; i++) {
+            let h1 = (i * 30) % 360;
+            let h2 = (h1 + 60) % 360;
+            let h3 = (h2 + 60) % 360;
+            let duration = 1.5 + ((i % 5) * 0.25);
 
-                cssRules += `
-                    .kc-${i} {
-                        background-image: radial-gradient(circle at ${30 + (i % 40)}% ${30 + (i % 40)}%, hsl(${h1}, 100%, 50%) 0%, hsl(${h2}, 100%, 60%) 50%, hsl(${h1}, 100%, 40%) 100%);
-                        -webkit-background-clip: text;
-                        -webkit-text-fill-color: transparent;
-                        background-clip: text;
-                        animation: circularSpin ${duration}s linear infinite, generalGlow 1s ease-in-out infinite;
-                        filter: drop-shadow(0 0 6px hsla(${h1}, 100%, 50%, 0.6));
-                    }
-                `;
-            }
+            cssRules += `
+                .kd-${i} {
+                    background-image: conic-gradient(from ${i * 20}deg at 50% 50%, hsl(${h1}, 100%, 50%), hsl(${h2}, 100%, 60%), hsl(${h3}, 100%, 50%), hsl(${h1}, 100%, 50%));
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                    animation: mediumCombinedAnim ${duration}s ease-in-out infinite, generalGlow 1.2s ease-in-out infinite;
+                    filter: drop-shadow(0 0 8px hsla(${h1}, 100%, 50%, 0.7));
+                }
+            `;
+        }
 
-            // 4. مولد الدمج الشامل (100 حركة)
-            for (let i = 1; i <= 100; i++) {
-                let h1 = (i * 30) % 360;
-                let h2 = (h1 + 60) % 360;
-                let h3 = (h2 + 60) % 360;
-                let duration = 1.5 + ((i % 5) * 0.25);
+        // 5. حركات ثلاثية الأبعاد (20 حركة)
+        for (let i = 1; i <= 20; i++) {
+            let h1 = (i * 50) % 360;
+            cssRules += `
+                .ks3d-${i} {
+                    background-image: linear-gradient(135deg, hsl(${h1}, 100%, 50%), hsl(${(h1+120)%360}, 100%, 60%));
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                    animation: pulseGlow ${2 + (i % 3)}s ease-in-out infinite;
+                }
+            `;
+        }
 
-                cssRules += `
-                    .kd-${i} {
-                        background-image: conic-gradient(from ${i * 20}deg at 50% 50%, hsl(${h1}, 100%, 50%), hsl(${h2}, 100%, 60%), hsl(${h3}, 100%, 50%), hsl(${h1}, 100%, 50%));
-                        -webkit-background-clip: text;
-                        -webkit-text-fill-color: transparent;
-                        background-clip: text;
-                        animation: mediumCombinedAnim ${duration}s ease-in-out infinite, generalGlow 1.2s ease-in-out infinite;
-                        filter: drop-shadow(0 0 8px hsla(${h1}, 100%, 50%, 0.7));
-                    }
-                `;
-            }
+        // 6. حركات نيون (15 حركة)
+        for (let i = 1; i <= 15; i++) {
+            let h = (i * 35) % 360;
+            cssRules += `
+                .neon-${i} {
+                    color: hsl(${h}, 100%, 70%);
+                    text-shadow: 0 0 5px hsl(${h}, 100%, 50%), 0 0 10px hsl(${h}, 100%, 50%), 0 0 20px hsl(${h}, 100%, 50%), 0 0 40px hsl(${h}, 100%, 30%);
+                    animation: radiantBlink ${1.5 + (i % 4) * 0.5}s ease-in-out infinite;
+                }
+            `;
+        }
 
-            // 5. حركات ثلاثية الأبعاد (20 حركة)
-            for (let i = 1; i <= 20; i++) {
-                let h1 = (i * 50) % 360;
-                cssRules += `
-                    .ks3d-${i} {
-                        background-image: linear-gradient(135deg, hsl(${h1}, 100%, 50%), hsl(${(h1+120)%360}, 100%, 60%));
-                        -webkit-background-clip: text;
-                        -webkit-text-fill-color: transparent;
-                        background-clip: text;
-                        animation: pulseGlow ${2 + (i % 3)}s ease-in-out infinite;
-                    }
-                `;
-            }
-
-            // 6. حركات نيون (15 حركة)
-            for (let i = 1; i <= 15; i++) {
-                let h = (i * 35) % 360;
-                cssRules += `
-                    .neon-${i} {
-                        color: hsl(${h}, 100%, 70%);
-                        text-shadow: 0 0 5px hsl(${h}, 100%, 50%), 0 0 10px hsl(${h}, 100%, 50%), 0 0 20px hsl(${h}, 100%, 50%), 0 0 40px hsl(${h}, 100%, 30%);
-                        animation: radiantBlink ${1.5 + (i % 4) * 0.5}s ease-in-out infinite;
-                    }
-                `;
-            }
-
-            styleSheet.innerHTML = cssRules;
-            document.head.appendChild(styleSheet);
-            console.log("تم تحديث الحركات إلى نظام الألوان الداخلية بدون تحريك الحرف!");
-
-            // ====== 2. بقية الكود ======
+        styleSheet.innerHTML = cssRules;
+        document.head.appendChild(styleSheet);
+        console.log("تم تحديث الحركات إلى نظام الألوان الداخلية بدون تحريك الحرف!");
+                    // ====== بقية الكود ======
             const usernameEl = document.getElementById('profile-username');
             const bioEl = document.getElementById('profile-bio');
             const coverInput = document.getElementById('cover-file-input');
@@ -1506,8 +1491,6 @@
             const gifCancelBtn = document.getElementById('gif-cancel-btn');
             let selectedGifValue = '';
 
-            const usernameDisplay = usernameEl ? usernameEl.innerText : 'قمر الشام';
-
             if(nameGif) {
                 nameGif.onclick = () => {
                     gifModal.classList.add('active');
@@ -1521,30 +1504,12 @@
                 
                 const gifOptions = [
                     { value: 'بدون GIF', animation: '' },
-                    ...Array.from({ length: 100 }, (_, i) => ({
-                        value: currentUsername,
-                        animation: `ka-${i + 1}`
-                    })),
-                    ...Array.from({ length: 50 }, (_, i) => ({
-                        value: currentUsername,
-                        animation: `ks-${i + 1}`
-                    })),
-                    ...Array.from({ length: 50 }, (_, i) => ({
-                        value: currentUsername,
-                        animation: `kc-${i + 1}`
-                    })),
-                    ...Array.from({ length: 100 }, (_, i) => ({
-                        value: currentUsername,
-                        animation: `kd-${i + 1}`
-                    })),
-                    ...Array.from({ length: 20 }, (_, i) => ({
-                        value: currentUsername,
-                        animation: `ks3d-${i + 1}`
-                    })),
-                    ...Array.from({ length: 15 }, (_, i) => ({
-                        value: currentUsername,
-                        animation: `neon-${i + 1}`
-                    }))
+                    ...Array.from({ length: 100 }, (_, i) => ({ value: currentUsername, animation: `ka-${i + 1}` })),
+                    ...Array.from({ length: 50 }, (_, i) => ({ value: currentUsername, animation: `ks-${i + 1}` })),
+                    ...Array.from({ length: 50 }, (_, i) => ({ value: currentUsername, animation: `kc-${i + 1}` })),
+                    ...Array.from({ length: 100 }, (_, i) => ({ value: currentUsername, animation: `kd-${i + 1}` })),
+                    ...Array.from({ length: 20 }, (_, i) => ({ value: currentUsername, animation: `ks3d-${i + 1}` })),
+                    ...Array.from({ length: 15 }, (_, i) => ({ value: currentUsername, animation: `neon-${i + 1}` }))
                 ];
 
                 gifOptions.forEach(option => {
@@ -2035,101 +2000,50 @@
                 }
             } catch (e) {}
 
-            // ====== إضافة: حفظ بيانات البروفايل تلقائياً ======
-            (function() {
-                const usernameEl = document.getElementById('profile-username');
-                if (usernameEl) {
-                    const observer = new MutationObserver(() => {
-                        localStorage.setItem('profile_name', usernameEl.innerText);
-                        localStorage.setItem('qamar_user_name', usernameEl.innerText);
-                    });
-                    observer.observe(usernameEl, { childList: true, characterData: true, subtree: true });
-                }
+            // ====== إضافة: حفظ التأثيرات تلقائياً ======
+            setInterval(function() {
+                const nameColor = document.getElementById('name-color');
+                const nameFont = document.getElementById('name-font');
+                const nameMovement = document.getElementById('name-movement');
+                const nameGif = document.getElementById('name-gif');
+                const avatarFrame = document.getElementById('avatar-frame-motion');
                 
-                const bioEl = document.getElementById('profile-bio');
-                if (bioEl) {
-                    const bioObserver = new MutationObserver(() => {
-                        localStorage.setItem('profile_bio', bioEl.innerText);
-                    });
-                    bioObserver.observe(bioEl, { childList: true, characterData: true, subtree: true });
-                }
+                if (nameColor) localStorage.setItem('saved_name_color', nameColor.innerText);
+                if (nameFont) localStorage.setItem('saved_name_font', nameFont.innerText);
+                if (nameMovement) localStorage.setItem('saved_name_movement', nameMovement.innerText);
+                if (nameGif) localStorage.setItem('saved_name_gif', localStorage.getItem('saved_name_gif') || '');
+                if (avatarFrame) localStorage.setItem('saved_avatar_frame_motion', localStorage.getItem('saved_avatar_frame_motion') || '');
+            }, 1000);
+
+            // ====== إضافة: إعادة النجوم بدون THREE.js ======
+            function createStars() {
+                const container = document.getElementById('stardust-canvas');
+                if (!container) return;
                 
-                const avatarImg = document.getElementById('profile-avatar-img');
-                if (avatarImg) {
-                    const avatarObserver = new MutationObserver(() => {
-                        localStorage.setItem('profile_avatar', avatarImg.src);
-                        localStorage.setItem('qamar_user_avatar', avatarImg.src);
-                    });
-                    avatarObserver.observe(avatarImg, { attributes: true, attributeFilter: ['src'] });
+                container.innerHTML = '';
+                for (let i = 0; i < 180; i++) {
+                    const star = document.createElement('div');
+                    star.style.position = 'absolute';
+                    star.style.width = '2px';
+                    star.style.height = '2px';
+                    star.style.background = '#ffd700';
+                    star.style.borderRadius = '50%';
+                    star.style.left = Math.random() * 100 + '%';
+                    star.style.top = Math.random() * 100 + '%';
+                    star.style.opacity = Math.random();
+                    star.style.animation = `starTwinkle ${Math.random() * 3 + 2}s ease-in-out infinite`;
+                    container.appendChild(star);
                 }
-                
-                const nameColorEl = document.getElementById('name-color');
-                if (nameColorEl) {
-                    nameColorEl.addEventListener('click', function() {
-                        setTimeout(() => {
-                            const color = nameColorEl.innerText;
-                            localStorage.setItem('saved_name_color', color);
-                        }, 100);
-                    });
-                }
-                
-                const nameFontEl = document.getElementById('name-font');
-                if (nameFontEl) {
-                    nameFontEl.addEventListener('click', function() {
-                        setTimeout(() => {
-                            const font = nameFontEl.innerText;
-                            localStorage.setItem('saved_name_font', font);
-                        }, 100);
-                    });
-                }
-                
-                const nameMovementEl = document.getElementById('name-movement');
-                if (nameMovementEl) {
-                    nameMovementEl.addEventListener('click', function() {
-                        setTimeout(() => {
-                            const movement = nameMovementEl.innerText;
-                            localStorage.setItem('saved_name_movement', movement);
-                        }, 100);
-                    });
-                }
-                
-                const nameGifEl = document.getElementById('name-gif');
-                if (nameGifEl) {
-                    nameGifEl.addEventListener('click', function() {
-                        setTimeout(() => {
-                            const gifClass = localStorage.getItem('saved_name_gif');
-                            if (gifClass) {
-                                localStorage.setItem('saved_name_gif', gifClass);
-                            }
-                        }, 100);
-                    });
-                }
-                
-                const avatarFrameEl = document.getElementById('avatar-frame-motion');
-                if (avatarFrameEl) {
-                    avatarFrameEl.addEventListener('click', function() {
-                        setTimeout(() => {
-                            const frame = localStorage.getItem('saved_avatar_frame_motion');
-                            if (frame) {
-                                localStorage.setItem('saved_avatar_frame_motion', frame);
-                            }
-                        }, 100);
-                    });
-                }
-                
-                const allSettings = ['saved_theme', 'saved_fontsize', 'saved_mode', 'saved_opacity', 'saved_stars_speed'];
-                allSettings.forEach(setting => {
-                    const el = document.getElementById(setting);
-                    if (el) {
-                        el.addEventListener('click', function() {
-                            setTimeout(() => {
-                                const val = el.innerText;
-                                localStorage.setItem(setting, val);
-                            }, 100);
-                        });
-                    }
-                });
-            })();
+            }
+
+            // تشغيل النجوم
+            createStars();
+
+            // ====== إضافة: حفظ الاسم تلقائياً ======
+            const savedUserName = localStorage.getItem('qamar_user_name');
+            if (savedUserName) {
+                document.getElementById('profile-username').innerText = savedUserName;
+            }
         });
     </script>
 </body>
