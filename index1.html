@@ -400,6 +400,7 @@
             <button class="header-btn" onclick="toggleRooms()"><i class="fas fa-door-open"></i></button>
             <div class="room-title" id="room-title">🌍 الروم العام</div>
             <div class="header-actions">
+                <button class="header-btn logout-btn" onclick="logout()" title="خروج"><i class="fas fa-sign-out-alt"></i></button>
                 <button class="header-btn" onclick="toggleSettings()"><i class="fas fa-bars"></i></button>
             </div>
         </div>
@@ -931,6 +932,18 @@
             plusBtn.classList.toggle('active');
         }
         
+        // ====== إصلاح القائمة المنبثقة ======
+        document.addEventListener('click', function(e) {
+            const toolbar = document.getElementById('floating-toolbar');
+            const plusBtn = document.getElementById('plus-btn');
+            
+            // إذا القائمة مفتوحة والمستخدم ضغط خارجها
+            if (toolbar.classList.contains('open') && !toolbar.contains(e.target) && !plusBtn.contains(e.target)) {
+                toolbar.classList.remove('open');
+                plusBtn.classList.remove('active');
+            }
+        });
+        
         function rollDice() {
             const num = Math.floor(Math.random() * 6) + 1;
             addSystemMessage(`🎲 النرد الملكي: ${num}`);
@@ -1215,6 +1228,36 @@
                 a.href = audio.src;
                 a.download = `تسجيل_${new Date().toLocaleString()}.wav`;
                 a.click();
+            }
+        }
+        
+        // ====== زر الخروج ======
+        function logout() {
+            if (confirm('هل أنت متأكد من الخروج؟')) {
+                // مسح بيانات المستخدم من localStorage
+                localStorage.removeItem('qamar_user');
+                localStorage.removeItem('qamar_messages_' + currentRoom);
+                
+                // إخفاء الشات وإظهار نافذة الدخول
+                document.getElementById('chat-container').style.display = 'none';
+                document.getElementById('login-screen').style.display = 'flex';
+                
+                // إعادة تعيين الحقول
+                document.getElementById('member-name').value = '';
+                document.getElementById('member-email').value = '';
+                document.getElementById('guest-name').value = '';
+                
+                // إعادة تعيين المستخدم الحالي
+                currentUser = null;
+                
+                // إغلاق أي نوافذ مفتوحة
+                closeAllPanels();
+                closeStudioModal();
+                
+                // إعادة تعيين تبويب الدخول إلى "عضو"
+                switchLoginTab('member');
+                
+                showToast('fa-sign-out-alt', 'تم تسجيل الخروج بنجاح');
             }
         }
         
