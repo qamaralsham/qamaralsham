@@ -23,7 +23,6 @@
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html, body { width: 100%; height: 100%; height: 100dvh; overflow: hidden; font-family: 'Cairo', sans-serif; background: var(--bg-dark); color: var(--text-light); }
         
-        /* ====== خلفية النجوم المتحركة ====== */
         .starfield { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
         .starfield .star { position: absolute; width: 2px; height: 2px; background: rgba(255,215,0,0.8); border-radius: 50%; animation: starFall linear infinite; }
         @keyframes starFall { 0% { transform: translateY(-100px); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(100vh); opacity: 0; } }
@@ -31,14 +30,12 @@
         .background-glow { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% 0%, rgba(212,175,55,0.1) 0%, transparent 60%); z-index: -1; pointer-events: none; }
         .container { width: 100%; max-width: 500px; height: 100%; height: 100dvh; display: flex; flex-direction: column; position: relative; margin: 0 auto; background: var(--bg-dark); z-index: 1; }
         
-        /* ====== خلفيات متحركة ====== */
         .container.background-type-stars { background-image: url('https://media.giphy.com/media/26tOZ42Mg6pbTUPHW/giphy.gif'); background-size: cover; background-position: center; }
         .container.background-type-nebula { background-image: url('https://media.giphy.com/media/13HgwGsXF0aiGY/giphy.gif'); background-size: cover; background-position: center; }
         .container.background-type-moon { background-image: url('https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif'); background-size: cover; background-position: center; }
         .container.background-type-dust { background-image: url('https://media.giphy.com/media/3o7abGQaXGZmJW8HMs/giphy.gif'); background-size: cover; background-position: center; }
         .container.background-type-waves { background-image: url('https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif'); background-size: cover; background-position: center; }
         
-        /* ====== الهيدر ====== */
         .header { height: 60px; background: rgba(10, 10, 15, 0.95); border-bottom: 1px solid var(--border-gold); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; position: sticky; top: 0; z-index: 100; }
         .header-title { font-size: 14px; font-weight: 900; color: var(--gold); text-shadow: 0 0 10px rgba(212,175,55,0.5); animation: royalGlow 3s ease-in-out infinite; }
         @keyframes royalGlow { 0%, 100% { text-shadow: 0 0 10px rgba(212,175,55,0.5); } 50% { text-shadow: 0 0 20px rgba(255,215,0,0.9); } }
@@ -47,7 +44,6 @@
         .header-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border-gold); background: rgba(20,20,25,0.8); color: #fff; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 15px; transition: all 0.2s; }
         .header-btn:active { transform: scale(0.95); }
         
-        /* ====== شريط المايكات ====== */
         .mics-bar-wrapper { position: relative; }
         .mics-bar { padding: 8px 12px; background: rgba(5,5,8,0.8); border-bottom: 1px solid var(--border-light); display: flex; align-items: center; gap: 10px; transition: all 0.3s ease; }
         .mics-bar.hidden { display: none; }
@@ -59,7 +55,6 @@
         .mics-toggle-btn:active { color: #fff; }
         .mics-toggle-btn.hidden { bottom: 0; border-radius: 10px 10px 0 0; border: 1px solid var(--border-gold); border-bottom: none; background: rgba(5,5,8,0.9); }
         
-        /* ====== منطقة الرسائل ====== */
         .messages { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; background: transparent; scrollbar-width: none; }
         .messages::-webkit-scrollbar { display: none; }
         .message { display: flex; align-items: flex-start; gap: 10px; padding: 0; background: transparent !important; border: none !important; max-width: 100%; animation: fadeInSlide 0.2s ease-out; }
@@ -80,7 +75,6 @@
         .reaction-badge { background: rgba(212,175,55,0.15); border: 1px solid var(--border-gold); border-radius: 12px; padding: 2px 8px; font-size: 12px; cursor: pointer; transition: all 0.2s; }
         .reaction-badge:hover { background: var(--gold); color: #000; }
         
-        /* ====== شريط الكتابة (معدل) ====== */
         .input-area { padding: 10px 12px; display: flex; align-items: center; gap: 8px; background: rgba(8,8,12,0.95); border-top: 1px solid var(--border-gold); position: relative; z-index: 50; }
         .input-area input { flex: 1; padding: 12px 16px; border-radius: 25px; border: 1px solid var(--border-input); background: rgba(255,255,255,0.05); color: #fff; outline: none; font-family: 'Cairo', sans-serif; font-size: 14px; text-align: right; }
         .input-area input:focus { border-color: var(--gold); }
@@ -90,20 +84,17 @@
         .plus-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: transparent; color: var(--text-dim); cursor: pointer; font-size: 22px; display: flex; justify-content: center; align-items: center; transition: transform 0.3s; }
         .plus-btn.active { transform: rotate(45deg); }
         
-        /* ====== الشريط العائم ====== */
         .floating-toolbar { position: absolute; bottom: 70px; left: 12px; right: 12px; padding: 10px; border-radius: 16px; background: rgba(15,15,20,0.95); border: 1px solid var(--border-gold); display: none; justify-content: space-around; gap: 8px; z-index: 200; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); animation: scaleFade 0.3s ease-out; }
         .floating-toolbar.open { display: flex; }
         @keyframes scaleFade { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
         .tool-btn { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.04); color: #fff; cursor: pointer; font-size: 18px; display: flex; justify-content: center; align-items: center; transition: all 0.2s; }
         .tool-btn:active { background: var(--gold); color: #000; }
         
-        /* ====== شريط التنقل السفلي ====== */
         .bottom-nav { height: 65px; background: rgba(10,10,15,0.95); border-top: 1px solid var(--border-gold); display: flex; justify-content: space-around; align-items: center; }
         .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--text-dim); cursor: pointer; font-size: 0.7rem; background: none; border: none; }
         .nav-item i { font-size: 1.1rem; }
         .nav-item.active { color: var(--gold); }
         
-        /* ====== القوائم الجانبية ====== */
         .sidebar { position: fixed; top: 0; width: 40vw; min-width: 140px; max-width: 260px; height: 100%; background: rgba(15,15,20,0.98); border: 1px solid var(--border-gold); box-shadow: 0 0 20px rgba(0,0,0,0.5); transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1); z-index: 300; display: flex; flex-direction: column; }
         .right-sidebar { right: 0; transform: translateX(100%); }
         .left-sidebar { left: 0; transform: translateX(-100%); }
@@ -118,11 +109,9 @@
         .sidebar-item.locked { opacity: 0.6; cursor: not-allowed; }
         .sidebar-item.locked:hover { background: rgba(255,255,255,0.03); border-color: var(--border-light); }
         
-        /* ====== طبقة التعتيم ====== */
         .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 250; }
         .overlay.show { opacity: 1; pointer-events: all; }
         
-        /* ====== نافذة الدخول ====== */
         .login-screen { position: fixed; inset: 0; background: rgba(5,5,8,0.98); display: flex; justify-content: center; align-items: center; z-index: 500; }
         .login-card { width: 90%; max-width: 380px; background: rgba(15,15,20,0.98); border: 1px solid var(--border-gold); border-radius: 20px; padding: 25px; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
         .login-logo { text-align: center; }
@@ -134,36 +123,23 @@
         .login-btn { padding: 14px; border-radius: 12px; border: none; background: var(--gold); color: #000; font-weight: 900; font-size: 16px; cursor: pointer; transition: all 0.2s; }
         .login-btn:active { transform: scale(0.98); }
         
-        /* ====== تبويبات الدخول ====== */
         .login-tabs { display: flex; gap: 8px; margin-bottom: 15px; }
         .login-tab { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.03); color: var(--text-dim); cursor: pointer; font-family: 'Cairo', sans-serif; font-size: 13px; font-weight: 700; text-align: center; transition: all 0.2s; }
         .login-tab.active { background: var(--gold); color: #000; border-color: var(--gold); }
         
-        /* ====== إخفاء عناصر حسب نوع الدخول ====== */
         .hidden-field { display: none !important; }
         
-        /* ====== البروفايل ====== */
-        .profile-modal { position: fixed; inset: 0; background: rgba(5,5,8,0.98); transform: translateY(100%); transition: transform 0.3s ease-out; z-index: 400; }
-        .profile-modal.open { transform: translateY(0); }
-        .profile-header { padding: 15px; border-bottom: 1px solid var(--border-gold); display: flex; justify-content: space-between; align-items: center; }
-        .profile-header h3 { color: var(--gold); font-size: 14px; font-weight: 900; }
-        .profile-avatar { width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--gold); margin: 20px auto; background: #222; display: flex; justify-content: center; align-items: center; font-size: 40px; }
-        
-        /* ====== مؤشر الكتابة ====== */
         .typing-indicator { position: fixed; bottom: 70px; left: 15px; background: rgba(212,175,55,0.1); border: 1px solid var(--border-gold); border-radius: 20px; padding: 8px 15px; font-size: 12px; color: var(--gold-light); display: none; z-index: 150; animation: fadeInSlide 0.3s; }
         .typing-indicator.show { display: block; }
         
-        /* ====== الهدايا ====== */
         .gift-effect { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); font-size: 80px; z-index: 1000; animation: giftExplode 2s ease-out forwards; pointer-events: none; }
         @keyframes giftExplode { 0% { transform: translate(-50%, -50%) scale(0); opacity: 1; } 50% { transform: translate(-50%, -50%) scale(1.5); opacity: 0.8; } 100% { transform: translate(-50%, -50%) scale(2); opacity: 0; } }
         
-        /* ====== الإشعارات ====== */
         .toast-notification { position: fixed; top: 20px; right: 20px; background: rgba(15,15,20,0.95); border: 1px solid var(--border-gold); border-radius: 12px; padding: 12px 20px; display: flex; align-items: center; gap: 10px; z-index: 1100; animation: toastIn 0.3s ease-out; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
         .toast-notification i { font-size: 20px; color: var(--gold); }
         .toast-notification span { font-size: 13px; font-weight: 600; }
         @keyframes toastIn { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
         
-        /* ====== استديو التسجيل (معدل) ====== */
         .recording-controls { display: flex; gap: 8px; align-items: center; justify-content: center; padding: 10px; background: rgba(15,15,20,0.9); border-radius: 12px; margin: 8px 0; border: 1px solid var(--border-gold); }
         .record-btn { width: 48px; height: 48px; border-radius: 50%; border: 2px solid #ff4444; background: rgba(255,68,68,0.1); color: #ff4444; cursor: pointer; font-size: 20px; display: flex; justify-content: center; align-items: center; transition: all 0.3s; }
         .record-btn.recording { background: #ff4444; color: #fff; animation: pulse 1s infinite; }
@@ -171,12 +147,6 @@
         .effect-btn { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.05); color: #fff; cursor: pointer; font-size: 16px; display: flex; justify-content: center; align-items: center; transition: all 0.2s; }
         .effect-btn.active { background: var(--gold); color: #000; }
         
-        /* ====== iframe البروفايل ====== */
-        #profile-frame-container { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.95); display: none; }
-        #profile-frame-container .close-btn { position: absolute; top: 10px; right: 10px; z-index: 10000; background: rgba(255,0,0,0.8); color: #fff; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 20px; cursor: pointer; }
-        #profile-frame-container iframe { width: 100%; height: 100%; border: none; }
-        
-        /* ====== تجاوب (معدل) ====== */
         @media (max-width: 480px) {
             .sidebar { width: 40vw; min-width: 140px; max-width: 260px; }
             .message-avatar { width: 32px; height: 32px; }
@@ -192,7 +162,6 @@
     <div class="starfield" id="starfield"></div>
     <div class="background-glow"></div>
     
-    <!-- نافذة الدخول -->
     <div class="login-screen" id="login-screen">
         <div class="login-card">
             <div class="login-logo">
@@ -216,7 +185,6 @@
         </div>
     </div>
     
-    <!-- الشات -->
     <div class="container" id="chat-container" style="display:none;">
         <div class="header">
             <button class="header-btn" onclick="toggleRooms()"><i class="fas fa-door-open"></i></button>
@@ -316,24 +284,69 @@
     
     <div class="overlay" id="overlay" onclick="closeAllPanels()"></div>
     
-    <div class="profile-modal" id="profile-modal">
-        <div class="profile-header">
-            <h3>البروفايل</h3>
-            <button class="sidebar-close" onclick="closeProfile()"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="profile-avatar"><i class="fas fa-user"></i></div>
-        <div style="text-align:center; padding: 10px;">
-            <h3 id="profile-name">مستخدم</h3>
-            <p id="profile-rank" style="color: var(--gold); font-size: 12px; margin-top: 5px;">👤 User</p>
+    <!-- ====== البروفايل (داخل الشات) ====== -->
+    <div class="profile-modal" id="profile-modal" style="display:none; position:fixed; inset:0; background:rgba(5,5,8,0.98); z-index:700; overflow-y:auto;">
+        <div style="max-width:580px; margin:0 auto; padding:20px;">
+            <button onclick="closeProfile()" style="background:rgba(255,0,0,0.8); color:#fff; border:none; border-radius:50%; width:40px; height:40px; font-size:20px; cursor:pointer; position:fixed; top:10px; right:10px; z-index:1000;">✕</button>
+            
+            <div style="width:100%; height:200px; background:linear-gradient(135deg, #35136b, #190938, #070312); border-radius:16px; position:relative; overflow:hidden;">
+                <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600" style="width:100%; height:100%; object-fit:cover; opacity:0.75;">
+                <div style="position:absolute; bottom:-40px; left:50%; transform:translateX(-50%); width:100px; height:100px; border-radius:50%; border:3px solid var(--gold); overflow:hidden; background:#111;">
+                    <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200" id="profile-avatar-img" style="width:100%; height:100%; object-fit:cover;">
+                </div>
+            </div>
+            
+            <div style="text-align:center; margin-top:60px;">
+                <div style="font-size:12px; color:var(--gold); font-weight:bold;">Owner 👑</div>
+                <h2 id="profile-name" style="font-size:24px; color:#fff; text-shadow:0 2px 12px rgba(0,0,0,0.95), 0 0 20px var(--gold);">قمر الشام</h2>
+                <p id="profile-bio" style="font-size:13px; color:#90caf9; margin-top:4px;">damascus_moon@</p>
+            </div>
+            
+            <div style="display:flex; overflow-x:auto; gap:4px; padding:3px; background:rgba(0,0,0,0.4); border-radius:12px; margin-top:20px; border:1px solid var(--border-gold); scrollbar-width:none;">
+                <div class="tab-item active" data-target="settings-tab" style="padding:8px 12px; color:#b0bec5; font-size:11px; cursor:pointer; font-weight:bold; border-radius:8px; white-space:nowrap;">إعدادات الحساب</div>
+                <div class="tab-item" data-target="appearance-tab" style="padding:8px 12px; color:#b0bec5; font-size:11px; cursor:pointer; font-weight:bold; border-radius:8px; white-space:nowrap;">المظهر البصري</div>
+                <div class="tab-item" data-target="info-tab" style="padding:8px 12px; color:#b0bec5; font-size:11px; cursor:pointer; font-weight:bold; border-radius:8px; white-space:nowrap;">المعلومات</div>
+            </div>
+            
+            <div style="margin-top:15px;">
+                <div id="settings-tab" class="tab-content active">
+                    <div style="background:rgba(10,5,20,0.6); border-radius:16px; padding:14px; border:1px solid var(--border-gold);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.08); padding:9px 0;">
+                            <span style="color:#ffab91; font-weight:bold; font-size:13px;">البريد الإلكتروني</span>
+                            <span style="color:#64b5f6; font-size:12px;">damascus.moon@gmail.com</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.08); padding:9px 0;">
+                            <span style="color:#ffab91; font-weight:bold; font-size:13px;">رقم الهاتف</span>
+                            <span style="color:#81c784; font-size:12px;">+963 999 000 000</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="appearance-tab" class="tab-content" style="display:none;">
+                    <div style="background:rgba(10,5,20,0.6); border-radius:16px; padding:14px; border:1px solid var(--border-gold);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.08); padding:9px 0;">
+                            <span style="color:#ffab91; font-weight:bold; font-size:13px;">لون الاسم</span>
+                            <span style="color:#ffffff; font-size:12px;">أبيض</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.08); padding:9px 0;">
+                            <span style="color:#ffab91; font-weight:bold; font-size:13px;">خط الاسم</span>
+                            <span style="color:#64b5f6; font-size:12px;">Cairo</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="info-tab" class="tab-content" style="display:none;">
+                    <div style="background:rgba(10,5,20,0.6); border-radius:16px; padding:14px; border:1px solid var(--border-gold);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.08); padding:9px 0;">
+                            <span style="color:#ffab91; font-weight:bold; font-size:13px;">البلد</span>
+                            <span style="color:#fff; font-size:12px;">سوريا - دمشق 🇸🇾</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-
-    <div id="profile-frame-container">
-        <div style="position:relative; width:100%; height:100%;">
-            <button class="close-btn" onclick="closeProfileFrame()">✕</button>
-            <iframe id="profile-iframe" src="https://qamaralsham.github.io/qamaralsham/profile.html"></iframe>
-        </div>
-    </div>
+    <!-- ====== نهاية البروفايل ====== -->
 
     <div class="recording-modal" id="recording-modal" style="display:none; position:fixed; inset:0; background:rgba(5,5,8,0.98); z-index:600; justify-content:center; align-items:center;">
         <div style="width:90%; max-width:400px; background:rgba(15,15,20,0.98); border:1px solid var(--border-gold); border-radius:20px; padding:20px;">
@@ -523,7 +536,7 @@
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
         
-        // ====== إضافة رسالة مع صورة البروفايل (معدل: يحفظ لون المرسل) ======
+        // ====== إضافة رسالة مع صورة البروفايل ======
         function addMessageWithAvatar(sender, text, color, avatar) {
             const messagesContainer = document.getElementById('messages');
             const msg = document.createElement('div');
@@ -578,7 +591,7 @@
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
         
-        // ====== إرسال رسالة (معدل: يحفظ لون المرسل) ======
+        // ====== إرسال رسالة ======
         function sendMessage() {
             const input = document.getElementById('message-input');
             const text = input.value.trim();
@@ -804,32 +817,17 @@
         }
         
         function closeProfile() {
-            document.getElementById('profile-modal').classList.remove('open');
+            document.getElementById('profile-modal').style.display = 'none';
         }
         
-        // ====== فتح وإغلاق البروفايل داخل الشات ======
+        // ====== فتح وإغلاق البروفايل ======
         function openProfile() {
             localStorage.setItem('profile_user', JSON.stringify(currentUser));
-            document.getElementById('profile-frame-container').style.display = 'block';
+            document.getElementById('profile-modal').style.display = 'block';
         }
         
-        // ====== إغلاق البروفايل وتحديث الشات ======
-        function closeProfileFrame() {
-            document.getElementById('profile-frame-container').style.display = 'none';
-            applyProfileToChat();
-            if (currentUser && currentUser.name) {
-                document.getElementById('profile-name').innerText = currentUser.name;
-            }
-            const messagesContainer = document.getElementById('messages');
-            const savedMessages = JSON.parse(localStorage.getItem('qamar_messages_' + currentRoom) || '[]');
-            messagesContainer.innerHTML = '';
-            if (savedMessages.length === 0) {
-                addSystemMessage(`📢 تم فتح ${document.getElementById('room-title').innerText}`);
-            } else {
-                savedMessages.forEach(msg => {
-                    addMessageWithAvatar(msg.sender, msg.text, msg.color || currentUser.color, msg.avatar);
-                });
-            }
+        function closeProfile() {
+            document.getElementById('profile-modal').style.display = 'none';
         }
         
         // ====== شريط التنقل ======
@@ -888,7 +886,7 @@
             setTimeout(() => toast.remove(), 3000);
         }
         
-        // ====== استديو التسجيل (معدل: أزرار مستقلة) ======
+        // ====== استديو التسجيل ======
         let mediaRecorder = null;
         let audioChunks = [];
         let isRecording = false;
@@ -1026,7 +1024,7 @@
                 currentUser = null;
                 closeAllPanels();
                 closeStudioModal();
-                closeProfileFrame();
+                closeProfile();
                 switchLoginTab('member');
                 showToast('fa-sign-out-alt', 'تم تسجيل الخروج بنجاح');
             }
