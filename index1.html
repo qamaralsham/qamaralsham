@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>شات قمر الشام 👑</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+</head>
+<body>
+    <!-- ====== نافذة الدخول ====== -->
+    <div class="login-screen" id="login-screen">
+        <div class="login-card">
+            <div class="login-logo">
+                <i class="fas fa-moon"></i>
+                <h1>قمر الشام 👑</h1>
+                <p>منصة الدردشة الملكية الفاخرة</p>
+            </div>
+            <!-- تبويبات الدخول -->
+            <div class="login-tabs">
+                <button class="tab-btn active" onclick="switchLoginTab('member', this)">👤 عضو</button>
+                <button class="tab-btn" onclick="switchLoginTab('guest', this)">🕶️ زائر</button>
+            </div>
+            <!-- تبويب العضو -->
+            <div class="tab-content" id="login-member">
+                <input type="text" class="login-input" id="login-email" placeholder="البريد الإلكتروني..." autocomplete="off">
+                <input type="password" class="login-input" id="login-password" placeholder="كلمة السر..." autocomplete="new-password">
+                <button class="login-btn" onclick="memberLogin()"><i class="fas fa-crown"></i> دخول العضو 👑</button>
+            </div>
+            <!-- تبويب الزائر -->
+            <div class="tab-content" id="login-guest" style="display:none;">
+                <input type="text" class="login-input" id="guest-name" placeholder="اسم الزائر..." autocomplete="off">
+                <input type="number" class="login-input" id="guest-age" placeholder="العمر..." autocomplete="off">
+                <select class="login-input" id="guest-gender">
+                    <option value="">الجنس...</option>
+                    <option value="male">ذكر</option>
+                    <option value="female">أنثى</option>
+                </select>
+                <button class="login-btn" onclick="guestLogin()"><i class="fas fa-user"></i> دخول الزائر 🕶️</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== الشات الرئيسي ====== -->
+    <div class="container" id="chat-container" style="display:none;">
+        <!-- الهيدر -->
+        <div class="header">
+            <button class="header-btn" onclick="toggleRooms()"><i class="fas fa-door-open"></i></button>
+            <div class="room-title" id="room-title">🌍 الروم العام</div>
+            <div class="header-actions">
+                <button class="header-btn" onclick="toggleSettings()"><i class="fas fa-bars"></i></button>
+            </div>
+        </div>
+
+        <!-- شريط المايكات -->
+        <div class="mics-bar-wrapper">
+            <div class="mics-bar" id="mics-bar">
+                <div class="mics" id="mics-container">
+                    <button class="mic-btn" onclick="toggleMic(1)"><i class="fas fa-microphone"></i></button>
+                    <button class="mic-btn" onclick="toggleMic(2)"><i class="fas fa-microphone"></i></button>
+                    <button class="mic-btn" onclick="toggleMic(3)"><i class="fas fa-microphone"></i></button>
+                    <button class="mic-btn" onclick="toggleMic(4)"><i class="fas fa-microphone"></i></button>
+                </div>
+            </div>
+            <button class="mics-toggle-btn" id="mics-toggle-btn" onclick="toggleMicsBar()">
+                <i class="fas fa-chevron-up"></i>
+            </button>
+        </div>
+
+        <!-- الرسائل -->
+        <div class="messages" id="messages">
+            <div class="message system">👑 أهلاً بك في إمبراطورية قمر الشام</div>
+        </div>
+
+        <!-- مؤشر الكتابة -->
+        <div class="typing-indicator" id="typing-indicator">✍️ <span id="typing-name">فراس</span> يكتب الآن...</div>
+
+        <!-- الشريط العائم -->
+        <div class="floating-toolbar" id="floating-toolbar">
+            <button class="tool-btn" onclick="uploadFile()"><i class="fas fa-folder"></i></button>
+            <button class="tool-btn" onclick="playMusic()"><i class="fas fa-music"></i></button>
+            <button class="tool-btn" onclick="rollDice()"><i class="fas fa-dice"></i></button>
+            <button class="tool-btn" onclick="searchYouTube()"><i class="fas fa-play"></i></button>
+            <button class="tool-btn" onclick="neonBrush()"><i class="fas fa-paint-brush"></i></button>
+            <button class="tool-btn" onclick="voiceRecording()"><i class="fas fa-wave-square"></i></button>
+            <button class="tool-btn" onclick="createPoll()"><i class="fas fa-chart-bar"></i></button>
+        </div>
+
+        <!-- شريط الكتابة -->
+        <div class="input-area">
+            <button class="send-btn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+            <button class="emoji-btn" onclick="insertEmoji()"><i class="fas fa-smile"></i></button>
+            <input type="text" id="message-input" placeholder="اكتب رسالتك هنا..." onkeypress="handleKeyPress(event)" autocomplete="off">
+            <button class="plus-btn" id="plus-btn" onclick="toggleToolbar()"><i class="fas fa-plus"></i></button>
+        </div>
+
+        <!-- شريط التنقل السفلي -->
+        <div class="bottom-nav">
+            <button class="nav-item active" onclick="setNav('home', this)"><i class="fas fa-home"></i><span>الرئيسية</span></button>
+            <button class="nav-item" onclick="toggleRooms()"><i class="fas fa-door-open"></i><span>الغرف</span></button>
+            <button class="nav-item" onclick="showOnlineUsers()"><i class="fas fa-users"></i><span>المتواجدين</span></button>
+            <button class="nav-item" onclick="showFriends()"><i class="fas fa-user-friends"></i><span>الأصدقاء</span></button>
+            <button class="nav-item" onclick="showSettings()"><i class="fas fa-cog"></i><span>الخيارات</span></button>
+            <button class="nav-item" onclick="openStore()"><i class="fas fa-store"></i><span>المتجر</span></button>
+        </div>
+    </div>
+
+    <!-- ====== القائمة اليمنى (الرومات) ====== -->
+    <div class="sidebar right-sidebar" id="rooms-sidebar">
+        <div class="sidebar-header">
+            <h3><i class="fas fa-door-open"></i> الغرف</h3>
+            <button class="sidebar-close" onclick="closeAllPanels()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="sidebar-content">
+            <!-- 8 رومات -->
+            <div class="sidebar-item active" onclick="switchRoom('general', '🌍 الروم العام', this)">
+                <i class="fas fa-globe"></i> الروم العام
+            </div>
+            <div class="sidebar-item" onclick="switchRoom('quiz', '🎯 روم المسابقات', this)">
+                <i class="fas fa-trophy"></i> روم المسابقات
+            </div>
+            <div class="sidebar-item" onclick="switchRoom('islamic', '🕌 روم الإسلاميات', this)">
+                <i class="fas fa-mosque"></i> روم الإسلاميات
+            </div>
+            <div class="sidebar-item" onclick="switchRoom('royal', '👑 السويت الملكي', this)">
+                <i class="fas fa-crown"></i> السويت الملكي
+            </div>
+            <div class="sidebar-item" onclick="switchRoom('candy', '🍫 Candy Room', this)">
+                <i class="fas fa-candy-cane"></i> Candy Room
+            </div>
+            <div class="sidebar-item" onclick="switchRoom('studio', '🎙️ استديو التسجيل', this)">
+                <i class="fas fa-microphone-alt"></i> استديو التسجيل
+            </div>
+            <div class="sidebar-item" onclick="switchRoom('gaza', '🇵🇸 غزة العزة', this)">
+                <i class="fas fa-hand-holding-heart"></i> غزة العزة
+            </div>
+            <div class="sidebar-item" onclick="switchRoom('sham', '🌙 ليالي الشام', this)">
+                <i class="fas fa-moon"></i> ليالي الشام
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== القائمة اليسرى (الإعدادات) ====== -->
+    <div class="sidebar left-sidebar" id="settings-sidebar">
+        <div class="sidebar-header">
+            <h3><i class="fas fa-cog"></i> الإعدادات</h3>
+            <button class="sidebar-close" onclick="closeAllPanels()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="sidebar-content">
+            <!-- خلفيات المنصة -->
+            <div class="settings-section">
+                <h4 style="color: var(--gold); font-size: 12px; margin-bottom: 8px;">🎨 خلفيات المنصة</h4>
+                <div class="background-options" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button class="bg-option active" style="padding: 8px; border-radius: 8px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.05); color: #fff; cursor: pointer;" onclick="changeBackground('stars')">✨ نجوم</button>
+                    <button class="bg-option" style="padding: 8px; border-radius: 8px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.05); color: #fff; cursor: pointer;" onclick="changeBackground('nebula')">🌌 سديم</button>
+                    <button class="bg-option" style="padding: 8px; border-radius: 8px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.05); color: #fff; cursor: pointer;" onclick="changeBackground('moon')">🌙 قمر</button>
+                    <button class="bg-option" style="padding: 8px; border-radius: 8px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.05); color: #fff; cursor: pointer;" onclick="changeBackground('dust')">✨ غبار</button>
+                    <button class="bg-option" style="padding: 8px; border-radius: 8px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.05); color: #fff; cursor: pointer;" onclick="changeBackground('waves')">🌊 أمواج</button>
+                </div>
+            </div>
+
+            <!-- إعدادات إضافية -->
+            <div class="settings-section">
+                <h4 style="color: var(--gold); font-size: 12px; margin-bottom: 8px;">⚙️ إعدادات إضافية</h4>
+                <div class="sidebar-item" onclick="alert('🔊 الصوت قيد التطوير')"><i class="fas fa-volume-up"></i> الصوت</div>
+                <div class="sidebar-item" onclick="alert('🔔 الإشعارات قيد التطوير')"><i class="fas fa-bell"></i> الإشعارات</div>
+                <div class="sidebar-item" onclick="alert('🛡️ الخصوصية قيد التطوير')"><i class="fas fa-shield-alt"></i> الخصوصية</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== طبقة التعتيم ====== -->
+    <div class="overlay" id="overlay" onclick="closeAllPanels()"></div>
+
+    <!-- ====== البروفايل (منفصل) ====== -->
+    <div class="profile-modal" id="profile-modal">
+        <div class="profile-header">
+            <h3>البروفايل</h3>
+            <button class="sidebar-close" onclick="closeProfile()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="profile-avatar"><i class="fas fa-user"></i></div>
+        <div style="text-align:center; padding: 10px;">
+            <h3 id="profile-name">مستخدم</h3>
+            <p id="profile-rank" style="color: var(--gold); font-size: 12px; margin-top: 5px;">👤 User</p>
+        </div>
+    </div>
+
+    <!-- ====== استديو التسجيل (Modal) ====== -->
+    <div class="studio-modal" id="studio-modal">
+        <div class="studio-header">
+            <h3><i class="fas fa-microphone-alt"></i> استديو التسجيل</h3>
+            <button class="sidebar-close" onclick="closeStudio()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="studio-content">
+            <!-- مايك واحد -->
+            <div class="studio-mic-section">
+                <button class="mic-btn" onclick="toggleStudioMic()"><i class="fas fa-microphone"></i></button>
+                <span id="studio-mic-status">🎙️ المايك متاح</span>
+            </div>
+            <!-- تسجيل الصوت -->
+            <div class="studio-recording-section">
+                <button class="studio-btn" onclick="startRecording()"><i class="fas fa-circle"></i> تسجيل</button>
+                <button class="studio-btn" onclick="stopRecording()"><i class="fas fa-stop"></i> إيقاف</button>
+                <audio id="studio-audio-preview" controls style="display:none; width:100%; margin-top:10px;"></audio>
+                <button class="studio-btn" onclick="downloadRecording()" style="display:none;" id="studio-download-btn"><i class="fas fa-download"></i> تحميل</button>
+            </div>
+            <!-- مؤثرات صوتية -->
+            <div class="studio-effects-section">
+                <h4>🎛️ مؤثرات صوتية</h4>
+                <button class="effect-btn" onclick="applyEffect('echo')"><i class="fas fa-wave-square"></i> إيكو</button>
+                <button class="effect-btn" onclick="applyEffect('reverb')"><i class="fas fa-music"></i> ترجيع</button>
+                <button class="effect-btn" onclick="applyEffect('none')"><i class="fas fa-microphone"></i> بدون</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
