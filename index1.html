@@ -349,6 +349,34 @@
         .effect-btn { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.05); color: #fff; cursor: pointer; font-size: 16px; display: flex; justify-content: center; align-items: center; transition: all 0.2s; }
         .effect-btn.active { background: var(--gold); color: #000; }
         
+        /* ====== iframe البروفايل ====== */
+        #profile-frame-container {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0,0,0,0.95);
+            display: none;
+        }
+        #profile-frame-container .close-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10000;
+            background: rgba(255,0,0,0.8);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        #profile-frame-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
         /* ====== تجاوب ====== */
         @media (max-width: 480px) {
             .sidebar { width: 40vw; min-width: 140px; max-width: 260px; }
@@ -518,6 +546,14 @@
         <div style="text-align:center; padding: 10px;">
             <h3 id="profile-name">مستخدم</h3>
             <p id="profile-rank" style="color: var(--gold); font-size: 12px; margin-top: 5px;">👤 User</p>
+        </div>
+    </div>
+
+    <!-- iframe البروفايل -->
+    <div id="profile-frame-container">
+        <div style="position:relative; width:100%; height:100%;">
+            <button class="close-btn" onclick="closeProfileFrame()">✕</button>
+            <iframe id="profile-iframe" src="https://qamaralsham.github.io/qamaralsham/profile.html"></iframe>
         </div>
     </div>
 
@@ -1038,6 +1074,19 @@
             document.getElementById('profile-modal').classList.remove('open');
         }
         
+        // ====== فتح وإغلاق البروفايل داخل الشات ======
+        function openProfile() {
+            // تمرير بيانات المستخدم للبروفايل
+            localStorage.setItem('profile_user', JSON.stringify(currentUser));
+            
+            // إظهار iframe البروفايل
+            document.getElementById('profile-frame-container').style.display = 'block';
+        }
+        
+        function closeProfileFrame() {
+            document.getElementById('profile-frame-container').style.display = 'none';
+        }
+        
         // ====== شريط التنقل ======
         function setNav(nav, element) {
             document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
@@ -1056,7 +1105,7 @@
         
         function showSettings() {
             closeAllPanels();
-            alert('⚙️ الإعدادات قيد التطوير');
+            openProfile();
         }
         
         function openStore() {
@@ -1253,6 +1302,7 @@
                 // إغلاق أي نوافذ مفتوحة
                 closeAllPanels();
                 closeStudioModal();
+                closeProfileFrame();
                 
                 // إعادة تعيين تبويب الدخول إلى "عضو"
                 switchLoginTab('member');
