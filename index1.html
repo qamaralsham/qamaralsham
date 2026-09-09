@@ -954,6 +954,19 @@
             }
         }
         
+        // ====== مراقبة تغييرات البروفايل ======
+        setInterval(function() {
+            if (currentUser) {
+                if (localStorage.getItem('profile_name')) currentUser.name = localStorage.getItem('profile_name');
+                if (localStorage.getItem('saved_name_color')) currentUser.color = localStorage.getItem('saved_name_color');
+                if (localStorage.getItem('saved_name_font')) currentUser.font = localStorage.getItem('saved_name_font');
+                if (localStorage.getItem('saved_name_movement')) currentUser.movement = localStorage.getItem('saved_name_movement');
+                if (localStorage.getItem('saved_name_gif')) currentUser.gifClass = localStorage.getItem('saved_name_gif');
+                if (localStorage.getItem('saved_avatar_frame_motion')) currentUser.avatarFrame = localStorage.getItem('saved_avatar_frame_motion');
+                if (localStorage.getItem('profile_avatar')) currentUser.avatar = localStorage.getItem('profile_avatar');
+            }
+        }, 1000);
+        
         // ====== تحميل البيانات المحفوظة ======
         window.addEventListener('DOMContentLoaded', () => {
             const savedUser = localStorage.getItem('qamar_user');
