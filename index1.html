@@ -6,7 +6,6 @@
     <title>شات قمر الشام 👑</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <style>
         :root {
             --bg-dark: #050508;
@@ -317,8 +316,6 @@
         .login-tabs { display: flex; gap: 8px; margin-bottom: 15px; }
         .login-tab { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.03); color: var(--text-dim); cursor: pointer; font-family: 'Cairo', sans-serif; font-size: 13px; font-weight: 700; text-align: center; transition: all 0.2s; }
         .login-tab.active { background: var(--gold); color: #000; border-color: var(--gold); }
-        .login-tab.king-tab { border-color: var(--gold); color: var(--gold); }
-        .login-tab.king-tab.active { background: linear-gradient(135deg, #ffd700, #ff8c00); color: #000; }
         
         /* ====== إخفاء عناصر حسب نوع الدخول ====== */
         .hidden-field { display: none !important; }
@@ -373,10 +370,7 @@
             
             <!-- تبويبات الدخول -->
             <div class="login-tabs">
-                <button class="login-tab king-tab active" onclick="switchLoginTab('king')" id="tab-king">
-                    <i class="fas fa-crown"></i> الملك
-                </button>
-                <button class="login-tab" onclick="switchLoginTab('member')" id="tab-member">
+                <button class="login-tab active" onclick="switchLoginTab('member')" id="tab-member">
                     <i class="fas fa-user"></i> عضو
                 </button>
                 <button class="login-tab" onclick="switchLoginTab('guest')" id="tab-guest">
@@ -384,19 +378,11 @@
                 </button>
             </div>
             
-            <!-- حقول الملك -->
-            <div id="king-fields">
-                <input type="text" class="login-input" id="king-name" placeholder="اسم الملك..." autocomplete="off">
-                <input type="email" class="login-input" id="king-email" placeholder="إيميل الملك..." autocomplete="off">
-                <input type="password" class="login-input" id="king-password" placeholder="كلمة السر..." autocomplete="new-password">
-                <button class="login-btn" onclick="loginAsKing()"><i class="fas fa-crown"></i> دخول الملك 👑</button>
-            </div>
-            
             <!-- حقول العضو -->
-            <div id="member-fields" style="display:none;">
+            <div id="member-fields">
                 <input type="text" class="login-input" id="member-name" placeholder="اسمك..." autocomplete="off">
                 <input type="email" class="login-input" id="member-email" placeholder="إيميلك..." autocomplete="off">
-                <button class="login-btn" onclick="loginAsMember()"><i class="fas fa-user"></i> دخول عضو</button>
+                <button class="login-btn" onclick="loginAsMember()"><i class="fas fa-user"></i> دخول</button>
             </div>
             
             <!-- حقول الزائر -->
@@ -579,7 +565,7 @@
         let currentUser = null;
         let currentRoom = 'general';
         let currentBackground = 'stars';
-        let loginType = 'king'; // king, member, guest
+        let loginType = 'member'; // member, guest
         
         // ====== نظام الرتب ======
         const ranks = {
@@ -598,7 +584,7 @@
         
         // ====== قاعدة بيانات المستخدمين ======
         const usersDB = {
-            'emadhlaweh@gmail.com': { name: 'Emad', rank: 'King', email: 'emadhlaweh@gmail.com', color: '#ffd700', avatar: 'https://ui-avatars.com/api/?name=Emad&background=ffd700&color=000', passwordHash: 'ef1c1b6a0e0c4b4f6f8b3c8e9f4a6a0c' }
+            'emadhlaweh@gmail.com': { name: 'Emad', rank: 'King', email: 'emadhlaweh@gmail.com', color: '#ffd700', avatar: 'https://ui-avatars.com/api/?name=Emad&background=ffd700&color=000', passwordHash: '85e1c6a8b6f2d0e4e1c5c9f8d0e2b3c7e5a5b0a2c8e1f3f6a7b9c0d1e2f3a4b5' }
         };
         
         // ====== الرسائل حسب الروم ======
@@ -653,48 +639,20 @@
             loginType = tab;
             
             // إزالة active من كل التبويبات
-            document.getElementById('tab-king').classList.remove('active');
             document.getElementById('tab-member').classList.remove('active');
             document.getElementById('tab-guest').classList.remove('active');
             
             // إخفاء كل الحقول
-            document.getElementById('king-fields').style.display = 'none';
             document.getElementById('member-fields').style.display = 'none';
             document.getElementById('guest-fields').style.display = 'none';
             
             // إظهار حسب التبويب
-            if (tab === 'king') {
-                document.getElementById('tab-king').classList.add('active');
-                document.getElementById('king-fields').style.display = 'block';
-            } else if (tab === 'member') {
+            if (tab === 'member') {
                 document.getElementById('tab-member').classList.add('active');
                 document.getElementById('member-fields').style.display = 'block';
             } else if (tab === 'guest') {
                 document.getElementById('tab-guest').classList.add('active');
                 document.getElementById('guest-fields').style.display = 'block';
-            }
-        }
-        
-        // ====== دخول الملك ======
-        function loginAsKing() {
-            const name = document.getElementById('king-name').value.trim();
-            const email = document.getElementById('king-email').value.trim().toLowerCase();
-            const password = document.getElementById('king-password').value;
-            
-            if (!name || !email || !password) {
-                alert('⚠️ الرجاء إدخال جميع الحقول');
-                return;
-            }
-            
-            // تشفير الباسورد
-            const passwordHash = CryptoJS.SHA256(password).toString();
-            
-            // التحقق من بيانات الملك
-            if (email === 'emadhlaweh@gmail.com' && name.toLowerCase() === 'emad' && passwordHash === usersDB['emadhlaweh@gmail.com'].passwordHash) {
-                currentUser = usersDB[email];
-                enterChat();
-            } else {
-                alert('❌ بيانات الملك غير صحيحة!');
             }
         }
         
@@ -708,7 +666,11 @@
                 return;
             }
             
-            if (usersDB[email]) {
+            // 🔐 التحقق التلقائي من بيانات الملك (بدون الحاجة لخانة خاصة)
+            if (email === 'emadhlaweh@gmail.com' && name.toLowerCase() === 'emad') {
+                // الملك يدخل مباشرة بدون كلمة مرور
+                currentUser = usersDB[email];
+            } else if (usersDB[email]) {
                 currentUser = usersDB[email];
             } else {
                 currentUser = { name, rank: 'User', email, color: '#ffffff', avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff` };
