@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>قمر الشام 🌙 - البروفايل</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" onerror="console.log('THREE.js failed to load')"></script>
+    <!-- تم إزالة THREE.js - لا يحتاجه البروفايل -->
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Amiri:wght@400;700&family=Reem+Kufi:wght@400;700&family=Aref+Ruqaa:wght@400;700&family=Lateef:wght@400;700&family=Scheherazade+New:wght@400;700&family=Markazi+Text:wght@400;700&family=Harmattan:wght@400;700&family=Jomhuria&family=Lalezar&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -1983,40 +1983,6 @@
                 document.getElementById('viewers-close-btn').onclick = () => {
                     document.getElementById('viewers-modal').classList.remove('active');
                 };
-            }
-
-            // تشغيل النجوم Three.js (مع try-catch)
-            try {
-                if (typeof THREE !== 'undefined') {
-                    const container = document.getElementById('stardust-canvas');
-                    const scene = new THREE.Scene();
-                    const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 1, 1000);
-                    camera.position.z = 500;
-                    const renderer = new THREE.WebGLRenderer({ alpha: true });
-                    renderer.setSize(container.clientWidth, container.clientHeight);
-                    container.appendChild(renderer.domElement);
-
-                    const starsGeometry = new THREE.BufferGeometry();
-                    const starsCount = 180;
-                    const starPositions = new Float32Array(starsCount * 3);
-                    for (let i = 0; i < starsCount * 3; i++) starPositions[i] = (Math.random() - 0.5) * 580;
-                    starsGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-                    const starsMaterial = new THREE.PointsMaterial({ color: 0xffe082, size: 2.5, transparent: true, opacity: 0.95 });
-                    const starField = new THREE.Points(starsGeometry, starsMaterial);
-                    scene.add(starField);
-
-                    function animateStardust() {
-                        requestAnimationFrame(animateStardust);
-                        starField.rotation.y += currentStarSpeed;
-                        starField.rotation.x += currentStarSpeed * 0.5;
-                        renderer.render(scene, camera);
-                    }
-                    animateStardust();
-                } else {
-                    console.log('THREE.js not loaded - stars disabled');
-                }
-            } catch (e) {
-                console.log('THREE.js error:', e.message);
             }
 
             // ====== إضافة: حفظ بيانات البروفايل تلقائياً للشات ======
