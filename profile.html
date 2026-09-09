@@ -986,6 +986,13 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
+            // ====== قراءة اسم المستخدم من الشات ======
+            const savedUserName = localStorage.getItem('qamar_user_name');
+            const usernameEl = document.getElementById('profile-username');
+            if (savedUserName && usernameEl) {
+                usernameEl.innerText = savedUserName;
+            }
+            
             // ====== 1. توليد الأنماط الـ 4 (بطيئة، حالية سريعة، دائرية، دمج شامل متوسط) ======
             const styleSheet = document.createElement("style");
             styleSheet.id = "dynamic-categorized-styles";
@@ -1609,7 +1616,6 @@
             function applyNameGif(className) {
                 const usernameEl = document.getElementById('profile-username');
                 if(usernameEl) {
-                    // إزالة أي كلاس قديم
                     for(let i = 1; i <= 200; i++) {
                         usernameEl.classList.remove(`ka-${i}`);
                         usernameEl.classList.remove(`ks-${i}`);
@@ -1738,7 +1744,6 @@
             const avatarFrameMotion = document.getElementById('avatar-frame-motion');
             if(avatarFrameMotion) {
                 avatarFrameMotion.onclick = () => {
-                    // فتح النافذة الجديدة بدلاً من النافذة القديمة
                     const megaFramesModal = document.getElementById('mega-frames-modal');
                     if(megaFramesModal) {
                         megaFramesModal.classList.add('active');
@@ -1749,105 +1754,69 @@
 
             // ====== قاعدة بيانات الإطارات (أضف أو عدل ما تحب هنا بكل سهولة) ======
             const framesDatabase = [
-                // 🔥 إطارات نارية
                 { id: 'fire_dragon', name: '🔥 طاقة التنانين', badge: '🔥', style: 'border: 4px solid transparent; background: linear-gradient(135deg, #ff4500, #ff0055, #ffd700) border-box; box-shadow: 0 0 40px rgba(255,69,0,0.9); animation: megaSpin 3s linear infinite;' },
                 { id: 'fire_phoenix', name: '🔥 طائر الفينيق', badge: '🦅', style: 'border: 4px solid #ff6600; box-shadow: 0 0 40px #ff6600, 0 0 80px rgba(255,102,0,0.5); animation: megaPulse 2s infinite;' },
                 { id: 'fire_lava', name: '🌋 الحمم البركانية', badge: '🌋', style: 'border: 4px solid #ff3300; background: linear-gradient(45deg, #ff3300, #ff9900, #ffcc00); box-shadow: 0 0 50px #ff3300; animation: megaGlow 1.5s infinite alternate;' },
-
-                // 👑 إطارات ملكية
                 { id: 'vip_crown', name: '👑 التاج الملكي VIP', badge: '👑', style: 'border: 4px solid #ffcc00; background: linear-gradient(135deg, rgba(255,215,0,0.4), transparent); box-shadow: 0 0 50px rgba(255,204,0,1); animation: royalPulse 2.5s ease-in-out infinite;' },
                 { id: 'vip_gold', name: '💎 الذهب الخالص', badge: '💎', style: 'border: 4px solid #ffd700; box-shadow: 0 0 50px #ffd700, 0 0 100px rgba(255,215,0,0.5); animation: megaSpin 5s linear infinite;' },
                 { id: 'vip_royal', name: '🏰 القصر الملكي', badge: '🏰', style: 'border: 4px solid #b8860b; background: linear-gradient(135deg, #b8860b, #ffd700); box-shadow: 0 0 40px #b8860b; animation: royalPulse 3s infinite;' },
-
-                // ⚡ إطارات نيون وسايبر
                 { id: 'neon_ring', name: '⚡ نيون سايبر', badge: '⚡', style: 'border: 4px dashed #00f3ff; box-shadow: 0 0 40px #00f3ff, 0 0 80px rgba(0,243,255,0.4); animation: megaSpin 4s linear infinite;' },
                 { id: 'neon_purple', name: '🔮 نيون بنفسجي', badge: '🔮', style: 'border: 4px solid #a855f7; box-shadow: 0 0 50px #a855f7, 0 0 100px rgba(168,85,247,0.5); animation: megaPulse 2s infinite;' },
                 { id: 'neon_green', name: '💚 نيون أخضر', badge: '💚', style: 'border: 4px solid #39ff14; box-shadow: 0 0 50px #39ff14, 0 0 100px rgba(57,255,20,0.4); animation: megaGlow 1.8s infinite alternate;' },
-
-                // 🌌 إطارات فضائية وجالاكسي
                 { id: 'galaxy', name: '🌌 جالاكسي الفضاء', badge: '🌌', style: 'border: 4px dashed transparent; background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d) border-box; box-shadow: 0 0 50px rgba(178,31,31,0.8); animation: megaSpin 8s linear infinite;' },
                 { id: 'stars', name: '⭐ حقل النجوم', badge: '⭐', style: 'border: 4px dotted #fff; background: radial-gradient(circle, #1a1a2e, #16213e); box-shadow: 0 0 40px rgba(255,255,255,0.5); animation: megaPulse 3s infinite;' },
                 { id: 'moon', name: '🌙 اكتمال القمر', badge: '🌙', style: 'border: 4px solid #f0e68c; box-shadow: 0 0 50px #f0e68c, 0 0 100px rgba(240,230,140,0.5); animation: megaGlow 2s infinite alternate;' },
-
-                // 🌸 إطارات زهور ورومانسية
                 { id: 'sakura', name: '🌸 عاصفة الساكورا', badge: '🌸', style: 'border: 4px solid #ff9ff3; box-shadow: 0 0 50px #ff9ff3, 0 0 100px rgba(255,159,243,0.5); animation: megaPulse 2.5s infinite;' },
                 { id: 'rose', name: '🌹 وردة الحب', badge: '🌹', style: 'border: 4px solid #ff4757; background: linear-gradient(135deg, #ff4757, #ff6b81); box-shadow: 0 0 50px #ff4757; animation: megaGlow 2s infinite alternate;' },
                 { id: 'hearts', name: '💖 قلوب نابضة', badge: '💖', style: 'border: 4px dotted #ff4757; box-shadow: 0 0 50px #ff4757, 0 0 100px rgba(255,71,87,0.5); animation: heartBeat 1.5s infinite;' },
-
-                // 🦋 إطارات حيوانات وطبيعة
                 { id: 'butterfly', name: '🦋 فراشات ساحرة', badge: '🦋', style: 'border: 4px solid #ba68c8; box-shadow: 0 0 50px #ba68c8, 0 0 100px rgba(186,104,200,0.5); animation: megaSpin 6s linear infinite;' },
                 { id: 'peacock', name: '🦚 ذيل الطاووس', badge: '🦚', style: 'border: 4px solid #00b894; background: linear-gradient(135deg, #00b894, #0984e3); box-shadow: 0 0 50px #00b894; animation: megaPulse 3s infinite;' },
                 { id: 'forest', name: '🌲 غابة خضراء', badge: '🌲', style: 'border: 4px solid #2ed573; box-shadow: 0 0 50px #2ed573, 0 0 100px rgba(46,213,115,0.4); animation: megaGlow 2s infinite alternate;' },
-
-                // 💎 إطارات كريستال ومجوهرات
                 { id: 'diamond', name: '💎 كريستال الماس', badge: '💎', style: 'border: 4px solid #e0fbfc; box-shadow: 0 0 60px #e0fbfc, 0 0 120px rgba(224,251,252,0.5); animation: megaSpin 3s linear infinite;' },
                 { id: 'emerald', name: '💚 زمرد أخضر', badge: '💚', style: 'border: 4px solid #50c878; box-shadow: 0 0 50px #50c878, 0 0 100px rgba(80,200,120,0.5); animation: megaPulse 2.5s infinite;' },
                 { id: 'ruby', name: '❤️ ياقوت أحمر', badge: '❤️', style: 'border: 4px solid #e0115f; box-shadow: 0 0 50px #e0115f, 0 0 100px rgba(224,17,95,0.5); animation: megaGlow 2s infinite alternate;' },
-
-                // 🏴‍☠️ إطارات قراصنة وأساطير
                 { id: 'pirate', name: '🏴‍☠️ قراصنة الظلام', badge: '🏴‍☠️', style: 'border: 4px solid #2f3542; background: linear-gradient(135deg, #2f3542, #1e272e); box-shadow: 0 0 50px #000, 0 0 100px rgba(255,71,87,0.4); animation: megaPulse 3s infinite;' },
                 { id: 'dragon', name: '🐉 تنين النار', badge: '🐉', style: 'border: 4px solid #ff4500; background: linear-gradient(135deg, #ff4500, #ff0055, #ffd700); box-shadow: 0 0 60px #ff4500; animation: megaSpin 4s linear infinite;' },
-
-                // ✨ إطارات كيوت وبناتي
                 { id: 'girly', name: '🎀 كيوت بناتي', badge: '🎀', style: 'border: 4px solid #ff9a9e; box-shadow: 0 0 50px #ff9a9e, 0 0 100px rgba(255,154,158,0.5); animation: megaPulse 2s infinite;' },
                 { id: 'candy', name: '🍬 حلوى ملونة', badge: '🍬', style: 'border: 4px solid #ffb347; background: linear-gradient(135deg, #ffb347, #ffcc33); box-shadow: 0 0 50px #ffb347; animation: megaGlow 2s infinite alternate;' },
-
-                // ❌ إطار إزالة
                 { id: 'none', name: '❌ إزالة الإطار', badge: '❌', style: 'border: 2px solid rgba(255,255,255,0.1);' }
             ];
 
-            // دالة المولد الديناميكي التي تطبق الإطار فور الضغط على USE NOW
             function applyFrameToAvatar(frameId) {
                 const avatarBox = document.getElementById('avatar-box');
                 if (!avatarBox) return;
-                
-                // إزالة أي إطار قديم موجود لمنع التداخل
                 const oldFrame = avatarBox.querySelector('.dynamic-frame-wrapper');
                 if (oldFrame) oldFrame.remove();
-
                 if (frameId === 'none') return;
-
                 const frameData = framesDatabase.find(f => f.id === frameId);
                 if (!frameData) return;
-
-                // حقن الإطار المتحرك جديداً داخل حاوية الصورة
                 const frameWrapper = document.createElement('div');
                 frameWrapper.className = 'dynamic-frame-wrapper';
                 frameWrapper.style.cssText = frameData.style;
-
                 if (frameData.badge && frameData.badge !== '❌') {
                     const badgeDiv = document.createElement('div');
                     badgeDiv.className = 'frame-badge-top';
                     badgeDiv.innerHTML = frameData.badge;
                     frameWrapper.appendChild(badgeDiv);
                 }
-
                 avatarBox.appendChild(frameWrapper);
             }
 
-            // دالة عرض القائمة (شبكة معاينات)
             function renderMegaFramesList() {
                 const container = document.getElementById('frames-list-container');
                 if(!container) return;
-
                 container.innerHTML = '';
                 container.className = 'frames-preview-grid';
-
                 framesDatabase.forEach(frame => {
                     const card = document.createElement('div');
                     card.className = 'frame-preview-card';
                     card.setAttribute('data-frame-id', frame.id);
-
-                    // إنشاء معاينة مصغرة
                     const preview = document.createElement('div');
                     preview.className = 'mini-frame-preview';
-
-                    // تطبيق ستايل المعاينة
                     if(frame.id === 'none') {
                         preview.innerHTML = '🚫';
                         preview.style.border = '2px dashed #666';
                     } else {
-                        // إنشاء إطار مصغر متحرك
                         const miniFrame = document.createElement('div');
                         miniFrame.className = 'dynamic-frame-wrapper';
                         miniFrame.style.cssText = frame.style;
@@ -1857,15 +1826,10 @@
                         preview.appendChild(miniFrame);
                         preview.innerHTML += frame.badge;
                     }
-
-                    // اسم الإطار
                     const nameSpan = document.createElement('span');
                     nameSpan.textContent = frame.name;
-
                     card.appendChild(preview);
                     card.appendChild(nameSpan);
-
-                    // زر USE NOW
                     const useBtn = document.createElement('button');
                     useBtn.className = 'use-now-btn';
                     useBtn.textContent = 'USE NOW';
@@ -1874,33 +1838,22 @@
                         e.stopPropagation();
                         applyFrameToAvatar(frame.id);
                     };
-
                     card.appendChild(useBtn);
-
-                    // عند النقر على البطاقة
                     card.onclick = () => {
                         applyFrameToAvatar(frame.id);
-                        // تمييز البطاقة المختارة
                         container.querySelectorAll('.frame-preview-card').forEach(c => c.classList.remove('selected'));
                         card.classList.add('selected');
                         localStorage.setItem('saved_avatar_frame_motion', frame.id);
                     };
-
                     container.appendChild(card);
                 });
             }
 
-            // إغلاق النافذة الجديدة
             const megaFramesCloseBtn = document.getElementById('mega-frames-close-btn');
             if(megaFramesCloseBtn) {
                 megaFramesCloseBtn.onclick = () => {
                     document.getElementById('mega-frames-modal').classList.remove('active');
                 };
-            }
-
-            // استدعاء الدالة القديمة إذا كانت موجودة
-            if(typeof applyAvatarFrameMotion === 'function') {
-                // لا تفعل شيئاً - الدالة القديمة موجودة وسيتم استدعاؤها من الكود الأصلي
             }
 
             // الحالة اليومية
@@ -2095,7 +2048,6 @@
                     const renderer = new THREE.WebGLRenderer({ alpha: true });
                     renderer.setSize(container.clientWidth, container.clientHeight);
                     container.appendChild(renderer.domElement);
-
                     const starsGeometry = new THREE.BufferGeometry();
                     const starsCount = 180;
                     const starPositions = new Float32Array(starsCount * 3);
@@ -2104,7 +2056,6 @@
                     const starsMaterial = new THREE.PointsMaterial({ color: 0xffe082, size: 2.5, transparent: true, opacity: 0.95 });
                     const starField = new THREE.Points(starsGeometry, starsMaterial);
                     scene.add(starField);
-
                     function animateStardust() {
                         requestAnimationFrame(animateStardust);
                         starField.rotation.y += currentStarSpeed;
@@ -2114,6 +2065,102 @@
                     animateStardust();
                 }
             } catch (e) {}
+
+            // ====== إضافة: حفظ بيانات البروفايل تلقائياً للشات ======
+            (function() {
+                const usernameEl = document.getElementById('profile-username');
+                if (usernameEl) {
+                    const observer = new MutationObserver(() => {
+                        localStorage.setItem('profile_name', usernameEl.innerText);
+                        localStorage.setItem('qamar_user_name', usernameEl.innerText);
+                    });
+                    observer.observe(usernameEl, { childList: true, characterData: true, subtree: true });
+                }
+                
+                const bioEl = document.getElementById('profile-bio');
+                if (bioEl) {
+                    const bioObserver = new MutationObserver(() => {
+                        localStorage.setItem('profile_bio', bioEl.innerText);
+                    });
+                    bioObserver.observe(bioEl, { childList: true, characterData: true, subtree: true });
+                }
+                
+                const avatarImg = document.getElementById('profile-avatar-img');
+                if (avatarImg) {
+                    const avatarObserver = new MutationObserver(() => {
+                        localStorage.setItem('profile_avatar', avatarImg.src);
+                        localStorage.setItem('qamar_user_avatar', avatarImg.src);
+                    });
+                    avatarObserver.observe(avatarImg, { attributes: true, attributeFilter: ['src'] });
+                }
+                
+                const nameColorEl = document.getElementById('name-color');
+                if (nameColorEl) {
+                    nameColorEl.addEventListener('click', function() {
+                        setTimeout(() => {
+                            const color = nameColorEl.innerText;
+                            localStorage.setItem('saved_name_color', color);
+                        }, 100);
+                    });
+                }
+                
+                const nameFontEl = document.getElementById('name-font');
+                if (nameFontEl) {
+                    nameFontEl.addEventListener('click', function() {
+                        setTimeout(() => {
+                            const font = nameFontEl.innerText;
+                            localStorage.setItem('saved_name_font', font);
+                        }, 100);
+                    });
+                }
+                
+                const nameMovementEl = document.getElementById('name-movement');
+                if (nameMovementEl) {
+                    nameMovementEl.addEventListener('click', function() {
+                        setTimeout(() => {
+                            const movement = nameMovementEl.innerText;
+                            localStorage.setItem('saved_name_movement', movement);
+                        }, 100);
+                    });
+                }
+                
+                const nameGifEl = document.getElementById('name-gif');
+                if (nameGifEl) {
+                    nameGifEl.addEventListener('click', function() {
+                        setTimeout(() => {
+                            const gifClass = localStorage.getItem('saved_name_gif');
+                            if (gifClass) {
+                                localStorage.setItem('saved_name_gif', gifClass);
+                            }
+                        }, 100);
+                    });
+                }
+                
+                const avatarFrameEl = document.getElementById('avatar-frame-motion');
+                if (avatarFrameEl) {
+                    avatarFrameEl.addEventListener('click', function() {
+                        setTimeout(() => {
+                            const frame = localStorage.getItem('saved_avatar_frame_motion');
+                            if (frame) {
+                                localStorage.setItem('saved_avatar_frame_motion', frame);
+                            }
+                        }, 100);
+                    });
+                }
+                
+                const allSettings = ['saved_theme', 'saved_fontsize', 'saved_mode', 'saved_opacity', 'saved_stars_speed'];
+                allSettings.forEach(setting => {
+                    const el = document.getElementById(setting);
+                    if (el) {
+                        el.addEventListener('click', function() {
+                            setTimeout(() => {
+                                const val = el.innerText;
+                                localStorage.setItem(setting, val);
+                            }, 100);
+                        });
+                    }
+                });
+            })();
         });
     </script>
 </body>
