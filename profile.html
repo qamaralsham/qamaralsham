@@ -972,6 +972,13 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
+            // ====== إضافة: عرض الأخطاء على الشاشة ======
+            window.onerror = function(msg) { 
+                alert('⚠️ خطأ: ' + msg); 
+                return false; 
+            };
+            console.log('✅ السكربت بدأ');
+            
             // ====== قراءة اسم المستخدم من الشات ======
             const savedUserName = localStorage.getItem('qamar_user_name');
             const usernameEl = document.getElementById('profile-username');
@@ -1154,7 +1161,7 @@
 
             styleSheet.innerHTML = cssRules;
             document.head.appendChild(styleSheet);
-            console.log("تم تحديث الحركات إلى نظام الألوان الداخلية بدون تحريك الحرف!");
+            console.log("✅ تم إنشاء الأنماط");
 
             // ====== بقية الكود ======
             const usernameEl = document.getElementById('profile-username');
