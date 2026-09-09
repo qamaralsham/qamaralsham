@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>قمر الشام 🌙 - البروفايل</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" onerror="console.log('THREE.js failed to load')"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Amiri:wght@400;700&family=Reem+Kufi:wght@400;700&family=Aref+Ruqaa:wght@400;700&family=Lateef:wght@400;700&family=Scheherazade+New:wght@400;700&family=Markazi+Text:wght@400;700&family=Harmattan:wght@400;700&family=Jomhuria&family=Lalezar&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -235,7 +235,6 @@
         }
         .interaction-buttons button:hover { transform: scale(1.15); background: rgba(255, 215, 0, 0.2); border-color: var(--accent-color); }
         
-        /* تحسين التبويبات لمنع التداخل والضغط على الموبايل */
         .profile-tabs {
             background: rgba(0, 0, 0, 0.4); 
             display: flex;
@@ -304,7 +303,6 @@
         .info-value .action-link { color: #64b5f6; text-decoration: none; cursor: pointer; transition: 0.2s; }
         .info-value .action-link:hover { opacity: 0.8; text-decoration: underline; }
 
-        /* الحالة اليومية */
         .statuses-scroll-box {
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
@@ -1980,7 +1978,7 @@
                 };
             }
 
-            // تشغيل النجوم Three.js
+            // تشغيل النجوم Three.js (مع try-catch)
             try {
                 if (typeof THREE !== 'undefined') {
                     const container = document.getElementById('stardust-canvas');
@@ -2007,8 +2005,12 @@
                         renderer.render(scene, camera);
                     }
                     animateStardust();
+                } else {
+                    console.log('THREE.js not loaded - stars disabled');
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.log('THREE.js error:', e.message);
+            }
 
             // ====== إضافة: حفظ بيانات البروفايل تلقائياً للشات ======
             (function() {
