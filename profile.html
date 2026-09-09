@@ -1027,7 +1027,6 @@
                     50% { opacity: 1; text-shadow: 0 0 15px currentColor; }
                 }
 
-                /* ====== أفكار إضافية (ألوان فقط بدون حركة الحرف) ====== */
                 @keyframes pulseGlow {
                     0%, 100% { filter: hue-rotate(0deg) brightness(1); }
                     50% { filter: hue-rotate(180deg) brightness(1.3); }
@@ -1066,21 +1065,16 @@
                 }
             `;
 
-            // 1. مولد الحركات البطيئة (50 حركة - كلاسات ks-1 إلى ks-50)
+            // 1. مولد الحركات البطيئة (50 حركة)
             for (let i = 1; i <= 50; i++) {
                 let h1 = (i * 25) % 360;
                 let h2 = (h1 + 50) % 360;
                 let h3 = (h2 + 50) % 360;
-                let duration = 3.0 + ((i % 5) * 0.6); // من 3 لـ 6 ثواني
+                let duration = 3.0 + ((i % 5) * 0.6);
 
                 cssRules += `
                     .ks-${i} {
-                        background-image: repeating-linear-gradient(
-                            ${i * 15}deg,
-                            hsl(${h1}, 100%, 50%) 0px,
-                            hsl(${h2}, 100%, 60%) 6px,
-                            hsl(${h3}, 100%, 50%) 12px
-                        );
+                        background-image: repeating-linear-gradient(${i * 15}deg, hsl(${h1}, 100%, 50%) 0px, hsl(${h2}, 100%, 60%) 6px, hsl(${h3}, 100%, 50%) 12px);
                         background-size: 200% 200%;
                         -webkit-background-clip: text;
                         -webkit-text-fill-color: transparent;
@@ -1090,21 +1084,16 @@
                 `;
             }
 
-            // 2. مولد الحركات الحالية السريعة (100 حركة - كلاسات ka-1 إلى ka-100)
+            // 2. مولد الحركات السريعة (100 حركة)
             for (let i = 1; i <= 100; i++) {
                 let h1 = (i * 23) % 360;
                 let h2 = (h1 + 45) % 360;
                 let h3 = (h2 + 45) % 360;
-                let duration = 0.4 + ((i % 6) * 0.1); // من 0.4 لـ 0.9 ثانية
+                let duration = 0.4 + ((i % 6) * 0.1);
 
                 cssRules += `
                     .ka-${i} {
-                        background-image: repeating-linear-gradient(
-                            ${i * 37}deg,
-                            hsl(${h1}, 100%, 50%) 0px,
-                            hsl(${h2}, 100%, 60%) 3px,
-                            hsl(${h3}, 100%, 50%) 6px
-                        );
+                        background-image: repeating-linear-gradient(${i * 37}deg, hsl(${h1}, 100%, 50%) 0px, hsl(${h2}, 100%, 60%) 3px, hsl(${h3}, 100%, 50%) 6px);
                         background-size: 200% 200%;
                         -webkit-background-clip: text;
                         -webkit-text-fill-color: transparent;
@@ -1114,7 +1103,7 @@
                 `;
             }
 
-            // 3. مولد الحركات الدائرية (50 حركة - كلاسات kc-1 إلى kc-50)
+            // 3. مولد الحركات الدائرية (50 حركة)
             for (let i = 1; i <= 50; i++) {
                 let h1 = (i * 40) % 360;
                 let h2 = (h1 + 70) % 360;
@@ -1122,12 +1111,7 @@
 
                 cssRules += `
                     .kc-${i} {
-                        background-image: radial-gradient(
-                            circle at ${30 + (i % 40)}% ${30 + (i % 40)}%,
-                            hsl(${h1}, 100%, 50%) 0%,
-                            hsl(${h2}, 100%, 60%) 50%,
-                            hsl(${h1}, 100%, 40%) 100%
-                        );
+                        background-image: radial-gradient(circle at ${30 + (i % 40)}% ${30 + (i % 40)}%, hsl(${h1}, 100%, 50%) 0%, hsl(${h2}, 100%, 60%) 50%, hsl(${h1}, 100%, 40%) 100%);
                         -webkit-background-clip: text;
                         -webkit-text-fill-color: transparent;
                         background-clip: text;
@@ -1137,22 +1121,16 @@
                 `;
             }
 
-            // 4. مولد الدمج الشامل (مستقيم + دائري + لولبي بسرعة متوسطة) (100 حركة - كلاسات kd-1 إلى kd-100)
+            // 4. مولد الدمج الشامل (100 حركة)
             for (let i = 1; i <= 100; i++) {
                 let h1 = (i * 30) % 360;
                 let h2 = (h1 + 60) % 360;
                 let h3 = (h2 + 60) % 360;
-                let duration = 1.5 + ((i % 5) * 0.25); // سرعة متوسطة بين 1.5 و 2.5 ثانية
+                let duration = 1.5 + ((i % 5) * 0.25);
 
                 cssRules += `
                     .kd-${i} {
-                        background-image: conic-gradient(
-                            from ${i * 20}deg at 50% 50%,
-                            hsl(${h1}, 100%, 50%),
-                            hsl(${h2}, 100%, 60%),
-                            hsl(${h3}, 100%, 50%),
-                            hsl(${h1}, 100%, 50%)
-                        );
+                        background-image: conic-gradient(from ${i * 20}deg at 50% 50%, hsl(${h1}, 100%, 50%), hsl(${h2}, 100%, 60%), hsl(${h3}, 100%, 50%), hsl(${h1}, 100%, 50%));
                         -webkit-background-clip: text;
                         -webkit-text-fill-color: transparent;
                         background-clip: text;
@@ -1162,7 +1140,7 @@
                 `;
             }
 
-            // ====== إضافات: حركات ثلاثية الأبعاد (3D) ======
+            // 5. حركات ثلاثية الأبعاد (20 حركة)
             for (let i = 1; i <= 20; i++) {
                 let h1 = (i * 50) % 360;
                 cssRules += `
@@ -1176,17 +1154,13 @@
                 `;
             }
 
-            // ====== إضافات: حركات نيون متلألئة ======
+            // 6. حركات نيون (15 حركة)
             for (let i = 1; i <= 15; i++) {
                 let h = (i * 35) % 360;
                 cssRules += `
                     .neon-${i} {
                         color: hsl(${h}, 100%, 70%);
-                        text-shadow: 
-                            0 0 5px hsl(${h}, 100%, 50%),
-                            0 0 10px hsl(${h}, 100%, 50%),
-                            0 0 20px hsl(${h}, 100%, 50%),
-                            0 0 40px hsl(${h}, 100%, 30%);
+                        text-shadow: 0 0 5px hsl(${h}, 100%, 50%), 0 0 10px hsl(${h}, 100%, 50%), 0 0 20px hsl(${h}, 100%, 50%), 0 0 40px hsl(${h}, 100%, 30%);
                         animation: radiantBlink ${1.5 + (i % 4) * 0.5}s ease-in-out infinite;
                     }
                 `;
@@ -1531,15 +1505,13 @@
                 }
             }
 
-            // ====== نظام خلفية GIF للاسم (بدون صور، الاسم فقط + حركة ألوان فقط) ======
+            // ====== نظام خلفية GIF للاسم ======
             const nameGif = document.getElementById('name-gif');
             const gifModal = document.getElementById('gif-modal');
             const gifOptionsList = document.getElementById('gif-options-list');
             const gifConfirmBtn = document.getElementById('gif-confirm-btn');
             const gifCancelBtn = document.getElementById('gif-cancel-btn');
             let selectedGifValue = '';
-
-            const usernameDisplay = usernameEl ? usernameEl.innerText : 'قمر الشام';
 
             if(nameGif) {
                 nameGif.onclick = () => {
@@ -1554,30 +1526,12 @@
                 
                 const gifOptions = [
                     { value: 'بدون GIF', animation: '' },
-                    ...Array.from({ length: 100 }, (_, i) => ({
-                        value: currentUsername,
-                        animation: `ka-${i + 1}`
-                    })),
-                    ...Array.from({ length: 50 }, (_, i) => ({
-                        value: currentUsername,
-                        animation: `ks-${i + 1}`
-                    })),
-                    ...Array.from({ length: 50 }, (_, i) => ({
-                        value: currentUsername,
-                        animation: `kc-${i + 1}`
-                    })),
-                    ...Array.from({ length: 100 }, (_, i) => ({
-                        value: currentUsername,
-                        animation: `kd-${i + 1}`
-                    })),
-                    ...Array.from({ length: 20 }, (_, i) => ({
-                        value: currentUsername,
-                        animation: `ks3d-${i + 1}`
-                    })),
-                    ...Array.from({ length: 15 }, (_, i) => ({
-                        value: currentUsername,
-                        animation: `neon-${i + 1}`
-                    }))
+                    ...Array.from({ length: 100 }, (_, i) => ({ value: currentUsername, animation: `ka-${i + 1}` })),
+                    ...Array.from({ length: 50 }, (_, i) => ({ value: currentUsername, animation: `ks-${i + 1}` })),
+                    ...Array.from({ length: 50 }, (_, i) => ({ value: currentUsername, animation: `kc-${i + 1}` })),
+                    ...Array.from({ length: 100 }, (_, i) => ({ value: currentUsername, animation: `kd-${i + 1}` })),
+                    ...Array.from({ length: 20 }, (_, i) => ({ value: currentUsername, animation: `ks3d-${i + 1}` })),
+                    ...Array.from({ length: 15 }, (_, i) => ({ value: currentUsername, animation: `neon-${i + 1}` }))
                 ];
 
                 gifOptions.forEach(option => {
@@ -1752,7 +1706,7 @@
                 };
             }
 
-            // ====== قاعدة بيانات الإطارات (أضف أو عدل ما تحب هنا بكل سهولة) ======
+            // ====== قاعدة بيانات الإطارات ======
             const framesDatabase = [
                 { id: 'fire_dragon', name: '🔥 طاقة التنانين', badge: '🔥', style: 'border: 4px solid transparent; background: linear-gradient(135deg, #ff4500, #ff0055, #ffd700) border-box; box-shadow: 0 0 40px rgba(255,69,0,0.9); animation: megaSpin 3s linear infinite;' },
                 { id: 'fire_phoenix', name: '🔥 طائر الفينيق', badge: '🦅', style: 'border: 4px solid #ff6600; box-shadow: 0 0 40px #ff6600, 0 0 80px rgba(255,102,0,0.5); animation: megaPulse 2s infinite;' },
@@ -2048,6 +2002,7 @@
                     const renderer = new THREE.WebGLRenderer({ alpha: true });
                     renderer.setSize(container.clientWidth, container.clientHeight);
                     container.appendChild(renderer.domElement);
+
                     const starsGeometry = new THREE.BufferGeometry();
                     const starsCount = 180;
                     const starPositions = new Float32Array(starsCount * 3);
@@ -2056,6 +2011,7 @@
                     const starsMaterial = new THREE.PointsMaterial({ color: 0xffe082, size: 2.5, transparent: true, opacity: 0.95 });
                     const starField = new THREE.Points(starsGeometry, starsMaterial);
                     scene.add(starField);
+
                     function animateStardust() {
                         requestAnimationFrame(animateStardust);
                         starField.rotation.y += currentStarSpeed;
