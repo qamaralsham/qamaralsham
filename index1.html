@@ -360,7 +360,7 @@
         #profile-frame-container .close-btn {
             position: absolute;
             top: 10px;
-            left: 10px;
+            right: 10px;
             z-index: 10000;
             background: rgba(255,0,0,0.8);
             color: #fff;
@@ -738,8 +738,55 @@
             enterChat();
         }
         
+        // ====== قراءة بيانات البروفايل وتطبيقها على الشات ======
+        function applyProfileToChat() {
+            if (!currentUser) return;
+            
+            // قراءة الاسم من البروفايل
+            const profileName = localStorage.getItem('profile_name');
+            if (profileName) {
+                currentUser.name = profileName;
+            }
+            
+            // قراءة لون الاسم
+            const savedNameColor = localStorage.getItem('saved_name_color');
+            if (savedNameColor) {
+                currentUser.color = savedNameColor;
+            }
+            
+            // قراءة خط الاسم
+            const savedNameFont = localStorage.getItem('saved_name_font');
+            if (savedNameFont) {
+                currentUser.font = savedNameFont;
+            }
+            
+            // قراءة حركة الاسم
+            const savedNameMovement = localStorage.getItem('saved_name_movement');
+            if (savedNameMovement) {
+                currentUser.movement = savedNameMovement;
+            }
+            
+            // قراءة تأثير GIF للاسم
+            const savedNameGif = localStorage.getItem('saved_name_gif');
+            if (savedNameGif) {
+                currentUser.gifClass = savedNameGif;
+            }
+            
+            // قراءة إطار الصورة
+            const savedAvatarFrame = localStorage.getItem('saved_avatar_frame_motion');
+            if (savedAvatarFrame) {
+                currentUser.avatarFrame = savedAvatarFrame;
+            }
+            
+            // حفظ البيانات المحدثة
+            localStorage.setItem('qamar_user', JSON.stringify(currentUser));
+        }
+        
         // ====== الدخول للشات ======
         function enterChat() {
+            // قراءة بيانات البروفايل وتطبيقها
+            applyProfileToChat();
+            
             localStorage.setItem('qamar_user', JSON.stringify(currentUser));
             
             document.getElementById('login-screen').style.display = 'none';
@@ -783,6 +830,12 @@
             avatarImg.src = avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(sender)}&background=random&color=fff`;
             avatarImg.alt = sender;
             
+            // تطبيق إطار الصورة إذا موجود
+            if (currentUser && currentUser.avatarFrame && currentUser.avatarFrame !== 'none') {
+                avatarImg.style.border = '4px solid #ffd700';
+                avatarImg.style.boxShadow = '0 0 15px rgba(255,215,0,0.7)';
+            }
+            
             const content = document.createElement('div');
             content.className = 'message-content';
             
@@ -790,6 +843,26 @@
             username.className = 'message-username';
             username.style.color = color || '#ffd700';
             username.innerText = sender;
+            
+            // تطبيق تأثيرات الاسم إذا كان المستخدم الحالي هو المرسل
+            if (currentUser && sender === currentUser.name) {
+                // تطبيق لون الاسم
+                if (currentUser.color) username.style.color = currentUser.color;
+                
+                // تطبيق خط الاسم
+                if (currentUser.font) username.style.fontFamily = `'${currentUser.font}', sans-serif`;
+                
+                // تطبيق حركة الاسم
+                if (currentUser.movement) {
+                    if (currentUser.movement === 'نبض') username.style.animation = 'pulse 2s ease-in-out infinite';
+                    else if (currentUser.movement === 'توهج') username.style.animation = 'glow 2s ease-in-out infinite';
+                    else if (currentUser.movement === 'قفز') username.style.animation = 'bounce 2s ease-in-out infinite';
+                    else if (currentUser.movement === 'دوران') username.style.animation = 'rotate 2s linear infinite';
+                }
+                
+                // تطبيق تأثير GIF للاسم
+                if (currentUser.gifClass) username.classList.add(currentUser.gifClass);
+            }
             
             const msgText = document.createElement('div');
             msgText.className = 'message-text';
