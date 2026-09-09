@@ -2114,6 +2114,111 @@
                     animateStardust();
                 }
             } catch (e) {}
+
+            // ====== إضافة: حفظ بيانات البروفايل تلقائياً للشات ======
+            (function() {
+                // حفظ الاسم عند تغييره
+                const usernameEl = document.getElementById('profile-username');
+                if (usernameEl) {
+                    const observer = new MutationObserver(() => {
+                        localStorage.setItem('profile_name', usernameEl.innerText);
+                        localStorage.setItem('qamar_user_name', usernameEl.innerText);
+                    });
+                    observer.observe(usernameEl, { childList: true, characterData: true, subtree: true });
+                }
+                
+                // حفظ النبذة عند تغييرها
+                const bioEl = document.getElementById('profile-bio');
+                if (bioEl) {
+                    const bioObserver = new MutationObserver(() => {
+                        localStorage.setItem('profile_bio', bioEl.innerText);
+                    });
+                    bioObserver.observe(bioEl, { childList: true, characterData: true, subtree: true });
+                }
+                
+                // حفظ الصورة عند تغييرها
+                const avatarImg = document.getElementById('profile-avatar-img');
+                if (avatarImg) {
+                    const avatarObserver = new MutationObserver(() => {
+                        localStorage.setItem('profile_avatar', avatarImg.src);
+                        localStorage.setItem('qamar_user_avatar', avatarImg.src);
+                    });
+                    avatarObserver.observe(avatarImg, { attributes: true, attributeFilter: ['src'] });
+                }
+                
+                // حفظ لون الاسم
+                const nameColorEl = document.getElementById('name-color');
+                if (nameColorEl) {
+                    nameColorEl.addEventListener('click', function() {
+                        setTimeout(() => {
+                            const color = nameColorEl.innerText;
+                            localStorage.setItem('saved_name_color', color);
+                        }, 100);
+                    });
+                }
+                
+                // حفظ خط الاسم
+                const nameFontEl = document.getElementById('name-font');
+                if (nameFontEl) {
+                    nameFontEl.addEventListener('click', function() {
+                        setTimeout(() => {
+                            const font = nameFontEl.innerText;
+                            localStorage.setItem('saved_name_font', font);
+                        }, 100);
+                    });
+                }
+                
+                // حفظ حركة الاسم
+                const nameMovementEl = document.getElementById('name-movement');
+                if (nameMovementEl) {
+                    nameMovementEl.addEventListener('click', function() {
+                        setTimeout(() => {
+                            const movement = nameMovementEl.innerText;
+                            localStorage.setItem('saved_name_movement', movement);
+                        }, 100);
+                    });
+                }
+                
+                // حفظ تأثير GIF للاسم
+                const nameGifEl = document.getElementById('name-gif');
+                if (nameGifEl) {
+                    nameGifEl.addEventListener('click', function() {
+                        setTimeout(() => {
+                            const gifClass = localStorage.getItem('saved_name_gif');
+                            if (gifClass) {
+                                localStorage.setItem('saved_name_gif', gifClass);
+                            }
+                        }, 100);
+                    });
+                }
+                
+                // حفظ إطار الصورة
+                const avatarFrameEl = document.getElementById('avatar-frame-motion');
+                if (avatarFrameEl) {
+                    avatarFrameEl.addEventListener('click', function() {
+                        setTimeout(() => {
+                            const frame = localStorage.getItem('saved_avatar_frame_motion');
+                            if (frame) {
+                                localStorage.setItem('saved_avatar_frame_motion', frame);
+                            }
+                        }, 100);
+                    });
+                }
+                
+                // حفظ الألوان والتأثيرات الأخرى
+                const allSettings = ['saved_theme', 'saved_fontsize', 'saved_mode', 'saved_opacity', 'saved_stars_speed'];
+                allSettings.forEach(setting => {
+                    const el = document.getElementById(setting);
+                    if (el) {
+                        el.addEventListener('click', function() {
+                            setTimeout(() => {
+                                const val = el.innerText;
+                                localStorage.setItem(setting, val);
+                            }, 100);
+                        });
+                    }
+                });
+            })();
         });
     </script>
 </body>
