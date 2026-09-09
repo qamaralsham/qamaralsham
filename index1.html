@@ -719,12 +719,12 @@
         
         // ====== دخول الزائر ======
         function loginAsGuest() {
-            const name = document.getElementById('guest-name').value.trim();
+            const guestNameInput = document.getElementById('guest-name').value.trim();
             
-            if (!name) {
-                alert('⚠️ الرجاء إدخال اسمك المؤقت');
-                return;
-            }
+            // إذا الزائر كتب اسم جديد → يستخدمه ويحفظه
+            // إذا ما كتب شي → ياخذ آخر اسم محفوظ
+            const savedGuestName = localStorage.getItem('last_guest_name');
+            const name = guestNameInput || savedGuestName || 'زائر';
             
             currentUser = { 
                 name, 
@@ -734,6 +734,9 @@
                 avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=95a5a6&color=fff`,
                 isGuest: true
             };
+            
+            // حفظ آخر اسم زائر
+            localStorage.setItem('last_guest_name', name);
             
             enterChat();
         }
