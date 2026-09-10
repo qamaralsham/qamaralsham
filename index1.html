@@ -1410,6 +1410,77 @@ document.addEventListener('focusout', (e) => {
     
     waitForAuth();
 })();
+    
+// ====== إصلاح تلقائي: ضمان Firebase + uid ======
+(function() {
+    'use strict';
+    
+    function autoFix() {
+        // 1. Firebase
+        if (typeof firebase === 'undefined' || !firebase.apps || !firebase.apps.length) {
+            setTimeout(autoFix, 500);
+            return;
+        }
+        
+        // 2. db
+        if (!window.db || typeof window.db.ref !== 'function') {
+            try {
+                window.db = firebase.database();
+                console.log('✅ [Fix] db initialized');
+            } catch(e) {
+                console.warn('[Fix] db error:', e);
+                setTimeout(autoFix, 500);
+                return;
+            }
+        }
+        
+        // 3. user.uid
+        try {
+            let user = JSON.parse(localStorage.getItem('qamar_user') || 'null');
+            let user2 = JSON.parse(localStorage.getItem('qamar_current_user') || 'null');
+            
+            // اختر اللي فيه اسم
+            const u = (user && user.name) ? user : ((user2 && user2.name) ? user2 : null);
+            
+            if (u && u.name && !u.uid) {
+                u.uid = 'guest_' + u.name.replace(/\s+/g, '_') + '_' + Date.now();
+                localStorage.setItem('qamar_user', JSON.stringify(u));
+                localStorage.setItem('qamar_current_user', JSON.stringify(u));
+                console.log('🔧 [Fix] uid assigned:', u.uid);
+            }
+        } catch(e) {
+            console.warn('[Fix] uid error:', e);
+        }
+        
+        // 4. اختبار الكتابة (بعد 3 ثوان من الدخول)
+        const testUser = JSON.parse(localStorage.getItem('qamar_user') || 'null');
+        if (testUser && testUser.name && !window._qamarTested) {
+            window._qamarTested = true;
+            setTimeout(() => {
+                try {
+                    db.ref('rooms/general/messages').push({
+                        sender: testUser.name,
+                        text: '🔧 اختبار الاتصال',
+                        time: firebase.database.ServerValue.TIMESTAMP,
+                        avatar: testUser.avatar || '',
+                        color: testUser.color || '#ffd700',
+                        isBot: false
+                    }).then(() => {
+                        console.log('✅ [Fix] Write test passed');
+                    }).catch(err => {
+                        console.warn('❌ [Fix] Write test failed:', err);
+                    });
+                } catch(e) {
+                    console.warn('[Fix] Write test error:', e);
+                }
+            }, 3000);
+        }
+        
+        console.log('✅ [Fix] Auto-fix active');
+    }
+    
+    setTimeout(autoFix, 1500);
+})();
 </script>
 </body>
 </html>
