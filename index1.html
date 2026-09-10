@@ -1481,6 +1481,54 @@ document.addEventListener('focusout', (e) => {
     
     setTimeout(autoFix, 1500);
 })();
+  
+// ====== إصلاح: ضمان استماع دائم للرسائل ======
+(function() {
+    'use strict';
+    
+    let lastRetry = 0;
+    
+    function ensureListener() {
+        const now = Date.now();
+        if (now - lastRetry < 5000) return;
+        lastRetry = now;
+        
+        try {
+            // 1. تأكد db شغال
+            if (!window.db || typeof window.db.ref !== 'function') {
+                console.warn('⚠️ db not ready, retrying...');
+                return;
+            }
+            
+            // 2. تأكد في روم
+            if (typeof currentRoom === 'undefined' || !currentRoom) return;
+            
+            // 3. أعد تشغيل listener كل 30 ثانية (اختياري)
+            if (!window._listenerActive) {
+                window._listenerActive = true;
+                
+                // أعد ربط listener
+                if (typeof startMessagesListener === 'function') {
+                    try {
+                        startMessagesListener();
+                        console.log('✅ [Fix] Listener restarted');
+                    } catch(e) {
+                        console.warn('Listener error:', e);
+                    }
+                }
+                
+                setTimeout(() => { window._listenerActive = false; }, 30000);
+            }
+        } catch(e) {
+            console.warn('[Fix] ensureListener error:', e);
+        }
+    }
+    
+    // تشغيل كل 10 ثوان
+    setInterval(ensureListener, 10000);
+    
+    console.log('✅ [Fix] Listener watchdog active');
+})();  
 </script>
 </body>
 </html>
