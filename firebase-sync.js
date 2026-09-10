@@ -1,209 +1,274 @@
 // ==============================================
-// قمر الشام - Firebase Sync for Profile
-// المزامنة المباشرة بين البروفايل والشات
+// قمر الشام - Firebase Sync
+// مزامنة تلقائية بين البروفايل و Firebase
 // ==============================================
 
 (function() {
     'use strict';
-
+    
     // ====== انتظر تحميل الصفحة ======
     window.addEventListener('load', function() {
-        setTimeout(initFirebaseSync, 1000);
+        setTimeout(initSync, 1500);
     });
 
-    function initFirebaseSync() {
+    function initSync() {
         // التحقق من Firebase
         if (typeof firebase === 'undefined' || !firebase.apps || !firebase.apps.length) {
-            console.warn('⚠️ Firebase not initialized — sync disabled');
+            console.warn('⚠️ Firebase not initialized');
             return;
         }
-
-        const auth = firebase.auth();
+        
         const db = firebase.database();
-
-        // التحقق من المستخدم
-        auth.onAuthStateChanged(function(user) {
-            if (!user) {
-                console.log('👤 No authenticated user — sync disabled');
-                return;
+        
+        // ====== الحصول على UID من localStorage ======
+        function getUID() {
+            // أولاً: من auth (إذا عضو)
+            if (firebase.auth().currentUser) {
+                return firebase.auth().currentUser.uid;
             }
-
-            console.log('✅ Firebase Sync started for UID:', user.uid);
-            startSync(user.uid, db);
-        });
-    }
-
-    // ====== بدء المزامنة ======
-    function startSync(uid, db) {
+            // ثانياً: من localStorage (إذا زائر أو عضو)
+            try {
+                const u = JSON.parse(localStorage.getItem('qamar_user') || '{}');
+                if (u.uid) return u.uid;
+                const u2 = JSON.parse(localStorage.getItem('qamar_current_user') || '{}');
+                if (u2.uid) return u2.uid;
+                // للزوار: نستخدم اسم مؤقت
+                if (u.name) return 'guest_' + u.name.replace(/\s+/g, '_');
+            } catch(e) {}
+            return null;
+        }
+        
+        const uid = getUID();
+        if (!uid) {
+            console.warn('⚠️ No UID found — sync disabled');
+            return;
+        }
+        
+        console.log('✅ Firebase Sync started for UID:', uid);
         const userRef = db.ref('users/' + uid);
-
-        // ====== 1. مزامنة الاسم ======
-        monitorElement('profile-username', function(newValue) {
-            const cleanName = newValue.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
-            if (cleanName && cleanName.length > 0) {
-                userRef.child('name').set(cleanName).catch(console.warn);
-                console.log('📝 Name synced:', cleanName);
+        
+        // ====== 1. المزامنة الأولية (تحميل من Firebase) ======
+        userRef.once('value').then(function(snap) {
+            const data = snap.val();
+            if (data) {
+                console.log('📥 Loading data from Firebase...');
+                loadFromFirebase(data);
+            }
+        }).catch(function(err) {
+            console.warn('Initial load error:', err);
+        });
+        
+        // ====== 2. مزامنة الاسم ======
+        syncElement('profile-username', function(el) {
+            let name = el.innerText || '';
+            // إزالة الإيموجي من الاسم
+            name = name.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{27BF}]/gu, '').trim();
+            if (name) {
+                userRef.child('name').set(name).catch(console.warn);
             }
         });
-
-        // ====== 2. مزامنة الصورة ======
-        monitorElement('profile-avatar-img', function(newValue) {
-            if (newValue && newValue.startsWith('data:image')) {
-                userRef.child('avatar').set(newValue).catch(console.warn);
-                console.log('🖼️ Avatar synced');
-            }
-        }, 'src');
-
-        // ====== 3. مزامنة الغلاف ======
-        monitorElement('profile-cover-img', function(newValue) {
-            if (newValue && newValue.startsWith('data:image')) {
-                userRef.child('cover').set(newValue).catch(console.warn);
-                console.log('🖼️ Cover synced');
-            }
-        }, 'src');
-
-        // ====== 4. مزامنة النبذة ======
-        monitorElement('profile-bio', function(newValue) {
-            if (newValue && newValue.length > 0) {
-                userRef.child('bio').set(newValue).catch(console.warn);
-                console.log('📝 Bio synced');
+        
+        // ====== 3. مزامنة الصورة ======
+        syncImage('profile-avatar-img', function(src) {
+            if (src && (src.startsWith('data:image') || src.startsWith('http'))) {
+                userRef.child('avatar').set(src).catch(console.warn);
             }
         });
-
-        // ====== 5. مزامنة إطار الصورة ======
-        monitorAvatarFrame(userRef);
-
-        // ====== 6. مزامنة تدرج الاسم ======
-        monitorNameGradient(userRef);
-
-        // ====== 7. مزامنة توهج الاسم ======
-        monitorNameGlow(userRef);
-
-        // ====== 8. مزامنة إيموجي الاسم ======
-        monitorNameEmoji(userRef);
-
-        console.log('✅ Firebase Sync fully active');
-    }
-
-    // ====== مراقبة تغييرات عنصر ======
-    function monitorElement(elementId, callback, attribute) {
-        const el = document.getElementById(elementId);
-        if (!el) {
-            // حاول بعد فترة (يمكن العنصر لسا ما تحمل)
-            setTimeout(function() {
-                monitorElement(elementId, callback, attribute);
-            }, 500);
-            return;
-        }
-
-        if (attribute) {
-            // مراقبة attribute (مثل src)
-            const observer = new MutationObserver(function(mutations) {
-                mutations.forEach(function(mutation) {
-                    if (mutation.attributeName === attribute) {
-                        callback(el.getAttribute(attribute));
+        
+        // ====== 4. مزامنة الغلاف ======
+        syncImage('profile-cover-img', function(src) {
+            if (src && (src.startsWith('data:image') || src.startsWith('http'))) {
+                userRef.child('cover').set(src).catch(console.warn);
+            }
+        });
+        
+        // ====== 5. مزامنة النبذة ======
+        syncElement('profile-bio', function(el) {
+            const bio = el.innerText || '';
+            if (bio) {
+                userRef.child('bio').set(bio).catch(console.warn);
+            }
+        });
+        
+        // ====== 6. مزامنة الإطار (من localStorage) ======
+        const originalSetItem = localStorage.setItem.bind(localStorage);
+        localStorage.setItem = function(key, value) {
+            originalSetItem(key, value);
+            if (key === 'saved_avatar_frame_motion') {
+                if (value && value !== '' && value !== 'none') {
+                    userRef.child('avatarFrame').set(value).catch(console.warn);
+                } else {
+                    userRef.child('avatarFrame').remove().catch(console.warn);
+                }
+            }
+            if (key === 'name_gradient') {
+                try {
+                    const grad = JSON.parse(value);
+                    if (grad && grad.length >= 2) {
+                        userRef.child('nameGradient').set(grad).catch(console.warn);
                     }
-                });
-            });
-            observer.observe(el, { attributes: true, attributeFilter: [attribute] });
-        } else {
-            // مراقبة النص
-            const observer = new MutationObserver(function() {
-                callback(el.innerText);
-            });
-            observer.observe(el, { childList: true, characterData: true, subtree: true });
-        }
-    }
-
-    // ====== مراقبة إطار الصورة ======
-    function monitorAvatarFrame(userRef) {
-        const box = document.getElementById('avatar-box');
-        if (!box) {
-            setTimeout(function() { monitorAvatarFrame(userRef); }, 500);
-            return;
-        }
-
-        const observer = new MutationObserver(function() {
-            const frameEl = box.querySelector('.dynamic-frame-wrapper');
-            if (frameEl) {
-                // استخراج id الإطار من الـ style
-                // بدل هذا، نراقب localStorage
-                const frameId = localStorage.getItem('saved_avatar_frame_motion');
-                if (frameId) {
-                    userRef.child('avatarFrame').set(frameId).catch(console.warn);
-                    console.log('🎨 Avatar frame synced:', frameId);
-                }
-            } else {
-                userRef.child('avatarFrame').remove().catch(console.warn);
+                } catch(e) {}
             }
-        });
-        observer.observe(box, { childList: true, subtree: true });
-    }
-
-    // ====== مراقبة تدرج الاسم ======
-    function monitorNameGradient(userRef) {
-        const username = document.getElementById('profile-username');
-        if (!username) {
-            setTimeout(function() { monitorNameGradient(userRef); }, 500);
-            return;
-        }
-
-        const observer = new MutationObserver(function() {
-            const style = username.style.background;
-            if (style && style.includes('linear-gradient')) {
-                // استخراج الألوان
-                const match = style.match(/rgb\([^)]+\)/g);
-                if (match && match.length >= 2) {
-                    const gradient = [match[0], match[1]];
-                    userRef.child('nameGradient').set(gradient).catch(console.warn);
-                    console.log('🌈 Name gradient synced');
+            if (key === 'name_glow') {
+                userRef.child('nameGlow').set(value || 'none').catch(console.warn);
+            }
+            if (key === 'name_emoji') {
+                if (value) {
+                    userRef.child('nameEmoji').set(value).catch(console.warn);
+                } else {
+                    userRef.child('nameEmoji').remove().catch(console.warn);
                 }
             }
-        });
-        observer.observe(username, { attributes: true, attributeFilter: ['style'] });
-    }
-
-    // ====== مراقبة توهج الاسم ======
-    function monitorNameGlow(userRef) {
-        const username = document.getElementById('profile-username');
-        if (!username) {
-            setTimeout(function() { monitorNameGlow(userRef); }, 500);
-            return;
-        }
-
-        const observer = new MutationObserver(function() {
-            let glow = 'none';
-            if (username.classList.contains('name-glow-soft')) glow = 'soft';
-            else if (username.classList.contains('name-glow-medium')) glow = 'medium';
-            else if (username.classList.contains('name-glow-strong')) glow = 'strong';
-
-            userRef.child('nameGlow').set(glow).catch(console.warn);
-            console.log('✨ Name glow synced:', glow);
-        });
-        observer.observe(username, { attributes: true, attributeFilter: ['class'] });
-    }
-
-    // ====== مراقبة إيموجي الاسم ======
-    function monitorNameEmoji(userRef) {
-        const username = document.getElementById('profile-username');
-        if (!username) {
-            setTimeout(function() { monitorNameEmoji(userRef); }, 500);
-            return;
-        }
-
-        const observer = new MutationObserver(function() {
-            const text = username.innerText;
-            // البحث عن إيموجي في النهاية
-            const emojiMatch = text.match(/[\u{1F300}-\u{1F9FF}]+$/u);
-            if (emojiMatch) {
-                userRef.child('nameEmoji').set(emojiMatch[0]).catch(console.warn);
-                console.log('😊 Name emoji synced:', emojiMatch[0]);
-            } else {
-                userRef.child('nameEmoji').remove().catch(console.warn);
+            if (key === 'name_gif') {
+                if (value) {
+                    userRef.child('nameGif').set(value).catch(console.warn);
+                } else {
+                    userRef.child('nameGif').remove().catch(console.warn);
+                }
+            }
+            if (key === 'profile_music_url') {
+                if (value) {
+                    userRef.child('music').set(value).catch(console.warn);
+                } else {
+                    userRef.child('music').remove().catch(console.warn);
+                }
+            }
+            if (key === 'profile_bg_value') {
+                if (value) {
+                    const type = localStorage.getItem('profile_bg_type') || 'color';
+                    userRef.child('profileBg').set({ type: type, value: value }).catch(console.warn);
+                }
+            }
+            if (key === 'poetry_text') {
+                userRef.child('poetry').set(value || '').catch(console.warn);
+            }
+            if (key === 'status_privacy') {
+                userRef.child('statusPrivacy').set(value || 'public').catch(console.warn);
+            }
+            if (key && key.startsWith('privacy_')) {
+                const field = key.replace('privacy_', '');
+                userRef.child('privacy/' + field).set(value).catch(console.warn);
+            }
+        };
+        
+        // ====== 7. الاستماع للتغييرات من Firebase (للمزامنة العكسية) ======
+        userRef.on('value', function(snap) {
+            const data = snap.val();
+            if (!data) return;
+            // فقط إذا كان المستخدم في وضع المالك
+            const mode = localStorage.getItem('profile_view_mode') || 'owner';
+            if (mode === 'owner') {
+                // لا نحدّث الحقول النشطة (لتجنب الحلقة)
+                console.log('🔄 Firebase data updated');
             }
         });
-        observer.observe(username, { childList: true, characterData: true, subtree: true });
+        
+        console.log('✅ Firebase Sync fully active for:', uid);
     }
-
-    console.log('📦 Firebase Sync script loaded');
+    
+    // ====== تحميل البيانات من Firebase ======
+    function loadFromFirebase(data) {
+        const mode = localStorage.getItem('profile_view_mode') || 'owner';
+        
+        // لا نحدّث البيانات إذا كنا في وضع الزيارة
+        if (mode === 'visitor') return;
+        
+        // الاسم
+        if (data.name) {
+            localStorage.setItem('profile_name', data.name);
+        }
+        // الصورة
+        if (data.avatar) {
+            localStorage.setItem('saved_avatar', data.avatar);
+        }
+        // الغلاف
+        if (data.cover) {
+            localStorage.setItem('saved_cover', data.cover);
+        }
+        // النبذة
+        if (data.bio) {
+            localStorage.setItem('profile_bio', data.bio);
+        }
+        // الإطار
+        if (data.avatarFrame) {
+            localStorage.setItem('saved_avatar_frame_motion', data.avatarFrame);
+        }
+        // التدرج
+        if (data.nameGradient) {
+            localStorage.setItem('name_gradient', JSON.stringify(data.nameGradient));
+        }
+        // التوهج
+        if (data.nameGlow) {
+            localStorage.setItem('name_glow', data.nameGlow);
+        }
+        // الإيموجي
+        if (data.nameEmoji) {
+            localStorage.setItem('name_emoji', data.nameEmoji);
+        }
+        // GIF
+        if (data.nameGif) {
+            localStorage.setItem('name_gif', data.nameGif);
+        }
+        // الموسيقى
+        if (data.music) {
+            localStorage.setItem('profile_music_url', data.music);
+        }
+        // الخلفية
+        if (data.profileBg) {
+            localStorage.setItem('profile_bg_type', data.profileBg.type || 'color');
+            localStorage.setItem('profile_bg_value', data.profileBg.value || '#050508');
+        }
+        // بيت الشعر
+        if (data.poetry) {
+            localStorage.setItem('poetry_text', data.poetry);
+        }
+        // خصوصية الحالة
+        if (data.statusPrivacy) {
+            localStorage.setItem('status_privacy', data.statusPrivacy);
+        }
+        // الخصوصية
+        if (data.privacy) {
+            Object.keys(data.privacy).forEach(function(field) {
+                localStorage.setItem('privacy_' + field, data.privacy[field]);
+            });
+        }
+    }
+    
+    // ====== مراقبة عنصر نصي ======
+    function syncElement(id, callback) {
+        const el = document.getElementById(id);
+        if (!el) {
+            setTimeout(function() { syncElement(id, callback); }, 500);
+            return;
+        }
+        
+        let timeout;
+        const observer = new MutationObserver(function() {
+            clearTimeout(timeout);
+            timeout = setTimeout(function() { callback(el); }, 300);
+        });
+        observer.observe(el, { childList: true, characterData: true, subtree: true, attributes: true });
+    }
+    
+    // ====== مراقبة عنصر صورة ======
+    function syncImage(id, callback) {
+        const el = document.getElementById(id);
+        if (!el) {
+            setTimeout(function() { syncImage(id, callback); }, 500);
+            return;
+        }
+        
+        let timeout;
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(m) {
+                if (m.attributeName === 'src') {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(function() { callback(el.src); }, 300);
+                }
+            });
+        });
+        observer.observe(el, { attributes: true, attributeFilter: ['src'] });
+    }
+    
+    console.log('📦 firebase-sync.js loaded');
 })();
