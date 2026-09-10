@@ -1,18 +1,71 @@
 // ==============================================
-// قمر الشام - نظام الدخول والمصادقة (محدّث)
-// Qamar Al Sham - Authentication System v2
+// قمر الشام - نظام الدخول والمصادقة (محدّث v3)
+// Qamar Al Sham - Authentication System v3
 // ==============================================
 
 // ====== متغيرات عامة ======
 let currentUser = null;
 let isUserGuest = false;
+let _authReady = false;
+
+// ==============================================
+// 0. أدوات مساعدة داخلية
+// ==============================================
+
+/**
+ * توليد UID محلي للزوار (يُخزَّن في Firebase)
+ * نستخدم بادئة guest_ لتمييزه
+ */
+function generateGuestUid(name) {
+    const cleanName = name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_\u0600-\u06FF]/g, '');
+    const random = Math.random().toString(36).substring(2, 10);
+    return 'guest_' + cleanName + '_' + random;
+}
+
+/**
+ * التحقق من توفر اسم (غير مستخدم)
+ */
+async function isNameAvailable(name) {
+    try {
+        if (typeof db === 'undefined' || !db) return true;
+        const snap = await db.ref('user_names/' + name).once('value');
+        return !snap.exists();
+    } catch (e) {
+        console.warn('⚠️ Name check failed:', e);
+        return true; // نسمح بالمرور لو فشل الفحص
+    }
+}
+
+/**
+ * تسجيل الاسم في user_names (لمنع التكرار لاحقاً)
+ */
+async function claimName(name, uid) {
+    try {
+        if (typeof db === 'undefined' || !db) return;
+        await db.ref('user_names/' + name).set(uid);
+    } catch (e) {
+        console.warn('⚠️ Claim name failed:', e);
+    }
+}
+
+/**
+ * إطلاق الاسم من user_names (عند تغيير الاسم أو الحذف)
+ */
+async function releaseName(name) {
+    try {
+        if (typeof db === 'undefined' || !db) return;
+        await db.ref('user_names/' + name).remove();
+    } catch (e) {
+        console.warn('⚠️ Release name failed:', e);
+    }
+}
 
 // ==============================================
 // 1. تسجيل زائر جديد
 // ==============================================
-function registerGuest(name, age, gender) {
-    // التحقق من المدخلات
-    if (!name || name.length < 2) {
+async function registerGuest(name, age, gender) {
+    // التحقق
+    if (!name || name.trim().length < 2) {
         return { success: false, error: 'الرجاء إدخال اسم صحيح (حرفين على الأقل)' };
     }
     if (!age || parseInt(age) < 13 || parseInt(age) > 120) {
@@ -22,31 +75,74 @@ function registerGuest(name, age, gender) {
         return { success: false, error: 'الرجاء اختيار الجنس' };
     }
 
-    // إنشاء بيانات الزائر
-    currentUser = {
-        name: name,
-        age: parseInt(age),
-        gender: gender,
-        rank: 'Guest',
-        isGuest: true,
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=555&color=fff`,
-        color: '#95a5a6'
-    };
-    isUserGuest = true;
+    const trimmedName = name.trim();
 
-    // حفظ في localStorage
-    saveSession(currentUser, true);
+    // التحقق من توفر الاسم
+    const available = await isNameAvailable(trimmedName);
+    if (!available) {
+        return { success: false, error: 'هذا الاسم مستخدم، اختر اسماً آخر' };
+    }
 
-    console.log('✅ Guest registered:', name);
-    return { success: true, user: currentUser };
+    try {
+        // توليد UID
+        const uid = generateGuestUid(trimmedName);
+
+        // بيانات الزائر — الرتبة الفعلية: User (وليس Guest)
+        const userData = {
+            uid: uid,
+            name: trimmedName,
+            age: parseInt(age),
+            gender: gender,
+            rank: 'User',
+            rankLevel: QAMAR.getRankLevel('User'),
+            isGuest: true,
+            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(trimmedName)}&background=555&color=fff`,
+            color: '#95a5a6',
+            createdAt: Date.now(),
+            lastSeen: Date.now()
+        };
+
+        // حفظ في Firebase
+        if (typeof db !== 'undefined' && db) {
+            try {
+                // 1) بيانات المستخدم
+                await db.ref('users/' + uid).set(userData);
+                // 2) تسجيل الاسم
+                await claimName(trimmedName, uid);
+                // 3) تهيئة الإشعارات (فارغة)
+                await db.ref('user_notifications/' + uid).set({});
+                // 4) تهيئة المحادثات الخاصة (فارغة)
+                await db.ref('user_private_chats/' + uid).set({});
+                // 5) الحضور
+                await db.ref('user_presence/' + uid).set({
+                    state: 'online',
+                    lastChanged: Date.now()
+                });
+            } catch (fbError) {
+                console.error('❌ Firebase save failed:', fbError);
+                return { success: false, error: 'فشل الحفظ في Firebase: ' + (fbError.message || '') };
+            }
+        }
+
+        currentUser = userData;
+        isUserGuest = true;
+        saveSession(currentUser, true);
+
+        console.log('✅ Guest registered:', trimmedName, '→', uid);
+        return { success: true, user: currentUser };
+
+    } catch (e) {
+        console.error('❌ registerGuest error:', e);
+        return { success: false, error: 'حدث خطأ غير متوقع' };
+    }
 }
 
 // ==============================================
 // 2. تسجيل عضو جديد
 // ==============================================
 async function registerMember(name, age, gender, email, password) {
-    // التحقق من المدخلات
-    if (!name || name.length < 2) {
+    // التحقق
+    if (!name || name.trim().length < 2) {
         return { success: false, error: 'الرجاء إدخال اسم صحيح' };
     }
     if (!age || parseInt(age) < 13 || parseInt(age) > 120) {
@@ -59,60 +155,64 @@ async function registerMember(name, age, gender, email, password) {
         return { success: false, error: 'كلمة السر لازم 6 أحرف على الأقل' };
     }
 
+    const trimmedName = name.trim();
+
     try {
-        // إذا Firebase متاح
-        if (typeof auth !== 'undefined' && auth) {
-            const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-            const firebaseUser = userCredential.user;
-
-            // تحديد الرتبة
-            let rank = 'User';
-            if (email === QAMAR.KING_EMAIL) rank = 'King';
-
-            // بيانات المستخدم
-            const userData = {
-                uid: firebaseUser.uid,
-                name: name,
-                age: parseInt(age),
-                gender: gender,
-                email: email,
-                rank: rank,
-                isGuest: false,
-                avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff`,
-                color: rank === 'King' ? '#ffd700' : '#ffffff',
-                createdAt: Date.now()
-            };
-
-            // حفظ في Firebase Database
-            if (typeof db !== 'undefined' && db) {
-                await db.ref('users/' + firebaseUser.uid).set(userData);
-            }
-
-            currentUser = userData;
-            isUserGuest = false;
-            saveSession(currentUser, false);
-
-            console.log('✅ Member registered:', name);
-            return { success: true, user: currentUser };
-
-        } else {
-            // وضع تجريبي (بدون Firebase)
-            const rank = email === QAMAR.KING_EMAIL ? 'King' : 'User';
-            currentUser = {
-                name: name,
-                age: parseInt(age),
-                gender: gender,
-                email: email,
-                rank: rank,
-                isGuest: false,
-                avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff`,
-                color: rank === 'King' ? '#ffd700' : '#ffffff'
-            };
-            isUserGuest = false;
-            saveSession(currentUser, false);
-            console.log('⚠️ Register (demo mode):', name);
-            return { success: true, user: currentUser };
+        if (typeof auth === 'undefined' || !auth) {
+            return { success: false, error: 'Firebase Auth غير متاح' };
         }
+
+        // 1) إنشاء حساب في Firebase Auth
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        const firebaseUser = userCredential.user;
+
+        // 2) التحقق من توفر الاسم
+        const available = await isNameAvailable(trimmedName);
+        if (!available) {
+            // نتراجع — لكن الحساب أُنشئ بالفعل. نسمح بالاسم مع لاحقة
+            console.warn('⚠️ Name taken, keeping account');
+            await firebaseUser.delete(); // حذف الحساب
+            return { success: false, error: 'هذا الاسم مستخدم، اختر اسماً آخر' };
+        }
+
+        // 3) تحديد الرتبة (User افتراضياً)
+        //    ملاحظة: الملك يُحدَّد يدوياً في Firebase Console (تعديل users/{uid}/rank → King)
+        const rank = 'User';
+
+        // 4) بيانات المستخدم
+        const userData = {
+            uid: firebaseUser.uid,
+            name: trimmedName,
+            age: parseInt(age),
+            gender: gender,
+            email: email,
+            rank: rank,
+            rankLevel: QAMAR.getRankLevel(rank),
+            isGuest: false,
+            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(trimmedName)}&background=random&color=fff`,
+            color: '#ffffff',
+            createdAt: Date.now(),
+            lastSeen: Date.now()
+        };
+
+        // 5) حفظ في Firebase Database
+        if (typeof db !== 'undefined' && db) {
+            await db.ref('users/' + firebaseUser.uid).set(userData);
+            await claimName(trimmedName, firebaseUser.uid);
+            await db.ref('user_notifications/' + firebaseUser.uid).set({});
+            await db.ref('user_private_chats/' + firebaseUser.uid).set({});
+            await db.ref('user_presence/' + firebaseUser.uid).set({
+                state: 'online',
+                lastChanged: Date.now()
+            });
+        }
+
+        currentUser = userData;
+        isUserGuest = false;
+        saveSession(currentUser, false);
+
+        console.log('✅ Member registered:', trimmedName);
+        return { success: true, user: currentUser };
 
     } catch (error) {
         console.error('❌ Register error:', error);
@@ -133,64 +233,52 @@ async function login(email, password) {
     }
 
     try {
-        // إذا Firebase متاح
-        if (typeof auth !== 'undefined' && auth) {
-            const userCredential = await auth.signInWithEmailAndPassword(email, password);
-            const firebaseUser = userCredential.user;
-
-            // جلب بيانات المستخدم من Database
-            let userData = {
-                uid: firebaseUser.uid,
-                email: firebaseUser.email,
-                name: firebaseUser.displayName || email.split('@')[0],
-                rank: 'User',
-                isGuest: false,
-                avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(email.split('@')[0])}&background=random&color=fff`,
-                color: '#ffffff'
-            };
-
-            if (typeof db !== 'undefined' && db) {
-                try {
-                    const snapshot = await db.ref('users/' + firebaseUser.uid).once('value');
-                    if (snapshot.exists()) {
-                        userData = { ...userData, ...snapshot.val() };
-                    }
-                } catch (dbError) {
-                    console.warn('⚠️ DB fetch failed:', dbError);
-                }
-            }
-
-            // إذا كان الملك
-            if (email === QAMAR.KING_EMAIL) {
-                userData.rank = 'King';
-                userData.name = QAMAR.KING_NAME;
-                userData.color = '#ffd700';
-                userData.avatar = `https://ui-avatars.com/api/?name=Emad&background=ffd700&color=000`;
-            }
-
-            currentUser = userData;
-            isUserGuest = false;
-            saveSession(currentUser, false);
-
-            console.log('✅ Member logged in:', userData.name);
-            return { success: true, user: currentUser };
-
-        } else {
-            // وضع تجريبي
-            const isKing = email === QAMAR.KING_EMAIL;
-            currentUser = {
-                email: email,
-                name: isKing ? QAMAR.KING_NAME : email.split('@')[0],
-                rank: isKing ? 'King' : 'User',
-                isGuest: false,
-                avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(email.split('@')[0])}&background=random&color=fff`,
-                color: isKing ? '#ffd700' : '#ffffff'
-            };
-            isUserGuest = false;
-            saveSession(currentUser, false);
-            console.log('⚠️ Login (demo mode):', currentUser.name);
-            return { success: true, user: currentUser };
+        if (typeof auth === 'undefined' || !auth) {
+            return { success: false, error: 'Firebase Auth غير متاح' };
         }
+
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        const firebaseUser = userCredential.user;
+
+        // جلب بيانات المستخدم من Database
+        let userData = {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            name: email.split('@')[0],
+            rank: 'User',
+            rankLevel: QAMAR.getRankLevel('User'),
+            isGuest: false,
+            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(email.split('@')[0])}&background=random&color=fff`,
+            color: '#ffffff',
+            lastSeen: Date.now()
+        };
+
+        if (typeof db !== 'undefined' && db) {
+            const snapshot = await db.ref('users/' + firebaseUser.uid).once('value');
+            if (snapshot.exists()) {
+                userData = { ...userData, ...snapshot.val() };
+                // تأكد من rankLevel
+                userData.rankLevel = QAMAR.getRankLevel(userData.rank);
+            } else {
+                // مستخدم موجود في Auth لكن ليس في Database → ننشئه
+                await db.ref('users/' + firebaseUser.uid).set(userData);
+                await claimName(userData.name, firebaseUser.uid);
+            }
+
+            // تحديث lastSeen
+            await db.ref('users/' + firebaseUser.uid + '/lastSeen').set(Date.now());
+            await db.ref('user_presence/' + firebaseUser.uid).set({
+                state: 'online',
+                lastChanged: Date.now()
+            });
+        }
+
+        currentUser = userData;
+        isUserGuest = false;
+        saveSession(currentUser, false);
+
+        console.log('✅ Member logged in:', userData.name, '| Rank:', userData.rank);
+        return { success: true, user: currentUser };
 
     } catch (error) {
         console.error('❌ Login error:', error);
@@ -207,15 +295,19 @@ async function login(email, password) {
 // ==============================================
 // 4. حفظ الجلسة
 // ==============================================
-function saveSession(user, isGuest) {
+function saveSession(user, isGuestFlag) {
     try {
-        if (isGuest) {
-            localStorage.setItem(QAMAR.STORAGE_KEYS.GUEST, JSON.stringify(user));
-            localStorage.removeItem(QAMAR.STORAGE_KEYS.USER);
+        const json = JSON.stringify(user);
+        // نخزّن في المفتاحين دائماً — بعض الملفات القديمة تعتمد على أحدهما
+        localStorage.setItem(QAMAR.STORAGE_KEYS.USER, json);
+        localStorage.setItem(QAMAR.STORAGE_KEYS.CURRENT_USER, json);
+
+        if (isGuestFlag) {
+            localStorage.setItem(QAMAR.STORAGE_KEYS.GUEST, json);
         } else {
-            localStorage.setItem(QAMAR.STORAGE_KEYS.USER, JSON.stringify(user));
             localStorage.removeItem(QAMAR.STORAGE_KEYS.GUEST);
         }
+
         console.log('💾 Session saved');
     } catch (e) {
         console.error('❌ Save session error:', e);
@@ -227,16 +319,26 @@ function saveSession(user, isGuest) {
 // ==============================================
 function loadSession() {
     try {
-        const userStr = localStorage.getItem(QAMAR.STORAGE_KEYS.USER);
+        // أولوية: current_user → user → guest
+        let userStr = localStorage.getItem(QAMAR.STORAGE_KEYS.CURRENT_USER)
+                   || localStorage.getItem(QAMAR.STORAGE_KEYS.USER);
+
         if (userStr) {
             currentUser = JSON.parse(userStr);
-            isUserGuest = false;
+            // ضمان rankLevel
+            if (currentUser && !currentUser.rankLevel) {
+                currentUser.rankLevel = QAMAR.getRankLevel(currentUser.rank || 'User');
+            }
+            isUserGuest = currentUser.isGuest === true;
             return currentUser;
         }
 
         const guestStr = localStorage.getItem(QAMAR.STORAGE_KEYS.GUEST);
         if (guestStr) {
             currentUser = JSON.parse(guestStr);
+            if (currentUser && !currentUser.rankLevel) {
+                currentUser.rankLevel = QAMAR.getRankLevel(currentUser.rank || 'User');
+            }
             isUserGuest = true;
             return currentUser;
         }
@@ -254,14 +356,26 @@ function loadSession() {
 async function logout() {
     try {
         if (typeof auth !== 'undefined' && auth && auth.currentUser) {
+            // تحديث الحضور إلى offline
+            if (typeof db !== 'undefined' && db && currentUser?.uid) {
+                try {
+                    await db.ref('user_presence/' + currentUser.uid).set({
+                        state: 'offline',
+                        lastChanged: Date.now()
+                    });
+                } catch (e) { /* تجاهل */ }
+            }
             await auth.signOut();
         }
     } catch (e) {
         console.warn('⚠️ Sign out error:', e);
     }
 
+    // مسح كل الجلسات
     localStorage.removeItem(QAMAR.STORAGE_KEYS.USER);
     localStorage.removeItem(QAMAR.STORAGE_KEYS.GUEST);
+    localStorage.removeItem(QAMAR.STORAGE_KEYS.CURRENT_USER);
+
     currentUser = null;
     isUserGuest = false;
 
@@ -278,7 +392,16 @@ function getCurrentUser() {
 
 function isKing() {
     if (!currentUser) return false;
-    return currentUser.rank === 'King' || currentUser.email === QAMAR.KING_EMAIL;
+    return currentUser.rank === 'King';
+}
+
+function isQueen() {
+    if (!currentUser) return false;
+    return currentUser.rank === 'Queen';
+}
+
+function isRoyal() {
+    return isKing() || isQueen();
 }
 
 function isGuest() {
@@ -289,10 +412,53 @@ function isMember() {
     return !isUserGuest && currentUser !== null;
 }
 
+/**
+ * هل رتبة المستخدم الحالي أعلى من رتبة معينة؟
+ */
+function isHigherThan(rank) {
+    if (!currentUser) return false;
+    return QAMAR.isHigherRank(currentUser.rank, rank);
+}
+
+/**
+ * هل رتبة المستخدم الحالي أعلى أو تساوي رتبة معينة؟
+ */
+function isHigherOrEqualThan(rank) {
+    if (!currentUser) return false;
+    return QAMAR.isHigherOrEqual(currentUser.rank, rank);
+}
+
 // ==============================================
-// 8. تحميل الجلسة عند بدء الصفحة
+// 8. مراقبة حالة المصادقة (للمستخدمين المسجّلين)
+// ==============================================
+if (typeof auth !== 'undefined' && auth) {
+    auth.onAuthStateChanged(async (firebaseUser) => {
+        _authReady = true;
+        if (firebaseUser) {
+            // مستخدم مسجّل دخول في Firebase
+            if (!currentUser || currentUser.uid !== firebaseUser.uid) {
+                // جلب البيانات
+                try {
+                    const snap = await db.ref('users/' + firebaseUser.uid).once('value');
+                    if (snap.exists()) {
+                        currentUser = snap.val();
+                        currentUser.rankLevel = QAMAR.getRankLevel(currentUser.rank);
+                        isUserGuest = false;
+                        saveSession(currentUser, false);
+                        console.log('🔄 Auth state restored:', currentUser.name);
+                    }
+                } catch (e) {
+                    console.warn('⚠️ Auth restore failed:', e);
+                }
+            }
+        }
+    });
+}
+
+// ==============================================
+// 9. تحميل الجلسة عند بدء الصفحة
 // ==============================================
 window.addEventListener('DOMContentLoaded', () => {
     loadSession();
-    console.log('📦 Auth.js v2 loaded');
+    console.log('📦 Auth.js v3 loaded');
 });
