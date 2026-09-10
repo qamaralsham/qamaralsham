@@ -1,17 +1,107 @@
 // ==============================================
-// قمر الشام - دوال مساعدة
-// Qamar Al Sham - Utilities
+// قمر الشام - دوال مساعدة (محدّث v2)
+// Qamar Al Sham - Utilities v2
 // ==============================================
 
-// ====== الإشعارات ======
+// ==============================================
+// 1. الأمان — ضد XSS (الأهم!)
+// ==============================================
 
 /**
- * إظهار إشعار منبثق
+ * تعقيم النص — يحوّل HTML إلى نص آمن
+ * الاستخدام: قبل أي innerHTML
  */
-function showToast(icon, message) {
+function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    const str = String(text);
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+/**
+ * تعقيم HTML لكن يسمح بوسوم محددة
+ * (مثال: يسمح بـ <b>, <i>, <br> فقط)
+ */
+function sanitizeWithTags(html, allowedTags = ['b', 'i', 'u', 'br', 'strong', 'em']) {
+    if (!html) return '';
+    const div = document.createElement('div');
+    div.innerHTML = html;
+
+    // إزالة كل الوسوم غير المسموحة
+    const walker = document.createTreeWalker(div, NodeFilter.SHOW_ELEMENT);
+    const toRemove = [];
+
+    while (walker.nextNode()) {
+        const node = walker.currentNode;
+        const tagName = node.tagName.toLowerCase();
+        if (!allowedTags.includes(tagName)) {
+            toRemove.push(node);
+        } else {
+            // إزالة كل السمات (onclick, onerror, إلخ)
+            Array.from(node.attributes).forEach(attr => {
+                node.removeAttribute(attr.name);
+            });
+        }
+    }
+
+    toRemove.forEach(node => {
+        // استبدل الوسم بمحتواه النصي
+        const text = document.createTextNode(node.textContent);
+        if (node.parentNode) {
+            node.parentNode.replaceChild(text, node);
+        }
+    });
+
+    return div.innerHTML;
+}
+
+/**
+ * تعقيم نص للعرض — يُستخدم للرسائل
+ * لا يسمح بأي HTML إطلاقاً
+ */
+function sanitizeText(text) {
+    return escapeHtml(text);
+}
+
+/**
+ * تعقيم نص للـ attribute
+ */
+function sanitizeAttr(text) {
+    if (!text) return '';
+    return String(text).replace(/[&<>"']/g, c => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    })[c]);
+}
+
+// ==============================================
+// 2. الإشعارات
+// ==============================================
+
+/**
+ * إظهار إشعار منبثق (آمن ضد XSS)
+ */
+function showToast(icon, message, duration = 3000) {
     const toast = document.createElement('div');
     toast.className = 'toast-notification';
-    toast.innerHTML = `<i class="fas ${icon}"></i><span>${message}</span>`;
+
+    // أيقونة (آمنة — نتحقق منها)
+    const safeIcon = /^[a-z0-9-]+$/i.test(icon.replace('fa-', '')) ? icon : 'fa-info-circle';
+
+    // بناء بأمان
+    const iconEl = document.createElement('i');
+    iconEl.className = `fas ${safeIcon}`;
+
+    const spanEl = document.createElement('span');
+    spanEl.textContent = message; // ← textContent وليس innerHTML
+
+    toast.appendChild(iconEl);
+    toast.appendChild(spanEl);
+
     toast.style.cssText = `
         position: fixed;
         top: 20px;
@@ -26,15 +116,23 @@ function showToast(icon, message) {
         z-index: 1100;
         box-shadow: 0 5px 15px rgba(0,0,0,0.5);
         animation: toastIn 0.3s ease-out;
+        max-width: 90vw;
+        direction: rtl;
     `;
+
     document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+    setTimeout(() => {
+        toast.style.animation = 'toastOut 0.3s ease-in';
+        setTimeout(() => toast.remove(), 300);
+    }, duration);
 }
 
-// ====== التنسيق ======
+// ==============================================
+// 3. التنسيق
+// ==============================================
 
 /**
- * تنسيق الوقت
+ * تنسيق الوقت (HH:MM)
  */
 function formatTime(timestamp) {
     if (!timestamp) return '';
@@ -51,13 +149,79 @@ function formatDate(timestamp) {
     return date.toLocaleDateString('ar', { year: 'numeric', month: '2-digit', day: '2-digit' });
 }
 
-// ====== التحقق ======
+/**
+ * تنسيق التاريخ والوقت معاً
+ */
+function formatDateTime(timestamp) {
+    if (!timestamp) return '';
+    return formatDate(timestamp) + ' - ' + formatTime(timestamp);
+}
 
 /**
- * هل النص رابط؟
+ * تنسيق "منذ" (قبل 5 دقائق، قبل ساعة...)
+ */
+function timeAgo(timestamp) {
+    if (!timestamp) return '';
+    const seconds = Math.floor((Date.now() - timestamp) / 1000);
+    if (seconds < 60) return 'الآن';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `قبل ${minutes} دقيقة`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `قبل ${hours} ساعة`;
+    const days = Math.floor(hours / 24);
+    if (days < 30) return `قبل ${days} يوم`;
+    return formatDate(timestamp);
+}
+
+/**
+ * تنسيق حجم الملف
+ */
+function formatFileSize(bytes) {
+    if (!bytes) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let size = bytes;
+    let i = 0;
+    while (size >= 1024 && i < units.length - 1) {
+        size /= 1024;
+        i++;
+    }
+    return size.toFixed(2) + ' ' + units[i];
+}
+
+/**
+ * تقصير النص
+ */
+function truncate(text, max = 80) {
+    if (!text) return '';
+    const str = String(text);
+    return str.length > max ? str.substring(0, max) + '...' : str;
+}
+
+// ==============================================
+// 4. التحقق
+// ==============================================
+
+/**
+ * هل النص رابط؟ (نسخة محسّنة)
  */
 function isLink(text) {
-    return /(https?:\/\/|www\.|\.com)/i.test(text);
+    if (!text) return false;
+    const patterns = [
+        /(https?:\/\/[^\s]+)/i,
+        /(www\.[^\s]+)/i,
+        /([a-z0-9-]+\.(com|net|org|io|ly|co|me|info|xyz|app|dev|tv|fm|link|sh|to|cc|ru|cn|tk))(\/[^\s]*)?/i,
+        /(bit\.ly|tinyurl|t\.co|goo\.gl|ow\.ly|is\.gd|buff\.ly)/i
+    ];
+    return patterns.some(p => p.test(text));
+}
+
+/**
+ * استخراج الروابط من النص
+ */
+function extractLinks(text) {
+    if (!text) return [];
+    const urlRegex = /(https?:\/\/[^\s]+)/gi;
+    return text.match(urlRegex) || [];
 }
 
 /**
@@ -67,7 +231,103 @@ function isValidEmail(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-// ====== نجوم الخلفية ======
+/**
+ * هل الاسم صحيح؟
+ */
+function isValidName(name) {
+    if (!name) return false;
+    const trimmed = name.trim();
+    return trimmed.length >= 2 && trimmed.length <= 20;
+}
+
+// ==============================================
+// 5. المنشن (Mentions)
+// ==============================================
+
+/**
+ * استخراج المنشنات من النص
+ * يدعم: @name (عربي + إنجليزي + أرقام + _)
+ * يتجاهل: الإيميلات
+ */
+function extractMentions(text) {
+    if (!text) return [];
+    // نستخدم regex يمنع @ داخل الإيميل
+    const regex = /(?:^|\s)@([\u0600-\u06FFa-zA-Z0-9_]{2,20})(?=\s|$|[^\u0600-\u06FFa-zA-Z0-9_@])/g;
+    const mentions = [];
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+        const name = match[1];
+        // تجاهل إذا كان إيميل (يوجد @ قبله)
+        const idx = match.index;
+        if (idx > 0 && text[idx - 1] !== ' ' && text[idx - 1] !== '\n') continue;
+        if (!mentions.includes(name)) mentions.push(name);
+    }
+    return mentions;
+}
+
+/**
+ * بناء HTML آمن للمنشن (بدون innerHTML مباشر)
+ * يُعيد مصفوفة من العقد DOM
+ */
+function buildMentionHTML(text, mentions, onClickMention = null) {
+    const container = document.createDocumentFragment();
+    if (!text) return container;
+
+    if (!mentions || mentions.length === 0) {
+        container.appendChild(document.createTextNode(text));
+        return container;
+    }
+
+    // نبني regex يشمل كل المنشنات
+    const escapedNames = mentions.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const regex = new RegExp(`@(${escapedNames.join('|')})`, 'g');
+
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+        // نص قبل المنشن
+        if (match.index > lastIndex) {
+            container.appendChild(document.createTextNode(text.substring(lastIndex, match.index)));
+        }
+
+        // المنشن نفسه
+        const name = match[1];
+        const span = document.createElement('span');
+        span.className = 'mention-inline';
+        span.setAttribute('data-mention', name);
+
+        const img = document.createElement('img');
+        img.src = getDefaultAvatar(name);
+        img.alt = name;
+        img.loading = 'lazy';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = name; // ← textContent آمن
+
+        span.appendChild(img);
+        span.appendChild(nameSpan);
+
+        if (onClickMention) {
+            span.style.cursor = 'pointer';
+            span.addEventListener('click', () => onClickMention(name));
+        }
+
+        container.appendChild(span);
+        lastIndex = regex.lastIndex;
+    }
+
+    // نص متبقٍ
+    if (lastIndex < text.length) {
+        container.appendChild(document.createTextNode(text.substring(lastIndex)));
+    }
+
+    return container;
+}
+
+// ==============================================
+// 6. نجوم الخلفية
+// ==============================================
 
 /**
  * توليد نجوم متساقطة
@@ -86,7 +346,9 @@ function generateStars() {
     }
 }
 
-// ====== Avatar ======
+// ==============================================
+// 7. Avatar
+// ==============================================
 
 /**
  * توليد صورة افتراضية
@@ -96,18 +358,82 @@ function getDefaultAvatar(name, bgColor = 'random', textColor = 'fff') {
     return `https://ui-avatars.com/api/?name=${encoded}&background=${bgColor}&color=${textColor}`;
 }
 
-// ====== الاهتزاز ======
+// ==============================================
+// 8. أدوات الأداء
+// ==============================================
+
+/**
+ * تأخير التنفيذ (debounce)
+ */
+function debounce(fn, delay = 300) {
+    let timer = null;
+    return function(...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), delay);
+    };
+}
+
+/**
+ * تقييد معدل التنفيذ (throttle)
+ */
+function throttle(fn, limit = 1000) {
+    let inThrottle = false;
+    return function(...args) {
+        if (!inThrottle) {
+            fn.apply(this, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+        }
+    };
+}
+
+// ==============================================
+// 9. الاهتزاز
+// ==============================================
 
 /**
  * اهتزاز الجهاز (للموبايل)
  */
 function vibrate(ms = 50) {
-    if (navigator.vibrate) navigator.vibrate(ms);
+    if (navigator.vibrate) {
+        try { navigator.vibrate(ms); } catch (e) {}
+    }
 }
 
-// ====== الأنيميشن ======
+// ==============================================
+// 10. التخزين الآمن
+// ==============================================
 
-// إضافة animation للإشعارات
+/**
+ * قراءة JSON من localStorage بأمان
+ */
+function safeGetJSON(key, fallback = null) {
+    try {
+        const val = localStorage.getItem(key);
+        return val ? JSON.parse(val) : fallback;
+    } catch (e) {
+        console.warn('safeGetJSON error:', key, e);
+        return fallback;
+    }
+}
+
+/**
+ * كتابة JSON في localStorage بأمان
+ */
+function safeSetJSON(key, value) {
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+        return true;
+    } catch (e) {
+        console.warn('safeSetJSON error:', key, e);
+        return false;
+    }
+}
+
+// ==============================================
+// 11. الأنيميشن (CSS)
+// ==============================================
+
 if (!document.getElementById('qamar-animations')) {
     const style = document.createElement('style');
     style.id = 'qamar-animations';
@@ -115,6 +441,10 @@ if (!document.getElementById('qamar-animations')) {
         @keyframes toastIn {
             from { opacity: 0; transform: translateX(50px); }
             to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes toastOut {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(50px); }
         }
         @keyframes fadeInSlide {
             from { opacity: 0; transform: translateY(10px); }
@@ -124,4 +454,26 @@ if (!document.getElementById('qamar-animations')) {
     document.head.appendChild(style);
 }
 
-console.log('📦 Utils loaded');
+// ==============================================
+// 12. اكتشاف البيئة
+// ==============================================
+
+/**
+ * هل الجهاز موبايل؟
+ */
+function isMobile() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+/**
+ * هل الجهاز iOS؟
+ */
+function isIOS() {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+
+// ==============================================
+// تصدير
+// ==============================================
+
+console.log('📦 Utils v2 loaded — Security enhanced 🔒');
