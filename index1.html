@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>شات قمر الشام 👑</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <style>
+        /* ====== ستايلات خاصة بالشات ====== */
+        .container { width: 100%; max-width: 500px; height: 100dvh; display: flex; flex-direction: column; position: relative; margin: 0 auto; background: var(--bg-dark); z-index: 1; }
+        
+        /* ====== Header ====== */
+        .header { height: 60px; background: rgba(10, 10, 15, 0.95); border-bottom: 1px solid var(--border-gold); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; position: sticky; top: 0; z-index: 100; }
+        .room-title { font-size: 13px; font-weight: 700; color: var(--gold-light); }
+        .header-actions { display: flex; gap: 8px; }
+        .header-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border-gold); background: rgba(20,20,25,0.8); color: #fff; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 15px; transition: all 0.2s; }
+        .header-btn:active { transform: scale(0.95); }
+        
+        /* ====== المايكات ====== */
+        .mics-bar-wrapper { position: relative; }
+        .mics-bar { padding: 8px 12px; background: rgba(5,5,8,0.8); border-bottom: 1px solid var(--border-light); display: flex; align-items: center; gap: 10px; }
+        .mics-bar.hidden { display: none; }
+        .mics { display: flex; gap: 8px; flex: 1; justify-content: center; }
+        .mic-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border-light); background: rgba(255,255,255,0.05); color: #fff; cursor: pointer; font-size: 16px; display: flex; justify-content: center; align-items: center; transition: all 0.3s; }
+        .mic-btn.active { background: var(--gold); color: #000; box-shadow: 0 0 15px rgba(212,175,55,0.5); }
+        
+        .mics-toggle-btn { position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%); width: 32px; height: 20px; border-radius: 0 0 10px 10px; border: 1px solid var(--border-gold); border-top: none; background: rgba(5,5,8,0.9); color: var(--gold); cursor: pointer; font-size: 10px; display: flex; justify-content: center; align-items: center; z-index: 150; }
+        .mics-toggle-btn.hidden { bottom: 0; border-radius: 10px 10px 0 0; border-bottom: none; }
+        
+        /* ====== الرسائل ====== */
+        .messages { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; scrollbar-width: none; }
+        .messages::-webkit-scrollbar { display: none; }
+        .message { display: flex; align-items: flex-start; gap: 10px; max-width: 100%; animation: fadeInSlide 0.2s ease-out; }
+        .message-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold); flex-shrink: 0; }
+        .message-content { flex: 1; display: flex; flex-direction: column; gap: 2px; position: relative; }
+        .message-username { font-size: 13px; font-weight: 900; display: flex; align-items: center; gap: 6px; }
+        .message-text { font-size: var(--chat-font-size); line-height: 1.4; word-wrap: break-word; }
+        .message-time { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+        .message.system { background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.3); border-radius: 8px; padding: 8px 12px; font-size: 12px; color: var(--gold); text-align: center; }
+        .message.bot { border-right: 3px solid var(--gold); padding-right: 8px; }
+        
+        /* ====== شريط الكتابة ====== */
+        .input-area { padding: 10px 12px; display: flex; align-items: center; gap: 8px; background: rgba(8,8,12,0.95); border-top: 1px solid var(--border-gold); position: relative; z-index: 50; }
+        .input-area input { flex: 1; padding: 12px 16px; border-radius: 25px; border: 1px solid var(--border-input); background: rgba(255,255,255,0.05); color: #fff; outline: none; font-family: 'Cairo', sans-serif; font-size: 14px; text-align: right; }
+        .input-area input:focus { border-color: var(--gold); }
+        .send-btn { width: 40px; height: 40px; border-radius: 50%; border: none; background: var(--gold); color: #000; cursor: pointer; font-size: 16px; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(212,175,55,0.4); }
+        .emoji-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: transparent; color: var(--text-dim); cursor: pointer; font-size: 20px; display: flex; justify-content: center; align-items: center; }
+        .plus-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: transparent; color: var(--text-dim); cursor: pointer; font-size: 22px; display: flex; justify-content: center; align-items: center; transition: transform 0.3s; }
+        .plus-btn.active { transform: rotate(45deg); }
+        
+        /* ====== الشريط العائم ====== */
+        .floating-toolbar { position: absolute; bottom: 70px; left: 12px; right: 12px; padding: 10px; border-radius: 16px; background: rgba(15,15,20,0.95); border: 1px solid var(--border-gold); display: none; justify-content: space-around; gap: 8px; z-index: 200; }
+        .floating-toolbar.open { display: flex; }
+        .tool-btn { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.04); color: #fff; cursor: pointer; font-size: 18px; display: flex; justify-content: center; align-items: center; }
+        
+        /* ====== شريط التنقل ====== */
+        .bottom-nav { height: 65px; background: rgba(10,10,15,0.95); border-top: 1px solid var(--border-gold); display: flex; justify-content: space-around; align-items: center; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--text-dim); cursor: pointer; font-size: 0.65rem; background: none; border: none; padding: 4px; }
+        .nav-item i { font-size: 1.1rem; }
+        .nav-item.active { color: var(--gold); }
+        
+        /* ====== القوائم الجانبية ====== */
+        .sidebar { position: fixed; top: 0; width: 60vw; min-width: 200px; max-width: 300px; height: 100%; background: rgba(15,15,20,0.98); border: 1px solid var(--border-gold); transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1); z-index: 300; display: flex; flex-direction: column; }
+        .right-sidebar { right: 0; transform: translateX(100%); }
+        .left-sidebar { left: 0; transform: translateX(-100%); }
+        .sidebar.open { transform: translateX(0); }
+        .sidebar-header { padding: 15px; border-bottom: 1px solid var(--border-gold); display: flex; justify-content: space-between; align-items: center; }
+        .sidebar-header h3 { color: var(--gold); font-size: 13px; font-weight: 900; }
+        .sidebar-close { width: 30px; height: 30px; border-radius: 8px; border: none; background: rgba(255,255,255,0.05); color: #fff; cursor: pointer; font-size: 14px; }
+        .sidebar-content { padding: 12px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+        .sidebar-item { padding: 12px; border-radius: 10px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.03); cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; transition: all 0.2s; }
+        .sidebar-item.active { background: var(--gold); color: #000; font-weight: 900; }
+        .sidebar-item.locked { opacity: 0.6; cursor: not-allowed; }
+        
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 250; }
+        .overlay.show { opacity: 1; pointer-events: all; }
+        
+        /* ====== شاشة الدخول ====== */
+        .login-screen { position: fixed; inset: 0; background: rgba(5,5,8,0.98); display: flex; justify-content: center; align-items: center; z-index: 500; overflow-y: auto; padding: 20px; }
+        .login-card { width: 100%; max-width: 380px; background: rgba(15,15,20,0.98); border: 1px solid var(--border-gold); border-radius: 20px; padding: 25px; display: flex; flex-direction: column; gap: 15px; }
+        .login-logo { text-align: center; }
+        .login-logo i { font-size: 50px; color: var(--gold); }
+        .login-logo h1 { font-size: 24px; font-weight: 900; color: var(--gold); margin-top: 8px; }
+        .login-logo p { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+        .login-input { padding: 12px; border-radius: 10px; border: 1px solid var(--border-input); background: rgba(255,255,255,0.05); color: #fff; font-family: 'Cairo', sans-serif; outline: none; font-size: 14px; width: 100%; }
+        .login-input:focus { border-color: var(--gold); }
+        .login-btn { padding: 14px; border-radius: 12px; border: none; background: var(--gold); color: #000; font-weight: 900; font-size: 16px; cursor: pointer; width: 100%; }
+        .login-tabs { display: flex; gap: 8px; margin-bottom: 15px; }
+        .login-tab { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.03); color: var(--text-dim); cursor: pointer; font-family: 'Cairo', sans-serif; font-size: 13px; font-weight: 700; text-align: center; }
+        .login-tab.active { background: var(--gold); color: #000; }
+        .gender-group { display: flex; gap: 10px; }
+        .gender-btn { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.03); color: var(--text-dim); cursor: pointer; font-family: 'Cairo', sans-serif; font-size: 14px; font-weight: 700; text-align: center; }
+        .gender-btn.active { background: var(--gold); color: #000; }
+        .link-text { color: var(--gold); cursor: pointer; font-size: 13px; text-align: center; text-decoration: underline; }
+        
+        /* ====== iframe البروفايل ====== */
+        #profile-frame-container { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.95); display: none; }
+        #profile-frame-container .close-btn { position: absolute; top: 10px; right: 10px; z-index: 10000; background: rgba(255,0,0,0.8); color: #fff; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 20px; cursor: pointer; }
+        #profile-frame-container iframe { width: 100%; height: 100%; border: none; }
+        
+        /* ====== نافذة الترقية ====== */
+        .upgrade-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .upgrade-modal.active { display: flex; }
+        .upgrade-content { background: #110724; border: 2px solid var(--gold); padding: 25px; border-radius: 16px; width: 90%; max-width: 360px; text-align: center; display: flex; flex-direction: column; gap: 12px; }
+        .upgrade-content h3 { color: var(--gold); font-size: 18px; }
+        .upgrade-content p { color: #ccc; font-size: 13px; }
+        .upgrade-content input { width: 100%; padding: 12px; background: rgba(255,255,255,0.08); border: 1px solid var(--gold); border-radius: 8px; color: white; font-size: 14px; outline: none; text-align: center; font-family: 'Cairo', sans-serif; }
+        .upgrade-btn { background: var(--gold); color: #000; border: none; padding: 12px; font-weight: 900; border-radius: 10px; cursor: pointer; font-size: 15px; }
+        .upgrade-btn.cancel { background: rgba(255,255,255,0.15); color: #fff; }
+        
+        @media (max-width: 480px) {
+            .message-avatar { width: 32px; height: 32px; }
+            .message-text { font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="starfield" id="starfield"></div>
+    <div class="background-glow"></div>
+    
+    <!-- شاشة الدخول -->
+    <div class="login-screen" id="login-screen">
+        <div class="login-card">
+            <div class="login-logo">
+                <i class="fas fa-moon"></i>
+                <h1>قمر الشام 👑</h1>
+                <p>منصة الدردشة الملكية الفاخرة</p>
+            </div>
+            
+            <div class="login-tabs">
+                <button class="login-tab active" id="tab-guest" onclick="switchLoginTab('guest')">
+                    <i class="fas fa-user-secret"></i> زائر
+                </button>
+                <button class="login-tab" id="tab-member" onclick="switchLoginTab('member')">
+                    <i class="fas fa-user"></i> عضو
+                </button>
+            </div>
+            
+            <!-- زائر -->
+            <div id="guest-form">
+                <input type="text" class="login-input" id="guest-name" placeholder="اسمك..." autocomplete="off" style="margin-bottom:10px;">
+                <input type="number" class="login-input" id="guest-age" placeholder="عمرك..." min="1" max="120" style="margin-bottom:10px;">
+                <div class="gender-group" style="margin-bottom:10px;">
+                    <button class="gender-btn active" id="gender-male" onclick="selectGender('male')">👦 ذكر</button>
+                    <button class="gender-btn" id="gender-female" onclick="selectGender('female')">👧 أنثى</button>
+                </div>
+                <button class="login-btn" onclick="handleGuestLogin()">
+                    <i class="fas fa-user-secret"></i> دخول كزائر
+                </button>
+            </div>
+            
+            <!-- عضو -->
+            <div id="member-form" style="display:none;">
+                <input type="email" class="login-input" id="member-email" placeholder="الإيميل..." autocomplete="off" style="margin-bottom:10px;">
+                <input type="password" class="login-input" id="member-password" placeholder="كلمة السر..." style="margin-bottom:10px;">
+                <button class="login-btn" onclick="handleMemberLogin()" style="margin-bottom:10px;">
+                    <i class="fas fa-sign-in-alt"></i> تسجيل دخول
+                </button>
+                <div class="link-text" onclick="switchToRegister()">
+                    ليس لديك حساب؟ سجّل الآن
+                </div>
+            </div>
+            
+            <!-- تسجيل جديد -->
+            <div id="register-form" style="display:none;">
+                <input type="text" class="login-input" id="register-name" placeholder="اسمك..." autocomplete="off" style="margin-bottom:10px;">
+                <input type="number" class="login-input" id="register-age" placeholder="عمرك..." min="1" max="120" style="margin-bottom:10px;">
+                <div class="gender-group" style="margin-bottom:10px;">
+                    <button class="gender-btn active" id="reg-gender-male" onclick="selectRegGender('male')">👦 ذكر</button>
+                    <button class="gender-btn" id="reg-gender-female" onclick="selectRegGender('female')">👧 أنثى</button>
+                </div>
+                <input type="email" class="login-input" id="register-email" placeholder="الإيميل..." autocomplete="off" style="margin-bottom:10px;">
+                <input type="password" class="login-input" id="register-password" placeholder="كلمة السر..." style="margin-bottom:10px;">
+                <input type="password" class="login-input" id="register-password-confirm" placeholder="تأكيد كلمة السر..." style="margin-bottom:10px;">
+                <button class="login-btn" onclick="handleRegister()">
+                    <i class="fas fa-user-plus"></i> إنشاء الحساب
+                </button>
+                <div class="link-text" onclick="switchToLogin()" style="margin-top:10px;">
+                    لديك حساب؟ سجّل دخول
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- الشات -->
+    <div class="container" id="chat-container" style="display:none;">
+        <div class="header">
+            <button class="header-btn" onclick="toggleRooms()"><i class="fas fa-door-open"></i></button>
+            <div class="room-title" id="room-title">🌍 الروم العام</div>
+            <div class="header-actions">
+                <button class="header-btn" onclick="handleLogout()" title="خروج"><i class="fas fa-sign-out-alt"></i></button>
+                <button class="header-btn" onclick="toggleSettings()"><i class="fas fa-bars"></i></button>
+            </div>
+        </div>
+        
+        <div class="mics-bar-wrapper">
+            <div class="mics-bar" id="mics-bar">
+                <div class="mics">
+                    <button class="mic-btn" onclick="toggleMic(1)"><i class="fas fa-microphone"></i></button>
+                    <button class="mic-btn" onclick="toggleMic(2)"><i class="fas fa-microphone"></i></button>
+                    <button class="mic-btn" onclick="toggleMic(3)"><i class="fas fa-microphone"></i></button>
+                    <button class="mic-btn" onclick="toggleMic(4)"><i class="fas fa-microphone"></i></button>
+                </div>
+            </div>
+            <button class="mics-toggle-btn" id="mics-toggle-btn" onclick="toggleMicsBar()"><i class="fas fa-chevron-up"></i></button>
+        </div>
+        
+        <div class="messages" id="messages"></div>
+        
+        <div class="floating-toolbar" id="floating-toolbar">
+            <button class="tool-btn" onclick="alert('📁 رفع ملفات')"><i class="fas fa-folder"></i></button>
+            <button class="tool-btn" onclick="alert('🎵 تشغيل صوتيات')"><i class="fas fa-music"></i></button>
+            <button class="tool-btn" onclick="rollDice()"><i class="fas fa-dice"></i></button>
+            <button class="tool-btn" onclick="searchYouTube()"><i class="fas fa-play"></i></button>
+        </div>
+        
+        <div class="input-area">
+            <button class="send-btn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+            <button class="emoji-btn" onclick="insertEmoji()"><i class="fas fa-smile"></i></button>
+            <input type="text" id="message-input" placeholder="اكتب رسالتك هنا..." onkeypress="handleKeyPress(event)" autocomplete="off">
+            <button class="plus-btn" id="plus-btn" onclick="toggleToolbar()"><i class="fas fa-plus"></i></button>
+        </div>
+        
+        <div class="bottom-nav">
+            <button class="nav-item" onclick="toggleRooms()"><i class="fas fa-door-open"></i><span>الغرف</span></button>
+            <button class="nav-item" onclick="showOnlineUsers()"><i class="fas fa-users"></i><span>المتواجدين</span></button>
+            <button class="nav-item" id="upgrade-nav-btn" onclick="openUpgradeModal()"><i class="fas fa-key"></i><span>عضوية</span></button>
+            <button class="nav-item" onclick="showStore()"><i class="fas fa-store"></i><span>المتجر</span></button>
+            <button class="nav-item" onclick="toggleSettings()"><i class="fas fa-cog"></i><span>الخيارات</span></button>
+            <button class="nav-item" onclick="openProfile()"><i class="fas fa-id-card"></i><span>بروفايلي</span></button>
+        </div>
+    </div>
+    
+    <!-- قائمة الغرف -->
+    <div class="sidebar right-sidebar" id="rooms-sidebar">
+        <div class="sidebar-header">
+            <h3><i class="fas fa-door-open"></i> الغرف</h3>
+            <button class="sidebar-close" onclick="closeAllPanels()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="sidebar-content" id="rooms-list">
+            <!-- تُملأ ديناميكياً -->
+        </div>
+    </div>
+    
+    <!-- قائمة الإعدادات -->
+    <div class="sidebar left-sidebar" id="settings-sidebar">
+        <div class="sidebar-header">
+            <h3><i class="fas fa-cog"></i> الإعدادات</h3>
+            <button class="sidebar-close" onclick="closeAllPanels()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="sidebar-content">
+            <h4 style="color: var(--gold); font-size: 12px; margin-bottom: 8px;">🎨 خلفيات المنصة</h4>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="bg-options"></div>
+        </div>
+    </div>
+    
+    <div class="overlay" id="overlay" onclick="closeAllPanels()"></div>
+    
+    <!-- iframe البروفايل -->
+    <div id="profile-frame-container">
+        <div style="position:relative; width:100%; height:100%;">
+            <button class="close-btn" onclick="closeProfileFrame()">✕</button>
+            <iframe id="profile-iframe" src="profile.html"></iframe>
+        </div>
+    </div>
+    
+    <!-- نافذة الترقية -->
+    <div class="upgrade-modal" id="upgrade-modal">
+        <div class="upgrade-content">
+            <h3>🔑 ترقية لعضوية</h3>
+            <p>احصل على حساب دائم — احفظ بياناتك للأبد</p>
+            <input type="email" id="upgrade-email" placeholder="الإيميل...">
+            <input type="password" id="upgrade-password" placeholder="كلمة السر...">
+            <input type="password" id="upgrade-password-confirm" placeholder="تأكيد كلمة السر...">
+            <div style="display:flex; gap:10px;">
+                <button class="upgrade-btn" onclick="handleUpgrade()" style="flex:1;">إنشاء الحساب</button>
+                <button class="upgrade-btn cancel" onclick="closeUpgradeModal()" style="flex:1;">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- الملفات الأساسية -->
+    <script src="config.js"></script>
+    <script src="ranks.js"></script>
+    <script src="utils.js"></script>
+    <script src="auth.js"></script>
+    <script src="bots.js"></script>
+    
+    <script>
+        // ====== المتغيرات ======
+        let currentRoom = 'general';
+        let messagesListener = null;
+        let selectedGender = 'male';
+        let regSelectedGender = 'male';
+        
+        // ====== تبويبات الدخول ======
+        function switchLoginTab(tab) {
+            document.getElementById('tab-guest').classList.remove('active');
+            document.getElementById('tab-member').classList.remove('active');
+            document.getElementById('guest-form').style.display = 'none';
+            document.getElementById('member-form').style.display = 'none';
+            document.getElementById('register-form').style.display = 'none';
+            
+            if (tab === 'guest') {
+                document.getElementById('tab-guest').classList.add('active');
+                document.getElementById('guest-form').style.display = 'block';
+            } else {
+                document.getElementById('tab-member').classList.add('active');
+                document.getElementById('member-form').style.display = 'block';
+            }
+        }
+        
+        function switchToRegister() {
+            document.getElementById('member-form').style.display = 'none';
+            document.getElementById('register-form').style.display = 'block';
+        }
+        
+        function switchToLogin() {
+            document.getElementById('register-form').style.display = 'none';
+            document.getElementById('member-form').style.display = 'block';
+        }
+        
+        function selectGender(g) {
+            selectedGender = g;
+            document.getElementById('gender-male').classList.remove('active');
+            document.getElementById('gender-female').classList.remove('active');
+            document.getElementById(g === 'male' ? 'gender-male' : 'gender-female').classList.add('active');
+        }
+        
+        function selectRegGender(g) {
+            regSelectedGender = g;
+            document.getElementById('reg-gender-male').classList.remove('active');
+            document.getElementById('reg-gender-female').classList.remove('active');
+            document.getElementById(g === 'male' ? 'reg-gender-male' : 'reg-gender-female').classList.add('active');
+        }
+        
+        // ====== الدخول ======
+        function handleGuestLogin() {
+            const name = document.getElementById('guest-name').value.trim();
+            const age = document.getElementById('guest-age').value.trim();
+            
+            const result = registerGuest(name, age, selectedGender);
+            if (result.success) {
+                enterChat();
+            } else {
+                alert('⚠️ ' + result.error);
+            }
+        }
+        
+        async function handleMemberLogin() {
+            const email = document.getElementById('member-email').value.trim();
+            const password = document.getElementById('member-password').value;
+            
+            const result = await login(email, password);
+            if (result.success) {
+                enterChat();
+            } else {
+                alert('⚠️ ' + result.error);
+            }
+        }
+        
+        async function handleRegister() {
+            const name = document.getElementById('register-name').value.trim();
+            const age = document.getElementById('register-age').value.trim();
+            const email = document.getElementById('register-email').value.trim();
+            const password = document.getElementById('register-password').value;
+            const confirmPassword = document.getElementById('register-password-confirm').value;
+            
+            if (password !== confirmPassword) {
+                alert('⚠️ كلمات السر غير متطابقة');
+                return;
+            }
+            
+            const result = await registerMember(name, age, regSelectedGender, email, password);
+            if (result.success) {
+                enterChat();
+            } else {
+                alert('⚠️ ' + result.error);
+            }
+        }
+        
+        async function handleUpgrade() {
+            const email = document.getElementById('upgrade-email').value.trim();
+            const password = document.getElementById('upgrade-password').value;
+            const confirmPassword = document.getElementById('upgrade-password-confirm').value;
+            
+            if (password !== confirmPassword) {
+                alert('⚠️ كلمات السر غير متطابقة');
+                return;
+            }
+            
+            const user = getCurrentUser();
+            if (!user) return;
+            
+            const result = await registerMember(user.name, user.age, user.gender, email, password);
+            if (result.success) {
+                closeUpgradeModal();
+                document.getElementById('upgrade-nav-btn').style.display = 'none';
+                showToast('fa-crown', '🎉 تم ترقيتك لعضو');
+                // إعادة تحميل الشات
+                location.reload();
+            } else {
+                alert('⚠️ ' + result.error);
+            }
+        }
+        
+        async function handleLogout() {
+            if (confirm('هل أنت متأكد من الخروج؟')) {
+                if (messagesListener) messagesListener.off();
+                await logout();
+                location.reload();
+            }
+        }
+        
+        // ====== الدخول للشات ======
+        function enterChat() {
+            const user = getCurrentUser();
+            if (!user) return;
+            
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('chat-container').style.display = 'flex';
+            
+            const savedBg = localStorage.getItem(QAMAR.STORAGE_KEYS.BACKGROUND);
+            if (savedBg) changeBackground(savedBg);
+            
+            generateStars();
+            buildRoomsList();
+            buildBackgroundsList();
+            
+            // فتح السويت الملكي للملك
+            if (user.rank === 'King' || user.rank === 'Queen') {
+                document.getElementById('royal-room-item')?.classList.remove('locked');
+            }
+            
+            // إخفاء زر الترقية للعضو
+            if (!user.isGuest) {
+                document.getElementById('upgrade-nav-btn').style.display = 'none';
+            }
+            
+            addSystemMessage(`👑 مرحباً ${user.name} - رتبتك: ${getRankBadge(user.rank)} ${user.rank}`);
+            startMessagesListener();
+            
+            // بدء نظام البوتات
+            if (typeof initBots === 'function') initBots();
+        }
+        
+        // ====== بناء قائمة الغرف ======
+        function buildRoomsList() {
+            const list = document.getElementById('rooms-list');
+            list.innerHTML = '';
+            
+            const user = getCurrentUser();
+            
+            Object.values(QAMAR.ROOMS).forEach(room => {
+                const item = document.createElement('div');
+                item.className = 'sidebar-item';
+                item.setAttribute('data-room', room.id);
+                item.innerHTML = `<i class="fas fa-${getRoomIcon(room.id)}"></i> ${room.name}`;
+                
+                // قفل الغرف الخاصة
+                if (room.type === 'private') {
+                    if (room.id === 'royal' && user.rank !== 'King' && user.rank !== 'Queen') {
+                        item.classList.add('locked');
+                    } else if (room.id === 'studio' && user.isGuest) {
+                        item.classList.add('locked');
+                    } else if (room.id === 'jail' && !can(user, 'canBan')) {
+                        item.classList.add('locked');
+                    }
+                }
+                
+                if (room.id === currentRoom) item.classList.add('active');
+                
+                item.onclick = () => switchRoom(room.id, room.name + ' ' + room.icon, item);
+                list.appendChild(item);
+            });
+        }
+        
+        function getRoomIcon(roomId) {
+            const icons = {
+                general: 'globe', quiz: 'trophy', islamic: 'mosque',
+                royal: 'crown', candy: 'candy-cane', studio: 'microphone-alt',
+                gaza: 'flag', sham: 'moon', jail: 'gavel'
+            };
+            return icons[roomId] || 'door-open';
+        }
+        
+        // ====== بناء خلفيات ======
+        function buildBackgroundsList() {
+            const list = document.getElementById('bg-options');
+            list.innerHTML = '';
+            
+            QAMAR.BACKGROUNDS.forEach(bg => {
+                const btn = document.createElement('button');
+                btn.style.cssText = 'padding:8px; border-radius:8px; border:1px solid var(--border-light); background:rgba(255,255,255,0.05); color:#fff; cursor:pointer;';
+                btn.innerText = bg.id;
+                btn.onclick = () => changeBackground(bg.id);
+                list.appendChild(btn);
+            });
+        }
+        
+        // ====== تبديل الغرفة ======
+        function switchRoom(roomId, roomTitle, element) {
+            const user = getCurrentUser();
+            
+            // فحص الصلاحيات
+            if (roomId === 'royal' && user.rank !== 'King' && user.rank !== 'Queen') {
+                alert('🔒 هذا الروم خاص جداً'); return;
+            }
+            if (roomId === 'studio' && user.isGuest) {
+                alert('🎙️ استديو التسجيل غير متاح للزوار'); return;
+            }
+            if (roomId === 'jail' && !can(user, 'canBan') && user.rank !== 'Guest') {
+                alert('🚔 غرفة السجن للمسجونين والمشرفين فقط'); return;
+            }
+            
+            if (messagesListener) messagesListener.off();
+            
+            currentRoom = roomId;
+            document.getElementById('room-title').innerText = roomTitle;
+            
+            document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+            if (element) element.classList.add('active');
+            
+            document.getElementById('messages').innerHTML = '';
+            addSystemMessage(`📢 تم فتح ${roomTitle}`);
+            
+            startMessagesListener();
+            closeAllPanels();
+        }
+        
+        // ====== الاستماع للرسائل ======
+        function startMessagesListener() {
+            if (!db) return;
+            if (messagesListener) messagesListener.off();
+            
+            const ref = db.ref('rooms/' + currentRoom + '/messages').limitToLast(100);
+            messagesListener = ref;
+            
+            messagesListener.on('child_added', (snap) => {
+                const msg = snap.val();
+                if (msg && msg.sender !== getCurrentUser()?.name) {
+                    displayMessage(msg.sender, msg.text, msg.color, msg.avatar, msg.time, msg.isBot);
+                }
+            });
+        }
+        
+        // ====== إرسال رسالة ======
+        function sendMessage() {
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            const user = getCurrentUser();
+            
+            if (!text || !user) return;
+            if (isLink(text)) { alert('⚠️ يحظر نشر الروابط'); return; }
+            
+            // فحص الأمر للبوت
+            if (text.startsWith('!') && typeof handleBotCommand === 'function') {
+                handleBotCommand(text);
+                input.value = '';
+                return;
+            }
+            
+            // عرض فوري
+            displayMessage(user.name, text, user.color, user.avatar, Date.now(), false);
+            
+            // حفظ في Firebase
+            db.ref('rooms/' + currentRoom + '/messages').push({
+                sender: user.name,
+                text: text,
+                time: firebase.database.ServerValue.TIMESTAMP,
+                avatar: user.avatar,
+                color: user.color,
+                uid: user.uid || null,
+                isBot: false
+            });
+            
+            input.value = '';
+            input.focus();
+        }
+        
+        function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
+        
+        function displayMessage(sender, text, color, avatar, time, isBot = false) {
+            const container = document.getElementById('messages');
+            const msg = document.createElement('div');
+            msg.className = 'message' + (isBot ? ' bot' : '');
+            
+            const avatarImg = document.createElement('img');
+            avatarImg.className = 'message-avatar';
+            avatarImg.src = avatar || getDefaultAvatar(sender);
+            
+            const content = document.createElement('div');
+            content.className = 'message-content';
+            
+            const username = document.createElement('div');
+            username.className = 'message-username';
+            username.style.color = color || '#ffd700';
+            username.innerText = sender + (isBot ? ' 🤖' : '');
+            
+            const msgText = document.createElement('div');
+            msgText.className = 'message-text';
+            msgText.innerText = text;
+            
+            const timeEl = document.createElement('div');
+            timeEl.className = 'message-time';
+            timeEl.innerText = formatTime(time);
+            
+            content.appendChild(username);
+            content.appendChild(msgText);
+            content.appendChild(timeEl);
+            msg.appendChild(avatarImg);
+            msg.appendChild(content);
+            
+            container.appendChild(msg);
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        function addSystemMessage(text) {
+            const container = document.getElementById('messages');
+            const msg = document.createElement('div');
+            msg.className = 'message system';
+            msg.innerText = text;
+            container.appendChild(msg);
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        // ====== تغيير الخلفية ======
+        function changeBackground(bgId) {
+            const container = document.getElementById('chat-container');
+            const bg = QAMAR.BACKGROUNDS.find(b => b.id === bgId);
+            if (bg) {
+                container.classList.remove('background-type-stars', 'background-type-nebula', 'background-type-moon', 'background-type-dust', 'background-type-waves');
+                container.classList.add(bg.class);
+                localStorage.setItem(QAMAR.STORAGE_KEYS.BACKGROUND, bgId);
+            }
+        }
+        
+        // ====== القوائم ======
+        function toggleRooms() {
+            document.getElementById('rooms-sidebar').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('show');
+        }
+        
+        function toggleSettings() {
+            document.getElementById('settings-sidebar').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('show');
+        }
+        
+        function closeAllPanels() {
+            document.getElementById('rooms-sidebar').classList.remove('open');
+            document.getElementById('settings-sidebar').classList.remove('open');
+            document.getElementById('overlay').classList.remove('show');
+        }
+        
+        // ====== البروفايل ======
+        function openProfile() {
+            const user = getCurrentUser();
+            localStorage.setItem('qamar_profile_user', JSON.stringify(user));
+            document.getElementById('profile-frame-container').style.display = 'block';
+        }
+        
+        function closeProfileFrame() {
+            document.getElementById('profile-frame-container').style.display = 'none';
+            const iframe = document.getElementById('profile-iframe');
+            iframe.src = iframe.src;
+        }
+        
+        // ====== المايكات ======
+        function toggleMic(n) {
+            const mic = document.querySelectorAll('.mic-btn')[n - 1];
+            mic.classList.toggle('active');
+            mic.innerHTML = mic.classList.contains('active') ? '<i class="fas fa-user"></i>' : '<i class="fas fa-microphone"></i>';
+        }
+        
+        function toggleMicsBar() {
+            document.getElementById('mics-bar').classList.toggle('hidden');
+            document.getElementById('mics-toggle-btn').classList.toggle('hidden');
+        }
+        
+        // ====== أدوات ======
+        function toggleToolbar() {
+            document.getElementById('floating-toolbar').classList.toggle('open');
+            document.getElementById('plus-btn').classList.toggle('active');
+        }
+        
+        function rollDice() { addSystemMessage(`🎲 النرد: ${Math.floor(Math.random() * 6) + 1}`); }
+        function searchYouTube() {
+            const q = prompt('🔍 ابحث في يوتيوب:');
+            if (q) window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`, '_blank');
+        }
+        function insertEmoji() {
+            const inp = document.getElementById('message-input');
+            inp.value += '😊';
+            inp.focus();
+        }
+        
+        function showOnlineUsers() { closeAllPanels(); alert('👥 المتواجدين'); }
+        function showStore() { closeAllPanels(); alert('🛒 المتجر قيد التطوير'); }
+        
+        function openUpgradeModal() {
+            const user = getCurrentUser();
+            if (!user || !user.isGuest) { alert('✅ أنت عضو بالفعل'); return; }
+            document.getElementById('upgrade-modal').classList.add('active');
+        }
+        
+        function closeUpgradeModal() {
+            document.getElementById('upgrade-modal').classList.remove('active');
+        }
+        
+        // ====== التحميل ======
+        window.addEventListener('DOMContentLoaded', () => {
+            const user = getCurrentUser();
+            if (user) {
+                enterChat();
+            }
+        });
+    </script>
+</body>
+</html>

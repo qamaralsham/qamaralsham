@@ -1,0 +1,260 @@
+/* ==============================================
+   قمر الشام - الستايلات المشتركة
+   Qamar Al Sham - Shared Styles
+   ============================================== */
+
+:root {
+    --bg-dark: #050508;
+    --gold: #d4af37;
+    --gold-light: #ffd700;
+    --text-light: #f3f4f6;
+    --text-dim: #9ca3af;
+    --border-gold: rgba(212, 175, 55, 0.3);
+    --border-light: rgba(255, 255, 255, 0.08);
+    --border-input: rgba(255, 255, 255, 0.1);
+    --chat-font-size: 16px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
+    overflow: hidden;
+    font-family: 'Cairo', sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-light);
+}
+
+/* ====== خلفية النجوم ====== */
+.starfield {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.starfield .star {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: rgba(255, 215, 0, 0.8);
+    border-radius: 50%;
+    animation: starFall linear infinite;
+}
+
+@keyframes starFall {
+    0% { transform: translateY(-100px); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(100vh); opacity: 0; }
+}
+
+.background-glow {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.1) 0%, transparent 60%);
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* ====== الخلفيات المتحركة ====== */
+.container.background-type-stars {
+    background-image: url('https://media.giphy.com/media/26tOZ42Mg6pbTUPHW/giphy.gif');
+    background-size: cover;
+    background-position: center;
+}
+
+.container.background-type-nebula {
+    background-image: url('https://media.giphy.com/media/13HgwGsXF0aiGY/giphy.gif');
+    background-size: cover;
+    background-position: center;
+}
+
+.container.background-type-moon {
+    background-image: url('https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif');
+    background-size: cover;
+    background-position: center;
+}
+
+.container.background-type-dust {
+    background-image: url('https://media.giphy.com/media/3o7abGQaXGZmJW8HMs/giphy.gif');
+    background-size: cover;
+    background-position: center;
+}
+
+.container.background-type-waves {
+    background-image: url('https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif');
+    background-size: cover;
+    background-position: center;
+}
+
+/* ====== الأزرار ====== */
+.btn {
+    padding: 12px 20px;
+    border-radius: 10px;
+    border: none;
+    background: var(--gold);
+    color: #000;
+    font-weight: 900;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Cairo', sans-serif;
+}
+
+.btn:hover {
+    opacity: 0.9;
+    transform: scale(1.02);
+}
+
+.btn:active {
+    transform: scale(0.98);
+}
+
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--border-gold);
+    color: var(--text-light);
+}
+
+.btn-danger {
+    background: #ff4444;
+    color: #fff;
+}
+
+/* ====== الإشعارات ====== */
+.toast-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(15, 15, 20, 0.95);
+    border: 1px solid var(--border-gold);
+    border-radius: 12px;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 1100;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    animation: toastIn 0.3s ease-out;
+}
+
+.toast-notification i {
+    font-size: 20px;
+    color: var(--gold);
+}
+
+.toast-notification span {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+@keyframes toastIn {
+    from { opacity: 0; transform: translateX(50px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* ====== النوافذ المنبثقة ====== */
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: #110724;
+    border: 2px solid var(--gold);
+    padding: 25px;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 360px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.modal-content h3 {
+    color: var(--gold);
+    font-size: 18px;
+}
+
+.modal-content p {
+    color: #ccc;
+    font-size: 13px;
+}
+
+.modal-content input,
+.modal-content select,
+.modal-content textarea {
+    width: 100%;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--gold);
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    outline: none;
+    font-family: 'Cairo', sans-serif;
+    text-align: center;
+}
+
+/* ====== التحميل ====== */
+.loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(212, 175, 55, 0.3);
+    border-radius: 50%;
+    border-top-color: var(--gold);
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ====== Utilities ====== */
+.hidden {
+    display: none !important;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-gold {
+    color: var(--gold);
+}
+
+.mt-10 { margin-top: 10px; }
+.mt-20 { margin-top: 20px; }
+.mb-10 { margin-bottom: 10px; }
+.mb-20 { margin-bottom: 20px; }
+
+/* ====== Responsive ====== */
+@media (max-width: 480px) {
+    :root {
+        --chat-font-size: 14px;
+    }
+}
