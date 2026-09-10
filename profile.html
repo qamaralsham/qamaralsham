@@ -1,0 +1,1822 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>قمر الشام 🌙 - البروفايل</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Amiri:wght@400;700&family=Reem+Kufi:wght@400;700&family=Aref+Ruqaa:wght@400;700&family=Lateef:wght@400;700&family=Scheherazade+New:wght@400;700&family=Markazi+Text:wght@400;700&family=Harmattan:wght@400;700&family=Jomhuria&family=Lalezar&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
+    <!-- الملفات الأساسية -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- ====== CSS يبدأ من هنا (سيتم وضعه في الجزء 2) ====== -->
+    <style id="profile-styles">
+        /* سيتم إرسال CSS في الجزء الثاني */
+    </style>
+</head>
+<body>
+
+    <!-- ====== عناصر إدخال الملفات ====== -->
+    <input type="file" id="cover-file-input" accept="image/*" style="display: none;">
+    <input type="file" id="avatar-file-input" accept="image/*" style="display: none;">
+    <input type="file" id="status-file-input" accept="image/*,video/*" style="display: none;">
+    <input type="file" id="name-gif-input" accept="image/*" style="display: none;">
+
+    <!-- ====== حاوية البروفايل ====== -->
+    <div class="profile" id="profile-container">
+        <div id="stardust-canvas"></div>
+        
+        <!-- ====== الأزرار العلوية ====== -->
+        <div class="top-buttons">
+            <button id="btn-close" title="إغلاق">✕</button>
+            <div class="owner-top-actions">
+                <button title="الكاميرا">📷</button>
+                <button title="الإبلاغ">🚩</button>
+                <button title="إعجاب عام">👍</button>
+                <button title="تمييز">⭐</button>
+            </div>
+        </div>
+        
+        <!-- ====== الغلاف ====== -->
+        <div class="cover" id="profile-cover-box">
+            <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600" class="cover-img" id="profile-cover-img">
+            
+            <div class="cover-edit-btns owner-only">
+                <button class="btn-del-cov" id="btn-remove-cover">✕ غلاف</button>
+                <button id="btn-change-cover">📷 غلاف</button>
+            </div>
+            
+            <!-- ====== الصورة الشخصية ====== -->
+            <div class="avatar-container">
+                <div class="avatar-box" id="avatar-box">
+                    <div class="avatar has-status" id="avatar-status-ring">
+                        <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200" class="avatar-img" id="profile-avatar-img">
+                    </div>
+                    <div id="activeAvatarFrame" class="avatar-frame"></div>
+                </div>
+
+                <div class="avatar-edit-btns owner-only">
+                    <span class="del-av" id="btn-remove-avatar" title="إزالة الصورة">✕</span>
+                    <span id="btn-change-avatar" title="تغيير الصورة">📷</span>
+                </div>
+            </div>
+            
+            <!-- ====== الاسم والنبذة ====== -->
+            <div class="header">
+                <div class="role" id="display-role">Owner 👑</div>
+                <div class="username-container">
+                    <div class="username" id="profile-username">قمر الشام</div>
+                    <span class="edit-pen owner-only" id="btn-edit-username" title="تعديل الاسم">✏️</span>
+                </div>
+                <div class="username-container">
+                    <div class="bio" id="profile-bio">damascus_moon@</div>
+                    <span class="edit-pen owner-only" id="btn-edit-bio" title="تعديل النبذة">✏️</span>
+                </div>
+            </div>
+        </div> 
+
+        <!-- ====== المنطقة الرئيسية ====== -->
+        <div class="main-content-area">
+            
+            <!-- ====== أزرار التفاعل ====== -->
+            <div class="interaction-buttons">
+                <button class="btn-heart" title="إعجاب">❤️</button>
+                <button class="btn-mail" title="مراسلة">💌</button>
+                <button class="btn-friends" title="الأصدقاء">👥</button>
+                <button class="btn-block" title="حظر">🚫</button>
+            </div>
+            
+            <!-- ====== التبويبات ====== -->
+            <div class="profile-tabs">
+                <div class="tab-item active" data-target="settings-tab">إعدادات الحساب</div>
+                <div class="tab-item" data-target="privacy-tab">الخصوصية والأمان</div>
+                <div class="tab-item" data-target="appearance-tab">المظهر البصري</div>
+                <div class="tab-item" data-target="status-tab">الحالة</div>
+                <div class="tab-item" data-target="info-tab">المعلومات</div>
+                <div class="tab-item" data-target="commands-tab">الأوامر</div>
+                <div class="tab-item" data-target="friends-tab">الأصدقاء</div>
+                <div class="tab-item" data-target="more-tab">المزيد</div>
+            </div>
+            
+            <!-- ====== محتوى التبويبات ====== -->
+            <div class="tab-scroll-box">
+                
+                <!-- ====== تبويب إعدادات الحساب ====== -->
+                <div id="settings-tab" class="tab-content active">
+                    <div class="info-card">
+                        <div class="info-row owner-only-row">
+                            <span class="info-label">البريد الإلكتروني</span>
+                            <span class="info-value"><span class="action-link" id="settings-email" style="color: #64b5f6;">damascus.moon@gmail.com</span></span>
+                        </div>
+                        <div class="info-row owner-only-row">
+                            <span class="info-label">رقم الهاتف المحمول</span>
+                            <span class="info-value"><span class="action-link" id="settings-phone" style="color: #81c784;">+963 999 000 000</span></span>
+                        </div>
+                        <div class="info-row owner-only-row">
+                            <span class="info-label">كلمة المرور والأمان</span>
+                            <span class="info-value"><span class="action-link" id="settings-password" style="color: #ffb74d;">تغيير كلمة المرور</span></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">توثيق الحساب</span>
+                            <span class="info-value"><span class="action-link" id="settings-verify" style="color: #ffd700;">طلب توثيق الحساب</span></span>
+                        </div>
+                        <div class="info-row owner-only-row">
+                            <span class="info-label">لغة الحساب</span>
+                            <span class="info-value"><span class="action-link" id="settings-lang" style="color: #ba68c8;">العربية (افتراضي)</span></span>
+                        </div>
+                        <div class="info-row owner-only-row">
+                            <span class="info-label">المنطقة الزمنية</span>
+                            <span class="info-value"><span class="action-link" id="settings-timezone" style="color: #4db6ac;">دمشق / مكة المكرمة (GMT+3)</span></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">نوع الحساب</span>
+                            <span class="info-value"><span class="action-link" id="settings-acctype" style="color: #e57373;">حساب صانع محتوى (Creator)</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ====== تبويب الخصوصية والأمان (معدل - يحتوي على نظام الخصوصية الكامل) ====== -->
+                <div id="privacy-tab" class="tab-content">
+                    
+                    <!-- القسم 1: خصوصية المعلومات الأساسية (للمالك فقط) -->
+                    <div class="privacy-section owner-only">
+                        <h3 class="privacy-section-title">🔒 خصوصية المعلومات الشخصية</h3>
+                        <div class="info-card">
+                            <div class="privacy-row">
+                                <span class="privacy-label">📧 الإيميل</span>
+                                <select class="privacy-select" id="privacy-email" data-field="email">
+                                    <option value="public" selected>🌍 الجميع</option>
+                                    <option value="friends">👥 الأصدقاء فقط</option>
+                                    <option value="private">🔒 لا أحد</option>
+                                </select>
+                            </div>
+                            <div class="privacy-row">
+                                <span class="privacy-label">📱 الهاتف</span>
+                                <select class="privacy-select" id="privacy-phone" data-field="phone">
+                                    <option value="public" selected>🌍 الجميع</option>
+                                    <option value="friends">👥 الأصدقاء فقط</option>
+                                    <option value="private">🔒 لا أحد</option>
+                                </select>
+                            </div>
+                            <div class="privacy-row">
+                                <span class="privacy-label">🎂 العمر</span>
+                                <select class="privacy-select" id="privacy-age" data-field="age">
+                                    <option value="public" selected>🌍 الجميع</option>
+                                    <option value="friends">👥 الأصدقاء فقط</option>
+                                    <option value="private">🔒 لا أحد</option>
+                                </select>
+                            </div>
+                            <div class="privacy-row">
+                                <span class="privacy-label">👤 الجنس</span>
+                                <select class="privacy-select" id="privacy-gender" data-field="gender">
+                                    <option value="public" selected>🌍 الجميع</option>
+                                    <option value="friends">👥 الأصدقاء فقط</option>
+                                    <option value="private">🔒 لا أحد</option>
+                                </select>
+                            </div>
+                            <div class="privacy-row">
+                                <span class="privacy-label">🌍 البلد</span>
+                                <select class="privacy-select" id="privacy-country" data-field="country">
+                                    <option value="public" selected>🌍 الجميع</option>
+                                    <option value="friends">👥 الأصدقاء فقط</option>
+                                    <option value="private">🔒 لا أحد</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- القسم 2: خصوصية التفاعل (للمالك فقط) -->
+                    <div class="privacy-section owner-only">
+                        <h3 class="privacy-section-title">💬 خصوصية التفاعل</h3>
+                        <div class="info-card">
+                            <div class="privacy-row">
+                                <span class="privacy-label">📊 الإحصائيات</span>
+                                <select class="privacy-select" id="privacy-stats" data-field="stats">
+                                    <option value="public" selected>🌍 الجميع</option>
+                                    <option value="friends">👥 الأصدقاء فقط</option>
+                                    <option value="private">🔒 لا أحد</option>
+                                </select>
+                            </div>
+                            <div class="privacy-row">
+                                <span class="privacy-label">📸 الحالات</span>
+                                <select class="privacy-select" id="privacy-status" data-field="status">
+                                    <option value="public" selected>🌍 الجميع</option>
+                                    <option value="friends">👥 الأصدقاء فقط</option>
+                                    <option value="private">🔒 لا أحد</option>
+                                </select>
+                            </div>
+                            <div class="privacy-row">
+                                <span class="privacy-label">👥 قائمة الأصدقاء</span>
+                                <select class="privacy-select" id="privacy-friends" data-field="friends">
+                                    <option value="public" selected>🌍 الجميع</option>
+                                    <option value="friends">👥 الأصدقاء فقط</option>
+                                    <option value="private">🔒 لا أحد</option>
+                                </select>
+                            </div>
+                            <div class="privacy-row">
+                                <span class="privacy-label">💌 استقبال الرسائل</span>
+                                <select class="privacy-select" id="privacy-messages" data-field="messages">
+                                    <option value="public" selected>🌍 الجميع</option>
+                                    <option value="friends">👥 الأصدقاء فقط</option>
+                                    <option value="private">🔒 لا أحد</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- القسم 3: رؤية الملف العام (للمالك فقط) -->
+                    <div class="privacy-section owner-only">
+                        <h3 class="privacy-section-title">👁️ رؤية الملف الشخصي</h3>
+                        <div class="info-card">
+                            <div class="info-row">
+                                <span class="info-label">رؤية الملف الشخصي</span>
+                                <span class="info-value"><span class="action-link" id="priv-profile" style="color: #81c784;">الجميع (عام)</span></span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">حالة النشاط</span>
+                                <span class="info-value"><span class="action-link" id="priv-status" style="color: #64b5f6;">نشط الآن (مفعل)</span></span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">استقبال الرسائل</span>
+                                <span class="info-value"><span class="action-link" id="priv-messages" style="color: #ffb74d;">الأصدقاء والمتابعون</span></span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">المصادقة الثنائية (2FA)</span>
+                                <span class="info-value"><span class="action-link" id="priv-2fa" style="color: #ffd700;">غير مفعلة (تفعيل)</span></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- قسم للزوار: عرض حالة الخصوصية فقط -->
+                    <div class="privacy-section visitor-only" style="display:none;">
+                        <div class="info-card">
+                            <div class="privacy-locked">
+                                <i class="fas fa-lock"></i>
+                                <p>إعدادات الخصوصية خاصة بصاحب البروفايل</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- ====== تبويب المظهر البصري ====== -->
+                <div id="appearance-tab" class="tab-content">
+                    <div class="info-card">
+                        <div class="info-row owner-only-row">
+                            <span class="info-label">وضع الواجهة والسمة</span>
+                            <span class="info-value"><span class="action-link" id="app-mode" style="color: #ffd700;">فضاء عميق (ليلي ملكي)</span></span>
+                        </div>
+                        <div class="info-row owner-only-row">
+                            <span class="info-label">سرعة النجوم (Stardust)</span>
+                            <span class="info-value"><span class="action-link" id="app-stars-speed" style="color: #81c784;">سرعة متوسطة (افتراضي)</span></span>
+                        </div>
+                        <div class="info-row owner-only-row">
+                            <span class="info-label">كثافة النجوم المتحركة</span>
+                            <span class="info-value"><span class="action-link" id="app-stars-density" style="color: #64b5f6;">200 نجمة (عالي)</span></span>
+                        </div>
+                        <div class="info-row owner-only-row">
+                            <span class="info-label">لون الثيم الأساسي والإطارات</span>
+                            <span class="info-value"><span class="action-link" id="app-theme-color" style="color: #ffb74d;">الذهبي الملكي 👑</span></span>
+                        </div>
+                        <div class="info-row owner-only-row">
+                            <span class="info-label">حجم وتنسيق الخطوط</span>
+                            <span class="info-value"><span class="action-link" id="app-font-size" style="color: #ba68c8;">حجم مناسب ومتناسق</span></span>
+                        </div>
+                        <div class="info-row owner-only-row">
+                            <span class="info-label">شفافية وتوهج الخلفية</span>
+                            <span class="info-value"><span class="action-link" id="app-opacity" style="color: #4db6ac;">توهج فخم وناعم</span></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">مدة العضوية</span>
+                            <span class="info-value"><span class="action-link" id="app-membership" style="color: #ffd700;">منذ 2022</span></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">لون الاسم</span>
+                            <span class="info-value"><span class="action-link" id="name-color" style="color: #ffffff;">أبيض</span></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">خط الاسم</span>
+                            <span class="info-value"><span class="action-link" id="name-font" style="color: #64b5f6;">Cairo</span></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">حركة الاسم</span>
+                            <span class="info-value"><span class="action-link" id="name-movement" style="color: #81c784;">نبض</span></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">خلفية GIF للاسم</span>
+                            <span class="info-value"><span class="action-link" id="name-gif" style="color: #ffb74d;">بدون GIF</span></span>
+                        </div>
+                        <div class="info-row owner-only-row">
+                            <span class="info-label">إطار الاسم (في الشات فقط)</span>
+                            <span class="info-value"><span class="action-link" id="name-frame" style="color: #ba68c8;">بدون إطار</span></span>
+                        </div>
+                        <div class="info-row owner-only-row">
+                            <span class="info-label">لون نيون للإطار</span>
+                            <span class="info-value"><span class="action-link" id="name-frame-neon" style="color: #4db6ac;">بدون</span></span>
+                        </div>
+                        <div class="info-row owner-only-row">
+                            <span class="info-label">توهج الإطار</span>
+                            <span class="info-value"><span class="action-link" id="name-frame-glow" style="color: #e57373;">بدون</span></span>
+                        </div>
+                        <div class="info-row owner-only-row">
+                            <span class="info-label">زر تحويل كيف يرى الزوار بروفايلي</span>
+                            <span class="info-value"><span class="action-link" id="btn-visitor-view" style="color: #81c784;">عرض كامل</span></span>
+                        </div>
+                        <div class="info-row owner-only-row">
+                            <span class="info-label">إطارات متحركة للصورة الشخصية</span>
+                            <span class="info-value"><span class="action-link" id="avatar-frame-motion" style="color: #ffd700;">بدون</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ====== تبويب الحالة ====== -->
+                <div id="status-tab" class="tab-content">
+                    <div class="info-card">
+                        <div class="info-row owner-only-row">
+                            <span class="info-label">نشر حالة</span>
+                            <span class="info-value"><span class="action-link" id="btn-create-status" style="color: #81c784;">+ حالة جديدة</span></span>
+                        </div>
+                        
+                        <div class="info-row owner-only-row">
+                            <span class="info-label">من يمكنه رؤية حالتي</span>
+                            <span class="info-value"><span class="action-link" id="btn-status-privacy" style="color: #64b5f6;">الجميع</span></span>
+                        </div>
+                        
+                        <div class="info-row owner-only-row">
+                            <span class="info-label">قائمة مشاهدين الحالة</span>
+                            <span class="info-value"><span class="action-link" id="btn-status-viewers" style="color: #ffb74d;">المشاهدون</span></span>
+                        </div>
+                        
+                        <div class="info-row owner-only-row">
+                            <span class="info-label">من تفاعل مع الحالة</span>
+                            <span class="info-value"><span class="action-link" id="btn-status-reactors" style="color: #81c784;">التفاعلات</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ====== تبويب المعلومات ====== -->
+                <div id="info-tab" class="tab-content">
+                    <div class="info-card">
+                        <div class="info-row">
+                            <span class="info-label">رابط الملف الشخصي</span>
+                            <span class="info-value"><span class="action-link" id="btn-copy">نسخ الرابط</span></span>
+                        </div>
+                        <div class="info-row" id="info-age-row">
+                            <span class="info-label">العمر والجنس</span>
+                            <span class="info-value" id="info-age-value">43 سنة - ذكر</span>
+                        </div>
+                        <div class="info-row" id="info-country-row">
+                            <span class="info-label">البلد</span>
+                            <span class="info-value" id="info-country-value">سوريا - دمشق 🇸🇾</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ====== تبويب الأوامر ====== -->
+                <div id="commands-tab" class="tab-content">
+                    <div class="info-card">
+                        <div class="info-row">
+                            <span class="info-label">نكز العضو</span>
+                            <span class="info-value"><span class="action-link" style="color: #81c784;" id="btn-poke">نكز الآن</span></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">إرسال هدية</span>
+                            <span class="info-value"><span class="action-link" style="color: #ffb74d;" id="btn-gift">إرسال وردة 🌹</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ====== تبويب الأصدقاء ====== -->
+                <div id="friends-tab" class="tab-content">
+                    <div class="info-card">
+                        <div class="info-row">
+                            <span class="info-label">قائمة الأصدقاء</span>
+                            <span class="info-value" id="friends-count">15 صديق نشط</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">المتابعون</span>
+                            <span class="info-value" id="followers-count">142 متابع</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ====== تبويب المزيد ====== -->
+                <div id="more-tab" class="tab-content">
+                    <div class="info-card">
+                        <div class="info-row">
+                            <span class="info-label">الدعم الفني</span>
+                            <span class="info-value"><span class="action-link" style="color: #4db6ac;" id="btn-support">تواصل معنا</span></span>
+                        </div>
+                        <div class="info-row owner-only-row">
+                            <span class="info-label" style="color: #ef5350;">تسجيل خروج</span>
+                            <span class="info-value"><span class="action-link" style="color: #ef5350;" id="btn-logout">خروج</span></span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            
+        </div>
+
+    </div>
+
+    <!-- ====== النوافذ المنبثقة (كلها تفتح داخل الشات) ====== -->
+
+    <!-- نافذة تفاعلية عامة -->
+    <div class="custom-modal" id="app-modal">
+        <div class="modal-content">
+            <h3 id="modal-title">تنبيه</h3>
+            <p id="modal-text">تمت العملية بنجاح.</p>
+            <div id="modal-dynamic-container"></div>
+            <div class="modal-buttons">
+                <button id="modal-confirm-btn">حفظ وتطبيق</button>
+                <button class="cancel-btn" id="modal-cancel-btn">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة الحالة -->
+    <div class="custom-modal" id="status-modal">
+        <div class="modal-content">
+            <h3 id="status-modal-title">نشر حالة</h3>
+            <p id="status-modal-text">اكتب حالتك أو ارفع صورة/فيديو</p>
+            <div id="status-modal-dynamic-container">
+                <textarea id="status-text" placeholder="اكتب حالتك هنا..." rows="3"></textarea>
+                <button id="btn-status-upload-file" style="width: 100%; margin-top: 8px; background: rgba(255,255,255,0.15); color: white;">📷 رفع صورة أو فيديو</button>
+            </div>
+            <div class="modal-buttons">
+                <button id="status-confirm-btn">نشر</button>
+                <button class="cancel-btn" id="status-cancel-btn">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة خصوصية الحالة -->
+    <div class="custom-modal" id="privacy-modal">
+        <div class="modal-content">
+            <h3>خصوصية الحالة</h3>
+            <p>من يمكنه رؤية حالتك؟</p>
+            <div id="privacy-modal-dynamic-container">
+                <select id="privacy-select">
+                    <option value="public">الجميع</option>
+                    <option value="friends">الأصدقاء فقط</option>
+                    <option value="custom">تخصيص أشخاص محددين</option>
+                    <option value="exclude">استبعاد أشخاص محددين</option>
+                </select>
+                <div id="privacy-custom-list" style="display: none; margin-top: 10px;">
+                    <p style="color: #aaa; font-size: 12px;">اختر الأشخاص:</p>
+                    <div id="privacy-people-list"></div>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button id="privacy-confirm-btn">حفظ</button>
+                <button class="cancel-btn" id="privacy-cancel-btn">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة المشاهدين -->
+    <div class="custom-modal" id="viewers-modal">
+        <div class="modal-content">
+            <h3>قائمة المشاهدين والتفاعلات</h3>
+            <p>من شاهد وتفاعل مع حالتك</p>
+            <div id="viewers-modal-dynamic-container"></div>
+            <div class="modal-buttons">
+                <button id="viewers-close-btn">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة الرد -->
+    <div class="custom-modal" id="reply-modal">
+        <div class="modal-content">
+            <h3>الرد على الحالة</h3>
+            <p>الرد سيتحول إلى رسالة خاصة</p>
+            <div id="reply-modal-dynamic-container">
+                <textarea id="reply-text" placeholder="اكتب ردك..." rows="3"></textarea>
+                <button id="btn-reply-upload" style="width: 100%; margin-top: 8px; background: rgba(255,255,255,0.15); color: white;">📷 إرفاق صورة / فيديو / مقطع صوتي</button>
+            </div>
+            <div class="modal-buttons">
+                <button id="reply-confirm-btn">إرسال</button>
+                <button class="cancel-btn" id="reply-cancel-btn">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة GIF -->
+    <div class="custom-modal" id="gif-modal">
+        <div class="modal-content">
+            <h3>اختر خلفية GIF للاسم</h3>
+            <p>هذه الحركات المتنوعة لاسمك</p>
+            <div id="gif-options-list" style="max-height: 300px; overflow-y: auto; text-align: right; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px;"></div>
+            <div class="modal-buttons">
+                <button id="gif-confirm-btn">تطبيق</button>
+                <button class="cancel-btn" id="gif-cancel-btn">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة الإطارات -->
+    <div id="mega-frames-modal">
+        <div class="modal-content">
+            <h3>🎨 اختر إطارك المفضل</h3>
+            <p>أكثر من 100 إطار مجسم ومتحرك</p>
+            <div id="frames-list-container" class="frames-preview-grid"></div>
+            <div class="modal-buttons">
+                <button id="mega-frames-close-btn">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== الملفات الأساسية ====== -->
+    <script src="config.js"></script>
+    <script src="ranks.js"></script>
+    <script src="utils.js"></script>
+    <script src="auth.js"></script>
+
+    <!-- ====== JavaScript يبدأ من هنا (سيتم وضعه في الجزء 3) ====== -->
+    <script id="profile-scripts">
+        // سيتم إرسال JavaScript في الجزء الثالث
+    </script>
+
+</body>
+</html>:root {
+    --accent-color: #ffd700;
+    --accent-glow: rgba(255, 215, 0, 0.7);
+    --bg-gradient: linear-gradient(160deg, rgba(27, 10, 58, 0.4), rgba(11, 4, 23, 0.6), rgba(3, 1, 8, 0.85));
+    --font-scale: 1px;
+    --profile-shadow: 0 25px 70px rgba(0, 0, 0, 0.95);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    background: #030108; 
+    min-height: 100vh; 
+    color: white; 
+    overflow: hidden; 
+    font-size: calc(14px + var(--font-scale));
+}
+
+/* ====== حاوية البروفايل (بدون تغيير في القياسات) ====== */
+.profile {
+    position: fixed;
+    top: 2%;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%); 
+    width: 100%; 
+    max-width: 580px; 
+    background: var(--bg-gradient);
+    border-radius: 20px 20px 0 0;
+    border-top: 2px solid var(--accent-color);
+    border-left: 1px solid var(--accent-glow);
+    border-right: 1px solid var(--accent-glow);
+    display: flex;
+    flex-direction: column; 
+    overflow: hidden;
+    z-index: 200;
+    box-shadow: var(--profile-shadow);
+    transition: 0.3s ease;
+}
+
+#stardust-canvas {
+    position: absolute;
+    top: 290px; 
+    left: 0;
+    width: 100%;
+    height: calc(100% - 290px);
+    z-index: 1;
+    pointer-events: none; 
+}
+
+/* ====== الأزرار العلوية ====== */
+.top-buttons {
+    position: absolute;
+    top: 10px;
+    left: 12px;
+    right: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 110;
+}
+.top-buttons button {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--accent-glow);
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    color: white;
+    cursor: pointer;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.95);
+    transition: 0.2s;
+}
+.top-buttons button:hover { transform: scale(1.1); border-color: var(--accent-color); color: var(--accent-color); background: rgba(255,215,0,0.2); }
+.owner-top-actions { display: flex; gap: 6px; }
+
+/* ====== الغلاف ====== */
+.cover {
+    width: 100%;
+    height: 290px; 
+    position: relative;
+    background: linear-gradient(135deg, #35136b, #190938, #070312);
+    flex-shrink: 0; 
+    z-index: 2;
+}
+.cover .cover-img { width: 100%; height: 100%; object-fit: cover; opacity: 0.75; }
+
+.cover-edit-btns {
+    position: absolute;
+    top: 50px;
+    left: 12px;
+    display: flex;
+    gap: 6px;
+    z-index: 100;
+}
+.cover-edit-btns button {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    color: white;
+    padding: 5px 10px;
+    font-size: 11px;
+    border-radius: 10px;
+    cursor: pointer;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.95);
+    transition: 0.2s;
+}
+.cover-edit-btns button:hover { background: rgba(255,255,255,0.2); border-color: #fff; }
+.cover-edit-btns .btn-del-cov { color: #ff6b6b; border-color: rgba(255, 107, 107, 0.4); }
+
+/* ====== الصورة الشخصية ====== */
+.avatar-container {
+    position: absolute;
+    bottom: 115px; 
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px; 
+    height: 100px; 
+    z-index: 10;
+}
+.avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #111;
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.8);
+    border: 3px solid var(--accent-color);
+    position: relative;
+    transition: 0.3s;
+}
+.avatar.has-status {
+    box-shadow: 0 0 30px var(--accent-glow), 0 0 60px rgba(100, 181, 246, 0.35);
+}
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.avatar-container .avatar-edit-btns {
+    position: absolute;
+    bottom: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 16px;
+    z-index: 15;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 2px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--accent-glow);
+}
+.avatar-container .avatar-edit-btns span { 
+    font-size: 13px; 
+    cursor: pointer; 
+    padding: 2px;
+    transition: 0.2s;
+}
+.avatar-container .avatar-edit-btns span:hover { transform: scale(1.2); }
+.avatar-container .avatar-edit-btns .del-av { color: #ff6b6b; }
+
+/* ====== الاسم والنبذة ====== */
+.header {
+    position: absolute;
+    bottom: 10px; 
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    text-align: center;
+    z-index: 10;
+    padding: 0 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+.username-container { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.edit-pen { font-size: 11px; cursor: pointer; color: var(--accent-color); text-shadow: 0 2px 5px rgba(0,0,0,0.9); }
+
+.role {
+    font-size: 11px;
+    color: var(--accent-color);
+    font-weight: bold;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+}
+
+.username {
+    font-size: 20px;
+    font-weight: bold;
+    color: #fff; 
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.95), 0 0 20px var(--accent-glow);
+}
+.bio {
+    font-size: 12px; 
+    color: #90caf9; 
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9);
+    font-weight: 600;
+}
+
+/* ====== المنطقة الرئيسية ====== */
+.main-content-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 10px 14px 14px 14px;
+    gap: 10px;
+    z-index: 5;
+    background: transparent;
+}
+
+/* ====== أزرار التفاعل ====== */
+.interaction-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    flex-shrink: 0;
+}
+.interaction-buttons button {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 50%;
+    width: 38px; 
+    height: 38px; 
+    color: white;
+    cursor: pointer;
+    font-size: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    transition: 0.2s;
+}
+.interaction-buttons button:hover { transform: scale(1.15); background: rgba(255, 215, 0, 0.2); border-color: var(--accent-color); }
+
+/* ====== التبويبات ====== */
+.profile-tabs {
+    background: rgba(0, 0, 0, 0.4); 
+    display: flex;
+    overflow-x: auto;
+    white-space: nowrap;
+    border: 1px solid var(--accent-glow);
+    scrollbar-width: none;
+    border-radius: 12px;
+    flex-shrink: 0;
+    z-index: 120; 
+    padding: 3px;
+    gap: 4px;
+}
+.profile-tabs::-webkit-scrollbar { display: none; }
+.tab-item {
+    padding: 8px 12px;
+    color: #b0bec5;
+    font-size: 11px;
+    cursor: pointer;
+    font-weight: bold;
+    flex-shrink: 0;
+    text-align: center;
+    transition: 0.2s;
+    border-radius: 8px;
+}
+.tab-item.active, .tab-item:hover {
+    background: rgba(255, 215, 0, 0.25);
+    color: var(--accent-color);
+    text-shadow: 0 0 10px var(--accent-glow);
+}
+
+/* ====== محتوى التبويبات ====== */
+.tab-scroll-box {
+    flex: 1;
+    overflow-y: auto; 
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 10px;
+}
+.tab-scroll-box::-webkit-scrollbar { display: none; }
+
+.info-card {
+    background: rgba(10, 5, 20, 0.6); 
+    border-radius: 16px;
+    padding: 14px;
+    border: 1px solid var(--accent-glow);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+}
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 9px 0;
+}
+.info-row:last-child { border-bottom: none; }
+
+.info-label { font-size: 0.95em; color: #ffab91; font-weight: bold; text-shadow: 0 1px 4px rgba(0,0,0,0.8); }
+.info-value { font-size: 0.9em; color: #f1f5f9; text-shadow: 0 1px 4px rgba(0,0,0,0.8); }
+.info-value .action-link { color: #64b5f6; text-decoration: none; cursor: pointer; transition: 0.2s; }
+.info-value .action-link:hover { opacity: 0.8; text-decoration: underline; }
+
+/* ====== نظام الخصوصية (جديد) ====== */
+.privacy-section {
+    margin-bottom: 15px;
+}
+.privacy-section-title {
+    color: var(--accent-color);
+    font-size: 13px;
+    font-weight: 900;
+    margin-bottom: 8px;
+    padding-right: 5px;
+    text-shadow: 0 0 10px var(--accent-glow);
+}
+.privacy-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.privacy-row:last-child { border-bottom: none; }
+.privacy-label {
+    font-size: 0.9em;
+    color: #f1f5f9;
+    font-weight: 600;
+}
+.privacy-select {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--accent-glow);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 12px;
+    padding: 6px 10px;
+    outline: none;
+    font-family: 'Cairo', sans-serif;
+    cursor: pointer;
+    min-width: 130px;
+    text-align: center;
+}
+.privacy-select:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 10px var(--accent-glow);
+}
+.privacy-select option {
+    background: #110724;
+    color: #fff;
+}
+.privacy-locked {
+    text-align: center;
+    padding: 30px 20px;
+    color: #90caf9;
+}
+.privacy-locked i {
+    font-size: 40px;
+    color: var(--accent-color);
+    margin-bottom: 15px;
+    display: block;
+    text-shadow: 0 0 20px var(--accent-glow);
+}
+.privacy-locked p {
+    font-size: 13px;
+    opacity: 0.8;
+}
+
+/* ====== إخفاء العناصر حسب الوضع ====== */
+body.visitor-mode .owner-only { display: none !important; }
+body.visitor-mode .owner-only-row { display: none !important; }
+body.owner-mode .visitor-only { display: none !important; }
+
+/* ====== النوافذ المنبثقة ====== */
+.custom-modal {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+.custom-modal.active { display: flex; }
+.modal-content {
+    background: #110724;
+    border: 2px solid var(--accent-color);
+    padding: 20px;
+    border-radius: 16px;
+    width: 88%;
+    max-width: 360px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.9);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.modal-content h3 { color: var(--accent-color); font-size: 16px; }
+.modal-content p { color: #ccc; font-size: 13px; }
+.modal-content input, .modal-content select {
+    width: 100%;
+    padding: 9px 12px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--accent-color);
+    border-radius: 8px;
+    color: white;
+    font-size: 13px;
+    outline: none;
+    text-align: center;
+}
+.modal-content select option { background: #110724; color: white; }
+.modal-content textarea {
+    width: 100%;
+    padding: 9px 12px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--accent-color);
+    border-radius: 8px;
+    color: white;
+    font-size: 13px;
+    outline: none;
+    text-align: center;
+}
+.modal-buttons { display: flex; justify-content: center; gap: 10px; margin-top: 5px; }
+.modal-content button {
+    background: var(--accent-color); color: #030108; border: none; padding: 7px 18px;
+    font-weight: bold; border-radius: 8px; cursor: pointer; font-size: 13px;
+    transition: 0.2s;
+}
+.modal-content button:hover { opacity: 0.9; transform: scale(1.03); }
+.modal-content button.cancel-btn { background: rgba(255,255,255,0.15); color: #fff; }
+
+@media (max-width: 480px) {
+    .profile { width: 100%; border-radius: 0; top: 0; }
+}
+
+/* ============================================ */
+/* ====== إضافات : الإطارات ====== */
+/* ============================================ */
+
+#avatar-box {
+    position: relative;
+    overflow: visible !important;
+    width: 120px;
+    height: 120px;
+    margin: 0 auto;
+}
+
+.dynamic-frame-wrapper {
+    position: absolute;
+    inset: -10px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 25;
+    box-sizing: border-box;
+}
+
+.frame-badge-top {
+    position: absolute;
+    top: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 24px;
+    filter: drop-shadow(0 3px 6px rgba(0,0,0,0.8));
+    animation: badgeFloat 2s ease-in-out infinite;
+    z-index: 30;
+}
+
+@keyframes badgeFloat {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-5px); }
+}
+
+@keyframes neonPulse {
+    0%, 100% { opacity: 0.7; filter: brightness(1); }
+    50% { opacity: 1; filter: brightness(1.4); }
+}
+
+@keyframes dynamicSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ====== قائمة الإطارات ====== */
+.frames-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.frame-preview-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.frame-preview-card:hover {
+    background: rgba(255, 215, 0, 0.1);
+    border-color: var(--accent-color);
+}
+
+.frame-preview-card.selected {
+    background: rgba(255, 215, 0, 0.2);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+}
+
+.mini-frame-preview {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #333;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20px;
+}
+
+.frame-preview-card span {
+    font-size: 10px;
+    color: #ccc;
+    text-align: center;
+    display: block;
+    line-height: 1.2;
+}
+
+.use-now-btn {
+    background: var(--accent-color);
+    color: #030108;
+    border: none;
+    padding: 5px 12px;
+    margin-top: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: bold;
+    transition: 0.2s;
+}
+
+.use-now-btn:hover {
+    opacity: 0.9;
+    transform: scale(1.05);
+}
+
+#mega-frames-modal {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+#mega-frames-modal.active { display: flex; }
+#mega-frames-modal .modal-content {
+    background: #110724;
+    border: 2px solid var(--accent-color);
+    padding: 20px;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.9);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+#mega-frames-modal h3 { color: var(--accent-color); font-size: 16px; }
+#mega-frames-modal .modal-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 5px;
+}
+#mega-frames-modal button {
+    background: var(--accent-color); color: #030108; border: none; padding: 7px 18px;
+    font-weight: bold; border-radius: 8px; cursor: pointer; font-size: 13px;
+    transition: 0.2s;
+}
+#mega-frames-modal button:hover { opacity: 0.9; transform: scale(1.03); }
+#mega-frames-modal button.cancel-btn { background: rgba(255,255,255,0.15); color: #fff; }// ==============================================
+// قمر الشام - البروفايل (مع نظام الوضعين)
+// ==============================================
+
+// ====== المتغيرات العامة ======
+let currentUser = null;       // المستخدم الحالي (اللي يفتح البروفايل)
+let targetUser = null;        // صاحب البروفايل (اللي يتعرض)
+let viewMode = 'owner';       // 'owner' أو 'visitor'
+let isTargetFriend = false;   // هل المستخدم الحالي صديق لصاحب البروفايل؟
+
+// ====== الإطارات ======
+const framesDatabase = [
+    { id: 'none', name: '❌ إزالة الإطار', badge: '❌', style: 'border: 2px solid rgba(255,255,255,0.1);' },
+    { id: 'fire_dragon', name: '🔥 طاقة التنانين', badge: '🔥', style: 'border: 4px solid transparent; background: linear-gradient(135deg, #ff4500, #ff0055, #ffd700) border-box; box-shadow: 0 0 40px rgba(255,69,0,0.9); animation: megaSpin 3s linear infinite;' },
+    { id: 'vip_crown', name: '👑 التاج الملكي VIP', badge: '👑', style: 'border: 4px solid #ffcc00; background: linear-gradient(135deg, rgba(255,215,0,0.4), transparent); box-shadow: 0 0 50px rgba(255,204,0,1); animation: royalPulse 2.5s ease-in-out infinite;' },
+    { id: 'neon_ring', name: '⚡ نيون سايبر', badge: '⚡', style: 'border: 4px dashed #00f3ff; box-shadow: 0 0 40px #00f3ff, 0 0 80px rgba(0,243,255,0.4); animation: megaSpin 4s linear infinite;' },
+    { id: 'galaxy', name: '🌌 جالاكسي الفضاء', badge: '🌌', style: 'border: 4px dashed transparent; background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d) border-box; box-shadow: 0 0 50px rgba(178,31,31,0.8); animation: megaSpin 8s linear infinite;' },
+    { id: 'sakura', name: '🌸 عاصفة الساكورا', badge: '🌸', style: 'border: 4px solid #ff9ff3; box-shadow: 0 0 50px #ff9ff3; animation: megaPulse 2.5s infinite;' },
+    { id: 'hearts', name: '💖 قلوب نابضة', badge: '💖', style: 'border: 4px dotted #ff4757; box-shadow: 0 0 50px #ff4757; animation: heartBeat 1.5s infinite;' },
+    { id: 'butterfly', name: '🦋 فراشات ساحرة', badge: '🦋', style: 'border: 4px solid #ba68c8; box-shadow: 0 0 50px #ba68c8; animation: megaSpin 6s linear infinite;' },
+    { id: 'diamond', name: '💎 كريستال الماس', badge: '💎', style: 'border: 4px solid #e0fbfc; box-shadow: 0 0 60px #e0fbfc; animation: megaSpin 3s linear infinite;' },
+    { id: 'pirate', name: '🏴‍☠️ قراصنة الظلام', badge: '🏴‍☠️', style: 'border: 4px solid #2f3542; background: linear-gradient(135deg, #2f3542, #1e272e); box-shadow: 0 0 50px #000; animation: megaPulse 3s infinite;' },
+    { id: 'girly', name: '🎀 كيوت بناتي', badge: '🎀', style: 'border: 4px solid #ff9a9e; box-shadow: 0 0 50px #ff9a9e; animation: megaPulse 2s infinite;' },
+    { id: 'moon', name: '🌙 اكتمال القمر', badge: '🌙', style: 'border: 4px solid #f0e68c; box-shadow: 0 0 50px #f0e68c; animation: megaGlow 2s infinite alternate;' }
+];
+
+// ==============================================
+// 1. التحميل الأولي
+// ==============================================
+document.addEventListener("DOMContentLoaded", function() {
+    
+    // قراءة الوضع من localStorage
+    viewMode = localStorage.getItem('profile_view_mode') || 'owner';
+    document.body.classList.add(viewMode + '-mode');
+    
+    // قراءة المستخدم الحالي (اللي يفتح)
+    currentUser = getCurrentUser() || JSON.parse(localStorage.getItem('qamar_profile_user') || 'null');
+    
+    // قراءة صاحب البروفايل (المستهدف)
+    targetUser = JSON.parse(localStorage.getItem('profile_target_data') || 'null');
+    
+    // إذا ما في targetUser، نستخدم currentUser
+    if (!targetUser) {
+        targetUser = currentUser;
+        viewMode = 'owner';
+        document.body.classList.remove('visitor-mode');
+        document.body.classList.add('owner-mode');
+    }
+    
+    // تطبيق الوضع
+    applyViewMode();
+    
+    // تحميل بيانات صاحب البروفايل
+    loadProfileData();
+    
+    // تفعيل الأنظمة
+    initTabs();
+    initPrivacySelectors();
+    initAvatarFrames();
+    initImageUploads();
+    initModals();
+    initStars();
+    loadSavedSettings();
+    
+    console.log('✅ Profile loaded | Mode:', viewMode, '| Target:', targetUser?.name);
+});
+
+// ==============================================
+// 2. تطبيق وضع الزيارة/المالك
+// ==============================================
+function applyViewMode() {
+    const ownerElements = document.querySelectorAll('.owner-only, .owner-only-row');
+    const visitorElements = document.querySelectorAll('.visitor-only');
+    
+    if (viewMode === 'visitor') {
+        ownerElements.forEach(el => el.style.display = 'none');
+        visitorElements.forEach(el => el.style.display = 'block');
+        document.body.classList.add('visitor-mode');
+        document.body.classList.remove('owner-mode');
+    } else {
+        ownerElements.forEach(el => el.style.display = '');
+        visitorElements.forEach(el => el.style.display = 'none');
+        document.body.classList.add('owner-mode');
+        document.body.classList.remove('visitor-mode');
+    }
+}
+
+// ==============================================
+// 3. تحميل بيانات صاحب البروفايل
+// ==============================================
+function loadProfileData() {
+    if (!targetUser) return;
+    
+    // الاسم (دائماً)
+    document.getElementById('profile-username').innerText = targetUser.name || 'مستخدم';
+    
+    // النبذة (دائماً)
+    document.getElementById('profile-bio').innerText = targetUser.bio || `@${targetUser.name || 'user'}`;
+    
+    // الرتبة (دائماً)
+    const rankBadge = typeof getRankBadge === 'function' ? getRankBadge(targetUser.rank) : '👤';
+    document.getElementById('display-role').innerText = `${rankBadge} ${targetUser.rank || 'User'}`;
+    
+    // الصورة (دائماً)
+    if (targetUser.avatar) {
+        document.getElementById('profile-avatar-img').src = targetUser.avatar;
+    }
+    
+    // الغلاف
+    if (targetUser.cover) {
+        document.getElementById('profile-cover-img').src = targetUser.cover;
+    }
+    
+    // الإيميل (حسب الخصوصية)
+    const emailEl = document.getElementById('settings-email');
+    if (emailEl && canView('email')) {
+        emailEl.innerText = targetUser.email || 'damascus.moon@gmail.com';
+    }
+    
+    // باقي البيانات
+    loadPrivacyFields();
+}
+
+// ==============================================
+// 4. فحص الخصوصية (يمكن استخدام utils.js)
+// ==============================================
+function canView(field) {
+    // صاحب البروفايل يشوف كل شي
+    if (viewMode === 'owner') return true;
+    
+    // الملك يشوف كل شي
+    if (currentUser && currentUser.rank === 'King') return true;
+    
+    // الملكة تشوف كل شي ما عدا كلمة السر
+    if (currentUser && currentUser.rank === 'Queen' && field !== 'password') return true;
+    
+    // فحص الخصوصية
+    const privacy = targetUser.privacy || {};
+    const setting = privacy[field] || 'public';
+    
+    if (setting === 'public') return true;
+    if (setting === 'friends' && isTargetFriend) return true;
+    if (setting === 'private') return false;
+    
+    return false;
+}
+
+// ==============================================
+// 5. تحميل حقول الخصوصية
+// ==============================================
+function loadPrivacyFields() {
+    // العمر والجنس
+    const ageRow = document.getElementById('info-age-row');
+    const ageValue = document.getElementById('info-age-value');
+    if (ageRow && ageValue) {
+        if (canView('age') && targetUser.age) {
+            const genderText = targetUser.gender === 'male' ? 'ذكر' : 'أنثى';
+            ageValue.innerText = `${targetUser.age} سنة - ${genderText}`;
+        } else {
+            ageRow.style.display = 'none';
+        }
+    }
+    
+    // البلد
+    const countryRow = document.getElementById('info-country-row');
+    const countryValue = document.getElementById('info-country-value');
+    if (countryRow && countryValue) {
+        if (canView('country') && targetUser.country) {
+            countryValue.innerText = targetUser.country;
+        } else {
+            countryRow.style.display = 'none';
+        }
+    }
+}
+
+// ==============================================
+// 6. تفعيل التبويبات
+// ==============================================
+function initTabs() {
+    const tabItems = document.querySelectorAll(".tab-item");
+    const tabContents = document.querySelectorAll(".tab-content");
+    
+    tabItems.forEach(item => {
+        item.addEventListener("click", function() {
+            const targetId = this.getAttribute("data-target");
+            tabItems.forEach(t => t.classList.remove("active"));
+            tabContents.forEach(c => c.classList.remove("active"));
+            this.classList.add("active");
+            const targetContent = document.getElementById(targetId);
+            if (targetContent) targetContent.classList.add("active");
+        });
+    });
+}
+
+// ==============================================
+// 7. تفعيل قوائم الخصوصية
+// ==============================================
+function initPrivacySelectors() {
+    const selects = document.querySelectorAll('.privacy-select');
+    
+    selects.forEach(select => {
+        // تحميل القيمة المحفوظة
+        const field = select.getAttribute('data-field');
+        const savedValue = localStorage.getItem(`privacy_${field}`) || 'public';
+        select.value = savedValue;
+        
+        // عند التغيير
+        select.addEventListener('change', function() {
+            const field = this.getAttribute('data-field');
+            const value = this.value;
+            
+            // حفظ في localStorage
+            localStorage.setItem(`privacy_${field}`, value);
+            
+            // حفظ في Firebase (إذا المستخدم عضو)
+            savePrivacyToFirebase(field, value);
+            
+            // إشعار
+            showToast(`تم تحديث خصوصية "${field}" إلى "${getPrivacyText(value)}"`);
+        });
+    });
+}
+
+function getPrivacyText(value) {
+    if (value === 'public') return '🌍 الجميع';
+    if (value === 'friends') return '👥 الأصدقاء فقط';
+    if (value === 'private') return '🔒 لا أحد';
+    return value;
+}
+
+// ==============================================
+// 8. حفظ الخصوصية في Firebase
+// ==============================================
+async function savePrivacyToFirebase(field, value) {
+    if (typeof db === 'undefined' || !db) return;
+    if (!currentUser || currentUser.isGuest) return;
+    if (!currentUser.uid) return;
+    
+    try {
+        await db.ref(`users/${currentUser.uid}/privacy/${field}`).set(value);
+        console.log(`✅ Privacy saved: ${field} = ${value}`);
+    } catch (e) {
+        console.error('❌ Privacy save error:', e);
+    }
+}
+
+// ==============================================
+// 9. تفعيل الإطارات
+// ==============================================
+function initAvatarFrames() {
+    const avatarFrameMotion = document.getElementById('avatar-frame-motion');
+    if (!avatarFrameMotion) return;
+    
+    // في وضع الزيارة، ممنوع التعديل
+    if (viewMode === 'visitor') {
+        avatarFrameMotion.style.pointerEvents = 'none';
+        avatarFrameMotion.style.opacity = '0.5';
+        return;
+    }
+    
+    avatarFrameMotion.onclick = () => {
+        const modal = document.getElementById('mega-frames-modal');
+        if (modal) {
+            modal.classList.add('active');
+            renderFramesList();
+        }
+    };
+    
+    // زر الإغلاق
+    const closeBtn = document.getElementById('mega-frames-close-btn');
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            document.getElementById('mega-frames-modal').classList.remove('active');
+        };
+    }
+}
+
+function renderFramesList() {
+    const container = document.getElementById('frames-list-container');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    container.className = 'frames-preview-grid';
+    
+    framesDatabase.forEach(frame => {
+        const card = document.createElement('div');
+        card.className = 'frame-preview-card';
+        card.setAttribute('data-frame-id', frame.id);
+        
+        const preview = document.createElement('div');
+        preview.className = 'mini-frame-preview';
+        
+        if (frame.id === 'none') {
+            preview.innerHTML = '🚫';
+            preview.style.border = '2px dashed #666';
+        } else {
+            const miniFrame = document.createElement('div');
+            miniFrame.className = 'dynamic-frame-wrapper';
+            miniFrame.style.cssText = frame.style;
+            miniFrame.style.width = '50px';
+            miniFrame.style.height = '50px';
+            miniFrame.style.inset = '-6px';
+            preview.appendChild(miniFrame);
+            preview.innerHTML += frame.badge;
+        }
+        
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = frame.name;
+        
+        const useBtn = document.createElement('button');
+        useBtn.className = 'use-now-btn';
+        useBtn.textContent = 'USE NOW';
+        useBtn.onclick = (e) => {
+            e.stopPropagation();
+            applyFrameToAvatar(frame.id);
+        };
+        
+        card.appendChild(preview);
+        card.appendChild(nameSpan);
+        card.appendChild(useBtn);
+        
+        card.onclick = () => {
+            applyFrameToAvatar(frame.id);
+            container.querySelectorAll('.frame-preview-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+        };
+        
+        container.appendChild(card);
+    });
+}
+
+function applyFrameToAvatar(frameId) {
+    const avatarBox = document.getElementById('avatar-box');
+    if (!avatarBox) return;
+    
+    const oldFrame = avatarBox.querySelector('.dynamic-frame-wrapper');
+    if (oldFrame) oldFrame.remove();
+    
+    if (frameId === 'none') {
+        localStorage.setItem('saved_avatar_frame_motion', '');
+        return;
+    }
+    
+    const frameData = framesDatabase.find(f => f.id === frameId);
+    if (!frameData) return;
+    
+    const frameWrapper = document.createElement('div');
+    frameWrapper.className = 'dynamic-frame-wrapper';
+    frameWrapper.style.cssText = frameData.style;
+    
+    if (frameData.badge && frameData.badge !== '❌') {
+        const badgeDiv = document.createElement('div');
+        badgeDiv.className = 'frame-badge-top';
+        badgeDiv.innerHTML = frameData.badge;
+        frameWrapper.appendChild(badgeDiv);
+    }
+    
+    avatarBox.appendChild(frameWrapper);
+    localStorage.setItem('saved_avatar_frame_motion', frameId);
+    
+    // حفظ في Firebase
+    if (currentUser && currentUser.uid) {
+        db.ref(`users/${currentUser.uid}/avatarFrame`).set(frameId).catch(() => {});
+    }
+}
+
+// ==============================================
+// 10. تفعيل رفع الصور
+// ==============================================
+function initImageUploads() {
+    // في وضع الزيارة، ممنوع التعديل
+    if (viewMode === 'visitor') return;
+    
+    const coverInput = document.getElementById('cover-file-input');
+    const avatarInput = document.getElementById('avatar-file-input');
+    const coverImg = document.getElementById('profile-cover-img');
+    const avatarImg = document.getElementById('profile-avatar-img');
+    
+    const changeCoverBtn = document.getElementById('btn-change-cover');
+    if (changeCoverBtn && coverInput) {
+        changeCoverBtn.onclick = () => coverInput.click();
+    }
+    
+    if (coverInput) {
+        coverInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const r = new FileReader();
+                r.onload = (ev) => { 
+                    coverImg.src = ev.target.result; 
+                    coverImg.style.display = 'block';
+                    localStorage.setItem('saved_cover', ev.target.result);
+                };
+                r.readAsDataURL(file);
+            }
+        };
+    }
+    
+    const removeCoverBtn = document.getElementById('btn-remove-cover');
+    if (removeCoverBtn) {
+        removeCoverBtn.onclick = () => { 
+            coverImg.src = ''; 
+            coverImg.style.display = 'none';
+            localStorage.removeItem('saved_cover');
+        };
+    }
+    
+    const changeAvatarBtn = document.getElementById('btn-change-avatar');
+    if (changeAvatarBtn && avatarInput) {
+        changeAvatarBtn.onclick = () => avatarInput.click();
+    }
+    
+    if (avatarInput) {
+        avatarInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const r = new FileReader();
+                r.onload = (ev) => { 
+                    avatarImg.src = ev.target.result;
+                    localStorage.setItem('saved_avatar', ev.target.result);
+                };
+                r.readAsDataURL(file);
+            }
+        };
+    }
+    
+    const removeAvatarBtn = document.getElementById('btn-remove-avatar');
+    if (removeAvatarBtn) {
+        removeAvatarBtn.onclick = () => { 
+            avatarImg.src = '';
+            localStorage.removeItem('saved_avatar');
+        };
+    }
+}
+
+// ==============================================
+// 11. النوافذ المنبثقة
+// ==============================================
+function initModals() {
+    // نافذة موحدة
+    const modal = document.getElementById('app-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalText = document.getElementById('modal-text');
+    const dynamicContainer = document.getElementById('modal-dynamic-container');
+    const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+    const modalCancelBtn = document.getElementById('modal-cancel-btn');
+    
+    window.openModal = function(title, text, type, optionsList, currentVal, onSave) {
+        if (!modal) return;
+        modalTitle.innerText = title;
+        modalText.innerText = text;
+        dynamicContainer.innerHTML = '';
+        
+        if (type === 'input') {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.id = 'modal-input-val';
+            input.value = currentVal || '';
+            dynamicContainer.appendChild(input);
+        } else if (type === 'select') {
+            const select = document.createElement('select');
+            select.id = 'modal-select-val';
+            optionsList.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt;
+                option.innerText = opt;
+                if (opt === currentVal) option.selected = true;
+                select.appendChild(option);
+            });
+            dynamicContainer.appendChild(select);
+        }
+        
+        modal.classList.add('active');
+        
+        modalConfirmBtn.onclick = function() {
+            let val = '';
+            if (type === 'input') {
+                const inp = document.getElementById('modal-input-val');
+                if (inp) val = inp.value;
+            } else if (type === 'select') {
+                const sel = document.getElementById('modal-select-val');
+                if (sel) val = sel.value;
+            }
+            if (onSave) onSave(val);
+            modal.classList.remove('active');
+        };
+        
+        modalCancelBtn.onclick = () => modal.classList.remove('active');
+    };
+}
+
+// ==============================================
+// 12. النجوم المتحركة
+// ==============================================
+function initStars() {
+    try {
+        if (typeof THREE === 'undefined') return;
+        const container = document.getElementById('stardust-canvas');
+        if (!container) return;
+        
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 1, 1000);
+        camera.position.z = 500;
+        const renderer = new THREE.WebGLRenderer({ alpha: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        container.appendChild(renderer.domElement);
+        
+        const starsGeometry = new THREE.BufferGeometry();
+        const starsCount = 180;
+        const starPositions = new Float32Array(starsCount * 3);
+        for (let i = 0; i < starsCount * 3; i++) starPositions[i] = (Math.random() - 0.5) * 580;
+        starsGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+        const starsMaterial = new THREE.PointsMaterial({ color: 0xffe082, size: 2.5, transparent: true, opacity: 0.95 });
+        const starField = new THREE.Points(starsGeometry, starsMaterial);
+        scene.add(starField);
+        
+        let currentStarSpeed = 0.001;
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            starField.rotation.y += currentStarSpeed;
+            starField.rotation.x += currentStarSpeed * 0.5;
+            renderer.render(scene, camera);
+        }
+        animate();
+    } catch (e) {
+        console.warn('Stars init failed:', e);
+    }
+}
+
+// ==============================================
+// 13. تحميل الإعدادات المحفوظة
+// ==============================================
+function loadSavedSettings() {
+    try {
+        // الاسم
+        if (localStorage.getItem('profile_name')) {
+            document.getElementById('profile-username').innerText = localStorage.getItem('profile_name');
+        }
+        
+        // النبذة
+        if (localStorage.getItem('profile_bio')) {
+            document.getElementById('profile-bio').innerText = localStorage.getItem('profile_bio');
+        }
+        
+        // الصورة
+        if (localStorage.getItem('saved_avatar')) {
+            document.getElementById('profile-avatar-img').src = localStorage.getItem('saved_avatar');
+        }
+        
+        // الغلاف
+        if (localStorage.getItem('saved_cover')) {
+            document.getElementById('profile-cover-img').src = localStorage.getItem('saved_cover');
+        }
+        
+        // الإطار
+        const savedFrame = localStorage.getItem('saved_avatar_frame_motion');
+        if (savedFrame) {
+            applyFrameToAvatar(savedFrame);
+            const frameEl = document.getElementById('avatar-frame-motion');
+            if (frameEl) frameEl.innerText = 'مطبق';
+        }
+        
+        // الخصوصية
+        const privacyFields = ['email', 'phone', 'age', 'gender', 'country', 'stats', 'status', 'friends', 'messages'];
+        privacyFields.forEach(field => {
+            const saved = localStorage.getItem(`privacy_${field}`);
+            const select = document.getElementById(`privacy-${field}`);
+            if (saved && select) select.value = saved;
+        });
+    } catch (e) {
+        console.warn('Load saved settings error:', e);
+    }
+}
+
+// ==============================================
+// 14. إشعار Toast
+// ==============================================
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(15,15,20,0.95);
+        border: 1px solid var(--accent-color);
+        border-radius: 12px;
+        padding: 12px 20px;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        z-index: 10000;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        animation: fadeInSlide 0.3s ease-out;
+        font-family: 'Cairo', sans-serif;
+    `;
+    toast.innerText = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+// ==============================================
+// 15. تفعيل الأزرار البسيطة
+// ==============================================
+document.addEventListener('DOMContentLoaded', () => {
+    // زر الإغلاق
+    const closeBtn = document.getElementById('btn-close');
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            window.parent.postMessage({ action: 'closeProfile' }, '*');
+            window.location.href = 'index1.html';
+        };
+    }
+    
+    // تعديل الاسم
+    const editUsr = document.getElementById('btn-edit-username');
+    if (editUsr && viewMode === 'owner') {
+        editUsr.onclick = () => {
+            window.openModal("تعديل الاسم", "اكتب اسمك الجديد:", 'input', [], 
+                document.getElementById('profile-username').innerText, 
+                (val) => {
+                    if (val.trim()) {
+                        document.getElementById('profile-username').innerText = val;
+                        localStorage.setItem('profile_name', val);
+                        
+                        // حفظ في Firebase
+                        if (currentUser && currentUser.uid) {
+                            db.ref(`users/${currentUser.uid}/name`).set(val).catch(() => {});
+                        }
+                        
+                        showToast('✅ تم حفظ الاسم');
+                    }
+                });
+        };
+    }
+    
+    // تعديل النبذة
+    const editBio = document.getElementById('btn-edit-bio');
+    if (editBio && viewMode === 'owner') {
+        editBio.onclick = () => {
+            window.openModal("تعديل النبذة", "اكتب النبذة الجديدة:", 'input', [], 
+                document.getElementById('profile-bio').innerText, 
+                (val) => {
+                    if (val.trim()) {
+                        document.getElementById('profile-bio').innerText = val;
+                        localStorage.setItem('profile_bio', val);
+                        
+                        if (currentUser && currentUser.uid) {
+                            db.ref(`users/${currentUser.uid}/bio`).set(val).catch(() => {});
+                        }
+                        
+                        showToast('✅ تم حفظ النبذة');
+                    }
+                });
+        };
+    }
+    
+    // زر زيارة
+    const visitorView = document.getElementById('btn-visitor-view');
+    if (visitorView && viewMode === 'owner') {
+        visitorView.onclick = () => {
+            // تبديل للوضع الزائر
+            localStorage.setItem('profile_view_mode', 'visitor');
+            location.reload();
+        };
+    }
+    
+    // زر العودة للمالك (في وضع الزيارة)
+    if (viewMode === 'visitor' && currentUser && targetUser && currentUser.uid === targetUser.uid) {
+        const roleEl = document.getElementById('display-role');
+        if (roleEl) {
+            const backBtn = document.createElement('span');
+            backBtn.innerText = ' ← عودة';
+            backBtn.style.cssText = 'cursor:pointer; color:var(--accent-color); font-size:12px; margin-right:10px;';
+            backBtn.onclick = () => {
+                localStorage.setItem('profile_view_mode', 'owner');
+                location.reload();
+            };
+            roleEl.appendChild(backBtn);
+        }
+    }
+});ح
