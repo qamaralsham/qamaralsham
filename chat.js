@@ -284,8 +284,13 @@ function startMessagesListener() {
         
         // لا تعرض رسائل نفسي (لأنها تُعرض محلياً عند الإرسال)
         if (msg.senderUid === user.uid) return;
-        
-        displayMessage(msg, snap.key);
+
+// ⭐ أضف هذه الأسطر الثلاثة:
+if (typeof processIncomingMessage === 'function') {
+    processIncomingMessage(msg).catch(e => console.warn('Bot error:', e));
+}
+
+displayMessage(msg, snap.key);
         
         // صوت + إشعار للمنشن
         if (msg.mentions && msg.mentions.includes(user.name)) {
