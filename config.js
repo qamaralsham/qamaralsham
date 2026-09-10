@@ -34,24 +34,120 @@ const QAMAR = {
     // معلومات الملك
     KING_EMAIL: 'emadhlaweh@gmail.com',
     KING_NAME: 'Emad',
+    QUEEN_EMAIL: null, // يُحدد لاحقاً
     
     // روابط
     PROFILE_URL: 'https://qamaralsham.github.io/qamaralsham/profile.html',
     INDEX_URL: 'https://qamaralsham.github.io/qamaralsham/index1.html',
     
-    // الغرف
+    // ====== الغرف ======
+    // visibleTo: 'all' = للجميع | 'royal' = للملك/الملكة | 'owner+' = Owner وما فوق
     ROOMS: {
-        general: { id: 'general', name: 'الروم العام', icon: '🌍', type: 'public' },
-        quiz: { id: 'quiz', name: 'روم المسابقات', icon: '🎯', type: 'public' },
-        islamic: { id: 'islamic', name: 'روم الإسلاميات', icon: '🕌', type: 'public' },
-        royal: { id: 'royal', name: 'السويت الملكي', icon: '👑', type: 'private' },
-        candy: { id: 'candy', name: 'كانديز', icon: '🍫', type: 'public' },
-        studio: { id: 'studio', name: 'استديو التسجيل', icon: '🎙️', type: 'private' },
-        gaza: { id: 'gaza', name: 'غزة العزة', icon: '🇵🇸', type: 'public' },
-        sham: { id: 'sham', name: 'ليالي الشام', icon: '🌙', type: 'public' }
+        general: { 
+            id: 'general', 
+            name: 'الروم العام', 
+            icon: '🌍', 
+            type: 'public',
+            visibleTo: 'all'
+        },
+        quiz: { 
+            id: 'quiz', 
+            name: 'روم المسابقات', 
+            icon: '🎯', 
+            type: 'public',
+            visibleTo: 'all'
+        },
+        islamic: { 
+            id: 'islamic', 
+            name: 'روم الإسلاميات', 
+            icon: '🕌', 
+            type: 'public',
+            visibleTo: 'all'
+        },
+        royal: { 
+            id: 'royal', 
+            name: 'السويت الملكي', 
+            icon: '👑', 
+            type: 'private',
+            visibleTo: 'royal'
+        },
+        candy: { 
+            id: 'candy', 
+            name: 'كانديز', 
+            icon: '🍫', 
+            type: 'public',
+            visibleTo: 'all'
+        },
+        studio: { 
+            id: 'studio', 
+            name: 'استديو التسجيل', 
+            icon: '🎙️', 
+            type: 'private',
+            visibleTo: 'owner+'
+        },
+        gaza: { 
+            id: 'gaza', 
+            name: 'غزة العزة', 
+            icon: '🇵🇸', 
+            type: 'public',
+            visibleTo: 'all'
+        },
+        sham: { 
+            id: 'sham', 
+            name: 'ليالي الشام', 
+            icon: '🌙', 
+            type: 'public',
+            visibleTo: 'all'
+        },
+        jail: { 
+            id: 'jail', 
+            name: 'السجن', 
+            icon: '🚔', 
+            type: 'private',
+            visibleTo: 'owner+'
+        }
     },
     
-    // الخلفيات
+    // ====== دوال مساعدة ======
+    
+    /**
+     * هل الغرفة مرئية للمستخدم؟
+     */
+    isRoomVisible: function(roomId, user) {
+        const room = this.ROOMS[roomId];
+        if (!room) return false;
+        if (!user) return false;
+        
+        // الملك يشوف كل شي
+        if (user.rank === 'King') return true;
+        
+        // القواعد حسب visibleTo
+        switch (room.visibleTo) {
+            case 'all':
+                return true;
+            case 'royal':
+                return user.rank === 'King' || user.rank === 'Queen';
+            case 'owner+':
+                return ['King', 'Queen', 'Super Owner', 'Room Manager Owner', 'Grand Owner', 'Owner'].includes(user.rank);
+            default:
+                return false;
+        }
+    },
+    
+    /**
+     * جلب الغرف المرئية للمستخدم
+     */
+    getVisibleRooms: function(user) {
+        const visible = {};
+        for (const [id, room] of Object.entries(this.ROOMS)) {
+            if (this.isRoomVisible(id, user)) {
+                visible[id] = room;
+            }
+        }
+        return visible;
+    },
+    
+    // ====== الخلفيات ======
     BACKGROUNDS: [
         { id: 'stars', class: 'background-type-stars' },
         { id: 'nebula', class: 'background-type-nebula' },
@@ -60,14 +156,14 @@ const QAMAR = {
         { id: 'waves', class: 'background-type-waves' }
     ],
     
-    // الألوان
+    // ====== الألوان ======
     COLORS: {
         gold: '#d4af37',
         goldLight: '#ffd700',
         bgDark: '#050508'
     },
     
-    // مفاتيح localStorage
+    // ====== مفاتيح localStorage ======
     STORAGE_KEYS: {
         USER: 'qamar_user',
         GUEST: 'qamar_guest',
@@ -75,5 +171,5 @@ const QAMAR = {
     }
 };
 
-// ====== تهيئة Firebase SDK (يتم تحميله في HTML) ======
-console.log('📦 Qamar Config loaded');
+// ====== تهيئة Firebase SDK ======
+console.log('📦 Qamar Config loaded with', Object.keys(QAMAR.ROOMS).length, 'rooms');
