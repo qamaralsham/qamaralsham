@@ -12,21 +12,19 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     
-    <!-- Styles -->
     <link rel="stylesheet" href="styles.css">
     
     <style>
-        /* ====== ستايلات خاصة بالشات ====== */
         .container { width: 100%; max-width: 500px; height: 100dvh; display: flex; flex-direction: column; position: relative; margin: 0 auto; background: var(--bg-dark); z-index: 1; }
         
-        /* ====== Header ====== */
         .header { height: 60px; background: rgba(10, 10, 15, 0.95); border-bottom: 1px solid var(--border-gold); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; position: sticky; top: 0; z-index: 100; }
         .room-title { font-size: 13px; font-weight: 700; color: var(--gold-light); }
         .header-actions { display: flex; gap: 8px; }
-        .header-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border-gold); background: rgba(20,20,25,0.8); color: #fff; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 15px; transition: all 0.2s; }
+        .header-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border-gold); background: rgba(20,20,25,0.8); color: #fff; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 15px; position: relative; }
         .header-btn:active { transform: scale(0.95); }
         
-        /* ====== المايكات ====== */
+        .notif-badge { position: absolute; top: -5px; right: -5px; background: #ff4444; color: #fff; border-radius: 50%; min-width: 18px; height: 18px; font-size: 10px; display: flex; justify-content: center; align-items: center; padding: 0 4px; font-weight: 900; }
+        
         .mics-bar-wrapper { position: relative; }
         .mics-bar { padding: 8px 12px; background: rgba(5,5,8,0.8); border-bottom: 1px solid var(--border-light); display: flex; align-items: center; gap: 10px; }
         .mics-bar.hidden { display: none; }
@@ -37,39 +35,69 @@
         .mics-toggle-btn { position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%); width: 32px; height: 20px; border-radius: 0 0 10px 10px; border: 1px solid var(--border-gold); border-top: none; background: rgba(5,5,8,0.9); color: var(--gold); cursor: pointer; font-size: 10px; display: flex; justify-content: center; align-items: center; z-index: 150; }
         .mics-toggle-btn.hidden { bottom: 0; border-radius: 10px 10px 0 0; border-bottom: none; }
         
-        /* ====== الرسائل ====== */
         .messages { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; scrollbar-width: none; }
         .messages::-webkit-scrollbar { display: none; }
-        .message { display: flex; align-items: flex-start; gap: 10px; max-width: 100%; animation: fadeInSlide 0.2s ease-out; }
-        .message-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold); flex-shrink: 0; }
+        .message { display: flex; align-items: flex-start; gap: 10px; max-width: 100%; animation: fadeInSlide 0.2s ease-out; position: relative; }
+        .message-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold); flex-shrink: 0; cursor: pointer; }
         .message-content { flex: 1; display: flex; flex-direction: column; gap: 2px; position: relative; }
-        .message-username { font-size: 13px; font-weight: 900; display: flex; align-items: center; gap: 6px; }
+        .message-username { font-size: 13px; font-weight: 900; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+        .message-username:hover { text-decoration: underline; }
         .message-text { font-size: var(--chat-font-size); line-height: 1.4; word-wrap: break-word; }
         .message-time { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
         .message.system { background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.3); border-radius: 8px; padding: 8px 12px; font-size: 12px; color: var(--gold); text-align: center; }
         .message.bot { border-right: 3px solid var(--gold); padding-right: 8px; }
+        .message.highlighted { background: rgba(212,175,55,0.15) !important; border-radius: 8px; padding: 6px; animation: highlightPulse 1s infinite; }
         
-        /* ====== شريط الكتابة ====== */
+        @keyframes highlightPulse {
+            0%, 100% { box-shadow: 0 0 5px rgba(212,175,55,0.3); }
+            50% { box-shadow: 0 0 20px rgba(212,175,55,0.8); }
+        }
+        
+        /* منشن */
+        .mention { color: var(--gold); font-weight: 900; cursor: pointer; text-decoration: underline; }
+        .mention:hover { color: var(--gold-light); }
+        
+        /* الرد */
+        .reply-quote { background: rgba(212,175,55,0.08); border-right: 3px solid var(--gold); padding: 5px 8px; border-radius: 6px; margin-bottom: 4px; font-size: 11px; cursor: pointer; }
+        .reply-quote .reply-name { color: var(--gold); font-weight: 900; }
+        .reply-quote .reply-text { color: var(--text-dim); font-size: 10px; }
+        
+        /* التفاعلات */
+        .message-reactions { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+        .reaction-badge { background: rgba(212,175,55,0.15); border: 1px solid var(--border-gold); border-radius: 12px; padding: 2px 8px; font-size: 12px; cursor: pointer; }
+        .reaction-badge:hover { background: var(--gold); color: #000; }
+        
+        /* قائمة الرسالة */
+        .message-menu { position: absolute; top: 100%; right: 0; background: rgba(15,15,20,0.98); border: 1px solid var(--border-gold); border-radius: 10px; padding: 4px; z-index: 500; display: none; flex-direction: column; gap: 2px; min-width: 160px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .message-menu.open { display: flex; }
+        .message-menu-item { padding: 8px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--text-light); }
+        .message-menu-item:hover { background: rgba(212,175,55,0.1); color: var(--gold); }
+        .message-menu-item.danger { color: #ff6b6b; }
+        
+        .message-options-btn { position: absolute; top: 0; left: 0; width: 24px; height: 24px; border-radius: 50%; border: none; background: transparent; color: var(--text-dim); cursor: pointer; font-size: 14px; display: flex; justify-content: center; align-items: center; opacity: 0.6; }
+        .message-options-btn:hover { opacity: 1; color: var(--gold); }
+        
+        /* شريط الكتابة */
         .input-area { padding: 10px 12px; display: flex; align-items: center; gap: 8px; background: rgba(8,8,12,0.95); border-top: 1px solid var(--border-gold); position: relative; z-index: 50; }
         .input-area input { flex: 1; padding: 12px 16px; border-radius: 25px; border: 1px solid var(--border-input); background: rgba(255,255,255,0.05); color: #fff; outline: none; font-family: 'Cairo', sans-serif; font-size: 14px; text-align: right; }
         .input-area input:focus { border-color: var(--gold); }
-        .send-btn { width: 40px; height: 40px; border-radius: 50%; border: none; background: var(--gold); color: #000; cursor: pointer; font-size: 16px; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(212,175,55,0.4); }
+        .send-btn { width: 40px; height: 40px; border-radius: 50%; border: none; background: var(--gold); color: #000; cursor: pointer; font-size: 16px; display: flex; justify-content: center; align-items: center; }
         .emoji-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: transparent; color: var(--text-dim); cursor: pointer; font-size: 20px; display: flex; justify-content: center; align-items: center; }
-        .plus-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: transparent; color: var(--text-dim); cursor: pointer; font-size: 22px; display: flex; justify-content: center; align-items: center; transition: transform 0.3s; }
-        .plus-btn.active { transform: rotate(45deg); }
+        .plus-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: transparent; color: var(--text-dim); cursor: pointer; font-size: 22px; display: flex; justify-content: center; align-items: center; }
         
-        /* ====== الشريط العائم ====== */
+        .reply-preview { display: none; padding: 8px 12px; background: rgba(212,175,55,0.1); border-top: 1px solid var(--border-gold); border-bottom: 1px solid var(--border-gold); font-size: 12px; color: var(--text-dim); position: relative; }
+        .reply-preview.show { display: block; }
+        .reply-preview-close { position: absolute; top: 4px; left: 8px; cursor: pointer; color: #ff6b6b; }
+        
         .floating-toolbar { position: absolute; bottom: 70px; left: 12px; right: 12px; padding: 10px; border-radius: 16px; background: rgba(15,15,20,0.95); border: 1px solid var(--border-gold); display: none; justify-content: space-around; gap: 8px; z-index: 200; }
         .floating-toolbar.open { display: flex; }
         .tool-btn { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.04); color: #fff; cursor: pointer; font-size: 18px; display: flex; justify-content: center; align-items: center; }
         
-        /* ====== شريط التنقل ====== */
         .bottom-nav { height: 65px; background: rgba(10,10,15,0.95); border-top: 1px solid var(--border-gold); display: flex; justify-content: space-around; align-items: center; }
         .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--text-dim); cursor: pointer; font-size: 0.65rem; background: none; border: none; padding: 4px; }
         .nav-item i { font-size: 1.1rem; }
         .nav-item.active { color: var(--gold); }
         
-        /* ====== القوائم الجانبية ====== */
         .sidebar { position: fixed; top: 0; width: 60vw; min-width: 200px; max-width: 300px; height: 100%; background: rgba(15,15,20,0.98); border: 1px solid var(--border-gold); transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1); z-index: 300; display: flex; flex-direction: column; }
         .right-sidebar { right: 0; transform: translateX(100%); }
         .left-sidebar { left: 0; transform: translateX(-100%); }
@@ -78,14 +106,13 @@
         .sidebar-header h3 { color: var(--gold); font-size: 13px; font-weight: 900; }
         .sidebar-close { width: 30px; height: 30px; border-radius: 8px; border: none; background: rgba(255,255,255,0.05); color: #fff; cursor: pointer; font-size: 14px; }
         .sidebar-content { padding: 12px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
-        .sidebar-item { padding: 12px; border-radius: 10px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.03); cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; transition: all 0.2s; }
+        .sidebar-item { padding: 12px; border-radius: 10px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.03); cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; }
         .sidebar-item.active { background: var(--gold); color: #000; font-weight: 900; }
         .sidebar-item.locked { opacity: 0.6; cursor: not-allowed; }
         
         .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 250; }
         .overlay.show { opacity: 1; pointer-events: all; }
         
-        /* ====== شاشة الدخول ====== */
         .login-screen { position: fixed; inset: 0; background: rgba(5,5,8,0.98); display: flex; justify-content: center; align-items: center; z-index: 500; overflow-y: auto; padding: 20px; }
         .login-card { width: 100%; max-width: 380px; background: rgba(15,15,20,0.98); border: 1px solid var(--border-gold); border-radius: 20px; padding: 25px; display: flex; flex-direction: column; gap: 15px; }
         .login-logo { text-align: center; }
@@ -103,12 +130,10 @@
         .gender-btn.active { background: var(--gold); color: #000; }
         .link-text { color: var(--gold); cursor: pointer; font-size: 13px; text-align: center; text-decoration: underline; }
         
-        /* ====== iframe البروفايل ====== */
         #profile-frame-container { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.95); display: none; }
         #profile-frame-container .close-btn { position: absolute; top: 10px; right: 10px; z-index: 10000; background: rgba(255,0,0,0.8); color: #fff; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 20px; cursor: pointer; }
         #profile-frame-container iframe { width: 100%; height: 100%; border: none; }
         
-        /* ====== نافذة الترقية ====== */
         .upgrade-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 1000; }
         .upgrade-modal.active { display: flex; }
         .upgrade-content { background: #110724; border: 2px solid var(--gold); padding: 25px; border-radius: 16px; width: 90%; max-width: 360px; text-align: center; display: flex; flex-direction: column; gap: 12px; }
@@ -117,6 +142,17 @@
         .upgrade-content input { width: 100%; padding: 12px; background: rgba(255,255,255,0.08); border: 1px solid var(--gold); border-radius: 8px; color: white; font-size: 14px; outline: none; text-align: center; font-family: 'Cairo', sans-serif; }
         .upgrade-btn { background: var(--gold); color: #000; border: none; padding: 12px; font-weight: 900; border-radius: 10px; cursor: pointer; font-size: 15px; }
         .upgrade-btn.cancel { background: rgba(255,255,255,0.15); color: #fff; }
+        
+        /* الرسائل الخاصة */
+        .dms-panel { position: fixed; bottom: 0; left: 0; right: 0; height: 50%; background: rgba(15,15,20,0.98); border-top: 2px solid var(--gold); z-index: 2000; display: none; flex-direction: column; transition: height 0.3s; }
+        .dms-panel.open { display: flex; }
+        .dms-panel.keyboard-open { height: 80%; }
+        .dms-header { padding: 12px 15px; border-bottom: 1px solid var(--border-gold); display: flex; justify-content: space-between; align-items: center; }
+        .dms-header h3 { color: var(--gold); font-size: 14px; }
+        .dms-close { background: rgba(255,0,0,0.8); color: #fff; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; }
+        .dms-messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .dms-input-area { padding: 10px; display: flex; gap: 8px; border-top: 1px solid var(--border-gold); }
+        .dms-input-area input { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid var(--border-input); background: rgba(255,255,255,0.05); color: #fff; outline: none; }
         
         @media (max-width: 480px) {
             .message-avatar { width: 32px; height: 32px; }
@@ -136,17 +172,11 @@
                 <h1>قمر الشام 👑</h1>
                 <p>منصة الدردشة الملكية الفاخرة</p>
             </div>
-            
             <div class="login-tabs">
-                <button class="login-tab active" id="tab-guest" onclick="switchLoginTab('guest')">
-                    <i class="fas fa-user-secret"></i> زائر
-                </button>
-                <button class="login-tab" id="tab-member" onclick="switchLoginTab('member')">
-                    <i class="fas fa-user"></i> عضو
-                </button>
+                <button class="login-tab active" id="tab-guest" onclick="switchLoginTab('guest')"><i class="fas fa-user-secret"></i> زائر</button>
+                <button class="login-tab" id="tab-member" onclick="switchLoginTab('member')"><i class="fas fa-user"></i> عضو</button>
             </div>
             
-            <!-- زائر -->
             <div id="guest-form">
                 <input type="text" class="login-input" id="guest-name" placeholder="اسمك..." autocomplete="off" style="margin-bottom:10px;">
                 <input type="number" class="login-input" id="guest-age" placeholder="عمرك..." min="1" max="120" style="margin-bottom:10px;">
@@ -154,24 +184,16 @@
                     <button class="gender-btn active" id="gender-male" onclick="selectGender('male')">👦 ذكر</button>
                     <button class="gender-btn" id="gender-female" onclick="selectGender('female')">👧 أنثى</button>
                 </div>
-                <button class="login-btn" onclick="handleGuestLogin()">
-                    <i class="fas fa-user-secret"></i> دخول كزائر
-                </button>
+                <button class="login-btn" onclick="handleGuestLogin()"><i class="fas fa-user-secret"></i> دخول كزائر</button>
             </div>
             
-            <!-- عضو -->
             <div id="member-form" style="display:none;">
                 <input type="email" class="login-input" id="member-email" placeholder="الإيميل..." autocomplete="off" style="margin-bottom:10px;">
                 <input type="password" class="login-input" id="member-password" placeholder="كلمة السر..." style="margin-bottom:10px;">
-                <button class="login-btn" onclick="handleMemberLogin()" style="margin-bottom:10px;">
-                    <i class="fas fa-sign-in-alt"></i> تسجيل دخول
-                </button>
-                <div class="link-text" onclick="switchToRegister()">
-                    ليس لديك حساب؟ سجّل الآن
-                </div>
+                <button class="login-btn" onclick="handleMemberLogin()" style="margin-bottom:10px;"><i class="fas fa-sign-in-alt"></i> تسجيل دخول</button>
+                <div class="link-text" onclick="switchToRegister()">ليس لديك حساب؟ سجّل الآن</div>
             </div>
             
-            <!-- تسجيل جديد -->
             <div id="register-form" style="display:none;">
                 <input type="text" class="login-input" id="register-name" placeholder="اسمك..." autocomplete="off" style="margin-bottom:10px;">
                 <input type="number" class="login-input" id="register-age" placeholder="عمرك..." min="1" max="120" style="margin-bottom:10px;">
@@ -182,12 +204,8 @@
                 <input type="email" class="login-input" id="register-email" placeholder="الإيميل..." autocomplete="off" style="margin-bottom:10px;">
                 <input type="password" class="login-input" id="register-password" placeholder="كلمة السر..." style="margin-bottom:10px;">
                 <input type="password" class="login-input" id="register-password-confirm" placeholder="تأكيد كلمة السر..." style="margin-bottom:10px;">
-                <button class="login-btn" onclick="handleRegister()">
-                    <i class="fas fa-user-plus"></i> إنشاء الحساب
-                </button>
-                <div class="link-text" onclick="switchToLogin()" style="margin-top:10px;">
-                    لديك حساب؟ سجّل دخول
-                </div>
+                <button class="login-btn" onclick="handleRegister()"><i class="fas fa-user-plus"></i> إنشاء الحساب</button>
+                <div class="link-text" onclick="switchToLogin()" style="margin-top:10px;">لديك حساب؟ سجّل دخول</div>
             </div>
         </div>
     </div>
@@ -198,7 +216,15 @@
             <button class="header-btn" onclick="toggleRooms()"><i class="fas fa-door-open"></i></button>
             <div class="room-title" id="room-title">🌍 الروم العام</div>
             <div class="header-actions">
-                <button class="header-btn" onclick="handleLogout()" title="خروج"><i class="fas fa-sign-out-alt"></i></button>
+                <button class="header-btn" onclick="toggleNotifications()" id="notif-btn">
+                    <i class="fas fa-bell"></i>
+                    <span class="notif-badge" id="notif-badge" style="display:none;">0</span>
+                </button>
+                <button class="header-btn" onclick="toggleDMs()" id="dms-btn">
+                    <i class="fas fa-envelope"></i>
+                    <span class="notif-badge" id="dms-badge" style="display:none;">0</span>
+                </button>
+                <button class="header-btn" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i></button>
                 <button class="header-btn" onclick="toggleSettings()"><i class="fas fa-bars"></i></button>
             </div>
         </div>
@@ -217,6 +243,12 @@
         
         <div class="messages" id="messages"></div>
         
+        <div class="reply-preview" id="reply-preview">
+            <span class="reply-preview-close" onclick="cancelReply()">✕</span>
+            <div>💬 الرد على: <strong id="reply-name"></strong></div>
+            <div id="reply-text-preview" style="font-size:11px;"></div>
+        </div>
+        
         <div class="floating-toolbar" id="floating-toolbar">
             <button class="tool-btn" onclick="alert('📁 رفع ملفات')"><i class="fas fa-folder"></i></button>
             <button class="tool-btn" onclick="alert('🎵 تشغيل صوتيات')"><i class="fas fa-music"></i></button>
@@ -232,27 +264,23 @@
         </div>
         
         <div class="bottom-nav">
+            <button class="nav-item" onclick="openProfile()"><i class="fas fa-id-card"></i><span>بروفايلي</span></button>
             <button class="nav-item" onclick="toggleRooms()"><i class="fas fa-door-open"></i><span>الغرف</span></button>
             <button class="nav-item" onclick="showOnlineUsers()"><i class="fas fa-users"></i><span>المتواجدين</span></button>
             <button class="nav-item" id="upgrade-nav-btn" onclick="openUpgradeModal()"><i class="fas fa-key"></i><span>عضوية</span></button>
             <button class="nav-item" onclick="showStore()"><i class="fas fa-store"></i><span>المتجر</span></button>
             <button class="nav-item" onclick="toggleSettings()"><i class="fas fa-cog"></i><span>الخيارات</span></button>
-            <button class="nav-item" onclick="openProfile()"><i class="fas fa-id-card"></i><span>بروفايلي</span></button>
         </div>
     </div>
     
-    <!-- قائمة الغرف -->
     <div class="sidebar right-sidebar" id="rooms-sidebar">
         <div class="sidebar-header">
             <h3><i class="fas fa-door-open"></i> الغرف</h3>
             <button class="sidebar-close" onclick="closeAllPanels()"><i class="fas fa-times"></i></button>
         </div>
-        <div class="sidebar-content" id="rooms-list">
-            <!-- تُملأ ديناميكياً -->
-        </div>
+        <div class="sidebar-content" id="rooms-list"></div>
     </div>
     
-    <!-- قائمة الإعدادات -->
     <div class="sidebar left-sidebar" id="settings-sidebar">
         <div class="sidebar-header">
             <h3><i class="fas fa-cog"></i> الإعدادات</h3>
@@ -266,7 +294,19 @@
     
     <div class="overlay" id="overlay" onclick="closeAllPanels()"></div>
     
-    <!-- iframe البروفايل -->
+    <!-- لوحة الرسائل الخاصة -->
+    <div class="dms-panel" id="dms-panel">
+        <div class="dms-header">
+            <h3>💬 الرسائل الخاصة</h3>
+            <button class="dms-close" onclick="closeDMs()">✕</button>
+        </div>
+        <div class="dms-messages" id="dms-messages"></div>
+        <div class="dms-input-area">
+            <input type="text" id="dms-input" placeholder="اكتب رسالة خاصة..." onkeypress="handleDMsKeyPress(event)">
+            <button class="send-btn" onclick="sendDM()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+    
     <div id="profile-frame-container">
         <div style="position:relative; width:100%; height:100%;">
             <button class="close-btn" onclick="closeProfileFrame()">✕</button>
@@ -274,7 +314,6 @@
         </div>
     </div>
     
-    <!-- نافذة الترقية -->
     <div class="upgrade-modal" id="upgrade-modal">
         <div class="upgrade-content">
             <h3>🔑 ترقية لعضوية</h3>
@@ -289,7 +328,6 @@
         </div>
     </div>
 
-    <!-- الملفات الأساسية -->
     <script src="config.js"></script>
     <script src="ranks.js"></script>
     <script src="utils.js"></script>
@@ -302,6 +340,41 @@
         let messagesListener = null;
         let selectedGender = 'male';
         let regSelectedGender = 'male';
+        let replyingTo = null;
+        let currentDMUser = null;
+        let dmsListener = null;
+        let notifications = [];
+        
+        // ====== صوت العصفور ======
+        function playBirdSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const now = ctx.currentTime;
+                
+                // صوت عصفور: 3 نقرات قصيرة
+                [0, 0.15, 0.3].forEach((delay, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    
+                    osc.type = 'sine';
+                    const baseFreq = 2000 + (i * 300);
+                    osc.frequency.setValueAtTime(baseFreq, now + delay);
+                    osc.frequency.linearRampToValueAtTime(baseFreq + 800, now + delay + 0.05);
+                    osc.frequency.linearRampToValueAtTime(baseFreq - 300, now + delay + 0.1);
+                    
+                    gain.gain.setValueAtTime(0, now + delay);
+                    gain.gain.linearRampToValueAtTime(0.3, now + delay + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + delay + 0.13);
+                    
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + delay);
+                    osc.stop(now + delay + 0.15);
+                });
+            } catch(e) {
+                console.log('Sound error:', e);
+            }
+        }
         
         // ====== تبويبات الدخول ======
         function switchLoginTab(tab) {
@@ -348,25 +421,17 @@
         function handleGuestLogin() {
             const name = document.getElementById('guest-name').value.trim();
             const age = document.getElementById('guest-age').value.trim();
-            
             const result = registerGuest(name, age, selectedGender);
-            if (result.success) {
-                enterChat();
-            } else {
-                alert('⚠️ ' + result.error);
-            }
+            if (result.success) enterChat();
+            else alert('⚠️ ' + result.error);
         }
         
         async function handleMemberLogin() {
             const email = document.getElementById('member-email').value.trim();
             const password = document.getElementById('member-password').value;
-            
             const result = await login(email, password);
-            if (result.success) {
-                enterChat();
-            } else {
-                alert('⚠️ ' + result.error);
-            }
+            if (result.success) enterChat();
+            else alert('⚠️ ' + result.error);
         }
         
         async function handleRegister() {
@@ -376,17 +441,11 @@
             const password = document.getElementById('register-password').value;
             const confirmPassword = document.getElementById('register-password-confirm').value;
             
-            if (password !== confirmPassword) {
-                alert('⚠️ كلمات السر غير متطابقة');
-                return;
-            }
+            if (password !== confirmPassword) { alert('⚠️ كلمات السر غير متطابقة'); return; }
             
             const result = await registerMember(name, age, regSelectedGender, email, password);
-            if (result.success) {
-                enterChat();
-            } else {
-                alert('⚠️ ' + result.error);
-            }
+            if (result.success) enterChat();
+            else alert('⚠️ ' + result.error);
         }
         
         async function handleUpgrade() {
@@ -394,10 +453,7 @@
             const password = document.getElementById('upgrade-password').value;
             const confirmPassword = document.getElementById('upgrade-password-confirm').value;
             
-            if (password !== confirmPassword) {
-                alert('⚠️ كلمات السر غير متطابقة');
-                return;
-            }
+            if (password !== confirmPassword) { alert('⚠️ كلمات السر غير متطابقة'); return; }
             
             const user = getCurrentUser();
             if (!user) return;
@@ -407,7 +463,6 @@
                 closeUpgradeModal();
                 document.getElementById('upgrade-nav-btn').style.display = 'none';
                 showToast('fa-crown', '🎉 تم ترقيتك لعضو');
-                // إعادة تحميل الشات
                 location.reload();
             } else {
                 alert('⚠️ ' + result.error);
@@ -417,6 +472,7 @@
         async function handleLogout() {
             if (confirm('هل أنت متأكد من الخروج؟')) {
                 if (messagesListener) messagesListener.off();
+                if (dmsListener) dmsListener.off();
                 await logout();
                 location.reload();
             }
@@ -437,12 +493,10 @@
             buildRoomsList();
             buildBackgroundsList();
             
-            // فتح السويت الملكي للملك
             if (user.rank === 'King' || user.rank === 'Queen') {
                 document.getElementById('royal-room-item')?.classList.remove('locked');
             }
             
-            // إخفاء زر الترقية للعضو
             if (!user.isGuest) {
                 document.getElementById('upgrade-nav-btn').style.display = 'none';
             }
@@ -450,7 +504,6 @@
             addSystemMessage(`👑 مرحباً ${user.name} - رتبتك: ${getRankBadge(user.rank)} ${user.rank}`);
             startMessagesListener();
             
-            // بدء نظام البوتات
             if (typeof initBots === 'function') initBots();
         }
         
@@ -458,24 +511,18 @@
         function buildRoomsList() {
             const list = document.getElementById('rooms-list');
             list.innerHTML = '';
-            
             const user = getCurrentUser();
             
             Object.values(QAMAR.ROOMS).forEach(room => {
                 const item = document.createElement('div');
                 item.className = 'sidebar-item';
                 item.setAttribute('data-room', room.id);
-                item.innerHTML = `<i class="fas fa-${getRoomIcon(room.id)}"></i> ${room.name}`;
+                item.innerHTML = `${room.icon} ${room.name}`;
                 
-                // قفل الغرف الخاصة
                 if (room.type === 'private') {
-                    if (room.id === 'royal' && user.rank !== 'King' && user.rank !== 'Queen') {
-                        item.classList.add('locked');
-                    } else if (room.id === 'studio' && user.isGuest) {
-                        item.classList.add('locked');
-                    } else if (room.id === 'jail' && !can(user, 'canBan')) {
-                        item.classList.add('locked');
-                    }
+                    if (room.id === 'royal' && user.rank !== 'King' && user.rank !== 'Queen') item.classList.add('locked');
+                    else if (room.id === 'studio' && user.isGuest) item.classList.add('locked');
+                    else if (room.id === 'jail' && !can(user, 'canBan')) item.classList.add('locked');
                 }
                 
                 if (room.id === currentRoom) item.classList.add('active');
@@ -485,20 +532,9 @@
             });
         }
         
-        function getRoomIcon(roomId) {
-            const icons = {
-                general: 'globe', quiz: 'trophy', islamic: 'mosque',
-                royal: 'crown', candy: 'candy-cane', studio: 'microphone-alt',
-                gaza: 'flag', sham: 'moon', jail: 'gavel'
-            };
-            return icons[roomId] || 'door-open';
-        }
-        
-        // ====== بناء خلفيات ======
         function buildBackgroundsList() {
             const list = document.getElementById('bg-options');
             list.innerHTML = '';
-            
             QAMAR.BACKGROUNDS.forEach(bg => {
                 const btn = document.createElement('button');
                 btn.style.cssText = 'padding:8px; border-radius:8px; border:1px solid var(--border-light); background:rgba(255,255,255,0.05); color:#fff; cursor:pointer;';
@@ -512,16 +548,9 @@
         function switchRoom(roomId, roomTitle, element) {
             const user = getCurrentUser();
             
-            // فحص الصلاحيات
-            if (roomId === 'royal' && user.rank !== 'King' && user.rank !== 'Queen') {
-                alert('🔒 هذا الروم خاص جداً'); return;
-            }
-            if (roomId === 'studio' && user.isGuest) {
-                alert('🎙️ استديو التسجيل غير متاح للزوار'); return;
-            }
-            if (roomId === 'jail' && !can(user, 'canBan') && user.rank !== 'Guest') {
-                alert('🚔 غرفة السجن للمسجونين والمشرفين فقط'); return;
-            }
+            if (roomId === 'royal' && user.rank !== 'King' && user.rank !== 'Queen') { alert('🔒 هذا الروم خاص جداً'); return; }
+            if (roomId === 'studio' && user.isGuest) { alert('🎙️ استديو التسجيل غير متاح للزوار'); return; }
+            if (roomId === 'jail' && !can(user, 'canBan') && user.rank !== 'Guest') { alert('🚔 غرفة السجن للمسجونين والمشرفين فقط'); return; }
             
             if (messagesListener) messagesListener.off();
             
@@ -548,8 +577,9 @@
             
             messagesListener.on('child_added', (snap) => {
                 const msg = snap.val();
-                if (msg && msg.sender !== getCurrentUser()?.name) {
-                    displayMessage(msg.sender, msg.text, msg.color, msg.avatar, msg.time, msg.isBot);
+                const user = getCurrentUser();
+                if (msg && msg.sender !== user?.name) {
+                    displayMessage(msg.sender, msg.text, msg.color, msg.avatar, msg.time, msg.isBot, snap.key, msg.replyTo, msg.mentions);
                 }
             });
         }
@@ -563,86 +593,359 @@
             if (!text || !user) return;
             if (isLink(text)) { alert('⚠️ يحظر نشر الروابط'); return; }
             
-            // فحص الأمر للبوت
             if (text.startsWith('!') && typeof handleBotCommand === 'function') {
                 handleBotCommand(text);
                 input.value = '';
                 return;
             }
             
-            // عرض فوري
-            displayMessage(user.name, text, user.color, user.avatar, Date.now(), false);
+            // استخراج المنشنات
+            const mentions = extractMentions(text);
             
-            // حفظ في Firebase
-            db.ref('rooms/' + currentRoom + '/messages').push({
+            const messageData = {
                 sender: user.name,
                 text: text,
                 time: firebase.database.ServerValue.TIMESTAMP,
                 avatar: user.avatar,
                 color: user.color,
                 uid: user.uid || null,
-                isBot: false
-            });
+                isBot: false,
+                mentions: mentions,
+                replyTo: replyingTo
+            };
+            
+            // عرض فوري
+            displayMessage(user.name, text, user.color, user.avatar, Date.now(), false, null, replyingTo, mentions);
+            
+            // حفظ
+            db.ref('rooms/' + currentRoom + '/messages').push(messageData);
+            
+            // إشعارات المنشن
+            if (mentions.length > 0) {
+                notifyMentions(mentions, text);
+            }
+            
+            // مسح الرد
+            cancelReply();
             
             input.value = '';
             input.focus();
         }
         
+        function extractMentions(text) {
+            const matches = text.match(/@[\u0600-\u06FF\w]+/g);
+            return matches ? matches.map(m => m.substring(1)) : [];
+        }
+        
+        function notifyMentions(mentions, text) {
+            const user = getCurrentUser();
+            mentions.forEach(name => {
+                if (name === user.name) return;
+                
+                db.ref('notifications').push({
+                    to: name,
+                    from: user.name,
+                    type: 'mention',
+                    text: text,
+                    room: currentRoom,
+                    time: firebase.database.ServerValue.TIMESTAMP
+                });
+            });
+            playBirdSound();
+        }
+        
         function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
         
-        function displayMessage(sender, text, color, avatar, time, isBot = false) {
+        // ====== عرض الرسالة ======
+        function displayMessage(sender, text, color, avatar, time, isBot = false, msgId = null, replyTo = null, mentions = []) {
             const container = document.getElementById('messages');
             const msg = document.createElement('div');
             msg.className = 'message' + (isBot ? ' bot' : '');
+            msg.setAttribute('data-msg-id', msgId || Date.now());
+            msg.setAttribute('data-sender', sender);
             
             const avatarImg = document.createElement('img');
             avatarImg.className = 'message-avatar';
             avatarImg.src = avatar || getDefaultAvatar(sender);
+            avatarImg.onclick = () => openUserProfile(sender);
             
             const content = document.createElement('div');
             content.className = 'message-content';
+            
+            // الرد
+            if (replyTo) {
+                const quote = document.createElement('div');
+                quote.className = 'reply-quote';
+                quote.innerHTML = `
+                    <div class="reply-name">↩ ${replyTo.sender}</div>
+                    <div class="reply-text">${replyTo.text.substring(0, 60)}</div>
+                `;
+                quote.onclick = () => {
+                    const original = document.querySelector(`[data-msg-id="${replyTo.id}"]`);
+                    if (original) {
+                        original.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        original.classList.add('highlighted');
+                        setTimeout(() => original.classList.remove('highlighted'), 3000);
+                    }
+                };
+                content.appendChild(quote);
+            }
             
             const username = document.createElement('div');
             username.className = 'message-username';
             username.style.color = color || '#ffd700';
             username.innerText = sender + (isBot ? ' 🤖' : '');
+            username.onclick = () => insertMention(sender);
             
             const msgText = document.createElement('div');
             msgText.className = 'message-text';
-            msgText.innerText = text;
+            // استبدال المنشنات
+            let formattedText = text;
+            if (mentions && mentions.length > 0) {
+                mentions.forEach(name => {
+                    const regex = new RegExp(`@${name}`, 'g');
+                    formattedText = formattedText.replace(regex, `<span class="mention" onclick="insertMention('${name}')">@${name}</span>`);
+                });
+                msgText.innerHTML = formattedText;
+            } else {
+                msgText.innerText = text;
+            }
             
             const timeEl = document.createElement('div');
             timeEl.className = 'message-time';
             timeEl.innerText = formatTime(time);
             
+            // زر الخيارات
+            const optBtn = document.createElement('button');
+            optBtn.className = 'message-options-btn';
+            optBtn.innerHTML = '⋮';
+            optBtn.onclick = (e) => {
+                e.stopPropagation();
+                showMessageMenu(msg, sender, text, msgId);
+            };
+            
             content.appendChild(username);
             content.appendChild(msgText);
             content.appendChild(timeEl);
+            
             msg.appendChild(avatarImg);
             msg.appendChild(content);
+            msg.appendChild(optBtn);
             
             container.appendChild(msg);
             container.scrollTop = container.scrollHeight;
         }
         
-        function addSystemMessage(text) {
-            const container = document.getElementById('messages');
-            const msg = document.createElement('div');
-            msg.className = 'message system';
-            msg.innerText = text;
-            container.appendChild(msg);
-            container.scrollTop = container.scrollHeight;
+        // ====== قائمة الرسالة ======
+        function showMessageMenu(msgEl, sender, text, msgId) {
+            document.querySelectorAll('.message-menu').forEach(m => m.remove());
+            
+            const user = getCurrentUser();
+            const isOwner = sender === user.name;
+            const canDelete = isOwner || can(user, 'canBan');
+            
+            const menu = document.createElement('div');
+            menu.className = 'message-menu open';
+            
+            // تفاعل
+            const react = document.createElement('div');
+            react.className = 'message-menu-item';
+            react.innerHTML = '😊 تفاعل';
+            react.onclick = () => addReaction(msgEl, '👍');
+            menu.appendChild(react);
+            
+            // رد
+            const reply = document.createElement('div');
+            reply.className = 'message-menu-item';
+            reply.innerHTML = '💬 رد';
+            reply.onclick = () => startReply(sender, text, msgId);
+            menu.appendChild(reply);
+            
+            // منشن
+            const mention = document.createElement('div');
+            mention.className = 'message-menu-item';
+            mention.innerHTML = '@ منشن';
+            mention.onclick = () => insertMention(sender);
+            menu.appendChild(mention);
+            
+            // تعديل
+            if (isOwner) {
+                const edit = document.createElement('div');
+                edit.className = 'message-menu-item';
+                edit.innerHTML = '✏️ تعديل';
+                edit.onclick = () => editMessage(msgEl, msgId);
+                menu.appendChild(edit);
+            }
+            
+            // حذف
+            if (canDelete) {
+                const del = document.createElement('div');
+                del.className = 'message-menu-item danger';
+                del.innerHTML = '🗑️ حذف';
+                del.onclick = () => deleteMessage(msgEl, msgId);
+                menu.appendChild(del);
+            }
+            
+            msgEl.appendChild(menu);
+            
+            // إغلاق عند النقر خارجها
+            setTimeout(() => {
+                document.addEventListener('click', function closeMenu(e) {
+                    if (!menu.contains(e.target)) {
+                        menu.remove();
+                        document.removeEventListener('click', closeMenu);
+                    }
+                });
+            }, 100);
         }
         
-        // ====== تغيير الخلفية ======
-        function changeBackground(bgId) {
-            const container = document.getElementById('chat-container');
-            const bg = QAMAR.BACKGROUNDS.find(b => b.id === bgId);
-            if (bg) {
-                container.classList.remove('background-type-stars', 'background-type-nebula', 'background-type-moon', 'background-type-dust', 'background-type-waves');
-                container.classList.add(bg.class);
-                localStorage.setItem(QAMAR.STORAGE_KEYS.BACKGROUND, bgId);
+        function addReaction(msgEl, emoji) {
+            let reactions = msgEl.querySelector('.message-reactions');
+            if (!reactions) {
+                reactions = document.createElement('div');
+                reactions.className = 'message-reactions';
+                msgEl.querySelector('.message-content').appendChild(reactions);
             }
+            const badge = document.createElement('span');
+            badge.className = 'reaction-badge';
+            badge.innerText = emoji;
+            reactions.appendChild(badge);
+            document.querySelectorAll('.message-menu').forEach(m => m.remove());
+        }
+        
+        function startReply(sender, text, msgId) {
+            replyingTo = { sender, text, id: msgId };
+            document.getElementById('reply-name').innerText = sender;
+            document.getElementById('reply-text-preview').innerText = text.substring(0, 60);
+            document.getElementById('reply-preview').classList.add('show');
+            document.getElementById('message-input').focus();
+            document.querySelectorAll('.message-menu').forEach(m => m.remove());
+        }
+        
+        function cancelReply() {
+            replyingTo = null;
+            document.getElementById('reply-preview').classList.remove('show');
+        }
+        
+        function editMessage(msgEl, msgId) {
+            const msgText = msgEl.querySelector('.message-text');
+            const newText = prompt('✏️ تعديل:', msgText.innerText);
+            if (newText && msgId) {
+                db.ref('rooms/' + currentRoom + '/messages/' + msgId).update({ text: newText });
+                msgText.innerText = newText;
+            }
+            document.querySelectorAll('.message-menu').forEach(m => m.remove());
+        }
+        
+        function deleteMessage(msgEl, msgId) {
+            if (confirm('🗑️ حذف الرسالة؟')) {
+                if (msgId) db.ref('rooms/' + currentRoom + '/messages/' + msgId).remove();
+                msgEl.remove();
+            }
+            document.querySelectorAll('.message-menu').forEach(m => m.remove());
+        }
+        
+        // ====== المنشن ======
+        function insertMention(name) {
+            const input = document.getElementById('message-input');
+            input.value += `@${name} `;
+            input.focus();
+            document.querySelectorAll('.message-menu').forEach(m => m.remove());
+        }
+        
+        // ====== الإشعارات ======
+        function toggleNotifications() {
+            document.getElementById('notif-badge').style.display = 'none';
+            alert('🔔 لا توجد إشعارات جديدة');
+        }
+        
+        function setupNotificationsListener() {
+            const user = getCurrentUser();
+            if (!user) return;
+            
+            db.ref('notifications').orderByChild('to').equalTo(user.name).on('child_added', (snap) => {
+                const notif = snap.val();
+                if (notif && (Date.now() - notif.time) < 60000) {
+                    playBirdSound();
+                    showToast('fa-bell', `🔔 ${notif.from} أشار إليك`);
+                }
+            });
+        }
+        
+        // ====== الرسائل الخاصة ======
+        function toggleDMs() {
+            const panel = document.getElementById('dms-panel');
+            panel.classList.toggle('open');
+            if (panel.classList.contains('open')) {
+                startDMsListener();
+            }
+        }
+        
+        function closeDMs() {
+            document.getElementById('dms-panel').classList.remove('open');
+        }
+        
+        function openDMWith(userName) {
+            currentDMUser = userName;
+            document.getElementById('dms-panel').classList.add('open');
+            startDMsListener();
+        }
+        
+        function startDMsListener() {
+            const user = getCurrentUser();
+            if (!user || !currentDMUser) return;
+            
+            if (dmsListener) dmsListener.off();
+            
+            const chatId = [user.name, currentDMUser].sort().join('_');
+            const ref = db.ref('dms/' + chatId + '/messages').limitToLast(100);
+            dmsListener = ref;
+            
+            const container = document.getElementById('dms-messages');
+            container.innerHTML = '';
+            
+            ref.on('child_added', (snap) => {
+                const msg = snap.val();
+                const msgEl = document.createElement('div');
+                msgEl.style.cssText = `padding:8px 12px; border-radius:12px; max-width:80%; ${msg.sender === user.name ? 'align-self:flex-end; background:rgba(212,175,55,0.2);' : 'align-self:flex-start; background:rgba(255,255,255,0.05);'}`;
+                msgEl.innerHTML = `<strong style="color:var(--gold);font-size:12px;">${msg.sender}</strong><div style="font-size:13px;">${msg.text}</div>`;
+                container.appendChild(msgEl);
+                container.scrollTop = container.scrollHeight;
+            });
+        }
+        
+        function sendDM() {
+            const input = document.getElementById('dms-input');
+            const text = input.value.trim();
+            const user = getCurrentUser();
+            
+            if (!text || !user || !currentDMUser) return;
+            
+            const chatId = [user.name, currentDMUser].sort().join('_');
+            db.ref('dms/' + chatId + '/messages').push({
+                sender: user.name,
+                text: text,
+                time: firebase.database.ServerValue.TIMESTAMP
+            });
+            
+            // إشعار للمستقبل
+            db.ref('notifications').push({
+                to: currentDMUser,
+                from: user.name,
+                type: 'dm',
+                text: text,
+                time: firebase.database.ServerValue.TIMESTAMP
+            });
+            
+            input.value = '';
+        }
+        
+        function handleDMsKeyPress(e) { if (e.key === 'Enter') sendDM(); }
+        
+        // ====== فتح بروفايل المستخدم ======
+        function openUserProfile(userName) {
+            alert('👤 بروفايل: ' + userName);
+            // لاحقاً: فتح بروفايل المستخدم
         }
         
         // ====== القوائم ======
@@ -717,11 +1020,45 @@
             document.getElementById('upgrade-modal').classList.remove('active');
         }
         
+        // ====== خلفية ======
+        function changeBackground(bgId) {
+            const container = document.getElementById('chat-container');
+            const bg = QAMAR.BACKGROUNDS.find(b => b.id === bgId);
+            if (bg) {
+                container.classList.remove('background-type-stars', 'background-type-nebula', 'background-type-moon', 'background-type-dust', 'background-type-waves');
+                container.classList.add(bg.class);
+                localStorage.setItem(QAMAR.STORAGE_KEYS.BACKGROUND, bgId);
+            }
+        }
+        
+        function addSystemMessage(text) {
+            const container = document.getElementById('messages');
+            const msg = document.createElement('div');
+            msg.className = 'message system';
+            msg.innerText = text;
+            container.appendChild(msg);
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        // ====== كيبورد ======
+        const input = document.getElementById('message-input');
+        if (input) {
+            input.addEventListener('focus', () => {
+                document.getElementById('dms-panel').classList.add('keyboard-open');
+            });
+            input.addEventListener('blur', () => {
+                setTimeout(() => {
+                    document.getElementById('dms-panel').classList.remove('keyboard-open');
+                }, 200);
+            });
+        }
+        
         // ====== التحميل ======
         window.addEventListener('DOMContentLoaded', () => {
             const user = getCurrentUser();
             if (user) {
                 enterChat();
+                setupNotificationsListener();
             }
         });
     </script>
