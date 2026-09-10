@@ -34,6 +34,7 @@
                 if (u2.uid) return u2.uid;
                 // للزوار: نستخدم اسم مؤقت
                 if (u.name) return 'guest_' + u.name.replace(/\s+/g, '_');
+                if (u2.name) return 'guest_' + u2.name.replace(/\s+/g, '_');
             } catch(e) {}
             return null;
         }
@@ -151,14 +152,12 @@
             }
         };
         
-        // ====== 7. الاستماع للتغييرات من Firebase (للمزامنة العكسية) ======
+        // ====== 7. الاستماع للتغييرات من Firebase ======
         userRef.on('value', function(snap) {
             const data = snap.val();
             if (!data) return;
-            // فقط إذا كان المستخدم في وضع المالك
             const mode = localStorage.getItem('profile_view_mode') || 'owner';
             if (mode === 'owner') {
-                // لا نحدّث الحقول النشطة (لتجنب الحلقة)
                 console.log('🔄 Firebase data updated');
             }
         });
@@ -232,6 +231,13 @@
                 localStorage.setItem('privacy_' + field, data.privacy[field]);
             });
         }
+        
+        // ====== تحديث الواجهة بعد التحميل ======
+        setTimeout(function() {
+            if (typeof loadAllSaved === 'function') {
+                loadAllSaved();
+            }
+        }, 150);
     }
     
     // ====== مراقبة عنصر نصي ======
