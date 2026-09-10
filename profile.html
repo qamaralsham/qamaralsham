@@ -394,10 +394,15 @@ body.owner-mode .visitor-only{display:none !important}
     </div>
 </div>
 
-<script src="config.js"></script>
-<script src="ranks.js"></script>
-<script src="utils.js"></script>
-<script src="auth.js"></script>    <script id="profile-scripts">
+<script>
+function getCurrentUser() {
+    return JSON.parse(localStorage.getItem('qamar_profile_user') || 'null');
+}
+function getRankBadge(rank) {
+    var badges = { 'King': '👑', 'Queen': '👸', 'Super Owner': '🌟', 'Grand Owner': '💎', 'Owner': '🏆', 'Admin': '🛠️', 'User': '👤', 'Guest': '🕶️' };
+    return badges[rank] || '👤';
+}
+<script id="profile-scripts">
         let currentUser = null;
         let targetUser = null;
         let viewMode = 'owner';
