@@ -399,7 +399,7 @@ if(viewMode==='visitor'&&currentUser&&targetUser&&currentUser.uid===targetUser.u
 initVisitorButtons();initAppearanceButtons();initCommandsButtons();initStatusButtons();initInfoButtons();initFriendsButtons();
 }
 
-function saveToChat(){if(!currentUser)return;const u={uid:currentUser.uid,name:localStorage.getItem('profile_name')||currentUser.name,rank:currentUser.rank,avatar:localStorage.getItem('saved_avatar')||currentUser.avatar||'',nameGradient:nameGradient,nameGlow:nameGlow,avatarFrame:localStorage.getItem('saved_avatar_frame_motion')||null,nameEmoji:nameEmoji};localStorage.setItem('qamar_current_user',JSON.stringify(u));if(currentUser.uid&&typeof db!=='undefined'&&db){db.ref('users/'+currentUser.uid).update({name:u.name,avatar:u.avatar,nameGradient:u.nameGradient,nameGlow:u.nameGlow,avatarFrame:u.avatarFrame,nameEmoji:u.nameEmoji}).catch(()=>{});}}
+function saveToChat(){if(!currentUser)return;const u={uid:currentUser.uid,name:localStorage.getItem('profile_name')||currentUser.name,rank:currentUser.rank,avatar:localStorage.getItem('saved_avatar')||currentUser.avatar||'',nameGradient:nameGradient,nameGlow:nameGlow,avatarFrame:localStorage.getItem('saved_avatar_frame_motion')||null,nameEmoji:nameEmoji,color:currentUser.color||'#ffffff'};localStorage.setItem('qamar_current_user',JSON.stringify(u));localStorage.setItem('qamar_user',JSON.stringify(u));if(currentUser.uid&&typeof db!=='undefined'&&db){db.ref('users/'+currentUser.uid).update({name:u.name,avatar:u.avatar,nameGradient:u.nameGradient,nameGlow:u.nameGlow,avatarFrame:u.avatarFrame,nameEmoji:u.nameEmoji}).catch(()=>{});}}
 
 function initCoverButtons(){const ci=document.getElementById('cover-file-input');const cc=document.getElementById('btn-change-cover');const rc=document.getElementById('btn-remove-cover');const cimg=document.getElementById('profile-cover-img');if(cc&&ci&&viewMode==='owner')cc.onclick=()=>ci.click();if(ci&&viewMode==='owner')ci.onchange=(e)=>{const f=e.target.files[0];if(f){const r=new FileReader();r.onload=(ev)=>{if(cimg){cimg.src=ev.target.result;cimg.style.display='block';}localStorage.setItem('saved_cover',ev.target.result);saveToChat();showToast('✅ تم تغيير الغلاف');};r.readAsDataURL(f);}};if(rc&&cimg&&viewMode==='owner')rc.onclick=()=>{cimg.src='';cimg.style.display='none';localStorage.removeItem('saved_cover');showToast('✅ تم حذف الغلاف');};}
 
@@ -469,6 +469,6 @@ function openPrivateChat(uid,name){window.parent.postMessage({action:'openPrivat
 window.addEventListener('load',async()=>{saveToChat();console.log('✅ Profile ready');});
 console.log('📦 Profile Scripts loaded successfully');
 </script>
- <script src="firebase-sync.js"></script> 
+<script src="firebase-sync.js"></script>
 </body>
 </html>
