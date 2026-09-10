@@ -1,1110 +1,1388 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>شات قمر الشام 👑</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-    <link rel="stylesheet" href="styles.css">
-    
-    <style>
-        .container { width: 100%; max-width: 500px; height: 100dvh; display: flex; flex-direction: column; position: relative; margin: 0 auto; background: var(--bg-dark); z-index: 1; }
-        
-        .header { height: 60px; background: rgba(10, 10, 15, 0.95); border-bottom: 1px solid var(--border-gold); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; position: sticky; top: 0; z-index: 100; }
-        .room-title { font-size: 13px; font-weight: 700; color: var(--gold-light); }
-        .header-actions { display: flex; gap: 8px; }
-        .header-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border-gold); background: rgba(20,20,25,0.8); color: #fff; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 15px; position: relative; }
-        .header-btn:active { transform: scale(0.95); }
-        .notif-badge { position: absolute; top: -5px; right: -5px; background: #ff4444; color: #fff; border-radius: 50%; min-width: 18px; height: 18px; font-size: 10px; display: flex; justify-content: center; align-items: center; padding: 0 4px; font-weight: 900; }
-        
-        .mics-bar-wrapper { position: relative; }
-        .mics-bar { padding: 8px 12px; background: rgba(5,5,8,0.8); border-bottom: 1px solid var(--border-light); display: flex; align-items: center; gap: 10px; }
-        .mics-bar.hidden { display: none; }
-        .mics { display: flex; gap: 8px; flex: 1; justify-content: center; }
-        .mic-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border-light); background: rgba(255,255,255,0.05); color: #fff; cursor: pointer; font-size: 16px; display: flex; justify-content: center; align-items: center; transition: all 0.3s; }
-        .mic-btn.active { background: var(--gold); color: #000; box-shadow: 0 0 15px rgba(212,175,55,0.5); }
-        .mics-toggle-btn { position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%); width: 32px; height: 20px; border-radius: 0 0 10px 10px; border: 1px solid var(--border-gold); border-top: none; background: rgba(5,5,8,0.9); color: var(--gold); cursor: pointer; font-size: 10px; display: flex; justify-content: center; align-items: center; z-index: 150; }
-        .mics-toggle-btn.hidden { bottom: 0; border-radius: 10px 10px 0 0; border-bottom: none; }
-        
-        .messages { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; scrollbar-width: none; }
-        .messages::-webkit-scrollbar { display: none; }
-        .message { display: flex; align-items: flex-start; gap: 10px; max-width: 100%; animation: fadeInSlide 0.2s ease-out; position: relative; }
-        .message.highlighted .message-avatar,
-        .message.highlighted .message-username {
-            background: rgba(212,175,55,0.3);
-            border-radius: 8px;
-            padding: 2px 6px;
-            box-shadow: 0 0 15px rgba(212,175,55,0.8);
-            animation: highlightPulse 1.5s infinite;
-        }
-        @keyframes highlightPulse {
-            0%, 100% { box-shadow: 0 0 10px rgba(212,175,55,0.5); }
-            50% { box-shadow: 0 0 25px rgba(212,175,55,1); }
-        }
-        
-        .message-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold); flex-shrink: 0; cursor: pointer; }
-        .message-content { flex: 1; display: flex; flex-direction: column; gap: 2px; position: relative; }
-        .message-username { font-size: 13px; font-weight: 900; display: flex; align-items: center; gap: 6px; cursor: pointer; }
-        .message-text { font-size: var(--chat-font-size); line-height: 1.4; word-wrap: break-word; }
-        .message-time { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
-        .message.system { background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.3); border-radius: 8px; padding: 8px 12px; font-size: 12px; color: var(--gold); text-align: center; }
-        .message.bot { border-right: 3px solid var(--gold); padding-right: 8px; }
-        
-        .message-header { display: flex; align-items: center; gap: 6px; position: relative; }
-        .message-options-btn { width: 20px; height: 20px; border-radius: 50%; border: none; background: transparent; color: var(--text-dim); cursor: pointer; font-size: 14px; display: flex; justify-content: center; align-items: center; opacity: 0.5; transition: all 0.2s; }
-        .message-options-btn:hover { opacity: 1; color: var(--gold); background: rgba(212,175,55,0.1); }
-        
-        .mention-inline { display: inline-flex; align-items: center; gap: 4px; background: rgba(212,175,55,0.15); border: 1px solid var(--border-gold); border-radius: 12px; padding: 1px 6px 1px 2px; margin: 0 2px; cursor: pointer; vertical-align: middle; }
-        .mention-inline img { width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--gold); }
-        .mention-inline span { font-weight: 900; font-size: 12px; }
-        
-        .reply-quote { background: rgba(212,175,55,0.08); border-right: 3px solid var(--gold); padding: 5px 8px; border-radius: 6px; margin-top: 4px; font-size: 10px; cursor: pointer; opacity: 0.85; }
-        .reply-quote .reply-name { color: var(--gold); font-weight: 900; font-size: 11px; }
-        .reply-quote .reply-text { color: var(--text-dim); font-size: 9px; margin-top: 2px; }
-        
-        .message-reactions { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
-        .reaction-badge { background: rgba(212,175,55,0.15); border: 1px solid var(--border-gold); border-radius: 12px; padding: 2px 8px; font-size: 12px; cursor: pointer; }
-        
-        .message-menu { position: absolute; top: 100%; right: 0; background: rgba(15,15,20,0.98); border: 1px solid var(--border-gold); border-radius: 10px; padding: 4px; z-index: 500; display: none; flex-direction: column; gap: 2px; min-width: 150px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); margin-top: 4px; }
-        .message-menu.open { display: flex; }
-        .message-menu-item { padding: 8px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--text-light); }
-        .message-menu-item:hover { background: rgba(212,175,55,0.1); color: var(--gold); }
-        .message-menu-item.danger { color: #ff6b6b; }
-        
-        .emoji-bar { display: none; position: absolute; top: 100%; right: 0; background: rgba(15,15,20,0.98); border: 1px solid var(--border-gold); border-radius: 20px; padding: 6px 10px; z-index: 600; gap: 8px; margin-top: 4px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-        .emoji-bar.open { display: flex; }
-        .emoji-quick { font-size: 20px; cursor: pointer; transition: transform 0.2s; }
-        .emoji-quick:hover { transform: scale(1.3); }
-        .emoji-plus { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border-gold); background: rgba(212,175,55,0.1); color: var(--gold); cursor: pointer; font-size: 14px; display: flex; justify-content: center; align-items: center; }
-        
-        .input-area { padding: 10px 12px; display: flex; align-items: center; gap: 8px; background: rgba(8,8,12,0.95); border-top: 1px solid var(--border-gold); position: relative; z-index: 50; }
-        .input-area input { flex: 1; padding: 12px 16px; border-radius: 25px; border: 1px solid var(--border-input); background: rgba(255,255,255,0.05); color: #fff; outline: none; font-family: 'Cairo', sans-serif; font-size: 14px; text-align: right; }
-        .input-area input:focus { border-color: var(--gold); }
-        .send-btn { width: 40px; height: 40px; border-radius: 50%; border: none; background: var(--gold); color: #000; cursor: pointer; font-size: 16px; display: flex; justify-content: center; align-items: center; }
-        .emoji-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: transparent; color: var(--text-dim); cursor: pointer; font-size: 20px; display: flex; justify-content: center; align-items: center; }
-        .plus-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: transparent; color: var(--text-dim); cursor: pointer; font-size: 22px; display: flex; justify-content: center; align-items: center; }
-        
-        .reply-preview { display: none; padding: 8px 12px; background: rgba(212,175,55,0.1); border-top: 1px solid var(--border-gold); font-size: 12px; position: relative; }
-        .reply-preview.show { display: block; }
-        .reply-preview-close { position: absolute; top: 8px; left: 10px; cursor: pointer; color: #ff6b6b; font-size: 14px; }
-        
-        .floating-toolbar { position: absolute; bottom: 70px; left: 12px; right: 12px; padding: 10px; border-radius: 16px; background: rgba(15,15,20,0.95); border: 1px solid var(--border-gold); display: none; justify-content: space-around; gap: 8px; z-index: 200; }
-        .floating-toolbar.open { display: flex; }
-        .tool-btn { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.04); color: #fff; cursor: pointer; font-size: 18px; display: flex; justify-content: center; align-items: center; }
-        
-        .bottom-nav { height: 65px; background: rgba(10,10,15,0.95); border-top: 1px solid var(--border-gold); display: flex; justify-content: space-around; align-items: center; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--text-dim); cursor: pointer; font-size: 0.65rem; background: none; border: none; padding: 4px; }
-        .nav-item i { font-size: 1.1rem; }
-        .nav-item.active { color: var(--gold); }
-        
-        .sidebar { position: fixed; top: 0; width: 70vw; min-width: 220px; max-width: 320px; height: 100%; background: rgba(15,15,20,0.98); border: 1px solid var(--border-gold); transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1); z-index: 300; display: flex; flex-direction: column; }
-        .right-sidebar { right: 0; transform: translateX(100%); }
-        .left-sidebar { left: 0; transform: translateX(-100%); }
-        .sidebar.open { transform: translateX(0); }
-        .sidebar-header { padding: 15px; border-bottom: 1px solid var(--border-gold); display: flex; justify-content: space-between; align-items: center; }
-        .sidebar-header h3 { color: var(--gold); font-size: 13px; font-weight: 900; }
-        .sidebar-close { width: 30px; height: 30px; border-radius: 8px; border: none; background: rgba(255,255,255,0.05); color: #fff; cursor: pointer; font-size: 14px; }
-        .sidebar-content { padding: 12px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
-        .sidebar-item { padding: 12px; border-radius: 10px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.03); cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; }
-        .sidebar-item.active { background: var(--gold); color: #000; font-weight: 900; }
-        .sidebar-item.locked { opacity: 0.5; cursor: not-allowed; }
-        .sidebar-item:hover:not(.locked) { background: rgba(212,175,55,0.1); border-color: var(--gold); }
-        
-        .notif-item { padding: 12px; border-radius: 10px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.03); cursor: pointer; display: flex; align-items: flex-start; gap: 10px; font-size: 12px; }
-        .notif-item:hover { background: rgba(212,175,55,0.1); }
-        .notif-item.unread { border-color: var(--gold); background: rgba(212,175,55,0.05); }
-        
-        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 250; }
-        .overlay.show { opacity: 1; pointer-events: all; }
-        
-        .login-screen { position: fixed; inset: 0; background: rgba(5,5,8,0.98); display: flex; justify-content: center; align-items: center; z-index: 500; overflow-y: auto; padding: 20px; }
-        .login-card { width: 100%; max-width: 380px; background: rgba(15,15,20,0.98); border: 1px solid var(--border-gold); border-radius: 20px; padding: 25px; display: flex; flex-direction: column; gap: 15px; }
-        .login-logo { text-align: center; }
-        .login-logo i { font-size: 50px; color: var(--gold); }
-        .login-logo h1 { font-size: 24px; font-weight: 900; color: var(--gold); margin-top: 8px; }
-        .login-logo p { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
-        .login-input { padding: 12px; border-radius: 10px; border: 1px solid var(--border-input); background: rgba(255,255,255,0.05); color: #fff; font-family: 'Cairo', sans-serif; outline: none; font-size: 14px; width: 100%; }
-        .login-input:focus { border-color: var(--gold); }
-        .login-btn { padding: 14px; border-radius: 12px; border: none; background: var(--gold); color: #000; font-weight: 900; font-size: 16px; cursor: pointer; width: 100%; }
-        .login-tabs { display: flex; gap: 8px; margin-bottom: 15px; }
-        .login-tab { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.03); color: var(--text-dim); cursor: pointer; font-family: 'Cairo', sans-serif; font-size: 13px; font-weight: 700; text-align: center; }
-        .login-tab.active { background: var(--gold); color: #000; }
-        .gender-group { display: flex; gap: 10px; }
-        .gender-btn { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.03); color: var(--text-dim); cursor: pointer; font-family: 'Cairo', sans-serif; font-size: 14px; font-weight: 700; text-align: center; }
-        .gender-btn.active { background: var(--gold); color: #000; }
-        .link-text { color: var(--gold); cursor: pointer; font-size: 13px; text-align: center; text-decoration: underline; }
-        
-        #profile-frame-container { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.95); display: none; }
-        #profile-frame-container .close-btn { position: absolute; top: 10px; right: 10px; z-index: 10000; background: rgba(255,0,0,0.8); color: #fff; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 20px; cursor: pointer; }
-        #profile-frame-container iframe { width: 100%; height: 100%; border: none; }
-        
-        .upgrade-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .upgrade-modal.active { display: flex; }
-        .upgrade-content { background: #110724; border: 2px solid var(--gold); padding: 25px; border-radius: 16px; width: 90%; max-width: 360px; text-align: center; display: flex; flex-direction: column; gap: 12px; }
-        .upgrade-content h3 { color: var(--gold); font-size: 18px; }
-        .upgrade-content input { width: 100%; padding: 12px; background: rgba(255,255,255,0.08); border: 1px solid var(--gold); border-radius: 8px; color: white; font-size: 14px; outline: none; text-align: center; font-family: 'Cairo', sans-serif; }
-        .upgrade-btn { background: var(--gold); color: #000; border: none; padding: 12px; font-weight: 900; border-radius: 10px; cursor: pointer; font-size: 15px; }
-        .upgrade-btn.cancel { background: rgba(255,255,255,0.15); color: #fff; }
-        
-        @media (max-width: 480px) {
-            .message-avatar { width: 32px; height: 32px; }
-            .message-text { font-size: 14px; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>شات قمر الشام 👑</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<link rel="stylesheet" href="styles.css">
+<style>
+.container{width:100%;max-width:500px;height:100dvh;display:flex;flex-direction:column;position:relative;margin:0 auto;background:var(--bg-dark);z-index:1}
+.header{height:60px;background:rgba(10,10,15,0.95);border-bottom:1px solid var(--border-gold);display:flex;align-items:center;justify-content:space-between;padding:0 15px;position:sticky;top:0;z-index:100}
+.room-title{font-size:13px;font-weight:700;color:var(--gold-light)}
+.header-actions{display:flex;gap:8px}
+.header-btn{width:36px;height:36px;border-radius:10px;border:1px solid var(--border-gold);background:rgba(20,20,25,0.8);color:#fff;cursor:pointer;display:flex;justify-content:center;align-items:center;font-size:15px;position:relative}
+.header-btn:active{transform:scale(0.95)}
+.notif-badge{position:absolute;top:-5px;right:-5px;background:#ff4444;color:#fff;border-radius:50%;min-width:18px;height:18px;font-size:10px;display:flex;justify-content:center;align-items:center;padding:0 4px;font-weight:900}
+.mics-bar-wrapper{position:relative}
+.mics-bar{padding:8px 12px;background:rgba(5,5,8,0.8);border-bottom:1px solid var(--border-light);display:flex;align-items:center;gap:10px}
+.mics-bar.hidden{display:none}
+.mics{display:flex;gap:8px;flex:1;justify-content:center}
+.mic-btn{width:40px;height:40px;border-radius:50%;border:1px solid var(--border-light);background:rgba(255,255,255,0.05);color:#fff;cursor:pointer;font-size:16px;display:flex;justify-content:center;align-items:center;transition:all 0.3s}
+.mic-btn.active{background:var(--gold);color:#000;box-shadow:0 0 15px rgba(212,175,55,0.5)}
+.mics-toggle-btn{position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);width:32px;height:20px;border-radius:0 0 10px 10px;border:1px solid var(--border-gold);border-top:none;background:rgba(5,5,8,0.9);color:var(--gold);cursor:pointer;font-size:10px;display:flex;justify-content:center;align-items:center;z-index:150}
+.mics-toggle-btn.hidden{bottom:0;border-radius:10px 10px 0 0;border-bottom:none}
+.messages{flex:1;padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:16px;scrollbar-width:none}
+.messages::-webkit-scrollbar{display:none}
+.message{display:flex;align-items:flex-start;gap:10px;max-width:100%;animation:fadeInSlide 0.2s ease-out;position:relative}
+.message.highlighted .message-avatar,.message.highlighted .message-username{background:rgba(212,175,55,0.3);border-radius:8px;padding:2px 6px;box-shadow:0 0 15px rgba(212,175,55,0.8);animation:highlightPulse 1.5s infinite}
+@keyframes highlightPulse{0%,100%{box-shadow:0 0 10px rgba(212,175,55,0.5)}50%{box-shadow:0 0 25px rgba(212,175,55,1)}}
+.message-avatar{width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);flex-shrink:0;cursor:pointer;position:relative}
+.message-avatar-frame{position:absolute;inset:-6px;border-radius:50%;pointer-events:none;z-index:5}
+.message-content{flex:1;display:flex;flex-direction:column;gap:2px;position:relative}
+.message-username{font-size:13px;font-weight:900;display:flex;align-items:center;gap:6px;cursor:pointer}
+.message-text{font-size:var(--chat-font-size);line-height:1.4;word-wrap:break-word}
+.message-time{font-size:10px;color:var(--text-dim);margin-top:2px}
+.message.system{background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.3);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--gold);text-align:center}
+.message.bot{border-right:3px solid var(--gold);padding-right:8px}
+.message-header{display:flex;align-items:center;gap:6px;position:relative}
+.message-options-btn{width:20px;height:20px;border-radius:50%;border:none;background:transparent;color:var(--text-dim);cursor:pointer;font-size:14px;display:flex;justify-content:center;align-items:center;opacity:0.5;transition:all 0.2s}
+.message-options-btn:hover{opacity:1;color:var(--gold);background:rgba(212,175,55,0.1)}
+.mention-inline{display:inline-flex;align-items:center;gap:4px;background:rgba(212,175,55,0.15);border:1px solid var(--border-gold);border-radius:12px;padding:1px 6px 1px 2px;margin:0 2px;cursor:pointer;vertical-align:middle}
+.mention-inline img{width:18px;height:18px;border-radius:50%;border:1px solid var(--gold)}
+.mention-inline span{font-weight:900;font-size:12px}
+.reply-quote{background:rgba(212,175,55,0.08);border-right:3px solid var(--gold);padding:5px 8px;border-radius:6px;margin-top:4px;font-size:10px;cursor:pointer;opacity:0.85}
+.reply-quote .reply-name{color:var(--gold);font-weight:900;font-size:11px}
+.reply-quote .reply-text{color:var(--text-dim);font-size:9px;margin-top:2px}
+.message-reactions{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
+.reaction-badge{background:rgba(212,175,55,0.15);border:1px solid var(--border-gold);border-radius:12px;padding:2px 8px;font-size:12px;cursor:pointer}
+.message-menu{position:absolute;top:100%;right:0;background:rgba(15,15,20,0.98);border:1px solid var(--border-gold);border-radius:10px;padding:4px;z-index:500;display:none;flex-direction:column;gap:2px;min-width:150px;box-shadow:0 5px 15px rgba(0,0,0,0.5);margin-top:4px}
+.message-menu.open{display:flex}
+.message-menu-item{padding:8px 12px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--text-light)}
+.message-menu-item:hover{background:rgba(212,175,55,0.1);color:var(--gold)}
+.message-menu-item.danger{color:#ff6b6b}
+.emoji-bar{display:none;position:absolute;top:100%;right:0;background:rgba(15,15,20,0.98);border:1px solid var(--border-gold);border-radius:20px;padding:6px 10px;z-index:600;gap:8px;margin-top:4px;box-shadow:0 5px 15px rgba(0,0,0,0.5)}
+.emoji-bar.open{display:flex}
+.emoji-quick{font-size:20px;cursor:pointer;transition:transform 0.2s}
+.emoji-quick:hover{transform:scale(1.3)}
+.emoji-plus{width:28px;height:28px;border-radius:50%;border:1px solid var(--border-gold);background:rgba(212,175,55,0.1);color:var(--gold);cursor:pointer;font-size:14px;display:flex;justify-content:center;align-items:center}
+.input-area{padding:10px 12px;display:flex;align-items:center;gap:8px;background:rgba(8,8,12,0.95);border-top:1px solid var(--border-gold);position:relative;z-index:50}
+.input-area input{flex:1;padding:12px 16px;border-radius:25px;border:1px solid var(--border-input);background:rgba(255,255,255,0.05);color:#fff;outline:none;font-family:'Cairo',sans-serif;font-size:14px;text-align:right}
+.input-area input:focus{border-color:var(--gold)}
+.send-btn{width:40px;height:40px;border-radius:50%;border:none;background:var(--gold);color:#000;cursor:pointer;font-size:16px;display:flex;justify-content:center;align-items:center}
+.emoji-btn{width:36px;height:36px;border-radius:50%;border:none;background:transparent;color:var(--text-dim);cursor:pointer;font-size:20px;display:flex;justify-content:center;align-items:center}
+.plus-btn{width:36px;height:36px;border-radius:50%;border:none;background:transparent;color:var(--text-dim);cursor:pointer;font-size:22px;display:flex;justify-content:center;align-items:center}
+.reply-preview{display:none;padding:8px 12px;background:rgba(212,175,55,0.1);border-top:1px solid var(--border-gold);font-size:12px;position:relative}
+.reply-preview.show{display:block}
+.reply-preview-close{position:absolute;top:8px;left:10px;cursor:pointer;color:#ff6b6b;font-size:14px}
+.floating-toolbar{position:absolute;bottom:70px;left:12px;right:12px;padding:10px;border-radius:16px;background:rgba(15,15,20,0.95);border:1px solid var(--border-gold);display:none;justify-content:space-around;gap:8px;z-index:200}
+.floating-toolbar.open{display:flex}
+.tool-btn{width:40px;height:40px;border-radius:12px;border:1px solid var(--border-light);background:rgba(255,255,255,0.04);color:#fff;cursor:pointer;font-size:18px;display:flex;justify-content:center;align-items:center}
+.bottom-nav{height:65px;background:rgba(10,10,15,0.95);border-top:1px solid var(--border-gold);display:flex;justify-content:space-around;align-items:center;position:relative}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--text-dim);cursor:pointer;font-size:0.65rem;background:none;border:none;padding:4px;position:relative}
+.nav-item i{font-size:1.1rem}
+.nav-item.active{color:var(--gold)}
+.nav-badge{position:absolute;top:-2px;right:2px;background:#ff4444;color:#fff;border-radius:50%;min-width:14px;height:14px;font-size:9px;display:flex;justify-content:center;align-items:center;padding:0 3px;font-weight:900}
+.sidebar{position:fixed;top:0;width:70vw;min-width:220px;max-width:320px;height:100%;background:rgba(15,15,20,0.98);border:1px solid var(--border-gold);transition:transform 0.3s cubic-bezier(0.165,0.84,0.44,1);z-index:300;display:flex;flex-direction:column}
+.right-sidebar{right:0;transform:translateX(100%)}
+.left-sidebar{left:0;transform:translateX(-100%)}
+.sidebar.open{transform:translateX(0)}
+.sidebar-header{padding:15px;border-bottom:1px solid var(--border-gold);display:flex;justify-content:space-between;align-items:center}
+.sidebar-header h3{color:var(--gold);font-size:13px;font-weight:900}
+.sidebar-close{width:30px;height:30px;border-radius:8px;border:none;background:rgba(255,255,255,0.05);color:#fff;cursor:pointer;font-size:14px}
+.sidebar-content{padding:12px;display:flex;flex-direction:column;gap:8px;overflow-y:auto}
+.sidebar-item{padding:12px;border-radius:10px;border:1px solid var(--border-light);background:rgba(255,255,255,0.03);cursor:pointer;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600}
+.sidebar-item.active{background:var(--gold);color:#000;font-weight:900}
+.sidebar-item.locked{opacity:0.5;cursor:not-allowed}
+.sidebar-item:hover:not(.locked){background:rgba(212,175,55,0.1);border-color:var(--gold)}
+.notif-item{padding:12px;border-radius:10px;border:1px solid var(--border-light);background:rgba(255,255,255,0.03);cursor:pointer;display:flex;align-items:flex-start;gap:10px;font-size:12px}
+.notif-item:hover{background:rgba(212,175,55,0.1)}
+.notif-item.unread{border-color:var(--gold);background:rgba(212,175,55,0.05)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity 0.3s;z-index:250}
+.overlay.show{opacity:1;pointer-events:all}
+.login-screen{position:fixed;inset:0;background:rgba(5,5,8,0.98);display:flex;justify-content:center;align-items:center;z-index:500;overflow-y:auto;padding:20px}
+.login-card{width:100%;max-width:380px;background:rgba(15,15,20,0.98);border:1px solid var(--border-gold);border-radius:20px;padding:25px;display:flex;flex-direction:column;gap:15px}
+.login-logo{text-align:center}
+.login-logo i{font-size:50px;color:var(--gold)}
+.login-logo h1{font-size:24px;font-weight:900;color:var(--gold);margin-top:8px}
+.login-logo p{font-size:12px;color:var(--text-dim);margin-top:4px}
+.login-input{padding:12px;border-radius:10px;border:1px solid var(--border-input);background:rgba(255,255,255,0.05);color:#fff;font-family:'Cairo',sans-serif;outline:none;font-size:14px;width:100%}
+.login-input:focus{border-color:var(--gold)}
+.login-btn{padding:14px;border-radius:12px;border:none;background:var(--gold);color:#000;font-weight:900;font-size:16px;cursor:pointer;width:100%}
+.login-tabs{display:flex;gap:8px;margin-bottom:15px}
+.login-tab{flex:1;padding:10px;border-radius:10px;border:1px solid var(--border-light);background:rgba(255,255,255,0.03);color:var(--text-dim);cursor:pointer;font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;text-align:center}
+.login-tab.active{background:var(--gold);color:#000}
+.gender-group{display:flex;gap:10px}
+.gender-btn{flex:1;padding:12px;border-radius:10px;border:1px solid var(--border-light);background:rgba(255,255,255,0.03);color:var(--text-dim);cursor:pointer;font-family:'Cairo',sans-serif;font-size:14px;font-weight:700;text-align:center}
+.gender-btn.active{background:var(--gold);color:#000}
+.link-text{color:var(--gold);cursor:pointer;font-size:13px;text-align:center;text-decoration:underline}
+#profile-frame-container{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.95);display:none}
+#profile-frame-container .close-btn{position:absolute;top:10px;right:10px;z-index:10000;background:rgba(255,0,0,0.8);color:#fff;border:none;border-radius:50%;width:40px;height:40px;font-size:20px;cursor:pointer}
+#profile-frame-container iframe{width:100%;height:100%;border:none}
+.upgrade-modal{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:none;justify-content:center;align-items:center;z-index:1000}
+.upgrade-modal.active{display:flex}
+.upgrade-content{background:#110724;border:2px solid var(--gold);padding:25px;border-radius:16px;width:90%;max-width:360px;text-align:center;display:flex;flex-direction:column;gap:12px}
+.upgrade-content h3{color:var(--gold);font-size:18px}
+.upgrade-content input{width:100%;padding:12px;background:rgba(255,255,255,0.08);border:1px solid var(--gold);border-radius:8px;color:white;font-size:14px;outline:none;text-align:center;font-family:'Cairo',sans-serif}
+.upgrade-btn{background:var(--gold);color:#000;border:none;padding:12px;font-weight:900;border-radius:10px;cursor:pointer;font-size:15px}
+.upgrade-btn.cancel{background:rgba(255,255,255,0.15);color:#fff}
+@media (max-width: 480px){
+.message-avatar{width:32px;height:32px}
+.message-text{font-size:14px}
+}
+</style>
 </head>
 <body>
-    <div class="starfield" id="starfield"></div>
-    <div class="background-glow"></div>
-    
-    <!-- شاشة الدخول -->
-    <div class="login-screen" id="login-screen">
-        <div class="login-card">
-            <div class="login-logo">
-                <i class="fas fa-moon"></i>
-                <h1>قمر الشام 👑</h1>
-                <p>منصة الدردشة الملكية الفاخرة</p>
-            </div>
-            <div class="login-tabs">
-                <button class="login-tab active" id="tab-guest" onclick="switchLoginTab('guest')"><i class="fas fa-user-secret"></i> زائر</button>
-                <button class="login-tab" id="tab-member" onclick="switchLoginTab('member')"><i class="fas fa-user"></i> عضو</button>
-            </div>
-            
-            <div id="guest-form">
-                <input type="text" class="login-input" id="guest-name" placeholder="اسمك..." autocomplete="off" style="margin-bottom:10px;">
-                <input type="number" class="login-input" id="guest-age" placeholder="عمرك..." min="1" max="120" style="margin-bottom:10px;">
-                <div class="gender-group" style="margin-bottom:10px;">
-                    <button class="gender-btn active" id="gender-male" onclick="selectGender('male')">👦 ذكر</button>
-                    <button class="gender-btn" id="gender-female" onclick="selectGender('female')">👧 أنثى</button>
-                </div>
-                <button class="login-btn" onclick="handleGuestLogin()"><i class="fas fa-user-secret"></i> دخول كزائر</button>
-            </div>
-            
-            <div id="member-form" style="display:none;">
-                <input type="email" class="login-input" id="member-email" placeholder="الإيميل..." autocomplete="off" style="margin-bottom:10px;">
-                <input type="password" class="login-input" id="member-password" placeholder="كلمة السر..." style="margin-bottom:10px;">
-                <button class="login-btn" onclick="handleMemberLogin()" style="margin-bottom:10px;"><i class="fas fa-sign-in-alt"></i> تسجيل دخول</button>
-                <div class="link-text" onclick="switchToRegister()">ليس لديك حساب؟ سجّل الآن</div>
-            </div>
-            
-            <div id="register-form" style="display:none;">
-                <input type="text" class="login-input" id="register-name" placeholder="اسمك..." autocomplete="off" style="margin-bottom:10px;">
-                <input type="number" class="login-input" id="register-age" placeholder="عمرك..." min="1" max="120" style="margin-bottom:10px;">
-                <div class="gender-group" style="margin-bottom:10px;">
-                    <button class="gender-btn active" id="reg-gender-male" onclick="selectRegGender('male')">👦 ذكر</button>
-                    <button class="gender-btn" id="reg-gender-female" onclick="selectRegGender('female')">👧 أنثى</button>
-                </div>
-                <input type="email" class="login-input" id="register-email" placeholder="الإيميل..." autocomplete="off" style="margin-bottom:10px;">
-                <input type="password" class="login-input" id="register-password" placeholder="كلمة السر..." style="margin-bottom:10px;">
-                <input type="password" class="login-input" id="register-password-confirm" placeholder="تأكيد كلمة السر..." style="margin-bottom:10px;">
-                <button class="login-btn" onclick="handleRegister()"><i class="fas fa-user-plus"></i> إنشاء الحساب</button>
-                <div class="link-text" onclick="switchToLogin()" style="margin-top:10px;">لديك حساب؟ سجّل دخول</div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- الشات -->
-    <div class="container" id="chat-container" style="display:none;">
-        <div class="header">
-            <button class="header-btn" onclick="toggleRooms()"><i class="fas fa-door-open"></i></button>
-            <div class="room-title" id="room-title">🌍 الروم العام</div>
-            <div class="header-actions">
-                <button class="header-btn" onclick="toggleNotifications()" id="notif-btn">
-                    <i class="fas fa-bell"></i>
-                    <span class="notif-badge" id="notif-badge" style="display:none;">0</span>
-                </button>
-                <button class="header-btn" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i></button>
-                <button class="header-btn" onclick="toggleSettings()"><i class="fas fa-bars"></i></button>
-            </div>
-        </div>
-        
-        <div class="mics-bar-wrapper">
-            <div class="mics-bar" id="mics-bar">
-                <div class="mics">
-                    <button class="mic-btn" onclick="toggleMic(1)"><i class="fas fa-microphone"></i></button>
-                    <button class="mic-btn" onclick="toggleMic(2)"><i class="fas fa-microphone"></i></button>
-                    <button class="mic-btn" onclick="toggleMic(3)"><i class="fas fa-microphone"></i></button>
-                    <button class="mic-btn" onclick="toggleMic(4)"><i class="fas fa-microphone"></i></button>
-                </div>
-            </div>
-            <button class="mics-toggle-btn" id="mics-toggle-btn" onclick="toggleMicsBar()"><i class="fas fa-chevron-up"></i></button>
-        </div>
-        
-        <div class="messages" id="messages"></div>
-        
-        <div class="reply-preview" id="reply-preview">
-            <span class="reply-preview-close" onclick="cancelReply()">✕</span>
-            <div style="font-size:11px;color:var(--gold);">💬 الرد على: <strong id="reply-name"></strong></div>
-            <div id="reply-text-preview" style="font-size:10px;color:var(--text-dim);"></div>
-        </div>
-        
-        <div class="floating-toolbar" id="floating-toolbar">
-            <button class="tool-btn" onclick="alert('📁 رفع ملفات')"><i class="fas fa-folder"></i></button>
-            <button class="tool-btn" onclick="alert('🎵 تشغيل صوتيات')"><i class="fas fa-music"></i></button>
-            <button class="tool-btn" onclick="rollDice()"><i class="fas fa-dice"></i></button>
-            <button class="tool-btn" onclick="searchYouTube()"><i class="fas fa-play"></i></button>
-        </div>
-        
-        <div class="input-area">
-            <button class="send-btn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
-            <button class="emoji-btn" onclick="insertEmoji()"><i class="fas fa-smile"></i></button>
-            <input type="text" id="message-input" placeholder="اكتب رسالتك هنا..." onkeypress="handleKeyPress(event)" autocomplete="off">
-            <button class="plus-btn" id="plus-btn" onclick="toggleToolbar()"><i class="fas fa-plus"></i></button>
-        </div>
-        
-        <div class="bottom-nav">
-            <button class="nav-item" onclick="openProfile()"><i class="fas fa-id-card"></i><span>بروفايلي</span></button>
-            <button class="nav-item" onclick="toggleRooms()"><i class="fas fa-door-open"></i><span>الغرف</span></button>
-            <button class="nav-item" onclick="showOnlineUsers()"><i class="fas fa-users"></i><span>المتواجدين</span></button>
-            <button class="nav-item" id="upgrade-nav-btn" onclick="openUpgradeModal()"><i class="fas fa-key"></i><span>عضوية</span></button>
-            <button class="nav-item" onclick="showStore()"><i class="fas fa-store"></i><span>المتجر</span></button>
-            <button class="nav-item" onclick="toggleSettings()"><i class="fas fa-cog"></i><span>الخيارات</span></button>
-        </div>
-    </div>
-    
-    <!-- قائمة الغرف -->
-    <div class="sidebar right-sidebar" id="rooms-sidebar">
-        <div class="sidebar-header">
-            <h3><i class="fas fa-door-open"></i> الغرف</h3>
-            <button class="sidebar-close" onclick="closeAllPanels()"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="sidebar-content" id="rooms-list"></div>
-    </div>
-    
-    <!-- قائمة الإشعارات -->
-    <div class="sidebar right-sidebar" id="notif-sidebar">
-        <div class="sidebar-header">
-            <h3><i class="fas fa-bell"></i> الإشعارات</h3>
-            <button class="sidebar-close" onclick="closeAllPanels()"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="sidebar-content" id="notif-list">
-            <div style="text-align:center; color:var(--text-dim); font-size:12px; padding:20px;">لا توجد إشعارات</div>
-        </div>
-    </div>
-    
-    <!-- قائمة الإعدادات -->
-    <div class="sidebar left-sidebar" id="settings-sidebar">
-        <div class="sidebar-header">
-            <h3><i class="fas fa-cog"></i> الإعدادات</h3>
-            <button class="sidebar-close" onclick="closeAllPanels()"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="sidebar-content">
-            <h4 style="color: var(--gold); font-size: 12px; margin-bottom: 8px;">🎨 خلفيات المنصة</h4>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="bg-options"></div>
-        </div>
-    </div>
-    
-    <div class="overlay" id="overlay" onclick="closeAllPanels()"></div>
-    
-    <div id="profile-frame-container">
-        <div style="position:relative; width:100%; height:100%;">
-            <button class="close-btn" onclick="closeProfileFrame()">✕</button>
-            <iframe id="profile-iframe" src="profile.html"></iframe>
-        </div>
-    </div>
-    
-    <div class="upgrade-modal" id="upgrade-modal">
-        <div class="upgrade-content">
-            <h3>🔑 ترقية لعضوية</h3>
-            <p style="color:#ccc;font-size:13px;">احصل على حساب دائم — احفظ بياناتك للأبد</p>
-            <input type="email" id="upgrade-email" placeholder="الإيميل...">
-            <input type="password" id="upgrade-password" placeholder="كلمة السر...">
-            <input type="password" id="upgrade-password-confirm" placeholder="تأكيد كلمة السر...">
-            <div style="display:flex; gap:10px;">
-                <button class="upgrade-btn" onclick="handleUpgrade()" style="flex:1;">إنشاء الحساب</button>
-                <button class="upgrade-btn cancel" onclick="closeUpgradeModal()" style="flex:1;">إلغاء</button>
-            </div>
-        </div>
-    </div>
+<div class="starfield" id="starfield"></div>
+<div class="background-glow"></div>
+<div class="login-screen" id="login-screen">
+<div class="login-card">
+<div class="login-logo">
+<i class="fas fa-moon"></i>
+<h1>قمر الشام 👑</h1>
+<p>منصة الدردشة الملكية الفاخرة</p>
+</div>
+<div class="login-tabs">
+<button class="login-tab active" id="tab-guest" onclick="switchLoginTab('guest')"><i class="fas fa-user-secret"></i> زائر</button>
+<button class="login-tab" id="tab-member" onclick="switchLoginTab('member')"><i class="fas fa-user"></i> عضو</button>
+</div>
+<div id="guest-form">
+<input type="text" class="login-input" id="guest-name" placeholder="اسمك..." autocomplete="off" style="margin-bottom:10px;">
+<input type="number" class="login-input" id="guest-age" placeholder="عمرك..." min="1" max="120" style="margin-bottom:10px;">
+<div class="gender-group" style="margin-bottom:10px;">
+<button class="gender-btn active" id="gender-male" onclick="selectGender('male')">👦 ذكر</button>
+<button class="gender-btn" id="gender-female" onclick="selectGender('female')">👧 أنثى</button>
+</div>
+<button class="login-btn" onclick="handleGuestLogin()"><i class="fas fa-user-secret"></i> دخول كزائر</button>
+</div>
+<div id="member-form" style="display:none;">
+<input type="email" class="login-input" id="member-email" placeholder="الإيميل..." autocomplete="off" style="margin-bottom:10px;">
+<input type="password" class="login-input" id="member-password" placeholder="كلمة السر..." style="margin-bottom:10px;">
+<button class="login-btn" onclick="handleMemberLogin()" style="margin-bottom:10px;"><i class="fas fa-sign-in-alt"></i> تسجيل دخول</button>
+<div class="link-text" onclick="switchToRegister()">ليس لديك حساب؟ سجّل الآن</div>
+</div>
+<div id="register-form" style="display:none;">
+<input type="text" class="login-input" id="register-name" placeholder="اسمك..." autocomplete="off" style="margin-bottom:10px;">
+<input type="number" class="login-input" id="register-age" placeholder="عمرك..." min="1" max="120" style="margin-bottom:10px;">
+<div class="gender-group" style="margin-bottom:10px;">
+<button class="gender-btn active" id="reg-gender-male" onclick="selectRegGender('male')">👦 ذكر</button>
+<button class="gender-btn" id="reg-gender-female" onclick="selectRegGender('female')">👧 أنثى</button>
+</div>
+<input type="email" class="login-input" id="register-email" placeholder="الإيميل..." autocomplete="off" style="margin-bottom:10px;">
+<input type="password" class="login-input" id="register-password" placeholder="كلمة السر..." style="margin-bottom:10px;">
+<input type="password" class="login-input" id="register-password-confirm" placeholder="تأكيد كلمة السر..." style="margin-bottom:10px;">
+<button class="login-btn" onclick="handleRegister()"><i class="fas fa-user-plus"></i> إنشاء الحساب</button>
+<div class="link-text" onclick="switchToLogin()" style="margin-top:10px;">لديك حساب؟ سجّل دخول</div>
+</div>
+</div>
+</div>
+<div class="container" id="chat-container" style="display:none;">
+<div class="header">
+<button class="header-btn" onclick="toggleRooms()"><i class="fas fa-door-open"></i></button>
+<div class="room-title" id="room-title">🌍 الروم العام</div>
+<div class="header-actions">
+<button class="header-btn" onclick="toggleNotifications()" id="notif-btn">
+<i class="fas fa-bell"></i>
+<span class="notif-badge" id="notif-badge" style="display:none;">0</span>
+</button>
+<button class="header-btn" onclick="togglePrivateMessages()" id="pm-btn">
+<i class="fas fa-comments"></i>
+<span class="notif-badge" id="pm-badge" style="display:none;">0</span>
+</button>
+<button class="header-btn" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i></button>
+<button class="header-btn" onclick="toggleSettings()"><i class="fas fa-bars"></i></button>
+</div>
+</div>
+<div class="mics-bar-wrapper">
+<div class="mics-bar" id="mics-bar">
+<div class="mics">
+<button class="mic-btn" onclick="toggleMic(1)"><i class="fas fa-microphone"></i></button>
+<button class="mic-btn" onclick="toggleMic(2)"><i class="fas fa-microphone"></i></button>
+<button class="mic-btn" onclick="toggleMic(3)"><i class="fas fa-microphone"></i></button>
+<button class="mic-btn" onclick="toggleMic(4)"><i class="fas fa-microphone"></i></button>
+</div>
+</div>
+<button class="mics-toggle-btn" id="mics-toggle-btn" onclick="toggleMicsBar()"><i class="fas fa-chevron-up"></i></button>
+</div>
+<div class="messages" id="messages"></div>
+<div class="reply-preview" id="reply-preview">
+<span class="reply-preview-close" onclick="cancelReply()">✕</span>
+<div style="font-size:11px;color:var(--gold);">💬 الرد على: <strong id="reply-name"></strong></div>
+<div id="reply-text-preview" style="font-size:10px;color:var(--text-dim);"></div>
+</div>
+<div class="floating-toolbar" id="floating-toolbar">
+<button class="tool-btn" onclick="alert('📁 رفع ملفات')"><i class="fas fa-folder"></i></button>
+<button class="tool-btn" onclick="alert('🎵 تشغيل صوتيات')"><i class="fas fa-music"></i></button>
+<button class="tool-btn" onclick="rollDice()"><i class="fas fa-dice"></i></button>
+<button class="tool-btn" onclick="searchYouTube()"><i class="fas fa-play"></i></button>
+</div>
+<div class="input-area">
+<button class="send-btn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+<button class="emoji-btn" onclick="insertEmoji()"><i class="fas fa-smile"></i></button>
+<input type="text" id="message-input" placeholder="اكتب رسالتك هنا..." onkeypress="handleKeyPress(event)" autocomplete="off">
+<button class="plus-btn" id="plus-btn" onclick="toggleToolbar()"><i class="fas fa-plus"></i></button>
+</div>
+<div class="bottom-nav">
+<button class="nav-item" onclick="openProfile()"><i class="fas fa-id-card"></i><span>بروفايلي</span></button>
+<button class="nav-item" onclick="toggleRooms()"><i class="fas fa-door-open"></i><span>الغرف</span></button>
+<button class="nav-item" onclick="showOnlineUsers()"><i class="fas fa-users"></i><span>المتواجدين</span></button>
+<button class="nav-item" id="upgrade-nav-btn" onclick="openUpgradeModal()"><i class="fas fa-key"></i><span>عضوية</span></button>
+<button class="nav-item" onclick="showStore()"><i class="fas fa-store"></i><span>المتجر</span></button>
+<button class="nav-item" onclick="toggleSettings()"><i class="fas fa-cog"></i><span>الخيارات</span></button>
+</div>
+</div>
+<div class="sidebar right-sidebar" id="rooms-sidebar">
+<div class="sidebar-header">
+<h3><i class="fas fa-door-open"></i> الغرف</h3>
+<button class="sidebar-close" onclick="closeAllPanels()"><i class="fas fa-times"></i></button>
+</div>
+<div class="sidebar-content" id="rooms-list"></div>
+</div>
+<div class="sidebar right-sidebar" id="notif-sidebar">
+<div class="sidebar-header">
+<h3><i class="fas fa-bell"></i> الإشعارات</h3>
+<button class="sidebar-close" onclick="closeAllPanels()"><i class="fas fa-times"></i></button>
+</div>
+<div class="sidebar-content" id="notif-list">
+<div style="text-align:center;color:var(--text-dim);font-size:12px;padding:20px;">لا توجد إشعارات</div>
+</div>
+</div>
+<div class="sidebar right-sidebar" id="pm-sidebar">
+<div class="sidebar-header">
+<h3><i class="fas fa-comments"></i> الرسائل الخاصة</h3>
+<button class="sidebar-close" onclick="closeAllPanels()"><i class="fas fa-times"></i></button>
+</div>
+<div class="sidebar-content" id="pm-list">
+<div style="text-align:center;color:var(--text-dim);font-size:12px;padding:20px;">لا توجد محادثات</div>
+</div>
+</div>
+<div class="sidebar left-sidebar" id="settings-sidebar">
+<div class="sidebar-header">
+<h3><i class="fas fa-cog"></i> الإعدادات</h3>
+<button class="sidebar-close" onclick="closeAllPanels()"><i class="fas fa-times"></i></button>
+</div>
+<div class="sidebar-content">
+<h4 style="color:var(--gold);font-size:12px;margin-bottom:8px;">🎨 خلفيات المنصة</h4>
+<div style="display:flex;gap:8px;flex-wrap:wrap;" id="bg-options"></div>
+</div>
+</div>
+<div class="overlay" id="overlay" onclick="closeAllPanels()"></div>
+<div id="profile-frame-container">
+<div style="position:relative;width:100%;height:100%;">
+<button class="close-btn" onclick="closeProfileFrame()">✕</button>
+<iframe id="profile-iframe" src="profile.html"></iframe>
+</div>
+</div><div class="upgrade-modal" id="upgrade-modal">
+<div class="upgrade-content">
+<h3>🔑 ترقية لعضوية</h3>
+<p style="color:#ccc;font-size:13px;">احصل على حساب دائم — احفظ بياناتك للأبد</p>
+<input type="email" id="upgrade-email" placeholder="الإيميل...">
+<input type="password" id="upgrade-password" placeholder="كلمة السر...">
+<input type="password" id="upgrade-password-confirm" placeholder="تأكيد كلمة السر...">
+<div style="display:flex;gap:10px;">
+<button class="upgrade-btn" onclick="handleUpgrade()" style="flex:1;">إنشاء الحساب</button>
+<button class="upgrade-btn cancel" onclick="closeUpgradeModal()" style="flex:1;">إلغاء</button>
+</div>
+</div>
+</div>
 
-    <script src="config.js"></script>
-    <script src="ranks.js"></script>
-    <script src="utils.js"></script>
-    <script src="auth.js"></script>
-    <script src="bots.js"></script>
-    
-    <script>
-        // ====== المتغيرات ======
-        let currentRoom = 'general';
-        let messagesListener = null;
-        let selectedGender = 'male';
-        let regSelectedGender = 'male';
-        let replyingTo = null;
-        let myNotifications = [];
-        let unreadCount = 0;
-        let mentionHighlights = {};
-        
-        // ====== صوت العصفور ======
-        function playBirdSound() {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const now = ctx.currentTime;
-                [0, 0.15, 0.3].forEach((delay, i) => {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.type = 'sine';
-                    const baseFreq = 2000 + (i * 300);
-                    osc.frequency.setValueAtTime(baseFreq, now + delay);
-                    osc.frequency.linearRampToValueAtTime(baseFreq + 800, now + delay + 0.05);
-                    osc.frequency.linearRampToValueAtTime(baseFreq - 300, now + delay + 0.1);
-                    gain.gain.setValueAtTime(0, now + delay);
-                    gain.gain.linearRampToValueAtTime(0.3, now + delay + 0.02);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + delay + 0.13);
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.start(now + delay);
-                    osc.stop(now + delay + 0.15);
-                });
-            } catch(e) { console.log('Sound error:', e); }
-        }
-        
-        // ====== تبويبات الدخول ======
-        function switchLoginTab(tab) {
-            document.getElementById('tab-guest').classList.remove('active');
-            document.getElementById('tab-member').classList.remove('active');
-            document.getElementById('guest-form').style.display = 'none';
-            document.getElementById('member-form').style.display = 'none';
-            document.getElementById('register-form').style.display = 'none';
-            if (tab === 'guest') {
-                document.getElementById('tab-guest').classList.add('active');
-                document.getElementById('guest-form').style.display = 'block';
-            } else {
-                document.getElementById('tab-member').classList.add('active');
-                document.getElementById('member-form').style.display = 'block';
-            }
-        }
-        
-        function switchToRegister() {
-            document.getElementById('member-form').style.display = 'none';
-            document.getElementById('register-form').style.display = 'block';
-        }
-        
-        function switchToLogin() {
-            document.getElementById('register-form').style.display = 'none';
-            document.getElementById('member-form').style.display = 'block';
-        }
-        
-        function selectGender(g) {
-            selectedGender = g;
-            document.getElementById('gender-male').classList.remove('active');
-            document.getElementById('gender-female').classList.remove('active');
-            document.getElementById(g === 'male' ? 'gender-male' : 'gender-female').classList.add('active');
-        }
-        
-        function selectRegGender(g) {
-            regSelectedGender = g;
-            document.getElementById('reg-gender-male').classList.remove('active');
-            document.getElementById('reg-gender-female').classList.remove('active');
-            document.getElementById(g === 'male' ? 'reg-gender-male' : 'reg-gender-female').classList.add('active');
-        }
-        
-        // ====== الدخول ======
-        function handleGuestLogin() {
-            const name = document.getElementById('guest-name').value.trim();
-            const age = document.getElementById('guest-age').value.trim();
-            const result = registerGuest(name, age, selectedGender);
-            if (result.success) enterChat();
-            else alert('⚠️ ' + result.error);
-        }
-        
-        async function handleMemberLogin() {
-            const email = document.getElementById('member-email').value.trim();
-            const password = document.getElementById('member-password').value;
-            const result = await login(email, password);
-            if (result.success) enterChat();
-            else alert('⚠️ ' + result.error);
-        }
-        
-        async function handleRegister() {
-            const name = document.getElementById('register-name').value.trim();
-            const age = document.getElementById('register-age').value.trim();
-            const email = document.getElementById('register-email').value.trim();
-            const password = document.getElementById('register-password').value;
-            const confirmPassword = document.getElementById('register-password-confirm').value;
-            if (password !== confirmPassword) { alert('⚠️ كلمات السر غير متطابقة'); return; }
-            const result = await registerMember(name, age, regSelectedGender, email, password);
-            if (result.success) enterChat();
-            else alert('⚠️ ' + result.error);
-        }
-        
-        async function handleUpgrade() {
-            const email = document.getElementById('upgrade-email').value.trim();
-            const password = document.getElementById('upgrade-password').value;
-            const confirmPassword = document.getElementById('upgrade-password-confirm').value;
-            if (password !== confirmPassword) { alert('⚠️ كلمات السر غير متطابقة'); return; }
-            const user = getCurrentUser();
-            if (!user) return;
-            const result = await registerMember(user.name, user.age, user.gender, email, password);
-            if (result.success) {
-                closeUpgradeModal();
-                document.getElementById('upgrade-nav-btn').style.display = 'none';
-                showToast('fa-crown', '🎉 تم ترقيتك لعضو');
-                location.reload();
-            } else alert('⚠️ ' + result.error);
-        }
-        
-        async function handleLogout() {
-            if (confirm('هل أنت متأكد من الخروج؟')) {
-                if (messagesListener) messagesListener.off();
-                await logout();
-                location.reload();
-            }
-        }
-        
-        // ====== الدخول للشات ======
-        function enterChat() {
-            const user = getCurrentUser();
-            if (!user) return;
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('chat-container').style.display = 'flex';
-            const savedBg = localStorage.getItem(QAMAR.STORAGE_KEYS.BACKGROUND);
-            if (savedBg) changeBackground(savedBg);
-            generateStars();
-            buildRoomsList();
-            buildBackgroundsList();
-            if (!user.isGuest) document.getElementById('upgrade-nav-btn').style.display = 'none';
-            addSystemMessage(`👑 مرحباً ${user.name} - رتبتك: ${getRankBadge(user.rank)} ${user.rank}`);
-            startMessagesListener();
-            setupNotificationsListener();
-            if (typeof initBots === 'function') initBots();
-        }
-        
-        // ====== بناء قائمة الغرف (مع الفلترة) ======
-        function buildRoomsList() {
-            const list = document.getElementById('rooms-list');
-            list.innerHTML = '';
-            const user = getCurrentUser();
-            if (!user) return;
-            
-            // استخدام getVisibleRooms من config.js
-            const visibleRooms = QAMAR.getVisibleRooms(user);
-            
-            Object.values(visibleRooms).forEach(room => {
-                const item = document.createElement('div');
-                item.className = 'sidebar-item';
-                item.innerHTML = `${room.icon} ${room.name}`;
-                if (room.id === currentRoom) item.classList.add('active');
-                item.onclick = () => switchRoom(room.id, room.name + ' ' + room.icon, item);
-                list.appendChild(item);
-            });
-        }
-        
-        function buildBackgroundsList() {
-            const list = document.getElementById('bg-options');
-            list.innerHTML = '';
-            QAMAR.BACKGROUNDS.forEach(bg => {
-                const btn = document.createElement('button');
-                btn.style.cssText = 'padding:8px; border-radius:8px; border:1px solid var(--border-light); background:rgba(255,255,255,0.05); color:#fff; cursor:pointer;';
-                btn.innerText = bg.id;
-                btn.onclick = () => changeBackground(bg.id);
-                list.appendChild(btn);
-            });
-        }
-        
-        // ====== تبديل الغرفة ======
-        function switchRoom(roomId, roomTitle, element) {
-            const user = getCurrentUser();
-            const room = QAMAR.ROOMS[roomId];
-            
-            if (!QAMAR.isRoomVisible(roomId, user)) {
-                alert('🔒 هذه الغرفة غير متاحة لك');
-                return;
-            }
-            
-            if (messagesListener) messagesListener.off();
-            currentRoom = roomId;
-            document.getElementById('room-title').innerText = roomTitle;
-            document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
-            if (element) element.classList.add('active');
-            document.getElementById('messages').innerHTML = '';
-            addSystemMessage(`📢 تم فتح ${roomTitle}`);
-            
-            startMessagesListener();
-            closeAllPanels();
-            
-            // إظهار التظليل للإشعارات القديمة في هذه الغرفة
-            showPendingHighlights();
-        }
-        
-        // ====== الاستماع للرسائل ======
-        function startMessagesListener() {
-            if (!db) return;
-            if (messagesListener) messagesListener.off();
-            const ref = db.ref('rooms/' + currentRoom + '/messages').limitToLast(100);
-            messagesListener = ref;
-            messagesListener.on('child_added', (snap) => {
-                const msg = snap.val();
-                const user = getCurrentUser();
-                if (msg && msg.sender !== user?.name) {
-                    displayMessage(msg.sender, msg.text, msg.color, msg.avatar, msg.time, msg.isBot, snap.key, msg.replyTo, msg.mentions);
-                }
-            });
-        }
-        
-        // ====== إرسال رسالة ======
-        function sendMessage() {
-            const input = document.getElementById('message-input');
-            const text = input.value.trim();
-            const user = getCurrentUser();
-            if (!text || !user) return;
-            if (isLink(text)) { alert('⚠️ يحظر نشر الروابط'); return; }
-            
-            if (text.startsWith('!') && typeof handleBotCommand === 'function') {
-                handleBotCommand(text);
-                input.value = '';
-                return;
-            }
-            
-            const mentions = extractMentions(text);
-            const messageData = {
-                sender: user.name,
-                text: text,
-                time: firebase.database.ServerValue.TIMESTAMP,
-                avatar: user.avatar,
-                color: user.color,
-                font: user.font || null,
-                movement: user.movement || null,
-                gifClass: user.gifClass || null,
-                avatarFrame: user.avatarFrame || null,
-                uid: user.uid || null,
-                isBot: false,
-                mentions: mentions,
-                replyTo: replyingTo
-            };
-            
-            displayMessage(user.name, text, user.color, user.avatar, Date.now(), false, null, replyingTo, mentions, user);
-            db.ref('rooms/' + currentRoom + '/messages').push(messageData);
-            
-            if (mentions.length > 0) notifyMentions(mentions, text);
-            
-            cancelReply();
-            input.value = '';
-            input.focus();
-        }
-        
-        function extractMentions(text) {
-            const matches = text.match(/@[\u0600-\u06FF\w]+/g);
-            return matches ? matches.map(m => m.substring(1)) : [];
-        }
-        
-        function notifyMentions(mentions, text) {
-            const user = getCurrentUser();
-            mentions.forEach(name => {
-                if (name === user.name) return;
-                db.ref('notifications').push({
-                    to: name,
-                    from: user.name,
-                    fromAvatar: user.avatar,
-                    fromColor: user.color,
-                    type: 'mention',
-                    text: text,
-                    room: currentRoom,
-                    roomName: QAMAR.ROOMS[currentRoom]?.name || currentRoom,
-                    time: firebase.database.ServerValue.TIMESTAMP
-                });
-            });
-        }
-        
-        function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
-        
-        // ====== عرض الرسالة ======
-        function displayMessage(sender, text, color, avatar, time, isBot = false, msgId = null, replyTo = null, mentions = [], senderData = null) {
-            const container = document.getElementById('messages');
-            const user = getCurrentUser();
-            const msg = document.createElement('div');
-            msg.className = 'message' + (isBot ? ' bot' : '');
-            msg.setAttribute('data-msg-id', msgId || Date.now());
-            msg.setAttribute('data-sender', sender);
-            
-            // التحقق من التظليل
-            const isMentioned = mentions && mentions.includes(user?.name);
-            if (isMentioned) {
-                msg.classList.add('highlighted');
-            }
-            
-            const avatarImg = document.createElement('img');
-            avatarImg.className = 'message-avatar';
-            avatarImg.src = avatar || getDefaultAvatar(sender);
-            avatarImg.onclick = () => openUserProfile(sender);
-            
-            const content = document.createElement('div');
-            content.className = 'message-content';
-            
-            const header = document.createElement('div');
-            header.className = 'message-header';
-            
-            const username = document.createElement('div');
-            username.className = 'message-username';
-            username.style.color = color || '#ffd700';
-            username.innerText = sender + (isBot ? ' 🤖' : '');
-            
-            // تطبيق تأثيرات الاسم
-            if (senderData) {
-                if (senderData.font) username.style.fontFamily = `'${senderData.font}', sans-serif`;
-                if (senderData.movement === 'نبض') username.style.animation = 'pulse 2s infinite';
-                if (senderData.movement === 'توهج') username.style.animation = 'glow 2s infinite';
-                if (senderData.gifClass) username.classList.add(senderData.gifClass);
-            }
-            
-            username.onclick = () => insertMention(sender);
-            
-            // زر الخيارات (ملاصق لآخر الرسالة)
-            const optBtn = document.createElement('button');
-            optBtn.className = 'message-options-btn';
-            optBtn.innerHTML = '⋮';
-            optBtn.onclick = (e) => {
-                e.stopPropagation();
-                showMessageMenu(msg, sender, text, msgId);
-            };
-            
-            const timeEl = document.createElement('span');
-            timeEl.style.cssText = 'font-size:10px;color:var(--text-dim);margin-right:auto;';
-            timeEl.innerText = ' ' + formatTime(time);
-            
-            header.appendChild(username);
-            header.appendChild(timeEl);
-            header.appendChild(optBtn);
-            
-            const msgText = document.createElement('div');
-            msgText.className = 'message-text';
-            
-            // استبدال المنشنات بصورة + اسم
-            if (mentions && mentions.length > 0) {
-                let formatted = text;
-                mentions.forEach(name => {
-                    const regex = new RegExp(`@${name}`, 'g');
-                    formatted = formatted.replace(regex, `<span class="mention-inline" onclick="insertMention('${name}')"><img src="${getDefaultAvatar(name)}"><span>${name}</span></span>`);
-                });
-                msgText.innerHTML = formatted;
-            } else {
-                msgText.innerText = text;
-            }
-            
-            content.appendChild(header);
-            content.appendChild(msgText);
-            
-            // الرد (تحت الرسالة الأساسية، أصغر بـ 30%)
-            if (replyTo) {
-                const quote = document.createElement('div');
-                quote.className = 'reply-quote';
-                quote.innerHTML = `
-                    <div class="reply-name">↩ ${replyTo.sender}</div>
-                    <div class="reply-text">${replyTo.text.substring(0, 80)}</div>
-                `;
-                quote.onclick = () => {
-                    const original = document.querySelector(`[data-msg-id="${replyTo.id}"]`);
-                    if (original) {
-                        original.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        original.classList.add('highlighted');
-                        setTimeout(() => original.classList.remove('highlighted'), 3000);
-                    }
-                };
-                content.appendChild(quote);
-            }
-            
-            // التفاعلات
-            const reactions = document.createElement('div');
-            reactions.className = 'message-reactions';
-            content.appendChild(reactions);
-            
-            msg.appendChild(avatarImg);
-            msg.appendChild(content);
-            container.appendChild(msg);
-            container.scrollTop = container.scrollHeight;
-        }
-        
-        // ====== قائمة الرسالة ======
-        function showMessageMenu(msgEl, sender, text, msgId) {
-            document.querySelectorAll('.message-menu').forEach(m => m.remove());
-            document.querySelectorAll('.emoji-bar').forEach(b => b.remove());
-            
-            const user = getCurrentUser();
-            const isOwner = sender === user.name;
-            const canDelete = isOwner || ['King', 'Queen', 'Super Owner', 'Room Manager Owner', 'Grand Owner', 'Owner'].includes(user.rank);
-            
-            const menu = document.createElement('div');
-            menu.className = 'message-menu open';
-            
-            // تفاعل
-            const react = document.createElement('div');
-            react.className = 'message-menu-item';
-            react.innerHTML = '😊 تفاعل';
-            react.onclick = () => showEmojiBar(msgEl);
-            menu.appendChild(react);
-            
-            // رد
-            const reply = document.createElement('div');
-            reply.className = 'message-menu-item';
-            reply.innerHTML = '💬 رد';
-            reply.onclick = () => startReply(sender, text, msgId);
-            menu.appendChild(reply);
-            
-            // تعديل (لصاحب الرسالة فقط)
-            if (isOwner) {
-                const edit = document.createElement('div');
-                edit.className = 'message-menu-item';
-                edit.innerHTML = '✏️ تعديل';
-                edit.onclick = () => editMessage(msgEl, msgId);
-                menu.appendChild(edit);
-            }
-            
-            // حذف (لصاحب + Grand Owner+)
-            if (canDelete) {
-                const del = document.createElement('div');
-                del.className = 'message-menu-item danger';
-                del.innerHTML = '🗑️ حذف';
-                del.onclick = () => deleteMessage(msgEl, msgId);
-                menu.appendChild(del);
-            }
-            
-            msgEl.querySelector('.message-content').appendChild(menu);
-            
-            setTimeout(() => {
-                document.addEventListener('click', function closeMenu(e) {
-                    if (!menu.contains(e.target)) {
-                        menu.remove();
-                        document.querySelectorAll('.emoji-bar').forEach(b => b.remove());
-                        document.removeEventListener('click', closeMenu);
-                    }
-                });
-            }, 100);
-        }
-        
-        // ====== شريط الإيموجيات السريع ======
-        function showEmojiBar(msgEl) {
-            document.querySelectorAll('.message-menu').forEach(m => m.remove());
-            document.querySelectorAll('.emoji-bar').forEach(b => b.remove());
-            
-            const bar = document.createElement('div');
-            bar.className = 'emoji-bar open';
-            
-            ['👍', '❤️', '😂', '😮'].forEach(emoji => {
-                const e = document.createElement('span');
-                e.className = 'emoji-quick';
-                e.innerText = emoji;
-                e.onclick = () => {
-                    addReaction(msgEl, emoji);
-                    bar.remove();
-                };
-                bar.appendChild(e);
-            });
-            
-            const plus = document.createElement('button');
-            plus.className = 'emoji-plus';
-            plus.innerHTML = '+';
-            plus.onclick = () => {
-                const customEmoji = prompt('🎨 اكتب إيموجي:', '🎉');
-                if (customEmoji) {
-                    addReaction(msgEl, customEmoji);
-                    bar.remove();
-                }
-            };
-            bar.appendChild(plus);
-            
-            msgEl.querySelector('.message-content').appendChild(bar);
-        }
-        
-        function addReaction(msgEl, emoji) {
-            let reactions = msgEl.querySelector('.message-reactions');
-            if (!reactions) {
-                reactions = document.createElement('div');
-                reactions.className = 'message-reactions';
-                msgEl.querySelector('.message-content').appendChild(reactions);
-            }
-            const badge = document.createElement('span');
-            badge.className = 'reaction-badge';
-            badge.innerText = emoji;
-            reactions.appendChild(badge);
-            document.querySelectorAll('.message-menu').forEach(m => m.remove());
-        }
-        
-        // ====== الرد ======
-        function startReply(sender, text, msgId) {
-            replyingTo = { sender, text, id: msgId };
-            document.getElementById('reply-name').innerText = sender;
-            document.getElementById('reply-text-preview').innerText = text.substring(0, 60);
-            document.getElementById('reply-preview').classList.add('show');
-            document.getElementById('message-input').focus();
-            document.querySelectorAll('.message-menu').forEach(m => m.remove());
-        }
-        
-        function cancelReply() {
-            replyingTo = null;
-            document.getElementById('reply-preview').classList.remove('show');
-        }
-        
-        function editMessage(msgEl, msgId) {
-            const msgText = msgEl.querySelector('.message-text');
-            const newText = prompt('✏️ تعديل:', msgText.innerText);
-            if (newText && msgId) {
-                db.ref('rooms/' + currentRoom + '/messages/' + msgId).update({ text: newText });
-                msgText.innerText = newText;
-            }
-            document.querySelectorAll('.message-menu').forEach(m => m.remove());
-        }
-        
-        function deleteMessage(msgEl, msgId) {
-            if (confirm('🗑️ حذف الرسالة؟')) {
-                if (msgId) db.ref('rooms/' + currentRoom + '/messages/' + msgId).remove();
-                msgEl.remove();
-            }
-            document.querySelectorAll('.message-menu').forEach(m => m.remove());
-        }
-        
-        // ====== المنشن ======
-        function insertMention(name) {
-            const input = document.getElementById('message-input');
-            input.value += `@${name} `;
-            input.focus();
-            document.querySelectorAll('.message-menu').forEach(m => m.remove());
-        }
-        
-        // ====== الإشعارات ======
-        function toggleNotifications() {
-            document.getElementById('notif-sidebar').classList.toggle('open');
-            document.getElementById('rooms-sidebar').classList.remove('open');
-            document.getElementById('settings-sidebar').classList.remove('open');
-            const isOpen = document.getElementById('notif-sidebar').classList.contains('open');
-            document.getElementById('overlay').classList.toggle('show', isOpen);
-            
-            if (isOpen) {
-                loadNotifications();
-                unreadCount = 0;
-                updateNotifBadge();
-            }
-        }
-        
-        function setupNotificationsListener() {
-            const user = getCurrentUser();
-            if (!user) return;
-            
-            db.ref('notifications').orderByChild('to').equalTo(user.name).on('child_added', (snap) => {
-                const notif = snap.val();
-                if (notif) {
-                    const notifId = snap.key;
-                    // التحقق من أنه ليس قديم (خلال 30 ثانية)
-                    const age = Date.now() - (notif.time || 0);
-                    const isRecent = age < 30000;
-                    
-                    // إذا كان في نفس الروم → صوت
-                    if (notif.room === currentRoom && isRecent) {
-                        playBirdSound();
-                        showToast('fa-bell', `🔔 ${notif.from} أشار إليك`);
-                    } else if (notif.room === currentRoom) {
-                        // قديم لكن في نفس الروم
-                        showToast('fa-bell', `🔔 ${notif.from} أشار إليك`);
-                    }
-                    
-                    unreadCount++;
-                    updateNotifBadge();
-                }
-            });
-        }
-        
-        function loadNotifications() {
-            const user = getCurrentUser();
-            if (!user) return;
-            const list = document.getElementById('notif-list');
-            list.innerHTML = '';
-            
-            db.ref('notifications').orderByChild('to').equalTo(user.name).limitToLast(50).once('value', (snap) => {
-                const notifs = [];
-                snap.forEach(child => {
-                    notifs.push({ id: child.key, ...child.val() });
-                });
-                notifs.reverse();
-                
-                if (notifs.length === 0) {
-                    list.innerHTML = '<div style="text-align:center; color:var(--text-dim); font-size:12px; padding:20px;">لا توجد إشعارات</div>';
-                    return;
-                }
-                
-                notifs.forEach(notif => {
-                    const item = document.createElement('div');
-                    item.className = 'notif-item';
-                    item.innerHTML = `
-                        <img src="${notif.fromAvatar || getDefaultAvatar(notif.from)}" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--gold);">
-                        <div style="flex:1;">
-                            <div style="color:${notif.fromColor || '#ffd700'};font-weight:900;font-size:12px;">${notif.from}</div>
-                            <div style="color:var(--text-dim);font-size:11px;">${notif.type === 'mention' ? '📢 أشار إليك في ' + (notif.roomName || notif.room) : notif.text}</div>
-                            <div style="color:#666;font-size:10px;">${formatTime(notif.time)}</div>
-                        </div>
-                    `;
-                    item.onclick = () => {
-                        if (notif.room && QAMAR.ROOMS[notif.room]) {
-                            switchRoom(notif.room, QAMAR.ROOMS[notif.room].name + ' ' + QAMAR.ROOMS[notif.room].icon);
-                        }
-                        closeAllPanels();
-                    };
-                    list.appendChild(item);
-                });
-            });
-        }
-        
-        function updateNotifBadge() {
-            const badge = document.getElementById('notif-badge');
-            if (unreadCount > 0) {
-                badge.innerText = unreadCount > 9 ? '9+' : unreadCount;
-                badge.style.display = 'flex';
-            } else {
-                badge.style.display = 'none';
-            }
-        }
-        
-        // ====== التظليل للإشعارات القديمة ======
-        function showPendingHighlights() {
-            // الرسائل اللي فيها تاغ للمستخدم الحالي في الروم الحالي
-            const user = getCurrentUser();
-            if (!user) return;
-            
-            setTimeout(() => {
-                document.querySelectorAll('.message').forEach(msgEl => {
-                    const sender = msgEl.getAttribute('data-sender');
-                    const text = msgEl.querySelector('.message-text')?.innerText || '';
-                    if (text.includes('@' + user.name) && sender !== user.name) {
-                        msgEl.classList.add('highlighted');
-                    }
-                });
-            }, 500);
-        }
-        
-        // ====== فتح بروفايل المستخدم ======
-        function openUserProfile(userName) {
-            const user = getCurrentUser();
-            const isMe = user && user.name === userName;
-            
-            // إذا أنا → افتح بروفايلي
-            if (isMe) {
-                openProfile();
-                return;
-            }
-            
-            // إذا عضو آخر → افتح بروفايله
-            // نبحث في Firebase عن المستخدم
-            db.ref('users').orderByChild('name').equalTo(userName).once('value', (snap) => {
-                let found = null;
-                snap.forEach(child => { found = { uid: child.key, ...child.val() }; });
-                
-                if (found) {
-                    localStorage.setItem('qamar_view_user', JSON.stringify(found));
-                    localStorage.setItem('qamar_profile_mode', 'view');
-                } else {
-                    // زائر — نستخدم معلومات مؤقتة
-                    localStorage.setItem('qamar_view_user', JSON.stringify({ name: userName, rank: 'Guest' }));
-                    localStorage.setItem('qamar_profile_mode', 'guest-view');
-                }
-                
-                document.getElementById('profile-frame-container').style.display = 'block';
-            });
-        }
-        
-        // ====== البروفايل ======
-        function openProfile() {
-            const user = getCurrentUser();
-            localStorage.setItem('qamar_profile_user', JSON.stringify(user));
-            localStorage.setItem('qamar_profile_mode', 'edit');
-            document.getElementById('profile-frame-container').style.display = 'block';
-        }
-        
-        function closeProfileFrame() {
-            document.getElementById('profile-frame-container').style.display = 'none';
-            const iframe = document.getElementById('profile-iframe');
-            iframe.src = iframe.src;
-        }
-        
-        // ====== القوائم ======
-        function toggleRooms() {
-            document.getElementById('rooms-sidebar').classList.toggle('open');
-            document.getElementById('notif-sidebar').classList.remove('open');
-            document.getElementById('settings-sidebar').classList.remove('open');
-            const isOpen = document.getElementById('rooms-sidebar').classList.contains('open');
-            document.getElementById('overlay').classList.toggle('show', isOpen);
-        }
-        
-        function toggleSettings() {
-            document.getElementById('settings-sidebar').classList.toggle('open');
-            document.getElementById('rooms-sidebar').classList.remove('open');
-            document.getElementById('notif-sidebar').classList.remove('open');
-            const isOpen = document.getElementById('settings-sidebar').classList.contains('open');
-            document.getElementById('overlay').classList.toggle('show', isOpen);
-        }
-        
-        function closeAllPanels() {
-            document.getElementById('rooms-sidebar').classList.remove('open');
-            document.getElementById('settings-sidebar').classList.remove('open');
-            document.getElementById('notif-sidebar').classList.remove('open');
-            document.getElementById('overlay').classList.remove('show');
-        }
-        
-        // ====== المايكات ======
-        function toggleMic(n) {
-            const mic = document.querySelectorAll('.mic-btn')[n - 1];
-            mic.classList.toggle('active');
-            mic.innerHTML = mic.classList.contains('active') ? '<i class="fas fa-user"></i>' : '<i class="fas fa-microphone"></i>';
-        }
-        
-        function toggleMicsBar() {
-            document.getElementById('mics-bar').classList.toggle('hidden');
-            document.getElementById('mics-toggle-btn').classList.toggle('hidden');
-        }
-        
-        // ====== أدوات ======
-        function toggleToolbar() {
-            document.getElementById('floating-toolbar').classList.toggle('open');
-            document.getElementById('plus-btn').classList.toggle('active');
-        }
-        
-        function rollDice() { addSystemMessage(`🎲 النرد: ${Math.floor(Math.random() * 6) + 1}`); }
-        function searchYouTube() {
-            const q = prompt('🔍 ابحث في يوتيوب:');
-            if (q) window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`, '_blank');
-        }
-        function insertEmoji() {
-            const inp = document.getElementById('message-input');
-            inp.value += '😊';
-            inp.focus();
-        }
-        
-        function showOnlineUsers() { closeAllPanels(); alert('👥 المتواجدين'); }
-        function showStore() { closeAllPanels(); alert('🛒 المتجر قيد التطوير'); }
-        
-        function openUpgradeModal() {
-            const user = getCurrentUser();
-            if (!user || !user.isGuest) { alert('✅ أنت عضو بالفعل'); return; }
-            document.getElementById('upgrade-modal').classList.add('active');
-        }
-        
-        function closeUpgradeModal() {
-            document.getElementById('upgrade-modal').classList.remove('active');
-        }
-        
-        function changeBackground(bgId) {
-            const container = document.getElementById('chat-container');
-            const bg = QAMAR.BACKGROUNDS.find(b => b.id === bgId);
-            if (bg) {
-                container.classList.remove('background-type-stars', 'background-type-nebula', 'background-type-moon', 'background-type-dust', 'background-type-waves');
-                container.classList.add(bg.class);
-                localStorage.setItem(QAMAR.STORAGE_KEYS.BACKGROUND, bgId);
-            }
-        }
-        
-        function addSystemMessage(text) {
-            const container = document.getElementById('messages');
-            const msg = document.createElement('div');
-            msg.className = 'message system';
-            msg.innerText = text;
-            container.appendChild(msg);
-            container.scrollTop = container.scrollHeight;
-        }
-        
-        // ====== التحميل ======
-        window.addEventListener('DOMContentLoaded', () => {
-            const user = getCurrentUser();
-            if (user) enterChat();
+<!-- ====== نافذة الخاص (المحادثة الخاصة) ====== -->
+<div class="private-chat-modal" id="private-chat-modal">
+<div class="private-chat-header">
+<div class="private-chat-user">
+<img id="pc-avatar" src="">
+<div class="private-chat-user-info">
+<div id="pc-name">المستخدم</div>
+<div id="pc-status">نشط</div>
+</div>
+</div>
+<div class="private-chat-actions">
+<button id="pc-minimize" title="تصغير"><i class="fas fa-minus"></i></button>
+<button id="pc-close" title="إغلاق"><i class="fas fa-times"></i></button>
+</div>
+</div>
+<div class="private-chat-messages" id="pc-messages"></div>
+<div class="private-chat-input">
+<input type="text" id="pc-input" placeholder="اكتب رسالتك..." onkeypress="if(event.key==='Enter')sendPrivateMsg()">
+<button onclick="sendPrivateMsg()"><i class="fas fa-paper-plane"></i></button>
+</div>
+</div>
+
+<!-- ====== صورة الطرف الآخر المصغّرة (في الشريط السفلي) ====== -->
+<div class="minimized-chat-avatar" id="minimized-chat-avatar" onclick="restorePrivateChat()">
+<img id="mca-img" src="">
+<span class="mca-badge" id="mca-badge" style="display:none;">0</span>
+</div>
+
+<style>
+/* ====== نافذة الخاص ====== */
+.private-chat-modal {
+position: fixed;
+top: 0; left: 0; width: 100%; height: 50%;
+background: rgba(15,15,20,0.98);
+border-bottom: 2px solid var(--gold);
+z-index: 8000;
+display: none;
+flex-direction: column;
+transition: all 0.3s ease;
+box-shadow: 0 10px 40px rgba(0,0,0,0.9);
+}
+.private-chat-modal.open { display: flex; }
+.private-chat-modal.keyboard-open { height: 80%; }
+.private-chat-header {
+padding: 10px 12px;
+background: rgba(10,10,15,0.98);
+border-bottom: 1px solid var(--border-gold);
+display: flex;
+justify-content: space-between;
+align-items: center;
+}
+.private-chat-user { display: flex; align-items: center; gap: 10px; }
+.private-chat-user img {
+width: 38px; height: 38px; border-radius: 50%;
+border: 2px solid var(--gold); object-fit: cover;
+}
+.private-chat-user-info { display: flex; flex-direction: column; }
+#pc-name { color: var(--gold); font-weight: 900; font-size: 14px; }
+#pc-status { color: var(--text-dim); font-size: 10px; }
+.private-chat-actions { display: flex; gap: 6px; }
+.private-chat-actions button {
+width: 30px; height: 30px; border-radius: 8px;
+border: 1px solid var(--border-light);
+background: rgba(255,255,255,0.05);
+color: #fff; cursor: pointer; font-size: 13px;
+display: flex; justify-content: center; align-items: center;
+}
+.private-chat-actions button:hover { background: rgba(212,175,55,0.15); border-color: var(--gold); color: var(--gold); }
+.private-chat-messages {
+flex: 1; overflow-y: auto; padding: 12px;
+display: flex; flex-direction: column; gap: 10px;
+scrollbar-width: none;
+}
+.private-chat-messages::-webkit-scrollbar { display: none; }
+.pc-msg {
+max-width: 75%; padding: 8px 12px; border-radius: 14px;
+font-size: 13px; line-height: 1.4; word-wrap: break-word;
+animation: fadeInSlide 0.2s ease-out;
+}
+.pc-msg.sent {
+align-self: flex-end;
+background: linear-gradient(135deg, #d4af37, #b8860b);
+color: #000; border-bottom-right-radius: 4px;
+}
+.pc-msg.received {
+align-self: flex-start;
+background: rgba(255,255,255,0.08);
+color: #fff; border: 1px solid rgba(255,255,255,0.1);
+border-bottom-left-radius: 4px;
+}
+.pc-msg-time { font-size: 9px; opacity: 0.6; margin-top: 3px; }
+.private-chat-input {
+padding: 8px 10px;
+background: rgba(8,8,12,0.98);
+border-top: 1px solid var(--border-gold);
+display: flex; gap: 6px; align-items: center;
+}
+.private-chat-input input {
+flex: 1; padding: 10px 14px;
+border-radius: 20px;
+border: 1px solid var(--border-input);
+background: rgba(255,255,255,0.05);
+color: #fff; outline: none;
+font-family: 'Cairo', sans-serif; font-size: 13px;
+}
+.private-chat-input input:focus { border-color: var(--gold); }
+.private-chat-input button {
+width: 38px; height: 38px; border-radius: 50%;
+background: var(--gold); border: none;
+color: #000; font-size: 14px; cursor: pointer;
+display: flex; justify-content: center; align-items: center;
+}
+
+/* ====== صورة الطرف الآخر المصغّرة ====== */
+.minimized-chat-avatar {
+position: fixed;
+bottom: 75px;
+right: 15px;
+width: 50px;
+height: 50px;
+border-radius: 50%;
+border: 2px solid var(--gold);
+box-shadow: 0 4px 20px rgba(212,175,55,0.5);
+cursor: pointer;
+z-index: 7000;
+display: none;
+overflow: visible;
+transition: transform 0.2s;
+}
+.minimized-chat-avatar.show { display: block; animation: bounceIn 0.4s ease-out; }
+.minimized-chat-avatar:active { transform: scale(0.95); }
+.minimized-chat-avatar img {
+width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
+}
+.mca-badge {
+position: absolute;
+top: -5px; right: -5px;
+background: #ff4444; color: #fff;
+border-radius: 50%; min-width: 18px; height: 18px;
+font-size: 10px; display: flex; justify-content: center;
+align-items: center; padding: 0 4px; font-weight: 900;
+border: 2px solid #0c0a0f;
+}
+@keyframes bounceIn {
+0% { transform: scale(0); opacity: 0; }
+50% { transform: scale(1.1); }
+100% { transform: scale(1); opacity: 1; }
+}
+</style><script src="config.js"></script>
+<script src="ranks.js"></script>
+<script src="utils.js"></script>
+<script src="auth.js"></script>
+<script src="bots.js"></script>
+<script>
+// ====== المتغيرات ======
+let currentRoom = 'general';
+let messagesListener = null;
+let selectedGender = 'male';
+let regSelectedGender = 'male';
+let replyingTo = null;
+let myNotifications = [];
+let unreadCount = 0;
+let mentionHighlights = {};
+
+// ====== الرسائل الخاصة ======
+let currentPrivateChat = null;
+let privateChatListener = null;
+let privateChatsCache = {};
+let minimizedChat = null;
+let unreadPrivate = 0;
+
+// ====== صوت العصفور ======
+function playBirdSound() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const now = ctx.currentTime;
+        [0, 0.15, 0.3].forEach((delay, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            const baseFreq = 2000 + (i * 300);
+            osc.frequency.setValueAtTime(baseFreq, now + delay);
+            osc.frequency.linearRampToValueAtTime(baseFreq + 800, now + delay + 0.05);
+            osc.frequency.linearRampToValueAtTime(baseFreq - 300, now + delay + 0.1);
+            gain.gain.setValueAtTime(0, now + delay);
+            gain.gain.linearRampToValueAtTime(0.3, now + delay + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + delay + 0.13);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + delay);
+            osc.stop(now + delay + 0.15);
         });
-    </script>
+    } catch(e) { console.log('Sound error:', e); }
+}
+
+// ====== صوت الرسالة الخاصة ======
+function playPrivateMsgSound() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const now = ctx.currentTime;
+        [0, 0.12].forEach((delay, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800 + (i * 200), now + delay);
+            osc.frequency.linearRampToValueAtTime(1200 + (i * 200), now + delay + 0.08);
+            gain.gain.setValueAtTime(0, now + delay);
+            gain.gain.linearRampToValueAtTime(0.25, now + delay + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + delay + 0.1);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + delay);
+            osc.stop(now + delay + 0.12);
+        });
+    } catch(e) {}
+}
+
+// ====== تبويبات الدخول ======
+function switchLoginTab(tab) {
+    document.getElementById('tab-guest').classList.remove('active');
+    document.getElementById('tab-member').classList.remove('active');
+    document.getElementById('guest-form').style.display = 'none';
+    document.getElementById('member-form').style.display = 'none';
+    document.getElementById('register-form').style.display = 'none';
+    if (tab === 'guest') {
+        document.getElementById('tab-guest').classList.add('active');
+        document.getElementById('guest-form').style.display = 'block';
+    } else {
+        document.getElementById('tab-member').classList.add('active');
+        document.getElementById('member-form').style.display = 'block';
+    }
+}
+function switchToRegister() {
+    document.getElementById('member-form').style.display = 'none';
+    document.getElementById('register-form').style.display = 'block';
+}
+function switchToLogin() {
+    document.getElementById('register-form').style.display = 'none';
+    document.getElementById('member-form').style.display = 'block';
+}
+function selectGender(g) {
+    selectedGender = g;
+    document.getElementById('gender-male').classList.remove('active');
+    document.getElementById('gender-female').classList.remove('active');
+    document.getElementById(g === 'male' ? 'gender-male' : 'gender-female').classList.add('active');
+}
+function selectRegGender(g) {
+    regSelectedGender = g;
+    document.getElementById('reg-gender-male').classList.remove('active');
+    document.getElementById('reg-gender-female').classList.remove('active');
+    document.getElementById(g === 'male' ? 'reg-gender-male' : 'reg-gender-female').classList.add('active');
+}
+
+// ====== الدخول ======
+function handleGuestLogin() {
+    const name = document.getElementById('guest-name').value.trim();
+    const age = document.getElementById('guest-age').value.trim();
+    const result = registerGuest(name, age, selectedGender);
+    if (result.success) enterChat();
+    else alert('⚠️ ' + result.error);
+}
+async function handleMemberLogin() {
+    const email = document.getElementById('member-email').value.trim();
+    const password = document.getElementById('member-password').value;
+    const result = await login(email, password);
+    if (result.success) enterChat();
+    else alert('⚠️ ' + result.error);
+}
+async function handleRegister() {
+    const name = document.getElementById('register-name').value.trim();
+    const age = document.getElementById('register-age').value.trim();
+    const email = document.getElementById('register-email').value.trim();
+    const password = document.getElementById('register-password').value;
+    const confirmPassword = document.getElementById('register-password-confirm').value;
+    if (password !== confirmPassword) { alert('⚠️ كلمات السر غير متطابقة'); return; }
+    const result = await registerMember(name, age, regSelectedGender, email, password);
+    if (result.success) enterChat();
+    else alert('⚠️ ' + result.error);
+}
+async function handleUpgrade() {
+    const email = document.getElementById('upgrade-email').value.trim();
+    const password = document.getElementById('upgrade-password').value;
+    const confirmPassword = document.getElementById('upgrade-password-confirm').value;
+    if (password !== confirmPassword) { alert('⚠️ كلمات السر غير متطابقة'); return; }
+    const user = getCurrentUser();
+    if (!user) return;
+    const result = await registerMember(user.name, user.age, user.gender, email, password);
+    if (result.success) {
+        closeUpgradeModal();
+        document.getElementById('upgrade-nav-btn').style.display = 'none';
+        showToast('fa-crown', '🎉 تم ترقيتك لعضو');
+        location.reload();
+    } else alert('⚠️ ' + result.error);
+}
+async function handleLogout() {
+    if (confirm('هل أنت متأكد من الخروج؟')) {
+        if (messagesListener) messagesListener.off();
+        if (privateChatListener) privateChatListener.off();
+        await logout();
+        location.reload();
+    }
+}
+
+// ====== الدخول للشات ======
+function enterChat() {
+    const user = getCurrentUser();
+    if (!user) return;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('chat-container').style.display = 'flex';
+    const savedBg = localStorage.getItem(QAMAR.STORAGE_KEYS.BACKGROUND);
+    if (savedBg) changeBackground(savedBg);
+    generateStars();
+    buildRoomsList();
+    buildBackgroundsList();
+    if (!user.isGuest) document.getElementById('upgrade-nav-btn').style.display = 'none';
+    addSystemMessage(`👑 مرحباً ${user.name} - رتبتك: ${getRankBadge(user.rank)} ${user.rank}`);
+    startMessagesListener();
+    setupNotificationsListener();
+    setupPrivateMessagesListener();
+    if (typeof initBots === 'function') initBots();
+}
+
+// ====== بناء قائمة الغرف ======
+function buildRoomsList() {
+    const list = document.getElementById('rooms-list');
+    list.innerHTML = '';
+    const user = getCurrentUser();
+    if (!user) return;
+    const visibleRooms = QAMAR.getVisibleRooms(user);
+    Object.values(visibleRooms).forEach(room => {
+        const item = document.createElement('div');
+        item.className = 'sidebar-item';
+        item.innerHTML = `${room.icon} ${room.name}`;
+        if (room.id === currentRoom) item.classList.add('active');
+        item.onclick = () => switchRoom(room.id, room.name + ' ' + room.icon, item);
+        list.appendChild(item);
+    });
+}
+function buildBackgroundsList() {
+    const list = document.getElementById('bg-options');
+    list.innerHTML = '';
+    QAMAR.BACKGROUNDS.forEach(bg => {
+        const btn = document.createElement('button');
+        btn.style.cssText = 'padding:8px;border-radius:8px;border:1px solid var(--border-light);background:rgba(255,255,255,0.05);color:#fff;cursor:pointer;';
+        btn.innerText = bg.id;
+        btn.onclick = () => changeBackground(bg.id);
+        list.appendChild(btn);
+    });
+}
+
+// ====== تبديل الغرفة ======
+function switchRoom(roomId, roomTitle, element) {
+    const user = getCurrentUser();
+    if (!QAMAR.isRoomVisible(roomId, user)) { alert('🔒 هذه الغرفة غير متاحة لك'); return; }
+    if (messagesListener) messagesListener.off();
+    currentRoom = roomId;
+    document.getElementById('room-title').innerText = roomTitle;
+    document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+    if (element) element.classList.add('active');
+    document.getElementById('messages').innerHTML = '';
+    addSystemMessage(`📢 تم فتح ${roomTitle}`);
+    startMessagesListener();
+    closeAllPanels();
+    showPendingHighlights();
+}
+
+// ====== الاستماع للرسائل ======
+function startMessagesListener() {
+    if (!db) return;
+    if (messagesListener) messagesListener.off();
+    const ref = db.ref('rooms/' + currentRoom + '/messages').limitToLast(100);
+    messagesListener = ref;
+    messagesListener.on('child_added', (snap) => {
+        const msg = snap.val();
+        const user = getCurrentUser();
+        if (msg && msg.sender !== user?.name) {
+            displayMessage(msg.sender, msg.text, msg.color, msg.avatar, msg.time, msg.isBot, snap.key, msg.replyTo, msg.mentions, msg);
+        }
+    });
+}
+
+// ====== إرسال رسالة ======
+function sendMessage() {
+    const input = document.getElementById('message-input');
+    const text = input.value.trim();
+    const user = getCurrentUser();
+    if (!text || !user) return;
+    if (isLink(text)) { alert('⚠️ يحظر نشر الروابط'); return; }
+    if (text.startsWith('!') && typeof handleBotCommand === 'function') {
+        handleBotCommand(text);
+        input.value = '';
+        return;
+    }
+    const mentions = extractMentions(text);
+    const messageData = {
+        sender: user.name,
+        text: text,
+        time: firebase.database.ServerValue.TIMESTAMP,
+        avatar: user.avatar,
+        color: user.color,
+        nameGradient: user.nameGradient || null,
+        nameGlow: user.nameGlow || null,
+        nameEmoji: user.nameEmoji || null,
+        avatarFrame: user.avatarFrame || null,
+        uid: user.uid || null,
+        isBot: false,
+        mentions: mentions,
+        replyTo: replyingTo
+    };
+    displayMessage(user.name, text, user.color, user.avatar, Date.now(), false, null, replyingTo, mentions, messageData);
+    db.ref('rooms/' + currentRoom + '/messages').push(messageData);
+    if (mentions.length > 0) notifyMentions(mentions, text);
+    cancelReply();
+    input.value = '';
+    input.focus();
+}
+function extractMentions(text) {
+    const matches = text.match(/@[\u0600-\u06FF\w]+/g);
+    return matches ? matches.map(m => m.substring(1)) : [];
+}
+function notifyMentions(mentions, text) {
+    const user = getCurrentUser();
+    mentions.forEach(name => {
+        if (name === user.name) return;
+        db.ref('notifications').push({
+            to: name,
+            from: user.name,
+            fromAvatar: user.avatar,
+            fromColor: user.color,
+            type: 'mention',
+            text: text,
+            room: currentRoom,
+            roomName: QAMAR.ROOMS[currentRoom]?.name || currentRoom,
+            time: firebase.database.ServerValue.TIMESTAMP
+        });
+    });
+}
+function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
+
+// ====== عرض الرسالة (مع الإطار والتدرج) ======
+function displayMessage(sender, text, color, avatar, time, isBot = false, msgId = null, replyTo = null, mentions = [], senderData = null) {
+    const container = document.getElementById('messages');
+    const user = getCurrentUser();
+    const msg = document.createElement('div');
+    msg.className = 'message' + (isBot ? ' bot' : '');
+    msg.setAttribute('data-msg-id', msgId || Date.now());
+    msg.setAttribute('data-sender', sender);
+
+    const isMentioned = mentions && mentions.includes(user?.name);
+    if (isMentioned) msg.classList.add('highlighted');
+
+    // حاوية الصورة + الإطار
+    const avatarWrapper = document.createElement('div');
+    avatarWrapper.style.cssText = 'position:relative;width:38px;height:38px;flex-shrink:0;';
+
+    const avatarImg = document.createElement('img');
+    avatarImg.className = 'message-avatar';
+    avatarImg.src = avatar || getDefaultAvatar(sender);
+    avatarImg.style.width = '100%';
+    avatarImg.style.height = '100%';
+    avatarImg.onclick = () => openUserProfile(sender);
+    avatarWrapper.appendChild(avatarImg);
+
+    // إضافة الإطار (إذا موجود)
+    if (senderData && senderData.avatarFrame && senderData.avatarFrame !== 'none') {
+        const frameData = getFrameStyleById(senderData.avatarFrame);
+        if (frameData) {
+            const frameEl = document.createElement('div');
+            frameEl.className = 'message-avatar-frame';
+            frameEl.style.cssText = frameData.style;
+            avatarWrapper.appendChild(frameEl);
+        }
+    }
+
+    const content = document.createElement('div');
+    content.className = 'message-content';
+
+    const header = document.createElement('div');
+    header.className = 'message-header';
+
+    const username = document.createElement('div');
+    username.className = 'message-username';
+    username.innerText = sender + (isBot ? ' 🤖' : '');
+
+    // تطبيق التدرج
+    if (senderData && senderData.nameGradient && senderData.nameGradient.length >= 2) {
+        username.style.background = `linear-gradient(90deg, ${senderData.nameGradient[0]}, ${senderData.nameGradient[1]}, ${senderData.nameGradient[0]})`;
+        username.style.backgroundSize = '200% 200%';
+        username.style.webkitBackgroundClip = 'text';
+        username.style.backgroundClip = 'text';
+        username.style.webkitTextFillColor = 'transparent';
+        username.style.animation = 'nameGradientMove 3s linear infinite';
+    } else {
+        username.style.color = color || '#ffd700';
+    }
+
+    // توهج
+    if (senderData && senderData.nameGlow) {
+        if (senderData.nameGlow === 'soft') username.style.filter = 'drop-shadow(0 0 8px currentColor)';
+        else if (senderData.nameGlow === 'medium') username.style.filter = 'drop-shadow(0 0 15px currentColor)';
+        else if (senderData.nameGlow === 'strong') username.style.filter = 'drop-shadow(0 0 25px currentColor) drop-shadow(0 0 40px currentColor)';
+    }
+
+    // إيموجي الاسم
+    if (senderData && senderData.nameEmoji) {
+        username.innerText = sender + ' ' + senderData.nameEmoji + (isBot ? ' 🤖' : '');
+    }
+
+    username.onclick = () => insertMention(sender);
+
+    const optBtn = document.createElement('button');
+    optBtn.className = 'message-options-btn';
+    optBtn.innerHTML = '⋮';
+    optBtn.onclick = (e) => {
+        e.stopPropagation();
+        showMessageMenu(msg, sender, text, msgId);
+    };
+
+    const timeEl = document.createElement('span');
+    timeEl.style.cssText = 'font-size:10px;color:var(--text-dim);margin-right:auto;';
+    timeEl.innerText = ' ' + formatTime(time);
+
+    header.appendChild(username);
+    header.appendChild(timeEl);
+    header.appendChild(optBtn);
+
+    const msgText = document.createElement('div');
+    msgText.className = 'message-text';
+
+    if (mentions && mentions.length > 0) {
+        let formatted = text;
+        mentions.forEach(name => {
+            const regex = new RegExp(`@${name}`, 'g');
+            formatted = formatted.replace(regex, `<span class="mention-inline" onclick="insertMention('${name}')"><img src="${getDefaultAvatar(name)}"><span>${name}</span></span>`);
+        });
+        msgText.innerHTML = formatted;
+    } else {
+        msgText.innerText = text;
+    }
+
+    content.appendChild(header);
+    content.appendChild(msgText);
+
+    if (replyTo) {
+        const quote = document.createElement('div');
+        quote.className = 'reply-quote';
+        quote.innerHTML = `<div class="reply-name">↩ ${replyTo.sender}</div><div class="reply-text">${replyTo.text.substring(0, 80)}</div>`;
+        quote.onclick = () => {
+            const original = document.querySelector(`[data-msg-id="${replyTo.id}"]`);
+            if (original) {
+                original.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                original.classList.add('highlighted');
+                setTimeout(() => original.classList.remove('highlighted'), 3000);
+            }
+        };
+        content.appendChild(quote);
+    }
+
+    const reactions = document.createElement('div');
+    reactions.className = 'message-reactions';
+    content.appendChild(reactions);
+
+    msg.appendChild(avatarWrapper);
+    msg.appendChild(content);
+    container.appendChild(msg);
+    container.scrollTop = container.scrollHeight;
+}
+
+// ====== دالة مساعدة للوصول لإطار
+function getFrameStyleById(frameId) {
+    const frames = {
+        'fire_dragon': { style: 'border:4px solid transparent;background:linear-gradient(135deg,#ff4500,#ff0055,#ffd700) border-box;-webkit-mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;box-shadow:0 0 15px rgba(255,69,0,0.9);animation:megaSpin 3s linear infinite;' },
+        'vip_crown': { style: 'border:3px solid #ffcc00;box-shadow:0 0 20px rgba(255,204,0,0.9);animation:royalPulse 2.5s ease-in-out infinite;' },
+        'neon_ring': { style: 'border:3px dashed #00f3ff;box-shadow:0 0 15px #00f3ff;animation:megaSpin 4s linear infinite;' },
+        'galaxy': { style: 'border:3px dashed transparent;background:linear-gradient(135deg,#1a2a6c,#b21f1f,#fdbb2d) border-box;-webkit-mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;box-shadow:0 0 20px rgba(178,31,31,0.8);animation:megaSpin 8s linear infinite;' },
+        'sakura': { style: 'border:3px solid #ff9ff3;box-shadow:0 0 20px #ff9ff3;animation:megaPulse 2.5s infinite;' },
+        'hearts': { style: 'border:3px dotted #ff4757;box-shadow:0 0 20px #ff4757;animation:heartBeat 1.5s infinite;' },
+        'butterfly': { style: 'border:3px solid #ba68c8;box-shadow:0 0 20px #ba68c8;animation:megaSpin 6s linear infinite;' },
+        'diamond': { style: 'border:3px solid #e0fbfc;box-shadow:0 0 25px #e0fbfc;animation:megaSpin 3s linear infinite;' },
+        'pirate': { style: 'border:3px solid #2f3542;box-shadow:0 0 20px #000;animation:megaPulse 3s infinite;' },
+        'girly': { style: 'border:3px solid #ff9a9e;box-shadow:0 0 20px #ff9a9e;animation:megaPulse 2s infinite;' },
+        'moon': { style: 'border:3px solid #f0e68c;box-shadow:0 0 20px #f0e68c;animation:megaGlow 2s infinite alternate;' }
+    };
+    return frames[frameId] || null;
+}
+
+// ====== قائمة الرسالة ======
+function showMessageMenu(msgEl, sender, text, msgId) {
+    document.querySelectorAll('.message-menu').forEach(m => m.remove());
+    document.querySelectorAll('.emoji-bar').forEach(b => b.remove());
+    const user = getCurrentUser();
+    const isOwner = sender === user.name;
+    const canDelete = isOwner || ['King','Queen','Super Owner','Room Manager Owner','Grand Owner','Owner'].includes(user.rank);
+    const menu = document.createElement('div');
+    menu.className = 'message-menu open';
+    const react = document.createElement('div');
+    react.className = 'message-menu-item';
+    react.innerHTML = '😊 تفاعل';
+    react.onclick = () => showEmojiBar(msgEl);
+    menu.appendChild(react);
+    const reply = document.createElement('div');
+    reply.className = 'message-menu-item';
+    reply.innerHTML = '💬 رد';
+    reply.onclick = () => startReply(sender, text, msgId);
+    menu.appendChild(reply);
+    if (isOwner) {
+        const edit = document.createElement('div');
+        edit.className = 'message-menu-item';
+        edit.innerHTML = '✏️ تعديل';
+        edit.onclick = () => editMessage(msgEl, msgId);
+        menu.appendChild(edit);
+    }
+    if (canDelete) {
+        const del = document.createElement('div');
+        del.className = 'message-menu-item danger';
+        del.innerHTML = '🗑️ حذف';
+        del.onclick = () => deleteMessage(msgEl, msgId);
+        menu.appendChild(del);
+    }
+    msgEl.querySelector('.message-content').appendChild(menu);
+    setTimeout(() => {
+        document.addEventListener('click', function closeMenu(e) {
+            if (!menu.contains(e.target)) {
+                menu.remove();
+                document.querySelectorAll('.emoji-bar').forEach(b => b.remove());
+                document.removeEventListener('click', closeMenu);
+            }
+        });
+    }, 100);
+}
+
+// ====== شريط الإيموجيات ======
+function showEmojiBar(msgEl) {
+    document.querySelectorAll('.message-menu').forEach(m => m.remove());
+    document.querySelectorAll('.emoji-bar').forEach(b => b.remove());
+    const bar = document.createElement('div');
+    bar.className = 'emoji-bar open';
+    ['👍','❤️','😂','😮'].forEach(emoji => {
+        const e = document.createElement('span');
+        e.className = 'emoji-quick';
+        e.innerText = emoji;
+        e.onclick = () => { addReaction(msgEl, emoji); bar.remove(); };
+        bar.appendChild(e);
+    });
+    const plus = document.createElement('button');
+    plus.className = 'emoji-plus';
+    plus.innerHTML = '+';
+    plus.onclick = () => {
+        const customEmoji = prompt('🎨 اكتب إيموجي:', '🎉');
+        if (customEmoji) { addReaction(msgEl, customEmoji); bar.remove(); }
+    };
+    bar.appendChild(plus);
+    msgEl.querySelector('.message-content').appendChild(bar);
+}
+function addReaction(msgEl, emoji) {
+    let reactions = msgEl.querySelector('.message-reactions');
+    if (!reactions) {
+        reactions = document.createElement('div');
+        reactions.className = 'message-reactions';
+        msgEl.querySelector('.message-content').appendChild(reactions);
+    }
+    const badge = document.createElement('span');
+    badge.className = 'reaction-badge';
+    badge.innerText = emoji;
+    reactions.appendChild(badge);
+    document.querySelectorAll('.message-menu').forEach(m => m.remove());
+}
+
+// ====== الرد ======
+function startReply(sender, text, msgId) {
+    replyingTo = { sender, text, id: msgId };
+    document.getElementById('reply-name').innerText = sender;
+    document.getElementById('reply-text-preview').innerText = text.substring(0, 60);
+    document.getElementById('reply-preview').classList.add('show');
+    document.getElementById('message-input').focus();
+    document.querySelectorAll('.message-menu').forEach(m => m.remove());
+}
+function cancelReply() {
+    replyingTo = null;
+    document.getElementById('reply-preview').classList.remove('show');
+}
+function editMessage(msgEl, msgId) {
+    const msgText = msgEl.querySelector('.message-text');
+    const newText = prompt('✏️ تعديل:', msgText.innerText);
+    if (newText && msgId) {
+        db.ref('rooms/' + currentRoom + '/messages/' + msgId).update({ text: newText });
+        msgText.innerText = newText;
+    }
+    document.querySelectorAll('.message-menu').forEach(m => m.remove());
+}
+function deleteMessage(msgEl, msgId) {
+    if (confirm('🗑️ حذف الرسالة؟')) {
+        if (msgId) db.ref('rooms/' + currentRoom + '/messages/' + msgId).remove();
+        msgEl.remove();
+    }
+    document.querySelectorAll('.message-menu').forEach(m => m.remove());
+}
+
+// ====== المنشن ======
+function insertMention(name) {
+    const input = document.getElementById('message-input');
+    input.value += `@${name} `;
+    input.focus();
+    document.querySelectorAll('.message-menu').forEach(m => m.remove());
+}
+function showPendingHighlights() {
+    const user = getCurrentUser();
+    if (!user) return;
+    setTimeout(() => {
+        document.querySelectorAll('.message').forEach(msgEl => {
+            const sender = msgEl.getAttribute('data-sender');
+            const text = msgEl.querySelector('.message-text')?.innerText || '';
+            if (text.includes('@' + user.name) && sender !== user.name) {
+                msgEl.classList.add('highlighted');
+            }
+        });
+    }, 500);
+}
+
+// ====== الإشعارات ======
+function toggleNotifications() {
+    document.getElementById('notif-sidebar').classList.toggle('open');
+    document.getElementById('rooms-sidebar').classList.remove('open');
+    document.getElementById('settings-sidebar').classList.remove('open');
+    document.getElementById('pm-sidebar').classList.remove('open');
+    const isOpen = document.getElementById('notif-sidebar').classList.contains('open');
+    document.getElementById('overlay').classList.toggle('show', isOpen);
+    if (isOpen) {
+        loadNotifications();
+        unreadCount = 0;
+        updateNotifBadge();
+    }
+}
+function setupNotificationsListener() {
+    const user = getCurrentUser();
+    if (!user) return;
+    db.ref('notifications').orderByChild('to').equalTo(user.name).on('child_added', (snap) => {
+        const notif = snap.val();
+        if (notif) {
+            const age = Date.now() - (notif.time || 0);
+            const isRecent = age < 30000;
+            if (notif.room === currentRoom && isRecent) {
+                playBirdSound();
+                showToast('fa-bell', `🔔 ${notif.from} أشار إليك`);
+            }
+            unreadCount++;
+            updateNotifBadge();
+        }
+    });
+}
+function loadNotifications() {
+    const user = getCurrentUser();
+    if (!user) return;
+    const list = document.getElementById('notif-list');
+    list.innerHTML = '';
+    db.ref('notifications').orderByChild('to').equalTo(user.name).limitToLast(50).once('value', (snap) => {
+        const notifs = [];
+        snap.forEach(child => { notifs.push({ id: child.key, ...child.val() }); });
+        notifs.reverse();
+        if (notifs.length === 0) {
+            list.innerHTML = '<div style="text-align:center;color:var(--text-dim);font-size:12px;padding:20px;">لا توجد إشعارات</div>';
+            return;
+        }
+        notifs.forEach(notif => {
+            const item = document.createElement('div');
+            item.className = 'notif-item';
+            item.innerHTML = `<img src="${notif.fromAvatar || getDefaultAvatar(notif.from)}" style="width:32px;height:32px;border-radius:50%;border:1px solid var(--gold);"><div style="flex:1;"><div style="color:${notif.fromColor || '#ffd700'};font-weight:900;font-size:12px;">${notif.from}</div><div style="color:var(--text-dim);font-size:11px;">${notif.type === 'mention' ? '📢 أشار إليك في ' + (notif.roomName || notif.room) : notif.text}</div><div style="color:#666;font-size:10px;">${formatTime(notif.time)}</div></div>`;
+            item.onclick = () => {
+                if (notif.room && QAMAR.ROOMS[notif.room]) switchRoom(notif.room, QAMAR.ROOMS[notif.room].name + ' ' + QAMAR.ROOMS[notif.room].icon);
+                closeAllPanels();
+            };
+            list.appendChild(item);
+        });
+    });
+}
+function updateNotifBadge() {
+    const badge = document.getElementById('notif-badge');
+    if (unreadCount > 0) {
+        badge.innerText = unreadCount > 9 ? '9+' : unreadCount;
+        badge.style.display = 'flex';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+// ====== الرسائل الخاصة ======
+function togglePrivateMessages() {
+    document.getElementById('pm-sidebar').classList.toggle('open');
+    document.getElementById('notif-sidebar').classList.remove('open');
+    document.getElementById('rooms-sidebar').classList.remove('open');
+    document.getElementById('settings-sidebar').classList.remove('open');
+    const isOpen = document.getElementById('pm-sidebar').classList.contains('open');
+    document.getElementById('overlay').classList.toggle('show', isOpen);
+    if (isOpen) {
+        loadPrivateChatsList();
+        unreadPrivate = 0;
+        updatePMBadge();
+    }
+}
+function setupPrivateMessagesListener() {
+    const user = getCurrentUser();
+    if (!user || !user.uid) return;
+    db.ref('private_chats').on('value', (snap) => {
+        const chats = snap.val() || {};
+        privateChatsCache = {};
+        Object.keys(chats).forEach(chatId => {
+            if (chatId.includes(user.uid)) {
+                const chat = chats[chatId];
+                const messages = chat.messages || {};
+                const msgKeys = Object.keys(messages);
+                if (msgKeys.length > 0) {
+                    const lastKey = msgKeys[msgKeys.length - 1];
+                    const lastMsg = messages[lastKey];
+                    const otherUid = chatId.split('_').find(u => u !== user.uid);
+                    const otherName = lastMsg.from === user.uid ? (lastMsg.toName || 'مستخدم') : lastMsg.fromName;
+                    const otherAvatar = lastMsg.from === user.uid ? (lastMsg.toAvatar || '') : lastMsg.fromAvatar;
+                    privateChatsCache[chatId] = {
+                        id: chatId,
+                        otherUid: otherUid,
+                        name: otherName || 'مستخدم',
+                        avatar: otherAvatar || getDefaultAvatar(otherName),
+                        last: lastMsg.text || '',
+                        time: lastMsg.time || Date.now(),
+                        unread: 0
+                    };
+                    if (lastMsg.from !== user.uid && !lastMsg.read) {
+                        privateChatsCache[chatId].unread = 1;
+                        if (currentPrivateChat && currentPrivateChat.id === chatId) {
+                            db.ref('private_chats/' + chatId + '/messages/' + lastKey + '/read').set(true);
+                        } else {
+                            unreadPrivate++;
+                            playPrivateMsgSound();
+                            updatePMBadge();
+                            if (minimizedChat && minimizedChat.id === chatId) {
+                                incrementMinimizedBadge();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+}
+function loadPrivateChatsList() {
+    const list = document.getElementById('pm-list');
+    list.innerHTML = '';
+    const chats = Object.values(privateChatsCache);
+    if (chats.length === 0) {
+        list.innerHTML = '<div style="text-align:center;color:var(--text-dim);font-size:12px;padding:20px;">لا توجد محادثات</div>';
+        return;
+    }
+    chats.sort((a, b) => (b.time || 0) - (a.time || 0));
+    chats.forEach(chat => {
+        const item = document.createElement('div');
+        item.className = 'sidebar-item';
+        if (chat.unread > 0) item.style.borderColor = 'var(--gold)';
+        item.innerHTML = `<img src="${chat.avatar}" style="width:36px;height:36px;border-radius:50%;border:2px solid var(--gold);object-fit:cover;"><div style="flex:1;"><div style="color:#fff;font-weight:900;font-size:13px;">${chat.name}</div><div style="color:var(--text-dim);font-size:11px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${chat.last}</div></div>${chat.unread > 0 ? '<span style="background:#ff4444;color:#fff;border-radius:50%;min-width:18px;height:18px;font-size:10px;display:flex;justify-content:center;align-items:center;padding:0 4px;font-weight:900;">'+chat.unread+'</span>' : ''}`;
+        item.onclick = () => {
+            closeAllPanels();
+            openPrivateChatWith(chat.otherUid, chat.name, chat.avatar);
+        };
+        list.appendChild(item);
+    });
+}
+function updatePMBadge() {
+    const badge = document.getElementById('pm-badge');
+    if (unreadPrivate > 0) {
+        badge.innerText = unreadPrivate > 9 ? '9+' : unreadPrivate;
+        badge.style.display = 'flex';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+function openPrivateChatWith(uid, name, avatar) {
+    const user = getCurrentUser();
+    if (!user || !user.uid) { alert('يجب تسجيل الدخول'); return; }
+    const chatId = [user.uid, uid].sort().join('_');
+    currentPrivateChat = { id: chatId, uid: uid, name: name, avatar: avatar || getDefaultAvatar(name) };
+
+    document.getElementById('pc-avatar').src = currentPrivateChat.avatar;
+    document.getElementById('pc-name').innerText = name;
+    document.getElementById('pc-status').innerText = 'متصل';
+
+    const modal = document.getElementById('private-chat-modal');
+    modal.classList.add('open');
+    document.getElementById('minimized-chat-avatar').classList.remove('show');
+    minimizedChat = null;
+
+    loadPrivateMessages();
+}
+function loadPrivateMessages() {
+    if (!currentPrivateChat) return;
+    if (privateChatListener) privateChatListener.off();
+    const user = getCurrentUser();
+    const container = document.getElementById('pc-messages');
+    container.innerHTML = '';
+    const ref = db.ref('private_chats/' + currentPrivateChat.id + '/messages').limitToLast(100);
+    privateChatListener = ref;
+    privateChatListener.on('child_added', (snap) => {
+        const msg = snap.val();
+        if (!msg) return;
+        const isSent = msg.from === user.uid;
+        displayPrivateMsg(msg.text, isSent, msg.time);
+        if (!isSent && !msg.read) {
+            db.ref('private_chats/' + currentPrivateChat.id + '/messages/' + snap.key + '/read').set(true);
+        }
+    });
+}
+function displayPrivateMsg(text, isSent, time) {
+    const container = document.getElementById('pc-messages');
+    const msg = document.createElement('div');
+    msg.className = 'pc-msg ' + (isSent ? 'sent' : 'received');
+    msg.innerHTML = `${text}<div class="pc-msg-time">${formatTime(time)}</div>`;
+    container.appendChild(msg);
+    container.scrollTop = container.scrollHeight;
+}
+function sendPrivateMsg() {
+    const input = document.getElementById('pc-input');
+    const text = input.value.trim();
+    if (!text || !currentPrivateChat) return;
+    const user = getCurrentUser();
+    db.ref('private_chats/' + currentPrivateChat.id + '/messages').push({
+        from: user.uid,
+        fromName: user.name,
+        fromAvatar: user.avatar || '',
+        to: currentPrivateChat.uid,
+        toName: currentPrivateChat.name,
+        toAvatar: currentPrivateChat.avatar || '',
+        text: text,
+        time: firebase.database.ServerValue.TIMESTAMP,
+        read: false
+    });
+    input.value = '';
+}
+document.getElementById('pc-minimize').onclick = () => {
+    if (!currentPrivateChat) return;
+    minimizedChat = { ...currentPrivateChat, unread: 0 };
+    document.getElementById('private-chat-modal').classList.remove('open');
+    document.getElementById('mca-img').src = currentPrivateChat.avatar;
+    document.getElementById('minimized-chat-avatar').classList.add('show');
+    document.getElementById('mca-badge').style.display = 'none';
+};
+document.getElementById('pc-close').onclick = () => {
+    if (privateChatListener) privateChatListener.off();
+    document.getElementById('private-chat-modal').classList.remove('open');
+    currentPrivateChat = null;
+    minimizedChat = null;
+    document.getElementById('minimized-chat-avatar').classList.remove('show');
+};
+function restorePrivateChat() {
+    if (!minimizedChat) return;
+    openPrivateChatWith(minimizedChat.uid, minimizedChat.name, minimizedChat.avatar);
+}
+function incrementMinimizedBadge() {
+    const badge = document.getElementById('mca-badge');
+    let count = parseInt(badge.innerText) || 0;
+    count++;
+    badge.innerText = count;
+    badge.style.display = 'flex';
+}
+// استقبال أمر فتح الخاص من البروفايل
+window.addEventListener('message', (e) => {
+    if (e.data && e.data.action === 'openPrivateChat') {
+        openPrivateChatWith(e.data.uid, e.data.name, '');
+    }
+    if (e.data && e.data.action === 'closeProfile') {
+        closeProfileFrame();
+    }
+});
+
+// ====== فتح بروفايل المستخدم ======
+function openUserProfile(userName) {
+    const user = getCurrentUser();
+    const isMe = user && user.name === userName;
+    if (isMe) { openProfile(); return; }
+    db.ref('users').orderByChild('name').equalTo(userName).once('value', (snap) => {
+        let found = null;
+        snap.forEach(child => { found = { uid: child.key, ...child.val() }; });
+        if (found) {
+            localStorage.setItem('qamar_view_user', JSON.stringify(found));
+            localStorage.setItem('profile_target_data', JSON.stringify(found));
+            localStorage.setItem('profile_view_mode', 'visitor');
+        } else {
+            const guestData = { name: userName, rank: 'Guest', isGuest: true };
+            localStorage.setItem('qamar_view_user', JSON.stringify(guestData));
+            localStorage.setItem('profile_target_data', JSON.stringify(guestData));
+            localStorage.setItem('profile_view_mode', 'visitor');
+        }
+        document.getElementById('profile-frame-container').style.display = 'block';
+    });
+}
+function openProfile() {
+    const user = getCurrentUser();
+    localStorage.setItem('qamar_profile_user', JSON.stringify(user));
+    localStorage.setItem('qamar_current_user', JSON.stringify(user));
+    localStorage.setItem('profile_target_data', JSON.stringify(user));
+    localStorage.setItem('profile_view_mode', 'owner');
+    document.getElementById('profile-frame-container').style.display = 'block';
+}
+function closeProfileFrame() {
+    document.getElementById('profile-frame-container').style.display = 'none';
+    const iframe = document.getElementById('profile-iframe');
+    iframe.src = iframe.src;
+}
+
+// ====== القوائم ======
+function toggleRooms() {
+    document.getElementById('rooms-sidebar').classList.toggle('open');
+    document.getElementById('notif-sidebar').classList.remove('open');
+    document.getElementById('settings-sidebar').classList.remove('open');
+    document.getElementById('pm-sidebar').classList.remove('open');
+    const isOpen = document.getElementById('rooms-sidebar').classList.contains('open');
+    document.getElementById('overlay').classList.toggle('show', isOpen);
+}
+function toggleSettings() {
+    document.getElementById('settings-sidebar').classList.toggle('open');
+    document.getElementById('rooms-sidebar').classList.remove('open');
+    document.getElementById('notif-sidebar').classList.remove('open');
+    document.getElementById('pm-sidebar').classList.remove('open');
+    const isOpen = document.getElementById('settings-sidebar').classList.contains('open');
+    document.getElementById('overlay').classList.toggle('show', isOpen);
+}
+function closeAllPanels() {
+    document.getElementById('rooms-sidebar').classList.remove('open');
+    document.getElementById('settings-sidebar').classList.remove('open');
+    document.getElementById('notif-sidebar').classList.remove('open');
+    document.getElementById('pm-sidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('show');
+}
+
+// ====== المايكات ======
+function toggleMic(n) {
+    const mic = document.querySelectorAll('.mic-btn')[n - 1];
+    mic.classList.toggle('active');
+    mic.innerHTML = mic.classList.contains('active') ? '<i class="fas fa-user"></i>' : '<i class="fas fa-microphone"></i>';
+}
+function toggleMicsBar() {
+    document.getElementById('mics-bar').classList.toggle('hidden');
+    document.getElementById('mics-toggle-btn').classList.toggle('hidden');
+}
+
+// ====== أدوات ======
+function toggleToolbar() {
+    document.getElementById('floating-toolbar').classList.toggle('open');
+    document.getElementById('plus-btn').classList.toggle('active');
+}
+function rollDice() { addSystemMessage(`🎲 النرد: ${Math.floor(Math.random() * 6) + 1}`); }
+function searchYouTube() {
+    const q = prompt('🔍 ابحث في يوتيوب:');
+    if (q) window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`, '_blank');
+}
+function insertEmoji() {
+    const inp = document.getElementById('message-input');
+    inp.value += '😊';
+    inp.focus();
+}
+function showOnlineUsers() { closeAllPanels(); alert('👥 المتواجدين'); }
+function showStore() { closeAllPanels(); alert('🛒 المتجر قيد التطوير'); }
+function openUpgradeModal() {
+    const user = getCurrentUser();
+    if (!user || !user.isGuest) { alert('✅ أنت عضو بالفعل'); return; }
+    document.getElementById('upgrade-modal').classList.add('active');
+}
+function closeUpgradeModal() {
+    document.getElementById('upgrade-modal').classList.remove('active');
+}
+function changeBackground(bgId) {
+    const container = document.getElementById('chat-container');
+    const bg = QAMAR.BACKGROUNDS.find(b => b.id === bgId);
+    if (bg) {
+        container.classList.remove('background-type-stars','background-type-nebula','background-type-moon','background-type-dust','background-type-waves');
+        container.classList.add(bg.class);
+        localStorage.setItem(QAMAR.STORAGE_KEYS.BACKGROUND, bgId);
+    }
+}
+function addSystemMessage(text) {
+    const container = document.getElementById('messages');
+    const msg = document.createElement('div');
+    msg.className = 'message system';
+    msg.innerText = text;
+    container.appendChild(msg);
+    container.scrollTop = container.scrollHeight;
+}
+
+// ====== التحميل ======
+window.addEventListener('DOMContentLoaded', () => {
+    const user = getCurrentUser();
+    if (user) enterChat();
+});
+
+// ====== كيبورد على الجوال ======
+document.addEventListener('focusin', (e) => {
+    if (e.target.id === 'pc-input') {
+        document.getElementById('private-chat-modal').classList.add('keyboard-open');
+    }
+});
+document.addEventListener('focusout', (e) => {
+    if (e.target.id === 'pc-input') {
+        setTimeout(() => {
+            document.getElementById('private-chat-modal').classList.remove('keyboard-open');
+        }, 100);
+    }
+});
+</script>
 </body>
 </html>
