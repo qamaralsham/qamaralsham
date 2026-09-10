@@ -1383,6 +1383,33 @@ document.addEventListener('focusout', (e) => {
         }, 100);
     }
 });
+// ====== إصلاح: قراءة البيانات من qamar_current_user أولاً ======
+(function() {
+    'use strict';
+    
+    function waitForAuth() {
+        if (typeof window.getCurrentUser !== 'function') {
+            setTimeout(waitForAuth, 200);
+            return;
+        }
+        
+        const originalGetCurrentUser = window.getCurrentUser;
+        
+        window.getCurrentUser = function() {
+            try {
+                const current = JSON.parse(localStorage.getItem('qamar_current_user') || 'null');
+                if (current && current.name) {
+                    return current;
+                }
+            } catch(e) {}
+            return originalGetCurrentUser();
+        };
+        
+        console.log('✅ getCurrentUser upgraded');
+    }
+    
+    waitForAuth();
+})();
 </script>
 </body>
 </html>
