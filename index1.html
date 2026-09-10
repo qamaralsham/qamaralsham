@@ -247,9 +247,7 @@
             <h3><i class="fas fa-door-open"></i> الغرف</h3>
             <button class="sidebar-close" onclick="closeAllPanels()"><i class="fas fa-times"></i></button>
         </div>
-        <div class="sidebar-content" id="rooms-list">
-            <!-- تُملأ ديناميكياً -->
-        </div>
+        <div class="sidebar-content" id="rooms-list"></div>
     </div>
     
     <!-- قائمة الإعدادات -->
@@ -294,7 +292,7 @@
     <script src="ranks.js"></script>
     <script src="utils.js"></script>
     <script src="auth.js"></script>
-    <script src="bots.js"></script>
+    <!-- <script src="bots.js"></script> --> <!-- معطل مؤقتاً -->
     
     <script>
         // ====== المتغيرات ======
@@ -406,8 +404,7 @@
             if (result.success) {
                 closeUpgradeModal();
                 document.getElementById('upgrade-nav-btn').style.display = 'none';
-                showToast('fa-crown', '🎉 تم ترقيتك لعضو');
-                // إعادة تحميل الشات
+                alert('🎉 تم ترقيتك لعضو');
                 location.reload();
             } else {
                 alert('⚠️ ' + result.error);
@@ -437,26 +434,22 @@
             buildRoomsList();
             buildBackgroundsList();
             
-            // فتح السويت الملكي للملك
             if (user.rank === 'King' || user.rank === 'Queen') {
                 document.getElementById('royal-room-item')?.classList.remove('locked');
             }
             
-            // إخفاء زر الترقية للعضو
             if (!user.isGuest) {
                 document.getElementById('upgrade-nav-btn').style.display = 'none';
             }
             
-            addSystemMessage(`👑 مرحباً ${user.name} - رتبتك: ${getRankBadge(user.rank)} ${user.rank}`);
+            addSystemMessage(`👑 مرحباً ${user.name} - رتبتك: ${user.rank}`);
             startMessagesListener();
-            
-            // بدء نظام البوتات
-            if (typeof initBots === 'function') initBots();
         }
         
         // ====== بناء قائمة الغرف ======
         function buildRoomsList() {
             const list = document.getElementById('rooms-list');
+            if (!list) return;
             list.innerHTML = '';
             
             const user = getCurrentUser();
@@ -467,13 +460,10 @@
                 item.setAttribute('data-room', room.id);
                 item.innerHTML = `<i class="fas fa-${getRoomIcon(room.id)}"></i> ${room.name}`;
                 
-                // قفل الغرف الخاصة
                 if (room.type === 'private') {
                     if (room.id === 'royal' && user.rank !== 'King' && user.rank !== 'Queen') {
                         item.classList.add('locked');
                     } else if (room.id === 'studio' && user.isGuest) {
-                        item.classList.add('locked');
-                    } else if (room.id === 'jail' && !can(user, 'canBan')) {
                         item.classList.add('locked');
                     }
                 }
@@ -489,14 +479,15 @@
             const icons = {
                 general: 'globe', quiz: 'trophy', islamic: 'mosque',
                 royal: 'crown', candy: 'candy-cane', studio: 'microphone-alt',
-                gaza: 'flag', sham: 'moon', jail: 'gavel'
+                gaza: 'flag', sham: 'moon'
             };
             return icons[roomId] || 'door-open';
         }
         
-        // ====== بناء خلفيات ======
+        // ====== بناء الخلفيات ======
         function buildBackgroundsList() {
             const list = document.getElementById('bg-options');
+            if (!list) return;
             list.innerHTML = '';
             
             QAMAR.BACKGROUNDS.forEach(bg => {
@@ -512,15 +503,11 @@
         function switchRoom(roomId, roomTitle, element) {
             const user = getCurrentUser();
             
-            // فحص الصلاحيات
             if (roomId === 'royal' && user.rank !== 'King' && user.rank !== 'Queen') {
                 alert('🔒 هذا الروم خاص جداً'); return;
             }
             if (roomId === 'studio' && user.isGuest) {
                 alert('🎙️ استديو التسجيل غير متاح للزوار'); return;
-            }
-            if (roomId === 'jail' && !can(user, 'canBan') && user.rank !== 'Guest') {
-                alert('🚔 غرفة السجن للمسجونين والمشرفين فقط'); return;
             }
             
             if (messagesListener) messagesListener.off();
@@ -540,7 +527,7 @@
         
         // ====== الاستماع للرسائل ======
         function startMessagesListener() {
-            if (!db) return;
+            if (typeof db === 'undefined' || !db) return;
             if (messagesListener) messagesListener.off();
             
             const ref = db.ref('rooms/' + currentRoom + '/messages').limitToLast(100);
@@ -563,26 +550,19 @@
             if (!text || !user) return;
             if (isLink(text)) { alert('⚠️ يحظر نشر الروابط'); return; }
             
-            // فحص الأمر للبوت
-            if (text.startsWith('!') && typeof handleBotCommand === 'function') {
-                handleBotCommand(text);
-                input.value = '';
-                return;
-            }
-            
-            // عرض فوري
             displayMessage(user.name, text, user.color, user.avatar, Date.now(), false);
             
-            // حفظ في Firebase
-            db.ref('rooms/' + currentRoom + '/messages').push({
-                sender: user.name,
-                text: text,
-                time: firebase.database.ServerValue.TIMESTAMP,
-                avatar: user.avatar,
-                color: user.color,
-                uid: user.uid || null,
-                isBot: false
-            });
+            if (typeof db !== 'undefined' && db) {
+                db.ref('rooms/' + currentRoom + '/messages').push({
+                    sender: user.name,
+                    text: text,
+                    time: firebase.database.ServerValue.TIMESTAMP,
+                    avatar: user.avatar,
+                    color: user.color,
+                    uid: user.uid || null,
+                    isBot: false
+                });
+            }
             
             input.value = '';
             input.focus();
