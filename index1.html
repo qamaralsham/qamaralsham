@@ -392,10 +392,19 @@ function selectRegGender(g) {
 
 // ====== الدخول ======
 async function handleGuestLogin() {
+    alert('1. الزر يعمل');
+    
     const name = document.getElementById('guest-name').value.trim();
     const age = document.getElementById('guest-age').value.trim();
-
+    
+    alert('2. الاسم=' + name + ' | العمر=' + age);
+    alert('3. نوع registerGuest=' + typeof registerGuest);
+    alert('4. نوع auth=' + typeof auth);
+    alert('5. نوع db=' + typeof db);
+    
     const result = await registerGuest(name, age, selectedGender);
+    alert('6. النتيجة=' + JSON.stringify(result));
+    
     if (result.success) {
         if (typeof initChat === 'function') initChat();
     } else {
