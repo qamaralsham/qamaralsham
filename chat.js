@@ -1907,4 +1907,4 @@ window.closeBotProfile = closeBotProfile;
 window.openBotTraining = openBotTraining;
 window.closeAllMenus = closeAllMenus;
 
-console.log('✅ chat.js v2 loaded');ح
+console.log('✅ chat.js v2 loaded');
