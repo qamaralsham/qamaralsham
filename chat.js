@@ -1410,25 +1410,22 @@ function startPresenceHeartbeat() {
         }).catch(() => {});
     };
 
-    const setOffline = () => {
+    setOnline();
+    setInterval(setOnline, 60000);  // كل دقيقة بدل 30 ثانية
+
+    window.addEventListener('beforeunload', () => {
         presenceRef.set({
             state: 'offline',
             lastChanged: Date.now()
         }).catch(() => {});
-    };
-
-    setOnline();
-    setInterval(setOnline, 30000);
-    window.addEventListener('beforeunload', setOffline);
+    });
 
     presenceRef.onDisconnect().set({
         state: 'offline',
         lastChanged: Date.now()
     });
 
-    if (ChatState.presenceListener) ChatState.presenceListener.off();
-    ChatState.presenceListener = db.ref('user_presence').limitToLast(100);
-    ChatState.presenceListener.on('value', () => {});
+    // ⭐ حذفنا: presenceListener (كان يقرأ 100 سجل بلا فائدة)
 }
 
 // ==============================================
