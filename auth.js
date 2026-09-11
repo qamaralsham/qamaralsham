@@ -1,6 +1,6 @@
 // ==============================================
-// قمر الشام - نظام الدخول والمصادقة (v5 - كامل، محسّن وسريع)
-// Qamar Al Sham - Auth v5 (Complete, Fast & Non-blocking)
+// قمر الشام - نظام الدخول والمصادقة (v6)
+// Qamar Al Sham - Auth v6 (Fixed & Fast)
 // ==============================================
 
 let currentUser = null;
@@ -8,7 +8,20 @@ let isUserGuest = false;
 let _authReady = false;
 
 // ==============================================
-// 1. تسجيل زائر (سريع + آمن)
+// أداة: انتظار Firebase Auth
+// ==============================================
+async function waitForAuth(timeoutMs = 5000) {
+    if (typeof auth !== 'undefined' && auth) return true;
+    const attempts = Math.floor(timeoutMs / 200);
+    for (let i = 0; i < attempts; i++) {
+        await new Promise(r => setTimeout(r, 200));
+        if (typeof auth !== 'undefined' && auth) return true;
+    }
+    return false;
+}
+
+// ==============================================
+// 1. تسجيل زائر
 // ==============================================
 async function registerGuest(name, age, gender) {
     if (!name || name.trim().length < 2) {
@@ -24,16 +37,11 @@ async function registerGuest(name, age, gender) {
     const trimmedName = name.trim();
 
     try {
-        // ⭐ انتظار auth حتى 5 ثوان
-if (typeof auth === 'undefined' || !auth) {
-    for (let i = 0; i < 25; i++) {
-        await new Promise(r => setTimeout(r, 200));
-        if (typeof auth !== 'undefined' && auth) break;
-    }
-}
-if (typeof auth === 'undefined' || !auth) {
-    return { success: false, error: 'Firebase Auth غير متاح — أعد المحاولة' };
-}
+        // ⭐ انتظار auth
+        const ok = await waitForAuth(5000);
+        if (!ok) {
+            return { success: false, error: 'Firebase لم يجهز بعد — انتظر ثوانٍ وأعد المحاولة' };
+        }
 
         const credential = await auth.signInAnonymously();
         const uid = credential.user.uid;
@@ -47,7 +55,7 @@ if (typeof auth === 'undefined' || !auth) {
             rank: 'User',
             rankLevel: QAMAR.getRankLevel('User'),
             isGuest: true,
-            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(trimmedName)}&background=555&color=fff`,
+            avatar: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(trimmedName) + '&background=555&color=fff',
             color: '#95a5a6',
             createdAt: now,
             lastSeen: now
@@ -66,7 +74,7 @@ if (typeof auth === 'undefined' || !auth) {
         isUserGuest = true;
         saveSession(currentUser, true);
 
-        console.log('✅ Guest registered (fast):', trimmedName, '→', uid);
+        console.log('✅ Guest registered:', trimmedName, '→', uid);
         return { success: true, user: currentUser };
 
     } catch (e) {
@@ -79,7 +87,7 @@ if (typeof auth === 'undefined' || !auth) {
 }
 
 // ==============================================
-// 2. تسجيل عضو جديد (سريع)
+// 2. تسجيل عضو جديد
 // ==============================================
 async function registerMember(name, age, gender, email, password) {
     if (!name || name.trim().length < 2) {
@@ -98,7 +106,11 @@ async function registerMember(name, age, gender, email, password) {
     const trimmedName = name.trim();
 
     try {
-        typeof auth === 'undefined' 
+        // ⭐ انتظار auth
+        const ok = await waitForAuth(5000);
+        if (!ok) {
+            return { success: false, error: 'Firebase لم يجهز بعد — انتظر ثوانٍ وأعد المحاولة' };
+        }
 
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         const firebaseUser = userCredential.user;
@@ -114,7 +126,7 @@ async function registerMember(name, age, gender, email, password) {
             rank: rank,
             rankLevel: QAMAR.getRankLevel(rank),
             isGuest: false,
-            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(trimmedName)}&background=random&color=fff`,
+            avatar: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(trimmedName) + '&background=random&color=fff',
             color: '#ffffff',
             createdAt: now,
             lastSeen: now
@@ -133,7 +145,7 @@ async function registerMember(name, age, gender, email, password) {
         isUserGuest = false;
         saveSession(currentUser, false);
 
-        console.log('✅ Member registered (fast):', trimmedName);
+        console.log('✅ Member registered:', trimmedName);
         return { success: true, user: currentUser };
 
     } catch (error) {
@@ -148,7 +160,7 @@ async function registerMember(name, age, gender, email, password) {
 }
 
 // ==============================================
-// 3. تسجيل دخول عضو (سريع)
+// 3. تسجيل دخول عضو
 // ==============================================
 async function login(email, password) {
     if (!email || !password) {
@@ -156,8 +168,10 @@ async function login(email, password) {
     }
 
     try {
-        if (typeof auth === 'undefined' || !auth) {
-            return { success: false, error: 'Firebase Auth غير متاح' };
+        // ⭐ انتظار auth
+        const ok = await waitForAuth(5000);
+        if (!ok) {
+            return { success: false, error: 'Firebase لم يجهز بعد — انتظر ثوانٍ وأعد المحاولة' };
         }
 
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
@@ -171,7 +185,7 @@ async function login(email, password) {
             rank: 'User',
             rankLevel: QAMAR.getRankLevel('User'),
             isGuest: false,
-            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(email.split('@')[0])}&background=random&color=fff`,
+            avatar: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(email.split('@')[0]) + '&background=random&color=fff',
             color: '#ffffff',
             lastSeen: now
         };
@@ -206,7 +220,7 @@ async function login(email, password) {
         isUserGuest = false;
         saveSession(currentUser, false);
 
-        console.log('✅ Member logged in (fast):', userData.name, '| Rank:', userData.rank);
+        console.log('✅ Member logged in:', userData.name, '| Rank:', userData.rank);
         return { success: true, user: currentUser };
 
     } catch (error) {
@@ -337,15 +351,22 @@ function isHigherThan(rank) {
 }
 
 function isHigherOrEqualThan(rank) {
-    let u = getCurrentUser();
+    const u = getCurrentUser();
     if (!u) return false;
     return QAMAR.isHigherOrEqual(u.rank, rank);
 }
 
 // ==============================================
-// 8. مراقبة حالة المصادقة (تعمل في الخلفية - بدون تعطيل الإقلاع)
+// 8. مراقبة حالة المصادقة
 // ==============================================
-if (typeof auth !== 'undefined' && auth) {
+async function startAuthListener() {
+    // انتظار auth قبل بدء المراقبة
+    const ok = await waitForAuth(10000);
+    if (!ok) {
+        console.warn('⚠️ auth not available for listener');
+        return;
+    }
+
     auth.onAuthStateChanged((firebaseUser) => {
         _authReady = true;
         if (firebaseUser) {
@@ -357,21 +378,24 @@ if (typeof auth !== 'undefined' && auth) {
                             currentUser.rankLevel = QAMAR.getRankLevel(currentUser.rank);
                             isUserGuest = currentUser.isGuest === true;
                             saveSession(currentUser, isUserGuest);
-                            console.log('🔄 Auth state restored instantly:', currentUser.name);
+                            console.log('🔄 Auth restored:', currentUser.name);
                         }
                     })
                     .catch((e) => {
-                        console.warn('⚠️ Background user fetch failed:', e);
+                        console.warn('⚠️ Fetch user failed:', e);
                     });
             }
         }
     });
+
+    console.log('✅ Auth listener started');
 }
 
 // ==============================================
-// 9. تحميل الجلسة الفوري
+// 9. التحميل
 // ==============================================
 window.addEventListener('DOMContentLoaded', () => {
     loadSession();
-    console.log('📦 Auth.js v5 loaded — Fast & Non-blocking ⚡');
+    startAuthListener();
+    console.log('📦 Auth.js v6 loaded');
 });
