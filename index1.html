@@ -309,6 +309,19 @@
 </div>
 
 <!-- ============================================
+     بروفايل البوت
+     ============================================ -->
+<div class="bot-profile-modal" id="bot-profile-modal">
+<div class="bot-profile-content">
+<button class="bot-profile-close" onclick="closeBotProfile()">✕</button>
+<div class="bot-profile-avatar" id="bp-avatar">🤖</div>
+<div class="bot-profile-name" id="bp-name">البوت</div>
+<div class="bot-profile-badge">🤖 بوت رسمي</div>
+<div class="bot-profile-desc" id="bp-desc">وصف البوت</div>
+</div>
+</div>
+
+<!-- ============================================
      إطار البروفايل
      ============================================ -->
 <div id="profile-frame-container" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.95);display:none;">
@@ -319,7 +332,7 @@
 </div>
 
 <!-- ============================================
-     السكربتات (الترتيب مهم!)
+     السكربتات
      ============================================ -->
 <script src="config.js"></script>
 <script src="ranks.js"></script>
@@ -329,7 +342,7 @@
 <script src="bots.js"></script>
 
 <!-- ============================================
-     سكربت الدخول (مبسّط)
+     سكربت الدخول
      ============================================ -->
 <script>
 // ====== متغيرات الدخول ======
@@ -343,7 +356,7 @@ function switchLoginTab(tab) {
     document.getElementById('guest-form').style.display = 'none';
     document.getElementById('member-form').style.display = 'none';
     document.getElementById('register-form').style.display = 'none';
-    
+
     if (tab === 'guest') {
         document.getElementById('tab-guest').classList.add('active');
         document.getElementById('guest-form').style.display = 'block';
@@ -381,7 +394,7 @@ function selectRegGender(g) {
 async function handleGuestLogin() {
     const name = document.getElementById('guest-name').value.trim();
     const age = document.getElementById('guest-age').value.trim();
-    
+
     const result = await registerGuest(name, age, selectedGender);
     if (result.success) {
         if (typeof initChat === 'function') initChat();
@@ -393,7 +406,7 @@ async function handleGuestLogin() {
 async function handleMemberLogin() {
     const email = document.getElementById('member-email').value.trim();
     const password = document.getElementById('member-password').value;
-    
+
     const result = await login(email, password);
     if (result.success) {
         if (typeof initChat === 'function') initChat();
@@ -408,12 +421,12 @@ async function handleRegister() {
     const email = document.getElementById('register-email').value.trim();
     const password = document.getElementById('register-password').value;
     const confirmPassword = document.getElementById('register-password-confirm').value;
-    
+
     if (password !== confirmPassword) {
         alert('⚠️ كلمات السر غير متطابقة');
         return;
     }
-    
+
     const result = await registerMember(name, age, regSelectedGender, email, password);
     if (result.success) {
         if (typeof initChat === 'function') initChat();
@@ -426,15 +439,15 @@ async function handleUpgrade() {
     const email = document.getElementById('upgrade-email').value.trim();
     const password = document.getElementById('upgrade-password').value;
     const confirmPassword = document.getElementById('upgrade-password-confirm').value;
-    
+
     if (password !== confirmPassword) {
         alert('⚠️ كلمات السر غير متطابقة');
         return;
     }
-    
+
     const user = getCurrentUser();
     if (!user) return;
-    
+
     const result = await registerMember(user.name, user.age, user.gender, email, password);
     if (result.success) {
         closeUpgradeModal();
@@ -442,19 +455,6 @@ async function handleUpgrade() {
         setTimeout(() => location.reload(), 1500);
     } else {
         alert('⚠️ ' + result.error);
-    }
-}
-
-// ====== دوال إضافية للواجهة ======
-function openBotTraining() {
-    const user = getCurrentUser();
-    if (!user || (user.rank !== 'King' && user.rank !== 'Queen')) {
-        showToast('fa-lock', '🔒 للملك/الملكة فقط');
-        return;
-    }
-    closeAllPanels();
-    if (typeof switchRoom === 'function') {
-        switchRoom('bot_training', '🤖 تدريب البوت');
     }
 }
 
@@ -466,18 +466,6 @@ window.addEventListener('DOMContentLoaded', () => {
             if (typeof initChat === 'function') initChat();
         }, 150);
     }
-    
-    // إظهار زر التخفي والإعدادات الإدارية للملك/الملكة
-    setTimeout(() => {
-        const u = getCurrentUser();
-        if (u && (u.rank === 'King' || u.rank === 'Queen')) {
-            const btn = document.getElementById('invisible-btn');
-            if (btn) btn.style.display = 'flex';
-            
-            const adminSettings = document.getElementById('admin-settings');
-            if (adminSettings) adminSettings.style.display = 'block';
-        }
-    }, 500);
 });
 </script>
 
