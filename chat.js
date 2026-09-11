@@ -102,18 +102,15 @@ function watchUser(uid) {
         }
     });
 }
-
 function updateMessagesByUid(uid, data) {
     if (!data) return;
 
     document.querySelectorAll(`.message[data-sender-uid="${uid}"]`).forEach(msgEl => {
-        // ⭐ الصورة
         const avatarImg = msgEl.querySelector('.message-avatar');
         if (avatarImg && data.avatar) {
             avatarImg.src = data.avatar;
         }
 
-        // ⭐ الاسم + التنسيقات
         const username = msgEl.querySelector('.message-username');
         if (!username) return;
 
@@ -121,10 +118,9 @@ function updateMessagesByUid(uid, data) {
         if (data.nameEmoji) displayName += ' ' + data.nameEmoji;
         username.textContent = displayName;
 
-        // ⭐ إعادة تعيين التنسيقات
         username.removeAttribute('style');
 
-        // التدرج
+        // التدرج (لا يُلمس أبداً)
         if (data.nameGradient && Array.isArray(data.nameGradient) && data.nameGradient.length >= 2) {
             username.style.background = `linear-gradient(90deg, ${data.nameGradient[0]}, ${data.nameGradient[1]}, ${data.nameGradient[0]})`;
             username.style.backgroundSize = '200% 200%';
@@ -138,14 +134,29 @@ function updateMessagesByUid(uid, data) {
 
         // التوهج
         if (data.nameGlow && data.nameGlow !== 'none') {
-            if (data.nameGlow === 'soft') {
-                username.style.filter = 'drop-shadow(0 0 8px currentColor)';
-            } else if (data.nameGlow === 'medium') {
-                username.style.filter = 'drop-shadow(0 0 15px currentColor)';
-            } else if (data.nameGlow === 'strong') {
-                username.style.filter = 'drop-shadow(0 0 25px currentColor) drop-shadow(0 0 40px currentColor)';
-            }
+            if (data.nameGlow === 'soft') username.style.filter = 'drop-shadow(0 0 8px currentColor)';
+            else if (data.nameGlow === 'medium') username.style.filter = 'drop-shadow(0 0 15px currentColor)';
+            else if (data.nameGlow === 'strong') username.style.filter = 'drop-shadow(0 0 25px currentColor) drop-shadow(0 0 40px currentColor)';
         }
+
+        // ⭐ الشكل — box-shadow inset (لا يُلغي التدرج)
+        if (data.nameShape && data.nameShape !== 'none') {
+            if (data.nameShape === 'capsule') {
+                username.style.padding = '4px 14px';
+                username.style.borderRadius = '30px';
+            } else if (data.nameShape === 'cloud') {
+                username.style.padding = '6px 18px';
+                username.style.borderRadius = '60% 40% 50% 50% / 50% 60% 40% 50%';
+            } else if (data.nameShape === 'wave') {
+                username.style.padding = '6px 16px';
+                username.style.borderRadius = '30% 70% 70% 30% / 30% 30% 70% 70%';
+            }
+            // خلفية وهمية — لا تلمس background
+            username.style.boxShadow = 'inset 0 0 0 100px rgba(0,0,0,0.5), 0 0 15px rgba(212,175,55,0.25)';
+            username.style.border = '1px solid rgba(212,175,55,0.4)';
+        }
+    });
+}ح
 
         // ⭐ شكل الخلفية (كبسولة/غيمة/موجة)
         if (data.nameShape && data.nameShape !== 'none') {
