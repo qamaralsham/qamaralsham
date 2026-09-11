@@ -422,15 +422,7 @@ async function handleGuestLogin() {
         alert('7. خطأ: ' + result.error);
     }
 }
-    const result = await registerGuest(name, age, selectedGender);
-    alert('6. النتيجة=' + JSON.stringify(result));
     
-    if (result.success) {
-        if (typeof initChat === 'function') initChat();
-    } else {
-        alert('⚠️ ' + result.error);
-    }
-}
 
 async function handleMemberLogin() {
     const email = document.getElementById('member-email').value.trim();
