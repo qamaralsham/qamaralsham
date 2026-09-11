@@ -2111,23 +2111,22 @@ window.addEventListener('message', (e) => {
     if (e.data && e.data.action === 'closeProfile') {
         closeProfileFrame();
     }
-    if (e.data && e.data.action === 'profileUpdated') {
-        if (e.data.uid) {
-            db.ref('users/' + e.data.uid).once('value').then(snap => {
-                const data = snap.val();
-                if (data) {
-                    usersCache[e.data.uid] = data;
-                    usersCacheTTL[e.data.uid] = Date.now();
-                    updateMessagesByUid(e.data.uid, data);
-                }
-            });
+        if (e.data && e.data.action === 'profileUpdated') {
+        if (e.data.uid && e.data.data) {
+            usersCache[e.data.uid] = e.data.data;
+            usersCacheTTL[e.data.uid] = Date.now();
+            updateMessagesByUid(e.data.uid, e.data.data);
+
+            const me = getCurrentUser();
+            if (me && me.uid === e.data.uid) {
+                const merged = { ...me, ...e.data.data };
+                currentUser = merged;
+                saveSession(currentUser, currentUser.isGuest);
+            }
+            console.log('📥 Profile update received for', e.data.uid);
         }
     }
 });
-
-document.addEventListener('DOMContentLoaded', () => {
-    const messagesContainer = document.getElementById('messages');
-    if (messagesContainer) {
         messagesContainer.addEventListener('scroll', closeAllMenus, { passive: true });
     }
 });
