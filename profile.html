@@ -1026,16 +1026,22 @@ function saveToChat() {
     if (currentUser.uid && typeof db !== 'undefined' && db) {
         db.ref('users/' + currentUser.uid).update(u).catch(e => console.warn('saveToChat error:', e));
     }
-
-    // ⭐ إرسال فوري للشات
+    // ⭐ إرسال فوري للشات (postMessage)
     if (window.parent && window.parent !== window) {
         window.parent.postMessage({
             action: 'profileUpdated',
             uid: u.uid,
             data: u
         }, '*');
-        console.log('📤 Profile update sent to chat');
+        showToast('📤 تم إرسال التحديث للشات');
     }
+
+    // ⭐ طريقة احتياطية: storage event (تعمل بين التبويبات)
+    localStorage.setItem('qamar_profile_ping', JSON.stringify({
+        uid: u.uid,
+        data: u,
+        time: Date.now()
+    }));
 }
 
 // ==============================================
