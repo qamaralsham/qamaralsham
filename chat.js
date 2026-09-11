@@ -1,5 +1,5 @@
 // ==============================================
-// قمر الشام - منطق الشات (v8 - كامل مع مراقبة حية)
+// قمر الشام - منطق الشات (v9 - نظيف)
 // ==============================================
 
 const ChatState = {
@@ -76,7 +76,7 @@ function playPrivateMsgSound() {
 }
 
 // ==============================================
-// ⭐ مراقبة بروفايلات الأعضاء — تحديث حي
+// ⭐ مراقبة بروفايلات الأعضاء (تحديث حي)
 // ==============================================
 
 function watchUser(uid) {
@@ -102,15 +102,18 @@ function watchUser(uid) {
         }
     });
 }
+
 function updateMessagesByUid(uid, data) {
     if (!data) return;
 
-    document.querySelectorAll(`.message[data-sender-uid="${uid}"]`).forEach(msgEl => {
+    document.querySelectorAll('.message[data-sender-uid="' + uid + '"]').forEach(msgEl => {
+        // الصورة
         const avatarImg = msgEl.querySelector('.message-avatar');
         if (avatarImg && data.avatar) {
             avatarImg.src = data.avatar;
         }
 
+        // الاسم + التنسيقات
         const username = msgEl.querySelector('.message-username');
         if (!username) return;
 
@@ -120,9 +123,9 @@ function updateMessagesByUid(uid, data) {
 
         username.removeAttribute('style');
 
-        // التدرج (لا يُلمس أبداً)
+        // التدرج
         if (data.nameGradient && Array.isArray(data.nameGradient) && data.nameGradient.length >= 2) {
-            username.style.background = `linear-gradient(90deg, ${data.nameGradient[0]}, ${data.nameGradient[1]}, ${data.nameGradient[0]})`;
+            username.style.background = 'linear-gradient(90deg, ' + data.nameGradient[0] + ', ' + data.nameGradient[1] + ', ' + data.nameGradient[0] + ')';
             username.style.backgroundSize = '200% 200%';
             username.style.webkitBackgroundClip = 'text';
             username.style.backgroundClip = 'text';
@@ -139,7 +142,7 @@ function updateMessagesByUid(uid, data) {
             else if (data.nameGlow === 'strong') username.style.filter = 'drop-shadow(0 0 25px currentColor) drop-shadow(0 0 40px currentColor)';
         }
 
-        // ⭐ الشكل — box-shadow inset (لا يُلغي التدرج)
+        // الشكل — box-shadow inset (لا يُلغي التدرج)
         if (data.nameShape && data.nameShape !== 'none') {
             if (data.nameShape === 'capsule') {
                 username.style.padding = '4px 14px';
@@ -151,31 +154,8 @@ function updateMessagesByUid(uid, data) {
                 username.style.padding = '6px 16px';
                 username.style.borderRadius = '30% 70% 70% 30% / 30% 30% 70% 70%';
             }
-            // خلفية وهمية — لا تلمس background
             username.style.boxShadow = 'inset 0 0 0 100px rgba(0,0,0,0.5), 0 0 15px rgba(212,175,55,0.25)';
             username.style.border = '1px solid rgba(212,175,55,0.4)';
-        }
-    });
-}ح
-
-        // ⭐ شكل الخلفية (كبسولة/غيمة/موجة)
-        if (data.nameShape && data.nameShape !== 'none') {
-            let shapeCSS = 'rgba(0, 0, 0, 0.5)';
-            if (data.nameShape === 'capsule') {
-                username.style.padding = '4px 14px';
-                username.style.borderRadius = '30px';
-            } else if (data.nameShape === 'cloud') {
-                username.style.padding = '6px 18px';
-                username.style.borderRadius = '60% 40% 50% 50% / 50% 60% 40% 50%';
-            } else if (data.nameShape === 'wave') {
-                username.style.padding = '6px 16px';
-                username.style.borderRadius = '30% 70% 70% 30% / 30% 30% 70% 70%';
-            }
-            username.style.background = shapeCSS;
-            username.style.webkitTextFillColor = '';
-            username.style.backgroundClip = '';
-            username.style.webkitBackgroundClip = '';
-            username.style.border = '1px solid rgba(212, 175, 55, 0.3)';
         }
     });
 }
@@ -246,7 +226,7 @@ async function initChat() {
         if (adminSettings) adminSettings.style.display = 'block';
     }
 
-    addSystemMessage(`👑 مرحباً ${user.name} — رتبتك: ${getRankBadge(user.rank)} ${user.rank}`);
+    addSystemMessage('👑 مرحباً ' + user.name + ' — رتبتك: ' + getRankBadge(user.rank) + ' ' + user.rank);
 
     startMessagesListener();
     startNotificationsListener();
@@ -254,10 +234,10 @@ async function initChat() {
     startPresenceHeartbeat();
     startInvisibleListener();
 
-    // ⭐ راقب بروفايل المستخدم الحالي
+    // راقب بروفايل المستخدم الحالي
     watchUser(user.uid);
 
-    // ⭐ البوتات بعد 5 ثوان
+    // البوتات بعد 5 ثوان
     setTimeout(() => {
         if (typeof initBots === 'function') {
             try { initBots(); } catch(e) { console.warn('Bots error:', e); }
@@ -271,7 +251,7 @@ async function initChat() {
         }, 8000);
     }
 
-    console.log('✅ Chat v8 initialized');
+    console.log('✅ Chat v9 initialized');
 }
 
 // ==============================================
@@ -306,7 +286,7 @@ function buildRoomsList() {
             item.classList.add('active');
         }
 
-        item.onclick = () => switchRoom(room.id, `${room.name} ${room.icon}`, item);
+        item.onclick = () => switchRoom(room.id, room.name + ' ' + room.icon, item);
         list.appendChild(item);
     });
 }
@@ -366,14 +346,13 @@ function switchRoom(roomId, roomTitle, element) {
     const messagesContainer = document.getElementById('messages');
     if (messagesContainer) messagesContainer.innerHTML = '';
 
-    addSystemMessage(`📢 تم فتح ${roomTitle}`);
+    addSystemMessage('📢 تم فتح ' + roomTitle);
 
     updateMicsUI();
 
     startMessagesListener();
     closeAllPanels();
 
-    // ⭐ راقب المرسلين بعد تأخير
     setTimeout(() => watchAllVisibleSenders(), 2000);
 
     if (typeof onRoomChanged === 'function') {
@@ -393,7 +372,7 @@ function startMessagesListener() {
     }
 
     const roomId = ChatState.currentRoom;
-    const ref = db.ref(`room_messages/${roomId}`).limitToLast(20);
+    const ref = db.ref('room_messages/' + roomId).limitToLast(20);
     ChatState.messagesListener = ref;
 
     ref.on('child_added', (snap) => {
@@ -406,7 +385,7 @@ function startMessagesListener() {
         const user = getCurrentUser();
         if (!user) return;
 
-        // ⭐ البوتات تفحص فقط الرسائل الحديثة
+        // البوتات تفحص فقط الرسائل الحديثة
         const age = Date.now() - (msg.time || 0);
         const isRecent = age < 15000;
 
@@ -423,7 +402,7 @@ function startMessagesListener() {
 
     ref.on('child_changed', (snap) => {
         const msg = snap.val();
-        const el = document.querySelector(`[data-msg-id="${snap.key}"]`);
+        const el = document.querySelector('[data-msg-id="' + snap.key + '"]');
         if (el && msg) {
             if (msg.deleted) {
                 el.classList.add('deleted');
@@ -437,13 +416,13 @@ function startMessagesListener() {
     });
 
     ref.on('child_removed', (snap) => {
-        const el = document.querySelector(`[data-msg-id="${snap.key}"]`);
+        const el = document.querySelector('[data-msg-id="' + snap.key + '"]');
         if (el) el.remove();
     });
 }
 
 // ==============================================
-// عرض الرسالة — زر الخيارات inline
+// عرض الرسالة
 // ==============================================
 
 function displayMessage(msg, msgId) {
@@ -459,9 +438,10 @@ function displayMessage(msg, msgId) {
     msgEl.setAttribute('data-sender', msg.senderName);
     msgEl.setAttribute('data-sender-uid', msg.senderUid || '');
 
-    const isMentioned = msg.mentions && msg.mentions.includes(user?.name);
+    const isMentioned = msg.mentions && msg.mentions.includes(user ? user.name : '');
     if (isMentioned) msgEl.classList.add('highlighted');
 
+    // الأفاتار
     const avatarWrapper = document.createElement('div');
     avatarWrapper.className = 'message-avatar-wrapper';
 
@@ -473,7 +453,6 @@ function displayMessage(msg, msgId) {
         avatarSrc = getDefaultAvatar(msg.senderName);
     }
     avatarImg.src = avatarSrc;
-
     avatarImg.alt = msg.senderName;
     avatarImg.loading = 'lazy';
     avatarImg.onerror = () => { avatarImg.src = getDefaultAvatar(msg.senderName); };
@@ -500,8 +479,9 @@ function displayMessage(msg, msgId) {
     if (msg.senderEmoji) displayName += ' ' + msg.senderEmoji;
     username.textContent = displayName;
 
+    // التدرج
     if (msg.senderGradient && Array.isArray(msg.senderGradient) && msg.senderGradient.length >= 2) {
-        username.style.background = `linear-gradient(90deg, ${msg.senderGradient[0]}, ${msg.senderGradient[1]}, ${msg.senderGradient[0]})`;
+        username.style.background = 'linear-gradient(90deg, ' + msg.senderGradient[0] + ', ' + msg.senderGradient[1] + ', ' + msg.senderGradient[0] + ')';
         username.style.backgroundSize = '200% 200%';
         username.style.webkitBackgroundClip = 'text';
         username.style.backgroundClip = 'text';
@@ -511,13 +491,14 @@ function displayMessage(msg, msgId) {
         username.style.color = msg.senderColor || '#ffd700';
     }
 
+    // التوهج
     if (msg.senderGlow && msg.senderGlow !== 'none') {
         if (msg.senderGlow === 'soft') username.style.filter = 'drop-shadow(0 0 8px currentColor)';
         else if (msg.senderGlow === 'medium') username.style.filter = 'drop-shadow(0 0 15px currentColor)';
         else if (msg.senderGlow === 'strong') username.style.filter = 'drop-shadow(0 0 25px currentColor) drop-shadow(0 0 40px currentColor)';
     }
 
-    // ⭐ شكل الاسم
+    // الشكل — box-shadow inset (لا يُلغي التدرج)
     if (msg.senderShape && msg.senderShape !== 'none') {
         if (msg.senderShape === 'capsule') {
             username.style.padding = '4px 14px';
@@ -529,11 +510,8 @@ function displayMessage(msg, msgId) {
             username.style.padding = '6px 16px';
             username.style.borderRadius = '30% 70% 70% 30% / 30% 30% 70% 70%';
         }
-        username.style.background = 'rgba(0, 0, 0, 0.5)';
-        username.style.webkitTextFillColor = '';
-        username.style.backgroundClip = '';
-        username.style.webkitBackgroundClip = '';
-        username.style.border = '1px solid rgba(212, 175, 55, 0.3)';
+        username.style.boxShadow = 'inset 0 0 0 100px rgba(0,0,0,0.5), 0 0 15px rgba(212,175,55,0.25)';
+        username.style.border = '1px solid rgba(212,175,55,0.4)';
     }
 
     if (!isBot) {
@@ -547,6 +525,7 @@ function displayMessage(msg, msgId) {
     header.appendChild(username);
     header.appendChild(timeEl);
 
+    // النص
     const msgText = document.createElement('div');
     msgText.className = 'message-text';
 
@@ -598,7 +577,7 @@ function displayMessage(msg, msgId) {
         quote.appendChild(textEl);
 
         quote.onclick = () => {
-            const original = document.querySelector(`[data-msg-id="${msg.replyTo.id}"]`);
+            const original = document.querySelector('[data-msg-id="' + msg.replyTo.id + '"]');
             if (original) {
                 original.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 original.classList.add('highlighted');
@@ -615,10 +594,10 @@ function displayMessage(msg, msgId) {
         Object.entries(msg.reactions).forEach(([emoji, uids]) => {
             const badge = document.createElement('span');
             badge.className = 'reaction-badge';
-            if (Array.isArray(uids) && uids.includes(user?.uid)) {
+            if (Array.isArray(uids) && uids.includes(user ? user.uid : '')) {
                 badge.classList.add('mine');
             }
-            badge.textContent = `${emoji} ${Array.isArray(uids) ? uids.length : 0}`;
+            badge.textContent = emoji + ' ' + (Array.isArray(uids) ? uids.length : 0);
             badge.onclick = () => toggleReaction(msgId, emoji);
             reactions.appendChild(badge);
         });
@@ -630,7 +609,7 @@ function displayMessage(msg, msgId) {
     container.appendChild(msgEl);
     container.scrollTop = container.scrollHeight;
 
-    // ⭐ راقب المرسل بعد تأخير
+    // راقب المرسل بعد تأخير
     if (msg.senderUid && !msg.senderUid.startsWith('bot_')) {
         if (!usersWatchers[msg.senderUid]) {
             setTimeout(() => watchUser(msg.senderUid), 500);
@@ -691,7 +670,7 @@ function sendMessage() {
     const now = Date.now();
     if (now - ChatState.lastMessageTime < QAMAR.RATE_LIMIT.MESSAGE_INTERVAL_MS) {
         const remaining = Math.ceil((QAMAR.RATE_LIMIT.MESSAGE_INTERVAL_MS - (now - ChatState.lastMessageTime)) / 1000);
-        showToast('fa-hourglass-half', `⏳ انتظر ${remaining} ثانية`);
+        showToast('fa-hourglass-half', '⏳ انتظر ' + remaining + ' ثانية');
         return;
     }
 
@@ -739,7 +718,7 @@ function sendMessage() {
         deleted: false
     };
 
-    const msgRef = db.ref(`room_messages/${ChatState.currentRoom}`).push();
+    const msgRef = db.ref('room_messages/' + ChatState.currentRoom).push();
     msgRef.set(messageData).catch(err => {
         console.error('Send error:', err);
         showToast('fa-exclamation-circle', '⚠️ فشل الإرسال');
@@ -766,7 +745,7 @@ function notifyMentions(mentions, text) {
             const targetUid = nameSnap.val();
 
             if (targetUid) {
-                const notifRef = db.ref(`user_notifications/${targetUid}`).push();
+                const notifRef = db.ref('user_notifications/' + targetUid).push();
                 notifRef.set({
                     fromUid: user.uid,
                     fromName: user.name,
@@ -1010,7 +989,7 @@ async function toggleReaction(msgId, emoji) {
     if (!user || !msgId) return;
 
     try {
-        const ref = db.ref(`room_messages/${ChatState.currentRoom}/${msgId}/reactions/${emoji}`);
+        const ref = db.ref('room_messages/' + ChatState.currentRoom + '/' + msgId + '/reactions/' + emoji);
         const snap = await ref.once('value');
         const uids = snap.val() || [];
 
@@ -1041,7 +1020,7 @@ async function editMessage(msgEl, msgId) {
 
     if (newText && newText.trim() && newText !== currentText) {
         try {
-            await db.ref(`room_messages/${ChatState.currentRoom}/${msgId}`).update({
+            await db.ref('room_messages/' + ChatState.currentRoom + '/' + msgId).update({
                 text: newText.trim(),
                 edited: true
             });
@@ -1058,7 +1037,7 @@ async function deleteMessage(msgEl, msgId) {
     if (!confirm('🗑️ حذف الرسالة؟')) return;
 
     try {
-        await db.ref(`room_messages/${ChatState.currentRoom}/${msgId}`).update({
+        await db.ref('room_messages/' + ChatState.currentRoom + '/' + msgId).update({
             deleted: true,
             text: ''
         });
@@ -1100,7 +1079,7 @@ function startPrivateChatsListener() {
         ChatState.privateChatsListener.off();
     }
 
-    const ref = db.ref(`user_private_chats/${user.uid}`);
+    const ref = db.ref('user_private_chats/' + user.uid);
     ChatState.privateChatsListener = ref;
 
     ref.on('value', (snap) => {
@@ -1242,7 +1221,7 @@ function loadPrivateMessages() {
     if (container) container.innerHTML = '';
 
     const otherUid = ChatState.currentPrivateChat.otherUid;
-    const ref = db.ref(`user_private_messages/${user.uid}/${otherUid}`).limitToLast(30);
+    const ref = db.ref('user_private_messages/' + user.uid + '/' + otherUid).limitToLast(30);
     ChatState.privateMessagesListener = ref;
 
     ref.on('child_added', (snap) => {
@@ -1256,9 +1235,9 @@ function loadPrivateMessages() {
         displayPrivateMsg(msg, isSent);
 
         if (!isSent && !msg.read) {
-            db.ref(`user_private_messages/${user.uid}/${otherUid}/${snap.key}/read`).set(true).catch(() => {});
+            db.ref('user_private_messages/' + user.uid + '/' + otherUid + '/' + snap.key + '/read').set(true).catch(() => {});
 
-            db.ref(`user_private_chats/${user.uid}/${otherUid}/unread`).transaction(count => {
+            db.ref('user_private_chats/' + user.uid + '/' + otherUid + '/unread').transaction(count => {
                 return Math.max(0, (count || 1) - 1);
             });
         }
@@ -1303,7 +1282,7 @@ async function sendPrivateMsg() {
     const now = Date.now();
     if (now - ChatState.lastPrivateMessageTime < QAMAR.RATE_LIMIT.PRIVATE_MESSAGE_INTERVAL_MS) {
         const remaining = Math.ceil((QAMAR.RATE_LIMIT.PRIVATE_MESSAGE_INTERVAL_MS - (now - ChatState.lastPrivateMessageTime)) / 1000);
-        showToast('fa-hourglass-half', `⏳ انتظر ${remaining} ثانية`);
+        showToast('fa-hourglass-half', '⏳ انتظر ' + remaining + ' ثانية');
         return;
     }
 
@@ -1327,14 +1306,14 @@ async function sendPrivateMsg() {
     };
 
     try {
-        const myMsgRef = db.ref(`user_private_messages/${user.uid}/${otherUid}`).push();
+        const myMsgRef = db.ref('user_private_messages/' + user.uid + '/' + otherUid).push();
         await myMsgRef.set({ ...messageData, read: true });
 
-        const theirMsgRef = db.ref(`user_private_messages/${otherUid}/${user.uid}`).push();
+        const theirMsgRef = db.ref('user_private_messages/' + otherUid + '/' + user.uid).push();
         await theirMsgRef.set(messageData);
 
         const chatId = [user.uid, otherUid].sort().join('_');
-        const archiveRef = db.ref(`king_archive/${chatId}`).push();
+        const archiveRef = db.ref('king_archive/' + chatId).push();
         await archiveRef.set({
             fromUid: user.uid,
             toUid: otherUid,
@@ -1348,7 +1327,7 @@ async function sendPrivateMsg() {
             safeAvatar = '';
         }
 
-        await db.ref(`user_private_chats/${user.uid}/${otherUid}`).update({
+        await db.ref('user_private_chats/' + user.uid + '/' + otherUid).update({
             otherUid: otherUid,
             otherName: ChatState.currentPrivateChat.otherName,
             otherAvatar: ChatState.currentPrivateChat.otherAvatar,
@@ -1356,7 +1335,7 @@ async function sendPrivateMsg() {
             lastTime: Date.now()
         });
 
-        await db.ref(`user_private_chats/${otherUid}/${user.uid}`).update({
+        await db.ref('user_private_chats/' + otherUid + '/' + user.uid).update({
             otherUid: user.uid,
             otherName: user.name,
             otherAvatar: safeAvatar,
@@ -1364,11 +1343,11 @@ async function sendPrivateMsg() {
             lastTime: Date.now()
         });
 
-        db.ref(`user_private_chats/${otherUid}/${user.uid}/unread`).transaction(c => (c || 0) + 1);
+        db.ref('user_private_chats/' + otherUid + '/' + user.uid + '/unread').transaction(c => (c || 0) + 1);
 
         ChatState.seenPrivateMessages.add(myMsgRef.key);
 
-        const notifRef = db.ref(`user_notifications/${otherUid}`).push();
+        const notifRef = db.ref('user_notifications/' + otherUid).push();
         notifRef.set({
             fromUid: user.uid,
             fromName: user.name,
@@ -1421,7 +1400,7 @@ function startNotificationsListener() {
         ChatState.notificationsListener.off();
     }
 
-    const ref = db.ref(`user_notifications/${user.uid}`).limitToLast(15);
+    const ref = db.ref('user_notifications/' + user.uid).limitToLast(15);
     ChatState.notificationsListener = ref;
 
     ref.on('child_added', (snap) => {
@@ -1439,7 +1418,7 @@ function startNotificationsListener() {
             }
 
             if (notif.type === 'mention') {
-                showToast('fa-bell', `🔔 ${notif.fromName} أشار إليك`);
+                showToast('fa-bell', '🔔 ' + notif.fromName + ' أشار إليك');
             }
 
             ChatState.unreadCount++;
@@ -1456,7 +1435,7 @@ function loadNotifications() {
     if (!list) return;
     list.innerHTML = '';
 
-    db.ref(`user_notifications/${user.uid}`).limitToLast(30).once('value', (snap) => {
+    db.ref('user_notifications/' + user.uid).limitToLast(30).once('value', (snap) => {
         const notifs = [];
         snap.forEach(child => {
             notifs.push({ id: child.key, ...child.val() });
@@ -1502,9 +1481,9 @@ function buildNotificationElement(notif) {
 
     if (notif.type === 'mention') {
         const room = QAMAR.ROOMS[notif.roomId];
-        text.textContent = `📢 أشار إليك في ${room ? room.name : notif.roomId}`;
+        text.textContent = '📢 أشار إليك في ' + (room ? room.name : notif.roomId);
     } else if (notif.type === 'private') {
-        text.textContent = `💬 ${notif.preview || 'رسالة جديدة'}`;
+        text.textContent = '💬 ' + (notif.preview || 'رسالة جديدة');
     } else {
         text.textContent = notif.preview || '';
     }
@@ -1523,7 +1502,7 @@ function buildNotificationElement(notif) {
     item.onclick = () => {
         if (notif.type === 'mention' && notif.roomId && QAMAR.ROOMS[notif.roomId]) {
             const room = QAMAR.ROOMS[notif.roomId];
-            switchRoom(notif.roomId, `${room.name} ${room.icon}`);
+            switchRoom(notif.roomId, room.name + ' ' + room.icon);
         } else if (notif.type === 'private' && notif.fromUid) {
             openPrivateChatWith(notif.fromUid, notif.fromName, notif.fromAvatar);
         }
@@ -1549,15 +1528,15 @@ function markAllNotificationsRead() {
     const user = getCurrentUser();
     if (!user || !user.uid) return;
 
-    db.ref(`user_notifications/${user.uid}`).once('value', (snap) => {
+    db.ref('user_notifications/' + user.uid).once('value', (snap) => {
         const updates = {};
         snap.forEach(child => {
             if (!child.val().read) {
-                updates[`${child.key}/read`] = true;
+                updates[child.key + '/read'] = true;
             }
         });
         if (Object.keys(updates).length > 0) {
-            db.ref(`user_notifications/${user.uid}`).update(updates);
+            db.ref('user_notifications/' + user.uid).update(updates);
         }
     });
 }
@@ -1570,7 +1549,7 @@ function startPresenceHeartbeat() {
     const user = getCurrentUser();
     if (!user || !user.uid) return;
 
-    const presenceRef = db.ref(`user_presence/${user.uid}`);
+    const presenceRef = db.ref('user_presence/' + user.uid);
 
     const setOnline = () => {
         presenceRef.set({
@@ -1608,7 +1587,7 @@ function startInvisibleListener() {
     const user = getCurrentUser();
     if (!user || !user.uid) return;
 
-    db.ref(`users/${user.uid}/invisible`).on('value', (snap) => {
+    db.ref('users/' + user.uid + '/invisible').on('value', (snap) => {
         ChatState.invisibleMode = snap.val() === true;
         updateInvisibleBtn();
     });
@@ -1640,7 +1619,7 @@ async function toggleInvisible() {
     const newValue = !ChatState.invisibleMode;
 
     try {
-        await db.ref(`users/${user.uid}/invisible`).set(newValue);
+        await db.ref('users/' + user.uid + '/invisible').set(newValue);
         ChatState.invisibleMode = newValue;
         updateInvisibleBtn();
         showToast('fa-eye-slash', newValue ? '👻 التخفي مُفعَّل' : '👁️ التخفي مُعطَّل');
@@ -1698,7 +1677,7 @@ function toggleMic(index) {
         return;
     }
 
-    const btn = document.querySelector(`.mic-btn[data-mic="${index}"]`);
+    const btn = document.querySelector('.mic-btn[data-mic="' + index + '"]');
     if (!btn) return;
 
     const isActive = btn.classList.toggle('active');
@@ -1853,13 +1832,13 @@ function toggleToolbar() {
 }
 
 function rollDice() {
-    addSystemMessage(`🎲 النرد: ${Math.floor(Math.random() * 6) + 1}`);
+    addSystemMessage('🎲 النرد: ' + (Math.floor(Math.random() * 6) + 1));
     toggleToolbar();
 }
 
 function searchYouTube() {
     const q = prompt('🔍 ابحث في يوتيوب:');
-    if (q) window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`, '_blank');
+    if (q) window.open('https://www.youtube.com/results?search_query=' + encodeURIComponent(q), '_blank');
     toggleToolbar();
 }
 
@@ -2099,4 +2078,4 @@ window.closeAllMenus = closeAllMenus;
 window.watchUser = watchUser;
 window.watchAllVisibleSenders = watchAllVisibleSenders;
 
-console.log('✅ chat.js v8 loaded — مراقبة حية + أداء محسّن 🎨⚡'); من 
+console.log('✅ chat.js v9 loaded — نظيف + مراقبة حية + شكل مع تدرج');
