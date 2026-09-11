@@ -684,7 +684,6 @@ function insertMention(name) {
 // ==============================================
 
 function showMessageMenu(msgEl, sender, text, msgId) {
-function showMessageMenu(msgEl, sender, text, msgId) {
     closeAllMenus();
 
     const user = getCurrentUser();
