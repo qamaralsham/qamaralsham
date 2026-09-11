@@ -403,7 +403,7 @@ async function handleGuestLogin() {
     alert('5. db=' + typeof db);
     
     const result = await registerGuest(name, age, selectedGender);
-    alert('6. success=' + result.success);
+    alert('6. success=' + result.success + '\n\nخطأ: ' + (result.error || 'لا يوجد'));
     
     if (result.success) {
         alert('7. نوع initChat=' + typeof initChat);
