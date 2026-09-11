@@ -1006,10 +1006,10 @@ function saveToChat() {
 
     const u = {
         uid: currentUser.uid,
-        name: localStorage.getItem('profile_name') || currentUser.name,
+        name: localStorage.getItem('profile_name') || currentUser.name || 'مستخدم',
         bio: localStorage.getItem('profile_bio') || currentUser.bio || '',
         cover: localStorage.getItem('saved_cover') || currentUser.cover || '',
-        rank: currentUser.rank,
+        rank: currentUser.rank || 'User',
         avatar: localStorage.getItem('saved_avatar') || currentUser.avatar || '',
         nameGradient: nameGradient,
         nameGlow: nameGlow,
@@ -1024,24 +1024,8 @@ function saveToChat() {
     localStorage.setItem('qamar_user', JSON.stringify(u));
 
     if (currentUser.uid && typeof db !== 'undefined' && db) {
-        db.ref('users/' + currentUser.uid).update(u).catch(e => console.warn('saveToChat error:', e));
+        db.ref('users/' + currentUser.uid).set(u).catch(e => console.warn(e));
     }
-    // ⭐ إرسال فوري للشات (postMessage)
-    if (window.parent && window.parent !== window) {
-        window.parent.postMessage({
-            action: 'profileUpdated',
-            uid: u.uid,
-            data: u
-        }, '*');
-        showToast('📤 تم إرسال التحديث للشات');
-    }
-
-    // ⭐ طريقة احتياطية: storage event (تعمل بين التبويبات)
-    localStorage.setItem('qamar_profile_ping', JSON.stringify({
-        uid: u.uid,
-        data: u,
-        time: Date.now()
-    }));
 }
 
 // ==============================================
