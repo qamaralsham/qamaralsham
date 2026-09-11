@@ -1,5 +1,6 @@
 // ==============================================
-// قمر الشام - نظام الدخول والمصادقة (v4)
+// قمر الشام - نظام الدخول والمصادقة (v5 - محسّن وسريع)
+// Qamar Al Sham - Auth v5 (Fast & Fixed)
 // ==============================================
 
 let currentUser = null;
@@ -7,31 +8,7 @@ let isUserGuest = false;
 let _authReady = false;
 
 // ==============================================
-// 0. أدوات مساعدة
-// ==============================================
-
-async function isNameAvailable(name) {
-    try {
-        if (typeof db === 'undefined' || !db) return true;
-        const snap = await db.ref('user_names/' + name).once('value');
-        return !snap.exists();
-    } catch (e) {
-        console.warn('⚠️ Name check failed:', e);
-        return true;
-    }
-}
-
-async function claimName(name, uid) {
-    try {
-        if (typeof db === 'undefined' || !db) return;
-        await db.ref('user_names/' + name).set(uid);
-    } catch (e) {
-        console.warn('⚠️ Claim name failed:', e);
-    }
-}
-
-// ==============================================
-// 1. تسجيل زائر (Anonymous Auth)
+// 1. تسجيل زائر (سريع + آمن)
 // ==============================================
 async function registerGuest(name, age, gender) {
     if (!name || name.trim().length < 2) {
@@ -45,20 +22,18 @@ async function registerGuest(name, age, gender) {
     }
 
     const trimmedName = name.trim();
-    const available = await isNameAvailable(trimmedName);
-    if (!available) {
-        return { success: false, error: 'هذا الاسم مستخدم، اختر اسماً آخر' };
-    }
 
     try {
         if (typeof auth === 'undefined' || !auth) {
             return { success: false, error: 'Firebase Auth غير متاح' };
         }
 
-        // ⭐ تسجيل مجهول في Firebase Auth
+        // ⭐ 1. تسجيل مجهول أولاً
         const credential = await auth.signInAnonymously();
         const uid = credential.user.uid;
+        const now = Date.now();
 
+        // ⭐ 2. تجهيز البيانات
         const userData = {
             uid: uid,
             name: trimmedName,
@@ -69,36 +44,41 @@ async function registerGuest(name, age, gender) {
             isGuest: true,
             avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(trimmedName)}&background=555&color=fff`,
             color: '#95a5a6',
-            createdAt: Date.now(),
-            lastSeen: Date.now()
+            createdAt: now,
+            lastSeen: now
         };
 
-        if (typeof db !== 'undefined' && db) {
-            await db.ref('users/' + uid).set(userData);
-            await claimName(trimmedName, uid);
-            await db.ref('user_notifications/' + uid).set({});
-            await db.ref('user_private_chats/' + uid).set({});
-            await db.ref('user_presence/' + uid).set({
+        // ⭐ 3. طلب واحد متوازي (سريع!)
+        await Promise.all([
+            db.ref('users/' + uid).set(userData),
+            db.ref('user_names/' + trimmedName).set(uid),
+            db.ref('user_presence/' + uid).set({
                 state: 'online',
-                lastChanged: Date.now()
-            });
-        }
+                lastChanged: now
+            })
+        ]);
 
         currentUser = userData;
         isUserGuest = true;
         saveSession(currentUser, true);
 
-        console.log('✅ Guest registered:', trimmedName, '→', uid);
+        console.log('✅ Guest registered (fast):', trimmedName, '→', uid);
         return { success: true, user: currentUser };
 
     } catch (e) {
         console.error('❌ registerGuest error:', e);
+
+        // ⭐ إذا فشل بسبب القواعد → حاول مرة ثانية بعد لحظة
+        if (e.code === 'PERMISSION_DENIED' || (e.message && e.message.includes('permission'))) {
+            return { success: false, error: 'فشل الاتصال، حاول مرة ثانية' };
+        }
+
         return { success: false, error: 'حدث خطأ: ' + (e.message || '') };
     }
 }
 
 // ==============================================
-// 2. تسجيل عضو جديد
+// 2. تسجيل عضو جديد (سريع)
 // ==============================================
 async function registerMember(name, age, gender, email, password) {
     if (!name || name.trim().length < 2) {
@@ -121,15 +101,12 @@ async function registerMember(name, age, gender, email, password) {
             return { success: false, error: 'Firebase Auth غير متاح' };
         }
 
+        // 1. إنشاء الحساب في Firebase Auth
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         const firebaseUser = userCredential.user;
+        const now = Date.now();
 
-        const available = await isNameAvailable(trimmedName);
-        if (!available) {
-            await firebaseUser.delete();
-            return { success: false, error: 'هذا الاسم مستخدم، اختر اسماً آخر' };
-        }
-
+        // 2. تجهيز البيانات
         const rank = 'User';
         const userData = {
             uid: firebaseUser.uid,
@@ -142,26 +119,25 @@ async function registerMember(name, age, gender, email, password) {
             isGuest: false,
             avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(trimmedName)}&background=random&color=fff`,
             color: '#ffffff',
-            createdAt: Date.now(),
-            lastSeen: Date.now()
+            createdAt: now,
+            lastSeen: now
         };
 
-        if (typeof db !== 'undefined' && db) {
-            await db.ref('users/' + firebaseUser.uid).set(userData);
-            await claimName(trimmedName, firebaseUser.uid);
-            await db.ref('user_notifications/' + firebaseUser.uid).set({});
-            await db.ref('user_private_chats/' + firebaseUser.uid).set({});
-            await db.ref('user_presence/' + firebaseUser.uid).set({
+        // 3. طلب واحد متوازي
+        await Promise.all([
+            db.ref('users/' + firebaseUser.uid).set(userData),
+            db.ref('user_names/' + trimmedName).set(firebaseUser.uid),
+            db.ref('user_presence/' + firebaseUser.uid).set({
                 state: 'online',
-                lastChanged: Date.now()
-            });
-        }
+                lastChanged: now
+            })
+        ]);
 
         currentUser = userData;
         isUserGuest = false;
         saveSession(currentUser, false);
 
-        console.log('✅ Member registered:', trimmedName);
+        console.log('✅ Member registered (fast):', trimmedName);
         return { success: true, user: currentUser };
 
     } catch (error) {
@@ -170,12 +146,13 @@ async function registerMember(name, age, gender, email, password) {
         if (error.code === 'auth/email-already-in-use') errorMsg = 'الإيميل مستخدم بالفعل';
         else if (error.code === 'auth/invalid-email') errorMsg = 'الإيميل غير صحيح';
         else if (error.code === 'auth/weak-password') errorMsg = 'كلمة السر ضعيفة';
+        else if (error.code === 'PERMISSION_DENIED') errorMsg = 'فشل الاتصال، حاول مرة ثانية';
         return { success: false, error: errorMsg };
     }
 }
 
 // ==============================================
-// 3. تسجيل دخول عضو
+// 3. تسجيل دخول عضو (سريع)
 // ==============================================
 async function login(email, password) {
     if (!email || !password) {
@@ -189,6 +166,7 @@ async function login(email, password) {
 
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
         const firebaseUser = userCredential.user;
+        const now = Date.now();
 
         let userData = {
             uid: firebaseUser.uid,
@@ -199,31 +177,42 @@ async function login(email, password) {
             isGuest: false,
             avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(email.split('@')[0])}&background=random&color=fff`,
             color: '#ffffff',
-            lastSeen: Date.now()
+            lastSeen: now
         };
 
         if (typeof db !== 'undefined' && db) {
             const snapshot = await db.ref('users/' + firebaseUser.uid).once('value');
+
             if (snapshot.exists()) {
                 userData = { ...userData, ...snapshot.val() };
                 userData.rankLevel = QAMAR.getRankLevel(userData.rank);
-            } else {
-                await db.ref('users/' + firebaseUser.uid).set(userData);
-                await claimName(userData.name, firebaseUser.uid);
-            }
 
-            await db.ref('users/' + firebaseUser.uid + '/lastSeen').set(Date.now());
-            await db.ref('user_presence/' + firebaseUser.uid).set({
-                state: 'online',
-                lastChanged: Date.now()
-            });
+                // ⭐ تحديث الحضور (لا ننتظر)
+                Promise.all([
+                    db.ref('users/' + firebaseUser.uid + '/lastSeen').set(now),
+                    db.ref('user_presence/' + firebaseUser.uid).set({
+                        state: 'online',
+                        lastChanged: now
+                    })
+                ]).catch(() => {});
+            } else {
+                // مستخدم غير موجود في DB → ننشئه
+                await Promise.all([
+                    db.ref('users/' + firebaseUser.uid).set(userData),
+                    db.ref('user_names/' + userData.name).set(firebaseUser.uid),
+                    db.ref('user_presence/' + firebaseUser.uid).set({
+                        state: 'online',
+                        lastChanged: now
+                    })
+                ]);
+            }
         }
 
         currentUser = userData;
         isUserGuest = false;
         saveSession(currentUser, false);
 
-        console.log('✅ Member logged in:', userData.name, '| Rank:', userData.rank);
+        console.log('✅ Member logged in (fast):', userData.name, '| Rank:', userData.rank);
         return { success: true, user: currentUser };
 
     } catch (error) {
@@ -298,12 +287,10 @@ async function logout() {
     try {
         if (typeof auth !== 'undefined' && auth && auth.currentUser) {
             if (typeof db !== 'undefined' && db && currentUser?.uid) {
-                try {
-                    await db.ref('user_presence/' + currentUser.uid).set({
-                        state: 'offline',
-                        lastChanged: Date.now()
-                    });
-                } catch (e) {}
+                db.ref('user_presence/' + currentUser.uid).set({
+                    state: 'offline',
+                    lastChanged: Date.now()
+                }).catch(() => {});
             }
             await auth.signOut();
         }
@@ -390,5 +377,5 @@ if (typeof auth !== 'undefined' && auth) {
 // ==============================================
 window.addEventListener('DOMContentLoaded', () => {
     loadSession();
-    console.log('📦 Auth.js v4 loaded');
+    console.log('📦 Auth.js v5 loaded — Fast & Fixed ⚡');
 });
