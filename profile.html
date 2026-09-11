@@ -1725,9 +1725,8 @@ function openPrivateChat(uid, name) {
 }
 
 window.addEventListener('load', async () => {
-    saveToChat();
-    console.log('✅ Profile v3 ready | Mode:', viewMode);
-    console.log('✅ ImgBB Key loaded:', IMGBB_API_KEY.substring(0, 8) + '...');
+    // ⚠️ لا نستدعي saveToChat هنا — فقط عند حفظ فعلي
+    console.log('✅ Profile ready | Mode:', viewMode);
 });
 
 console.log('📦 Profile v3 loaded — with postMessage 📤');
