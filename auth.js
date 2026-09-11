@@ -98,9 +98,7 @@ async function registerMember(name, age, gender, email, password) {
     const trimmedName = name.trim();
 
     try {
-        if (typeof auth === 'undefined' || !auth) {
-            return { success: false, error: 'Firebase Auth غير متاح' };
-        }
+        typeof auth === 'undefined' 
 
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         const firebaseUser = userCredential.user;
