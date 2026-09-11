@@ -1,6 +1,6 @@
 // ==============================================
-// قمر الشام - نظام الدخول والمصادقة (v5 - محسّن وسريع)
-// Qamar Al Sham - Auth v5 (Fast & Fixed)
+// قمر الشام - نظام الدخول والمصادقة (v5 - كامل، محسّن وسريع)
+// Qamar Al Sham - Auth v5 (Complete, Fast & Non-blocking)
 // ==============================================
 
 let currentUser = null;
@@ -28,12 +28,10 @@ async function registerGuest(name, age, gender) {
             return { success: false, error: 'Firebase Auth غير متاح' };
         }
 
-        // ⭐ 1. تسجيل مجهول أولاً
         const credential = await auth.signInAnonymously();
         const uid = credential.user.uid;
         const now = Date.now();
 
-        // ⭐ 2. تجهيز البيانات
         const userData = {
             uid: uid,
             name: trimmedName,
@@ -48,7 +46,6 @@ async function registerGuest(name, age, gender) {
             lastSeen: now
         };
 
-        // ⭐ 3. طلب واحد متوازي (سريع!)
         await Promise.all([
             db.ref('users/' + uid).set(userData),
             db.ref('user_names/' + trimmedName).set(uid),
@@ -67,12 +64,9 @@ async function registerGuest(name, age, gender) {
 
     } catch (e) {
         console.error('❌ registerGuest error:', e);
-
-        // ⭐ إذا فشل بسبب القواعد → حاول مرة ثانية بعد لحظة
         if (e.code === 'PERMISSION_DENIED' || (e.message && e.message.includes('permission'))) {
             return { success: false, error: 'فشل الاتصال، حاول مرة ثانية' };
         }
-
         return { success: false, error: 'حدث خطأ: ' + (e.message || '') };
     }
 }
@@ -101,12 +95,10 @@ async function registerMember(name, age, gender, email, password) {
             return { success: false, error: 'Firebase Auth غير متاح' };
         }
 
-        // 1. إنشاء الحساب في Firebase Auth
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         const firebaseUser = userCredential.user;
         const now = Date.now();
 
-        // 2. تجهيز البيانات
         const rank = 'User';
         const userData = {
             uid: firebaseUser.uid,
@@ -123,7 +115,6 @@ async function registerMember(name, age, gender, email, password) {
             lastSeen: now
         };
 
-        // 3. طلب واحد متوازي
         await Promise.all([
             db.ref('users/' + firebaseUser.uid).set(userData),
             db.ref('user_names/' + trimmedName).set(firebaseUser.uid),
@@ -187,7 +178,6 @@ async function login(email, password) {
                 userData = { ...userData, ...snapshot.val() };
                 userData.rankLevel = QAMAR.getRankLevel(userData.rank);
 
-                // ⭐ تحديث الحضور (لا ننتظر)
                 Promise.all([
                     db.ref('users/' + firebaseUser.uid + '/lastSeen').set(now),
                     db.ref('user_presence/' + firebaseUser.uid).set({
@@ -196,7 +186,6 @@ async function login(email, password) {
                     })
                 ]).catch(() => {});
             } else {
-                // مستخدم غير موجود في DB → ننشئه
                 await Promise.all([
                     db.ref('users/' + firebaseUser.uid).set(userData),
                     db.ref('user_names/' + userData.name).set(firebaseUser.uid),
@@ -343,39 +332,41 @@ function isHigherThan(rank) {
 }
 
 function isHigherOrEqualThan(rank) {
-    if (!currentUser) return false;
-    return QAMAR.isHigherOrEqual(currentUser.rank, rank);
+    let u = getCurrentUser();
+    if (!u) return false;
+    return QAMAR.isHigherOrEqual(u.rank, rank);
 }
 
 // ==============================================
-// 8. مراقبة حالة المصادقة
+// 8. مراقبة حالة المصادقة (تعمل في الخلفية - بدون تعطيل الإقلاع)
 // ==============================================
 if (typeof auth !== 'undefined' && auth) {
-    auth.onAuthStateChanged(async (firebaseUser) => {
+    auth.onAuthStateChanged((firebaseUser) => {
         _authReady = true;
         if (firebaseUser) {
             if (!currentUser || currentUser.uid !== firebaseUser.uid) {
-                try {
-                    const snap = await db.ref('users/' + firebaseUser.uid).once('value');
-                    if (snap.exists()) {
-                        currentUser = snap.val();
-                        currentUser.rankLevel = QAMAR.getRankLevel(currentUser.rank);
-                        isUserGuest = currentUser.isGuest === true;
-                        saveSession(currentUser, isUserGuest);
-                        console.log('🔄 Auth state restored:', currentUser.name);
-                    }
-                } catch (e) {
-                    console.warn('⚠️ Auth restore failed:', e);
-                }
+                db.ref('users/' + firebaseUser.uid).once('value')
+                    .then((snap) => {
+                        if (snap.exists()) {
+                            currentUser = snap.val();
+                            currentUser.rankLevel = QAMAR.getRankLevel(currentUser.rank);
+                            isUserGuest = currentUser.isGuest === true;
+                            saveSession(currentUser, isUserGuest);
+                            console.log('🔄 Auth state restored instantly:', currentUser.name);
+                        }
+                    })
+                    .catch((e) => {
+                        console.warn('⚠️ Background user fetch failed:', e);
+                    });
             }
         }
     });
 }
 
 // ==============================================
-// 9. تحميل الجلسة
+// 9. تحميل الجلسة الفوري
 // ==============================================
 window.addEventListener('DOMContentLoaded', () => {
     loadSession();
-    console.log('📦 Auth.js v5 loaded — Fast & Fixed ⚡');
+    console.log('📦 Auth.js v5 loaded — Fast & Non-blocking ⚡');
 });
