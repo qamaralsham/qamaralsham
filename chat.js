@@ -606,9 +606,8 @@ function sendMessage() {
         showToast('fa-exclamation-circle', '⚠️ فشل الإرسال');
     });
     
-    // ⚠️ مهم: نضيف الرسالة لقائمة seenMessages لمنع تكرارها
-    ChatState.seenMessages.add(msgRef.key);
     
+
     // عرض محلياً فوراً
     const localMsg = { ...messageData, time: Date.now() };
     displayMessage(localMsg, msgRef.key);
