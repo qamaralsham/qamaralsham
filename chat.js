@@ -98,7 +98,7 @@ async function initChat() {
                 resolved = true;
                 try { unsub(); } catch(e) {}
                 resolve();
-            }, 5000);
+            }, 3000);
         });
     }
 
@@ -133,25 +133,28 @@ async function initChat() {
 
     addSystemMessage(`👑 مرحباً ${user.name} — رتبتك: ${getRankBadge(user.rank)} ${user.rank}`);
 
+    // ⭐ 1. الأهم أولاً — الرسائل تظهر فوراً
     startMessagesListener();
-    startNotificationsListener();
-    startPrivateChatsListener();
-    startPresenceHeartbeat();
-    startInvisibleListener();
+    updateMicsUI();
 
-    watchUser(user.uid);
+    // ⭐ 2. باقي المستمعين بعد 500ms (بدون حجب)
+    setTimeout(() => {
+        try { startNotificationsListener(); } catch(e) {}
+        try { startPrivateChatsListener(); } catch(e) {}
+        try { startInvisibleListener(); } catch(e) {}
+        try { watchUser(user.uid); } catch(e) {}
+    }, 500);
 
-    if (typeof initBots === 'function') {
-        try { initBots(); } catch(e) { console.warn('Bots error:', e); }
-    }
+    // ⭐ 3. البوتات بعد 3 ثوان (غير حرجة)
+    setTimeout(() => {
+        if (typeof initBots === 'function') {
+            try { initBots(); } catch(e) {}
+        }
+    }, 3000);
 
-    if (typeof hakawatiWelcomeUser === 'function') {
-        setTimeout(() => {
-            hakawatiWelcomeUser(user).catch(e => {});
-        }, 2000);
-    }
+    // ⭐ 4. تم إلغاء presence listener العام
 
-    console.log('✅ Chat v6 initialized');
+    console.log('✅ Chat v7 initialized — سريع ⚡');
 }
 
 // ==============================================
