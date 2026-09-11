@@ -2,13 +2,12 @@
 // قمر الشام - نظام الدخول والمصادقة (v4)
 // ==============================================
 
-// ====== متغيرات عامة ======
 let currentUser = null;
 let isUserGuest = false;
 let _authReady = false;
 
 // ==============================================
-// 0. أدوات مساعدة داخلية
+// 0. أدوات مساعدة
 // ==============================================
 
 async function isNameAvailable(name) {
@@ -32,7 +31,7 @@ async function claimName(name, uid) {
 }
 
 // ==============================================
-// 1. تسجيل زائر جديد (Anonymous Auth)
+// 1. تسجيل زائر (Anonymous Auth)
 // ==============================================
 async function registerGuest(name, age, gender) {
     if (!name || name.trim().length < 2) {
@@ -253,7 +252,6 @@ function saveSession(user, isGuestFlag) {
         } else {
             localStorage.removeItem(QAMAR.STORAGE_KEYS.GUEST);
         }
-        console.log('💾 Session saved');
     } catch (e) {
         console.error('❌ Save session error:', e);
     }
