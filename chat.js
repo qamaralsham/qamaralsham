@@ -1,5 +1,5 @@
 // ==============================================
-// قمر الشام - منطق الشات (v9 - نظيف)
+// قمر الشام - منطق الشات (v10 - نهائي)
 // ==============================================
 
 const ChatState = {
@@ -23,7 +23,6 @@ const ChatState = {
     isInitialized: false
 };
 
-// ⭐ مراقبة بروفايلات الأعضاء
 const usersCache = {};
 const usersWatchers = {};
 
@@ -76,6 +75,20 @@ function playPrivateMsgSound() {
 }
 
 // ==============================================
+// ⭐ أدوات مساعدة
+// ==============================================
+
+// Firebase يحوّل الـ Array إلى Object — هذه الدالة تعيدها Array
+function toArray(val) {
+    if (!val) return null;
+    if (Array.isArray(val)) return val;
+    if (typeof val === 'object') {
+        return Object.keys(val).sort((a, b) => parseInt(a) - parseInt(b)).map(k => val[k]);
+    }
+    return null;
+}
+
+// ==============================================
 // ⭐ مراقبة بروفايلات الأعضاء (تحديث حي)
 // ==============================================
 
@@ -107,13 +120,32 @@ function updateMessagesByUid(uid, data) {
     if (!data) return;
 
     document.querySelectorAll('.message[data-sender-uid="' + uid + '"]').forEach(msgEl => {
-        // الصورة
+        // ═══ الصورة ═══
         const avatarImg = msgEl.querySelector('.message-avatar');
         if (avatarImg && data.avatar) {
             avatarImg.src = data.avatar;
         }
 
-        // الاسم + التنسيقات
+        // ═══ الإطار ═══
+        const avatarWrapper = msgEl.querySelector('.message-avatar-wrapper');
+        if (avatarWrapper) {
+            let frameEl = avatarWrapper.querySelector('.message-avatar-frame');
+            if (data.avatarFrame && data.avatarFrame !== 'none' && typeof getFrameStyleById === 'function') {
+                const frameData = getFrameStyleById(data.avatarFrame);
+                if (frameData) {
+                    if (!frameEl) {
+                        frameEl = document.createElement('div');
+                        frameEl.className = 'message-avatar-frame';
+                        avatarWrapper.appendChild(frameEl);
+                    }
+                    frameEl.style.cssText = frameData.style;
+                }
+            } else if (frameEl) {
+                frameEl.remove();
+            }
+        }
+
+        // ═══ الاسم + التنسيقات ═══
         const username = msgEl.querySelector('.message-username');
         if (!username) return;
 
@@ -123,9 +155,10 @@ function updateMessagesByUid(uid, data) {
 
         username.removeAttribute('style');
 
-        // التدرج
-        if (data.nameGradient && Array.isArray(data.nameGradient) && data.nameGradient.length >= 2) {
-            username.style.background = 'linear-gradient(90deg, ' + data.nameGradient[0] + ', ' + data.nameGradient[1] + ', ' + data.nameGradient[0] + ')';
+        // التدرج (مع toArray)
+        const gradient = toArray(data.nameGradient);
+        if (gradient && gradient.length >= 2) {
+            username.style.background = 'linear-gradient(90deg, ' + gradient[0] + ', ' + gradient[1] + ', ' + gradient[0] + ')';
             username.style.backgroundSize = '200% 200%';
             username.style.webkitBackgroundClip = 'text';
             username.style.backgroundClip = 'text';
@@ -142,7 +175,7 @@ function updateMessagesByUid(uid, data) {
             else if (data.nameGlow === 'strong') username.style.filter = 'drop-shadow(0 0 25px currentColor) drop-shadow(0 0 40px currentColor)';
         }
 
-        // الشكل — box-shadow inset (لا يُلغي التدرج)
+        // الشكل
         if (data.nameShape && data.nameShape !== 'none') {
             if (data.nameShape === 'capsule') {
                 username.style.padding = '4px 14px';
@@ -234,24 +267,21 @@ async function initChat() {
     startPresenceHeartbeat();
     startInvisibleListener();
 
-    // راقب بروفايل المستخدم الحالي
     watchUser(user.uid);
 
-    // البوتات بعد 5 ثوان
     setTimeout(() => {
         if (typeof initBots === 'function') {
             try { initBots(); } catch(e) { console.warn('Bots error:', e); }
         }
     }, 5000);
 
-    // ترحيب بعد 8 ثوان
     if (typeof hakawatiWelcomeUser === 'function') {
         setTimeout(() => {
             hakawatiWelcomeUser(user).catch(e => {});
         }, 8000);
     }
 
-    console.log('✅ Chat v9 initialized');
+    console.log('✅ Chat v10 initialized');
 }
 
 // ==============================================
@@ -385,7 +415,6 @@ function startMessagesListener() {
         const user = getCurrentUser();
         if (!user) return;
 
-        // البوتات تفحص فقط الرسائل الحديثة
         const age = Date.now() - (msg.time || 0);
         const isRecent = age < 15000;
 
@@ -466,6 +495,17 @@ function displayMessage(msg, msgId) {
     };
     avatarWrapper.appendChild(avatarImg);
 
+    // الإطار
+    if (msg.senderFrame && msg.senderFrame !== 'none' && typeof getFrameStyleById === 'function') {
+        const frameData = getFrameStyleById(msg.senderFrame);
+        if (frameData) {
+            const frameEl = document.createElement('div');
+            frameEl.className = 'message-avatar-frame';
+            frameEl.style.cssText = frameData.style;
+            avatarWrapper.appendChild(frameEl);
+        }
+    }
+
     const content = document.createElement('div');
     content.className = 'message-content';
 
@@ -479,9 +519,10 @@ function displayMessage(msg, msgId) {
     if (msg.senderEmoji) displayName += ' ' + msg.senderEmoji;
     username.textContent = displayName;
 
-    // التدرج
-    if (msg.senderGradient && Array.isArray(msg.senderGradient) && msg.senderGradient.length >= 2) {
-        username.style.background = 'linear-gradient(90deg, ' + msg.senderGradient[0] + ', ' + msg.senderGradient[1] + ', ' + msg.senderGradient[0] + ')';
+    // التدرج (مع toArray)
+    const gradient = toArray(msg.senderGradient);
+    if (gradient && gradient.length >= 2) {
+        username.style.background = 'linear-gradient(90deg, ' + gradient[0] + ', ' + gradient[1] + ', ' + gradient[0] + ')';
         username.style.backgroundSize = '200% 200%';
         username.style.webkitBackgroundClip = 'text';
         username.style.backgroundClip = 'text';
@@ -498,7 +539,7 @@ function displayMessage(msg, msgId) {
         else if (msg.senderGlow === 'strong') username.style.filter = 'drop-shadow(0 0 25px currentColor) drop-shadow(0 0 40px currentColor)';
     }
 
-    // الشكل — box-shadow inset (لا يُلغي التدرج)
+    // الشكل
     if (msg.senderShape && msg.senderShape !== 'none') {
         if (msg.senderShape === 'capsule') {
             username.style.padding = '4px 14px';
@@ -525,7 +566,6 @@ function displayMessage(msg, msgId) {
     header.appendChild(username);
     header.appendChild(timeEl);
 
-    // النص
     const msgText = document.createElement('div');
     msgText.className = 'message-text';
 
@@ -609,7 +649,6 @@ function displayMessage(msg, msgId) {
     container.appendChild(msgEl);
     container.scrollTop = container.scrollHeight;
 
-    // راقب المرسل بعد تأخير
     if (msg.senderUid && !msg.senderUid.startsWith('bot_')) {
         if (!usersWatchers[msg.senderUid]) {
             setTimeout(() => watchUser(msg.senderUid), 500);
@@ -2077,5 +2116,6 @@ window.openBotTraining = openBotTraining;
 window.closeAllMenus = closeAllMenus;
 window.watchUser = watchUser;
 window.watchAllVisibleSenders = watchAllVisibleSenders;
+window.toArray = toArray;
 
-console.log('✅ chat.js v9 loaded — نظيف + مراقبة حية + شكل مع تدرج');
+console.log('✅ chat.js v10 loaded — مراقبة حية + toArray للإصلاح');
