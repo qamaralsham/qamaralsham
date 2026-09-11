@@ -684,6 +684,7 @@ function insertMention(name) {
 // ==============================================
 
 function showMessageMenu(msgEl, sender, text, msgId) {
+function showMessageMenu(msgEl, sender, text, msgId) {
     closeAllMenus();
 
     const user = getCurrentUser();
@@ -744,14 +745,18 @@ function showMessageMenu(msgEl, sender, text, msgId) {
     const btnRect = btn.getBoundingClientRect();
     const menuRect = menu.getBoundingClientRect();
 
+    // ⭐ القائمة تبدأ من يسار الزر
     let top = btnRect.bottom + 6;
-    let left = btnRect.left + (btnRect.width / 2) - (menuRect.width / 2);
+    let left = btnRect.left;
 
+    // إذا ستخرج من يمين الشاشة → انزلق لليسار
     if (left + menuRect.width > window.innerWidth - 10) {
         left = window.innerWidth - menuRect.width - 10;
     }
+    // إذا ستخرج من يسار الشاشة
     if (left < 10) left = 10;
 
+    // إذا ستخرج من أسفل → افتحها فوق الزر
     if (top + menuRect.height > window.innerHeight - 10) {
         top = btnRect.top - menuRect.height - 6;
         if (top < 10) top = 10;
@@ -774,7 +779,6 @@ function showMessageMenu(msgEl, sender, text, msgId) {
         document.addEventListener('click', closeHandler);
     }, 100);
 }
-
 function showEmojiBar(msgEl, msgId, btn) {
     closeAllMenus();
 
@@ -810,7 +814,7 @@ function showEmojiBar(msgEl, msgId, btn) {
     const barRect = bar.getBoundingClientRect();
 
     let top = btnRect.bottom + 6;
-    let left = btnRect.left + (btnRect.width / 2) - (barRect.width / 2);
+    let left = btnRect.left;
 
     if (left + barRect.width > window.innerWidth - 10) {
         left = window.innerWidth - barRect.width - 10;
