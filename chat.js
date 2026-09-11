@@ -1,5 +1,5 @@
 // ==============================================
-// قمر الشام - منطق الشات (v6 - نظيف)
+// قمر الشام - منطق الشات (v7 - سريع)
 // ==============================================
 
 const ChatState = {
@@ -22,9 +22,6 @@ const ChatState = {
     invisibleMode: false,
     isInitialized: false
 };
-
-const usersCache = {};
-const usersWatchers = {};
 
 // ==============================================
 // الأصوات
@@ -75,7 +72,7 @@ function playPrivateMsgSound() {
 }
 
 // ==============================================
-// التهيئة
+// التهيئة — سريعة
 // ==============================================
 
 async function initChat() {
@@ -84,6 +81,7 @@ async function initChat() {
     const user = getCurrentUser();
     if (!user) return;
 
+    // ⭐ انتظار auth ثانية واحدة فقط
     if (typeof auth !== 'undefined' && auth && !auth.currentUser) {
         await new Promise((resolve) => {
             let resolved = false;
@@ -98,7 +96,7 @@ async function initChat() {
                 resolved = true;
                 try { unsub(); } catch(e) {}
                 resolve();
-            }, 3000);
+            }, 1000);
         });
     }
 
@@ -133,28 +131,28 @@ async function initChat() {
 
     addSystemMessage(`👑 مرحباً ${user.name} — رتبتك: ${getRankBadge(user.rank)} ${user.rank}`);
 
-    // ⭐ 1. الأهم أولاً — الرسائل تظهر فوراً
+    // ⭐ المستمعون الأساسيون
     startMessagesListener();
-    updateMicsUI();
+    startNotificationsListener();
+    startPrivateChatsListener();
+    startPresenceHeartbeat();
+    startInvisibleListener();
 
-    // ⭐ 2. باقي المستمعين بعد 500ms (بدون حجب)
-    setTimeout(() => {
-        try { startNotificationsListener(); } catch(e) {}
-        try { startPrivateChatsListener(); } catch(e) {}
-        try { startInvisibleListener(); } catch(e) {}
-        try { watchUser(user.uid); } catch(e) {}
-    }, 500);
-
-    // ⭐ 3. البوتات بعد 3 ثوان (غير حرجة)
+    // ⭐ البوتات بعد 5 ثوان (لا تبطئ الدخول)
     setTimeout(() => {
         if (typeof initBots === 'function') {
-            try { initBots(); } catch(e) {}
+            try { initBots(); } catch(e) { console.warn('Bots error:', e); }
         }
-    }, 3000);
+    }, 5000);
 
-    // ⭐ 4. تم إلغاء presence listener العام
+    // ترحيب بعد 8 ثوان
+    if (typeof hakawatiWelcomeUser === 'function') {
+        setTimeout(() => {
+            hakawatiWelcomeUser(user).catch(e => {});
+        }, 8000);
+    }
 
-    console.log('✅ Chat v7 initialized — سريع ⚡');
+    console.log('✅ Chat v7 initialized (fast)');
 }
 
 // ==============================================
@@ -256,15 +254,13 @@ function switchRoom(roomId, roomTitle, element) {
     startMessagesListener();
     closeAllPanels();
 
-    setTimeout(() => watchAllVisibleSenders(), 500);
-
     if (typeof onRoomChanged === 'function') {
         onRoomChanged(roomId);
     }
 }
 
 // ==============================================
-// مستمع الرسائل
+// مستمع الرسائل — 20 رسالة فقط
 // ==============================================
 
 function startMessagesListener() {
@@ -275,7 +271,8 @@ function startMessagesListener() {
     }
 
     const roomId = ChatState.currentRoom;
-    const ref = db.ref(`room_messages/${roomId}`).limitToLast(100);
+    // ⭐ 20 رسالة بدل 100
+    const ref = db.ref(`room_messages/${roomId}`).limitToLast(20);
     ChatState.messagesListener = ref;
 
     ref.on('child_added', (snap) => {
@@ -288,7 +285,11 @@ function startMessagesListener() {
         const user = getCurrentUser();
         if (!user) return;
 
-        if (typeof processIncomingMessage === 'function') {
+        // ⭐ البوتات تفحص فقط الرسائل الحديثة (آخر 15 ثانية)
+        const age = Date.now() - (msg.time || 0);
+        const isRecent = age < 15000;
+
+        if (isRecent && typeof processIncomingMessage === 'function') {
             processIncomingMessage(msg).catch(e => {});
         }
 
@@ -321,7 +322,7 @@ function startMessagesListener() {
 }
 
 // ==============================================
-// عرض الرسالة — زر الخيارات inline
+// عرض الرسالة — مع حماية من base64
 // ==============================================
 
 function displayMessage(msg, msgId) {
@@ -345,7 +346,14 @@ function displayMessage(msg, msgId) {
 
     const avatarImg = document.createElement('img');
     avatarImg.className = 'message-avatar';
-    avatarImg.src = msg.senderAvatar || getDefaultAvatar(msg.senderName);
+
+    // ⭐ إذا كانت صورة base64 طويلة → استبدلها بـ URL صغير
+    let avatarSrc = msg.senderAvatar || getDefaultAvatar(msg.senderName);
+    if (avatarSrc.length > 500 && !avatarSrc.startsWith('http')) {
+        avatarSrc = getDefaultAvatar(msg.senderName);
+    }
+    avatarImg.src = avatarSrc;
+
     avatarImg.alt = msg.senderName;
     avatarImg.loading = 'lazy';
     avatarImg.onerror = () => { avatarImg.src = getDefaultAvatar(msg.senderName); };
@@ -400,7 +408,6 @@ function displayMessage(msg, msgId) {
     header.appendChild(username);
     header.appendChild(timeEl);
 
-    // النص
     const msgText = document.createElement('div');
     msgText.className = 'message-text';
 
@@ -415,7 +422,6 @@ function displayMessage(msg, msgId) {
             msgText.textContent = msg.text || '';
         }
 
-        // زر الخيارات inline بعد النص
         if (!isBot) {
             const optBtn = document.createElement('button');
             optBtn.className = 'message-options-btn';
@@ -485,9 +491,7 @@ function displayMessage(msg, msgId) {
     container.appendChild(msgEl);
     container.scrollTop = container.scrollHeight;
 
-    if (msg.senderUid && !msg.senderUid.startsWith('bot_')) {
-        watchUser(msg.senderUid);
-    }
+    // ⭐ لا مراقبة للمرسلين (سبب البطء الرئيسي)
 }
 
 // ==============================================
@@ -528,7 +532,7 @@ function buildAttachmentElement(attachment) {
 }
 
 // ==============================================
-// إرسال رسالة
+// إرسال رسالة — مع حماية base64
 // ==============================================
 
 function sendMessage() {
@@ -567,10 +571,16 @@ function sendMessage() {
 
     const mentions = extractMentions(text);
 
+    // ⭐ حماية: لا نحفظ base64 في الرسالة
+    let avatarToSave = user.avatar || '';
+    if (avatarToSave.length > 500 && !avatarToSave.startsWith('http')) {
+        avatarToSave = getDefaultAvatar(user.name);
+    }
+
     const messageData = {
         senderUid: user.uid,
         senderName: user.name,
-        senderAvatar: user.avatar || '',
+        senderAvatar: avatarToSave,
         senderColor: user.color || '#ffd700',
         senderRank: user.rank,
         senderFrame: user.avatarFrame || 'none',
@@ -616,7 +626,7 @@ function notifyMentions(mentions, text) {
                 notifRef.set({
                     fromUid: user.uid,
                     fromName: user.name,
-                    fromAvatar: user.avatar || '',
+                    fromAvatar: (user.avatar && user.avatar.length < 500) ? user.avatar : '',
                     type: 'mention',
                     roomId: ChatState.currentRoom,
                     preview: truncate(text, 80),
@@ -747,18 +757,14 @@ function showMessageMenu(msgEl, sender, text, msgId) {
     const btnRect = btn.getBoundingClientRect();
     const menuRect = menu.getBoundingClientRect();
 
-    // ⭐ القائمة تبدأ من يسار الزر
     let top = btnRect.bottom + 6;
     let left = btnRect.left;
 
-    // إذا ستخرج من يمين الشاشة → انزلق لليسار
     if (left + menuRect.width > window.innerWidth - 10) {
         left = window.innerWidth - menuRect.width - 10;
     }
-    // إذا ستخرج من يسار الشاشة
     if (left < 10) left = 10;
 
-    // إذا ستخرج من أسفل → افتحها فوق الزر
     if (top + menuRect.height > window.innerHeight - 10) {
         top = btnRect.top - menuRect.height - 6;
         if (top < 10) top = 10;
@@ -781,6 +787,7 @@ function showMessageMenu(msgEl, sender, text, msgId) {
         document.addEventListener('click', closeHandler);
     }, 100);
 }
+
 function showEmojiBar(msgEl, msgId, btn) {
     closeAllMenus();
 
@@ -988,7 +995,11 @@ function loadPrivateChatsList() {
         item.className = 'sidebar-item';
 
         const img = document.createElement('img');
-        img.src = chat.otherAvatar || getDefaultAvatar(chat.otherName);
+        let chatAvatar = chat.otherAvatar || getDefaultAvatar(chat.otherName);
+        if (chatAvatar.length > 500 && !chatAvatar.startsWith('http')) {
+            chatAvatar = getDefaultAvatar(chat.otherName);
+        }
+        img.src = chatAvatar;
         img.style.cssText = 'width:36px;height:36px;border-radius:50%;border:2px solid var(--gold);object-fit:cover;';
 
         const info = document.createElement('div');
@@ -1045,10 +1056,15 @@ function openPrivateChatWith(otherUid, otherName, otherAvatar) {
 
     if (otherUid === user.uid) return;
 
+    let safeAvatar = otherAvatar || getDefaultAvatar(otherName);
+    if (safeAvatar.length > 500 && !safeAvatar.startsWith('http')) {
+        safeAvatar = getDefaultAvatar(otherName);
+    }
+
     ChatState.currentPrivateChat = {
         otherUid: otherUid,
         otherName: otherName || 'مستخدم',
-        otherAvatar: otherAvatar || getDefaultAvatar(otherName)
+        otherAvatar: safeAvatar
     };
 
     const avatarEl = document.getElementById('pc-avatar');
@@ -1082,7 +1098,7 @@ function loadPrivateMessages() {
     if (container) container.innerHTML = '';
 
     const otherUid = ChatState.currentPrivateChat.otherUid;
-    const ref = db.ref(`user_private_messages/${user.uid}/${otherUid}`).limitToLast(50);
+    const ref = db.ref(`user_private_messages/${user.uid}/${otherUid}`).limitToLast(30);
     ChatState.privateMessagesListener = ref;
 
     ref.on('child_added', (snap) => {
@@ -1183,6 +1199,12 @@ async function sendPrivateMsg() {
             deleted: false
         });
 
+        // ⭐ حماية base64 للـ avatar
+        let safeAvatar = user.avatar || '';
+        if (safeAvatar.length > 500 && !safeAvatar.startsWith('http')) {
+            safeAvatar = '';
+        }
+
         await db.ref(`user_private_chats/${user.uid}/${otherUid}`).update({
             otherUid: otherUid,
             otherName: ChatState.currentPrivateChat.otherName,
@@ -1194,7 +1216,7 @@ async function sendPrivateMsg() {
         await db.ref(`user_private_chats/${otherUid}/${user.uid}`).update({
             otherUid: user.uid,
             otherName: user.name,
-            otherAvatar: user.avatar || '',
+            otherAvatar: safeAvatar,
             lastMessage: truncate(text, 50),
             lastTime: Date.now()
         });
@@ -1207,7 +1229,7 @@ async function sendPrivateMsg() {
         notifRef.set({
             fromUid: user.uid,
             fromName: user.name,
-            fromAvatar: user.avatar || '',
+            fromAvatar: safeAvatar,
             type: 'private',
             preview: truncate(text, 80),
             time: firebase.database.ServerValue.TIMESTAMP,
@@ -1256,7 +1278,7 @@ function startNotificationsListener() {
         ChatState.notificationsListener.off();
     }
 
-    const ref = db.ref(`user_notifications/${user.uid}`).limitToLast(20);
+    const ref = db.ref(`user_notifications/${user.uid}`).limitToLast(15);
     ChatState.notificationsListener = ref;
 
     ref.on('child_added', (snap) => {
@@ -1291,7 +1313,7 @@ function loadNotifications() {
     if (!list) return;
     list.innerHTML = '';
 
-    db.ref(`user_notifications/${user.uid}`).limitToLast(50).once('value', (snap) => {
+    db.ref(`user_notifications/${user.uid}`).limitToLast(30).once('value', (snap) => {
         const notifs = [];
         snap.forEach(child => {
             notifs.push({ id: child.key, ...child.val() });
@@ -1318,7 +1340,11 @@ function buildNotificationElement(notif) {
     if (!notif.read) item.classList.add('unread');
 
     const img = document.createElement('img');
-    img.src = notif.fromAvatar || getDefaultAvatar(notif.fromName);
+    let notifAvatar = notif.fromAvatar || getDefaultAvatar(notif.fromName);
+    if (notifAvatar.length > 500 && !notifAvatar.startsWith('http')) {
+        notifAvatar = getDefaultAvatar(notif.fromName);
+    }
+    img.src = notifAvatar;
     img.style.cssText = 'width:32px;height:32px;border-radius:50%;border:1px solid var(--gold);flex-shrink:0;';
 
     const info = document.createElement('div');
@@ -1410,22 +1436,25 @@ function startPresenceHeartbeat() {
         }).catch(() => {});
     };
 
-    setOnline();
-    setInterval(setOnline, 60000);  // كل دقيقة بدل 30 ثانية
-
-    window.addEventListener('beforeunload', () => {
+    const setOffline = () => {
         presenceRef.set({
             state: 'offline',
             lastChanged: Date.now()
         }).catch(() => {});
-    });
+    };
+
+    setOnline();
+    setInterval(setOnline, 60000);
+    window.addEventListener('beforeunload', setOffline);
 
     presenceRef.onDisconnect().set({
         state: 'offline',
         lastChanged: Date.now()
     });
 
-    // ⭐ حذفنا: presenceListener (كان يقرأ 100 سجل بلا فائدة)
+    if (ChatState.presenceListener) ChatState.presenceListener.off();
+    ChatState.presenceListener = db.ref('user_presence').limitToLast(50);
+    ChatState.presenceListener.on('value', () => {});
 }
 
 // ==============================================
@@ -1632,6 +1661,13 @@ function openUserProfile(uid, name) {
     db.ref('users/' + uid).once('value').then(snap => {
         const data = snap.val();
         if (data) {
+            // ⭐ لا نحفظ base64 في localStorage (يسبب بطء)
+            if (data.avatar && data.avatar.length > 500 && !data.avatar.startsWith('http')) {
+                data.avatar = getDefaultAvatar(data.name);
+            }
+            if (data.cover && data.cover.length > 500 && !data.cover.startsWith('http')) {
+                data.cover = '';
+            }
             localStorage.setItem('qamar_view_user', JSON.stringify(data));
             localStorage.setItem('profile_target_data', JSON.stringify(data));
         } else {
@@ -1774,84 +1810,6 @@ function closeBotProfile() {
 }
 
 // ==============================================
-// مراقبة بروفايلات الأعضاء
-// ==============================================
-
-function watchUser(uid) {
-    if (!uid) return;
-    if (uid.startsWith('bot_')) return;
-    if (usersWatchers[uid]) return;
-
-    usersWatchers[uid] = true;
-
-    const ref = db.ref('users/' + uid);
-    ref.on('value', (snap) => {
-        const data = snap.val();
-        if (data) {
-            usersCache[uid] = data;
-            updateMessagesByUid(uid, data);
-
-            const me = getCurrentUser();
-            if (me && me.uid === uid) {
-                const merged = { ...me, ...data };
-                currentUser = merged;
-                saveSession(currentUser, currentUser.isGuest);
-            }
-        }
-    });
-}
-
-function updateMessagesByUid(uid, data) {
-    if (!data) return;
-
-    document.querySelectorAll(`.message[data-sender-uid="${uid}"]`).forEach(msgEl => {
-        const avatarImg = msgEl.querySelector('.message-avatar');
-        if (avatarImg && data.avatar) {
-            avatarImg.src = data.avatar;
-        }
-
-        const username = msgEl.querySelector('.message-username');
-        if (!username) return;
-
-        let displayName = data.name || 'مجهول';
-        if (data.nameEmoji) displayName += ' ' + data.nameEmoji;
-
-        username.textContent = displayName;
-        username.removeAttribute('style');
-
-        if (data.nameGradient && Array.isArray(data.nameGradient) && data.nameGradient.length >= 2) {
-            username.style.background = `linear-gradient(90deg, ${data.nameGradient[0]}, ${data.nameGradient[1]}, ${data.nameGradient[0]})`;
-            username.style.backgroundSize = '200% 200%';
-            username.style.webkitBackgroundClip = 'text';
-            username.style.backgroundClip = 'text';
-            username.style.webkitTextFillColor = 'transparent';
-            username.style.animation = 'nameGradientMove 3s linear infinite';
-        } else {
-            username.style.color = data.color || '#ffd700';
-        }
-
-        if (data.nameGlow && data.nameGlow !== 'none') {
-            if (data.nameGlow === 'soft') {
-                username.style.filter = 'drop-shadow(0 0 8px currentColor)';
-            } else if (data.nameGlow === 'medium') {
-                username.style.filter = 'drop-shadow(0 0 15px currentColor)';
-            } else if (data.nameGlow === 'strong') {
-                username.style.filter = 'drop-shadow(0 0 25px currentColor) drop-shadow(0 0 40px currentColor)';
-            }
-        }
-    });
-}
-
-function watchAllVisibleSenders() {
-    document.querySelectorAll('.message[data-sender-uid]').forEach(msgEl => {
-        const uid = msgEl.getAttribute('data-sender-uid');
-        if (uid && !uid.startsWith('bot_')) {
-            watchUser(uid);
-        }
-    });
-}
-
-// ==============================================
 // الأحداث العامة
 // ==============================================
 
@@ -1935,16 +1893,6 @@ window.addEventListener('message', (e) => {
     if (e.data && e.data.action === 'closeProfile') {
         closeProfileFrame();
     }
-    if (e.data && e.data.action === 'profileUpdated') {
-        if (e.data.uid) {
-            db.ref('users/' + e.data.uid).once('value').then(snap => {
-                const data = snap.val();
-                if (data) {
-                    updateMessagesByUid(e.data.uid, data);
-                }
-            });
-        }
-    }
 });
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1996,7 +1944,5 @@ window.openBotProfile = openBotProfile;
 window.closeBotProfile = closeBotProfile;
 window.openBotTraining = openBotTraining;
 window.closeAllMenus = closeAllMenus;
-window.watchUser = watchUser;
-window.watchAllVisibleSenders = watchAllVisibleSenders;
 
-console.log('✅ chat.js v6 loaded');
+console.log('✅ chat.js v7 loaded — Fast & Optimized 🚀');
