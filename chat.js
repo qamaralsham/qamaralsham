@@ -1,6 +1,6 @@
 // ==============================================
-// قمر الشام - منطق الشات الرئيسي (v3)
-// Qamar Al Sham - Main Chat Logic v3
+// قمر الشام - منطق الشات الرئيسي (v4)
+// Qamar Al Sham - Main Chat Logic v4
 // ==============================================
 // يعتمد على:
 //   - config.js (QAMAR)
@@ -93,14 +93,39 @@ function playPrivateMsgSound() {
 }
 
 // ==============================================
-// 3. التهيئة (Init)
+// 3. التهيئة (Init) — ⭐ معدّل: async + ينتظر auth
 // ==============================================
 
-function initChat() {
+async function initChat() {
     if (ChatState.isInitialized) return;
 
     const user = getCurrentUser();
-    if (!user) return;
+    if (!user) {
+        console.warn('⚠️ No user for initChat');
+        return;
+    }
+
+    // ⭐ انتظر auth جاهز (بعد تحديث الصفحة)
+    if (typeof auth !== 'undefined' && auth && !auth.currentUser) {
+        console.log('⏳ Waiting for auth before init...');
+        await new Promise((resolve) => {
+            let resolved = false;
+            const unsub = auth.onAuthStateChanged(() => {
+                if (resolved) return;
+                resolved = true;
+                try { unsub(); } catch(e) {}
+                resolve();
+            });
+            setTimeout(() => {
+                if (resolved) return;
+                resolved = true;
+                try { unsub(); } catch(e) {}
+                console.log('⚠️ Auth wait timeout — proceeding anyway');
+                resolve();
+            }, 5000);
+        });
+        console.log('✅ Auth ready, initializing chat');
+    }
 
     ChatState.isInitialized = true;
 
@@ -155,7 +180,7 @@ function initChat() {
         }, 2000);
     }
 
-    console.log('✅ Chat v3 initialized');
+    console.log('✅ Chat v4 initialized');
 }
 
 // ==============================================
@@ -727,7 +752,6 @@ function showMessageMenu(msgEl, sender, text, msgId) {
     menu.style.left = 'auto';
     menu.style.bottom = 'auto';
 
-    // تفاعل
     const reactItem = document.createElement('div');
     reactItem.className = 'message-menu-item';
     reactItem.textContent = '😊 تفاعل';
@@ -738,7 +762,6 @@ function showMessageMenu(msgEl, sender, text, msgId) {
     };
     menu.appendChild(reactItem);
 
-    // رد
     const replyItem = document.createElement('div');
     replyItem.className = 'message-menu-item';
     replyItem.textContent = '💬 رد';
@@ -748,7 +771,6 @@ function showMessageMenu(msgEl, sender, text, msgId) {
     };
     menu.appendChild(replyItem);
 
-    // تعديل (لصاحب الرسالة فقط)
     if (isOwner && msgId) {
         const editItem = document.createElement('div');
         editItem.className = 'message-menu-item';
@@ -760,7 +782,6 @@ function showMessageMenu(msgEl, sender, text, msgId) {
         menu.appendChild(editItem);
     }
 
-    // حذف
     if (canDelete && msgId) {
         const delItem = document.createElement('div');
         delItem.className = 'message-menu-item danger';
@@ -1629,9 +1650,25 @@ function openUserProfile(uid, name) {
         return;
     }
 
+    // ⭐ اكتب بالطريقتين (للتوافق مع profile.html القديم والجديد)
     localStorage.setItem('profile_target_uid', uid);
     localStorage.setItem('profile_target_name', name);
     localStorage.setItem('profile_view_mode', 'visitor');
+
+    // ⭐ للتوافق مع profile.html القديم
+    db.ref('users/' + uid).once('value').then(snap => {
+        const data = snap.val();
+        if (data) {
+            localStorage.setItem('qamar_view_user', JSON.stringify(data));
+            localStorage.setItem('profile_target_data', JSON.stringify(data));
+        } else {
+            const guestData = { uid: uid, name: name, rank: 'User', isGuest: true };
+            localStorage.setItem('qamar_view_user', JSON.stringify(guestData));
+            localStorage.setItem('profile_target_data', JSON.stringify(guestData));
+        }
+    }).catch(e => {
+        console.warn('openUserProfile: fetch failed', e);
+    });
 
     const frame = document.getElementById('profile-frame-container');
     if (frame) frame.style.display = 'block';
@@ -1643,6 +1680,9 @@ function openProfile() {
 
     localStorage.setItem('profile_view_mode', 'owner');
     localStorage.setItem('profile_target_uid', user.uid);
+    localStorage.setItem('qamar_profile_user', JSON.stringify(user));
+    localStorage.setItem('qamar_current_user', JSON.stringify(user));
+    localStorage.setItem('profile_target_data', JSON.stringify(user));
 
     const frame = document.getElementById('profile-frame-container');
     if (frame) frame.style.display = 'block';
@@ -1808,7 +1848,6 @@ function updateMessagesByUid(uid, data) {
         let displayName = data.name || 'مجهول';
         if (data.nameEmoji) displayName += ' ' + data.nameEmoji;
 
-        const isBot = msgEl.classList.contains('bot');
         username.textContent = displayName;
 
         // مسح التنسيقات القديمة
@@ -1933,9 +1972,7 @@ window.addEventListener('message', (e) => {
         closeProfileFrame();
     }
     if (e.data && e.data.action === 'profileUpdated') {
-        // تحديث فوري عندما يُعدّل البروفايل
         if (e.data.uid) {
-            // أعد جلب البيانات مباشرة
             db.ref('users/' + e.data.uid).once('value').then(snap => {
                 const data = snap.val();
                 if (data) {
@@ -1999,4 +2036,4 @@ window.closeAllMenus = closeAllMenus;
 window.watchUser = watchUser;
 window.watchAllVisibleSenders = watchAllVisibleSenders;
 
-console.log('✅ chat.js v3 loaded — مراقبة بروفايلات حية 🎨');
+console.log('✅ chat.js v4 loaded — انتظار auth + مراقبة بروفايلات 🎨');
