@@ -24,9 +24,16 @@ async function registerGuest(name, age, gender) {
     const trimmedName = name.trim();
 
     try {
-        if (typeof auth === 'undefined' || !auth) {
-            return { success: false, error: 'Firebase Auth غير متاح' };
-        }
+        // ⭐ انتظار auth حتى 5 ثوان
+if (typeof auth === 'undefined' || !auth) {
+    for (let i = 0; i < 25; i++) {
+        await new Promise(r => setTimeout(r, 200));
+        if (typeof auth !== 'undefined' && auth) break;
+    }
+}
+if (typeof auth === 'undefined' || !auth) {
+    return { success: false, error: 'Firebase Auth غير متاح — أعد المحاولة' };
+}
 
         const credential = await auth.signInAnonymously();
         const uid = credential.user.uid;
