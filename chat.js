@@ -1,5 +1,5 @@
 // ==============================================
-// قمر الشام - منطق الشات (v10 - نهائي)
+// قمر الشام - منطق الشات (v11 - سريع)
 // ==============================================
 
 const ChatState = {
@@ -25,6 +25,7 @@ const ChatState = {
 
 const usersCache = {};
 const usersWatchers = {};
+const usersCacheTTL = {};
 
 // ==============================================
 // الأصوات
@@ -78,7 +79,6 @@ function playPrivateMsgSound() {
 // ⭐ أدوات مساعدة
 // ==============================================
 
-// Firebase يحوّل الـ Array إلى Object — هذه الدالة تعيدها Array
 function toArray(val) {
     if (!val) return null;
     if (Array.isArray(val)) return val;
@@ -89,9 +89,10 @@ function toArray(val) {
 }
 
 // ==============================================
-// ⭐ مراقبة بروفايلات الأعضاء (تحديث حي)
+// ⭐ مراقبة بروفايلات الأعضاء
 // ==============================================
 
+// listener دائم — فقط للمستخدم الحالي
 function watchUser(uid) {
     if (!uid) return;
     if (uid.startsWith('bot_')) return;
@@ -104,6 +105,7 @@ function watchUser(uid) {
         const data = snap.val();
         if (data) {
             usersCache[uid] = data;
+            usersCacheTTL[uid] = Date.now();
             updateMessagesByUid(uid, data);
 
             const me = getCurrentUser();
@@ -116,17 +118,41 @@ function watchUser(uid) {
     });
 }
 
+// قراءة مرة واحدة (مع cache 60 ثانية)
+async function fetchUserData(uid) {
+    if (!uid) return null;
+    if (uid.startsWith('bot_')) return null;
+
+    const now = Date.now();
+    const cacheAge = now - (usersCacheTTL[uid] || 0);
+
+    if (usersCache[uid] && cacheAge < 60000) {
+        return usersCache[uid];
+    }
+
+    try {
+        const snap = await db.ref('users/' + uid).once('value');
+        const data = snap.val();
+        if (data) {
+            usersCache[uid] = data;
+            usersCacheTTL[uid] = now;
+            return data;
+        }
+    } catch(e) {}
+    return null;
+}
+
 function updateMessagesByUid(uid, data) {
     if (!data) return;
 
     document.querySelectorAll('.message[data-sender-uid="' + uid + '"]').forEach(msgEl => {
-        // ═══ الصورة ═══
+        // الصورة
         const avatarImg = msgEl.querySelector('.message-avatar');
         if (avatarImg && data.avatar) {
             avatarImg.src = data.avatar;
         }
 
-        // ═══ الإطار ═══
+        // الإطار
         const avatarWrapper = msgEl.querySelector('.message-avatar-wrapper');
         if (avatarWrapper) {
             let frameEl = avatarWrapper.querySelector('.message-avatar-frame');
@@ -145,7 +171,7 @@ function updateMessagesByUid(uid, data) {
             }
         }
 
-        // ═══ الاسم + التنسيقات ═══
+        // الاسم والتنسيقات
         const username = msgEl.querySelector('.message-username');
         if (!username) return;
 
@@ -155,7 +181,7 @@ function updateMessagesByUid(uid, data) {
 
         username.removeAttribute('style');
 
-        // التدرج (مع toArray)
+        // التدرج
         const gradient = toArray(data.nameGradient);
         if (gradient && gradient.length >= 2) {
             username.style.background = 'linear-gradient(90deg, ' + gradient[0] + ', ' + gradient[1] + ', ' + gradient[0] + ')';
@@ -189,15 +215,6 @@ function updateMessagesByUid(uid, data) {
             }
             username.style.boxShadow = 'inset 0 0 0 100px rgba(0,0,0,0.5), 0 0 15px rgba(212,175,55,0.25)';
             username.style.border = '1px solid rgba(212,175,55,0.4)';
-        }
-    });
-}
-
-function watchAllVisibleSenders() {
-    document.querySelectorAll('.message[data-sender-uid]').forEach(msgEl => {
-        const uid = msgEl.getAttribute('data-sender-uid');
-        if (uid && !uid.startsWith('bot_')) {
-            watchUser(uid);
         }
     });
 }
@@ -267,6 +284,7 @@ async function initChat() {
     startPresenceHeartbeat();
     startInvisibleListener();
 
+    // listener دائم للمستخدم الحالي فقط
     watchUser(user.uid);
 
     setTimeout(() => {
@@ -281,7 +299,7 @@ async function initChat() {
         }, 8000);
     }
 
-    console.log('✅ Chat v10 initialized');
+    console.log('✅ Chat v11 initialized');
 }
 
 // ==============================================
@@ -383,8 +401,6 @@ function switchRoom(roomId, roomTitle, element) {
     startMessagesListener();
     closeAllPanels();
 
-    setTimeout(() => watchAllVisibleSenders(), 2000);
-
     if (typeof onRoomChanged === 'function') {
         onRoomChanged(roomId);
     }
@@ -400,6 +416,11 @@ function startMessagesListener() {
     if (ChatState.messagesListener) {
         ChatState.messagesListener.off();
     }
+
+    // إفراغ pending
+    Object.keys(usersCache).forEach(k => {
+        if (k.startsWith('_pending_')) delete usersCache[k];
+    });
 
     const roomId = ChatState.currentRoom;
     const ref = db.ref('room_messages/' + roomId).limitToLast(20);
@@ -448,6 +469,35 @@ function startMessagesListener() {
         const el = document.querySelector('[data-msg-id="' + snap.key + '"]');
         if (el) el.remove();
     });
+
+    // ⭐ تحميل جماعي لبيانات المرسلين (بعد 800ms) — 1 قراءة بدل 20
+    setTimeout(() => {
+        const pendingUids = Object.keys(usersCache)
+            .filter(k => k.startsWith('_pending_'))
+            .map(k => k.replace('_pending_', ''));
+
+        pendingUids.forEach(uid => delete usersCache['_pending_' + uid]);
+
+        if (pendingUids.length === 0) return;
+
+        const me = getCurrentUser();
+        const otherUids = pendingUids.filter(uid => !me || me.uid !== uid);
+
+        if (otherUids.length === 0) return;
+
+        db.ref('users').once('value').then(snap => {
+            const allUsers = snap.val() || {};
+            otherUids.forEach(uid => {
+                const data = allUsers[uid];
+                if (data) {
+                    usersCache[uid] = data;
+                    usersCacheTTL[uid] = Date.now();
+                    updateMessagesByUid(uid, data);
+                }
+            });
+        }).catch(e => console.warn('Batch fetch error:', e));
+
+    }, 800);
 }
 
 // ==============================================
@@ -519,7 +569,7 @@ function displayMessage(msg, msgId) {
     if (msg.senderEmoji) displayName += ' ' + msg.senderEmoji;
     username.textContent = displayName;
 
-    // التدرج (مع toArray)
+    // التدرج
     const gradient = toArray(msg.senderGradient);
     if (gradient && gradient.length >= 2) {
         username.style.background = 'linear-gradient(90deg, ' + gradient[0] + ', ' + gradient[1] + ', ' + gradient[0] + ')';
@@ -649,9 +699,17 @@ function displayMessage(msg, msgId) {
     container.appendChild(msgEl);
     container.scrollTop = container.scrollHeight;
 
+    // ⭐ لا نجلب هنا — Batch fetch في startMessagesListener
     if (msg.senderUid && !msg.senderUid.startsWith('bot_')) {
-        if (!usersWatchers[msg.senderUid]) {
-            setTimeout(() => watchUser(msg.senderUid), 500);
+        const me = getCurrentUser();
+        if (me && me.uid === msg.senderUid) {
+            // المستخدم الحالي — يتولى watchUser
+        } else if (usersCache[msg.senderUid] && usersCacheTTL[msg.senderUid]) {
+            // موجود في cache — طبّق فوراً
+            setTimeout(() => updateMessagesByUid(msg.senderUid, usersCache[msg.senderUid]), 0);
+        } else {
+            // ضع علامة pending — Batch fetch سيتولى
+            usersCache['_pending_' + msg.senderUid] = true;
         }
     }
 }
@@ -2058,6 +2116,8 @@ window.addEventListener('message', (e) => {
             db.ref('users/' + e.data.uid).once('value').then(snap => {
                 const data = snap.val();
                 if (data) {
+                    usersCache[e.data.uid] = data;
+                    usersCacheTTL[e.data.uid] = Date.now();
                     updateMessagesByUid(e.data.uid, data);
                 }
             });
@@ -2115,7 +2175,7 @@ window.closeBotProfile = closeBotProfile;
 window.openBotTraining = openBotTraining;
 window.closeAllMenus = closeAllMenus;
 window.watchUser = watchUser;
-window.watchAllVisibleSenders = watchAllVisibleSenders;
+window.fetchUserData = fetchUserData;
 window.toArray = toArray;
 
-console.log('✅ chat.js v10 loaded — مراقبة حية + toArray للإصلاح');
+console.log('✅ chat.js v11 loaded — Fetch جماعي + cache + listener واحد للمستخدم الحالي');
