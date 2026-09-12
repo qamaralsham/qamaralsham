@@ -581,7 +581,8 @@ function sendMessage() {
 
     // عرض محلياً
     const localMsg = { ...messageData, time: Date.now() };
-    displayMessage(localMsg, msgRef.key);
+ChatState.seenMessages.add(msgRef.key);
+displayMessage(localMsg, msgRef.key);
 
     // ✅ استدعِ البوتات على رسالتك أيضاً
     if (typeof processIncomingMessage === 'function') {
