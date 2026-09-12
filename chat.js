@@ -1757,4 +1757,27 @@ window.handleLogout = handleLogout;
 window.toggleInvisible = toggleInvisible;
 window.changeBackground = changeBackground;
 
+// ==============================================
+// 24. مراقبة بيانات المستخدم (تحديث فوري للصورة)
+// ==============================================
+
+function startUserDataListener() {
+    const user = getCurrentUser();
+    if (!user || !user.uid) return;
+
+    db.ref('users/' + user.uid).on('value', (snap) => {
+        const data = snap.val();
+        if (!data) return;
+
+        const current = JSON.parse(localStorage.getItem('qamar_current_user') || '{}');
+        const updated = { ...current, ...data };
+        localStorage.setItem('qamar_current_user', JSON.stringify(updated));
+        localStorage.setItem('qamar_user', JSON.stringify(updated));
+
+        console.log('🔄 User data synced:', data.name);
+    });
+}
+
+window.startUserDataListener = startUserDataListener;
+
 console.log('✅ chat.js v1.2 loaded');
