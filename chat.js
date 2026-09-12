@@ -276,12 +276,12 @@ function startMessagesListener() {
         // لأن رسائلك تُعرض محلياً عند الإرسال، ونتجاهل التكرار عبر seenMessages
 
         // ✅ معالجة البوتات (فلترة العمر داخل bots.js)
-        if (typeof processIncomingMessage === 'function') {
-            try {
-                processIncomingMessage({ ...msg, _key: snap.key })
-                    .catch(e => console.warn('Bot error:', e));
-            } catch(e) { console.warn('Bot error:', e); }
-        }
+if (typeof processIncomingMessage === 'function') {
+    try {
+        processIncomingMessage({ ...msg, _key: snap.key })
+            .catch(e => console.warn('Bot error:', e));
+    } catch(e) { console.warn('Bot error:', e); }
+}
 
         displayMessage(msg, snap.key);
 
