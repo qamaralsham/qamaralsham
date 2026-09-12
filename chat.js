@@ -1,6 +1,6 @@
 // ==============================================
-// قمر الشام - منطق الشات الرئيسي (v1.4)
-// Qamar Al Sham - Main Chat Logic v1.4
+// قمر الشام - منطق الشات الرئيسي (v1.5)
+// Qamar Al Sham - Main Chat Logic v1.5
 // ==============================================
 // يعتمد على:
 //   - config.js (QAMAR)
@@ -224,7 +224,6 @@ function switchRoom(roomId, roomTitle, element) {
         ChatState.messagesListener = null;
     }
 
-    // ✅ نستخدم مفاتيح مركّبة (roomId_msgId) فلا حاجة لمسح seenMessages
     ChatState.currentRoom = roomId;
 
     const titleEl = document.getElementById('room-title');
@@ -251,7 +250,7 @@ function switchRoom(roomId, roomTitle, element) {
 }
 
 // ==============================================
-// 6. المستمع للرسائل العامة (v1.4)
+// 6. المستمع للرسائل العامة
 // ==============================================
 
 function startMessagesListener() {
@@ -272,10 +271,8 @@ function startMessagesListener() {
         const user = getCurrentUser();
         if (!user) return;
 
-        // ✅ مفتاح مركّب — يمنع تداخل الرسائل بين الرومات
         const compositeKey = roomId + '_' + snap.key;
 
-        // ✅ العرض مرة واحدة فقط
         if (!ChatState.seenMessages.has(compositeKey)) {
             ChatState.seenMessages.add(compositeKey);
             displayMessage(msg, snap.key);
@@ -285,7 +282,6 @@ function startMessagesListener() {
             }
         }
 
-        // ✅ معالجة البوتات — القفل الموزّع في bots.js يضمن مرة واحدة
         if (typeof processIncomingMessage === 'function') {
             try {
                 processIncomingMessage({ ...msg, _key: compositeKey })
@@ -521,19 +517,33 @@ function buildAttachmentElement(attachment) {
 }
 
 // ==============================================
-// 9. إرسال رسالة (v1.4)
+// 9. إرسال رسالة (v1.5 — جلب بيانات حديثة من Firebase)
 // ==============================================
 
-function sendMessage() {
+async function sendMessage() {
     const input = document.getElementById('message-input');
     if (!input) return;
 
     const text = input.value.trim();
-    const user = getCurrentUser();
+    let user = getCurrentUser();
 
     if (!text || !user) return;
 
-    // ✅ حماية من الإرسال المزدوج (touch + click على الجوال)
+    // ✅ جلب أحدث بيانات المستخدم من Firebase قبل الإرسال
+    try {
+        const snap = await db.ref('users/' + user.uid).once('value');
+        const fresh = snap.val();
+        if (fresh) {
+            user = { ...user, ...fresh };
+            if (typeof saveSession === 'function') {
+                saveSession(user, user.isGuest === true);
+            }
+        }
+    } catch(e) {
+        console.warn('Fresh fetch failed:', e);
+    }
+
+    // ✅ حماية من الإرسال المزدوج
     const _nowCheck = Date.now();
     if (ChatState._lastSentText === text &&
         (_nowCheck - (ChatState._lastSentAt || 0)) < 1500) {
@@ -590,7 +600,6 @@ function sendMessage() {
 
     const msgRef = db.ref(`room_messages/${ChatState.currentRoom}`).push();
 
-    // ✅ أضف المفتاح المركّب قبل العرض المحلي
     const compositeKey = ChatState.currentRoom + '_' + msgRef.key;
     ChatState.seenMessages.add(compositeKey);
 
@@ -599,12 +608,8 @@ function sendMessage() {
         showToast('fa-exclamation-circle', '⚠️ فشل الإرسال');
     });
 
-    // عرض محلياً
     const localMsg = { ...messageData, time: Date.now() };
     displayMessage(localMsg, msgRef.key);
-
-    // ✅ لا نستدعي processIncomingMessage هنا — سيُستدعى من child_added
-    // (مع قفل موزّع في bots.js يضمن مرة واحدة فقط)
 
     if (mentions.length > 0) {
         notifyMentions(mentions, text);
@@ -1573,27 +1578,12 @@ function openProfile() {
     if (frame) frame.style.display = 'block';
 }
 
-async function closeProfileFrame() {
+function closeProfileFrame() {
     const frame = document.getElementById('profile-frame-container');
     if (frame) frame.style.display = 'none';
 
     const iframe = document.getElementById('profile-iframe');
     if (iframe) iframe.src = iframe.src;
-
-    // ✅ جلب أحدث بيانات المستخدم من Firebase بعد إغلاق البروفايل
-    const user = getCurrentUser();
-    if (user && user.uid && db) {
-        try {
-            const snap = await db.ref('users/' + user.uid).once('value');
-            const data = snap.val();
-            if (data) {
-                const updated = { ...user, ...data };
-                localStorage.setItem('qamar_current_user', JSON.stringify(updated));
-                localStorage.setItem('qamar_user', JSON.stringify(updated));
-                console.log('🔄 User refreshed after profile close:', updated.name);
-            }
-        } catch(e) { console.warn('Refresh user error:', e); }
-    }
 }
 
 function toggleToolbar() {
@@ -1720,6 +1710,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+function restorePrivateChat() {
+    if (!ChatState.minimizedChat) return;
+    const c = ChatState.minimizedChat;
+    openPrivateChatWith(c.otherUid, c.otherName, c.otherAvatar);
+}
+
 window.addEventListener('message', (e) => {
     if (e.data && e.data.action === 'openPrivateChat') {
         openPrivateChatWith(e.data.uid, e.data.name, e.data.avatar || '');
@@ -1787,11 +1783,7 @@ function startUserDataListener() {
         const current = JSON.parse(localStorage.getItem('qamar_current_user') || '{}');
         const updated = { ...current, ...data };
 
-        // ✅ تحديث localStorage
-        localStorage.setItem('qamar_current_user', JSON.stringify(updated));
-        localStorage.setItem('qamar_user', JSON.stringify(updated));
-
-        // ✅ الأهم: تحديث currentUser الداخلي في auth.js
+        // ✅ تحديث المتغير الداخلي في auth.js
         if (typeof saveSession === 'function') {
             saveSession(updated, updated.isGuest === true);
         }
@@ -1800,4 +1792,6 @@ function startUserDataListener() {
     });
 }
 
-console.log('✅ chat.js v1.4 loaded');
+window.startUserDataListener = startUserDataListener;
+
+console.log('✅ chat.js v1.5 loaded');
