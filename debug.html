@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔍 تشخيص قمر الشام</title>
+<style>
+    body { font-family: 'Cairo', sans-serif; background: #050508; color: #fff; padding: 15px; margin: 0; }
+    h1 { color: #ffd700; font-size: 18px; margin-bottom: 15px; }
+    .card { background: rgba(255,255,255,0.05); border: 1px solid #d4af37; border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+    .label { color: #d4af37; font-size: 12px; font-weight: bold; margin-bottom: 5px; }
+    .value { font-size: 14px; word-break: break-all; }
+    .ok { color: #4CAF50; }
+    .fail { color: #ff4444; }
+    .warn { color: #FF9800; }
+    .btn { background: #d4af37; color: #000; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 5px; font-size: 14px; }
+    pre { background: #000; padding: 10px; border-radius: 8px; font-size: 11px; overflow-x: auto; direction: ltr; text-align: left; }
+    #logs { max-height: 300px; overflow-y: auto; }
+</style>
+</head>
+<body>
+<h1>🔍 تشخيص قمر الشام</h1>
+<div id="output"></div>
+<button class="btn" onclick="location.reload()">🔄 إعادة التحميل</button>
+<div class="card">
+    <div class="label">📋 سجل التشخيص</div>
+    <div id="logs"></div>
+</div>
+
+<script>
+const out = document.getElementById('output');
+const logs = document.getElementById('logs');
+
+// اعتراض console.log
+const origLog = console.log;
+const origWarn = console.warn;
+const origErr = console.error;
+const logBuffer = [];
+
+function addLog(level, args) {
+    const msg = args.map(a => {
+        if (typeof a === 'object') {
+            try { return JSON.stringify(a); } catch(e) { return String(a); }
+        }
+        return String(a);
+    }).join(' ');
+    const color = level === 'error' ? '#ff4444' : level === 'warn' ? '#FF9800' : '#4CAF50';
+    logBuffer.push({ level, msg, time: new Date().toLocaleTimeString('ar') });
+    renderLogs();
+}
+
+console.log = (...args) => { addLog('log', args); origLog(...args); };
+console.warn = (...args) => { addLog('warn', args); origWarn(...args); };
+console.error = (...args) => { addLog('error', args); origErr(...args); };
+
+function renderLogs() {
+    logs.innerHTML = logBuffer.map(l => 
+        `<div style="color:${l.level === 'error' ? '#ff4444' : l.level === 'warn' ? '#FF9800' : '#4CAF50'};font-size:11px;padding:3px 0;border-bottom:1px solid #222;">
+            <b>[${l.time}]</b> ${l.msg}
+        </div>`
+    ).join('');
+    logs.scrollTop = logs.scrollHeight;
+}
+
+// اعتراض الأخطاء العامة
+window.addEventListener('error', (e) => {
+    addLog('error', ['❌ خطأ عام: ' + e.message + ' | ' + e.filename + ':' + e.lineno]);
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+    addLog('error', ['❌ Promise مرفوض: ' + (e.reason?.message || e.reason)]);
+});
+
+// الدالة الرئيسية
+function card(label, value, color = '') {
+    out.innerHTML += `<div class="card">
+        <div class="label">${label}</div>
+        <div class="value ${color}">${value}</div>
+    </div>`;
+}
+
+function check() {
+    out.innerHTML = '';
+    
+    // 1. هل Firebase محمّل؟
+    const firebaseOk = typeof firebase !== 'undefined';
+    card('1️⃣ Firebase SDK', firebaseOk ? '✅ محمّل' : '❌ غير محمّل', firebaseOk ? 'ok' : 'fail');
+    
+    if (!firebaseOk) return;
+    
+    // 2. هل db موجود؟
+    const dbOk = typeof db !== 'undefined' && db;
+    card('2️⃣ Database (db)', dbOk ? '✅ متصل' : '❌ غير متصل', dbOk ? 'ok' : 'fail');
+    
+    // 3. هل auth موجود؟
+    const authOk = typeof auth !== 'undefined' && auth;
+    card('3️⃣ Auth', authOk ? '✅ متصل' : '❌ غير متصل', authOk ? 'ok' : 'fail');
+    
+    // 4. هل المستخدم مسجّل دخول؟
+    const user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
+    card('4️⃣ المستخدم الحالي', user ? `✅ ${user.name} (${user.rank})` : '❌ لا يوجد مستخدم', user ? 'ok' : 'fail');
+    
+    // 5. هل chat.js محمّل؟
+    const chatOk = typeof ChatState !== 'undefined';
+    card('5️⃣ chat.js', chatOk ? '✅ محمّل' : '❌ غير محمّل', chatOk ? 'ok' : 'fail');
+    
+    // 6. هل bots.js محمّل؟
+    const botsOk = typeof BotsState !== 'undefined';
+    card('6️⃣ bots.js', botsOk ? '✅ محمّل (v2)' : '❌ غير محمّل أو v1', botsOk ? 'ok' : 'fail');
+    
+    // 7. هل البوتات initialized؟
+    const initOk = botsOk && BotsState.initialized === true;
+    card('7️⃣ البوتات مهيّأة', initOk ? '✅ نعم' : '❌ لا — initBots() ما اشتغلت', initOk ? 'ok' : 'fail');
+    
+    // 8. الروم الحالي
+    const room = (typeof ChatState !== 'undefined') ? ChatState.currentRoom : 'غير معروف';
+    const roomOk = (room === 'islamic' || room === 'quiz');
+    card('8️⃣ الروم الحالي', `📍 ${room} ${roomOk ? '✅' : '⚠️ البوت ما ينشر هنا'}`, roomOk ? 'ok' : 'warn');
+    
+    // 9. فحص القفل
+    if (dbOk) {
+        db.ref('bot_locks/islamic').once('value').then(snap => {
+            const v = snap.val();
+            if (v) {
+                const ago = Math.floor((Date.now() - v.at) / 1000);
+                card('9️⃣ قفل الإسلامي', `⏱️ آخر نشر قبل ${ago} ثانية`, ago < 300 ? 'ok' : 'warn');
+            } else {
+                card('9️⃣ قفل الإسلامي', '🆕 لم يُستخدم بعد', 'ok');
+            }
+        }).catch(e => {
+            card('9️⃣ قفل الإسلامي', '❌ خطأ: ' + e.message, 'fail');
+        });
+    }
+    
+    // 10. فحص current quiz
+    if (dbOk) {
+        db.ref('bot_data/quiz/current').once('value').then(snap => {
+            const q = snap.val();
+            if (q) {
+                card('🔟 السؤال الحالي', `❓ ${q.question} | كشف: ${q.revealed}`, 'ok');
+            } else {
+                card('🔟 السؤال الحالي', '🆕 لا يوجد سؤال حالي', 'ok');
+            }
+        }).catch(e => {
+            card('🔟 السؤال الحالي', '❌ خطأ: ' + e.message, 'fail');
+        });
+    }
+    
+    // 11. زر اختبار النشر
+    setTimeout(() => {
+        out.innerHTML += `<div class="card">
+            <div class="label">🧪 اختبار فوري</div>
+            <button class="btn" onclick="testIslamic()">نشر رسالة إسلامية الآن</button>
+            <button class="btn" onclick="testQuiz()" style="background:#FF9800;margin-top:5px;">نشر سؤال مسابقة الآن</button>
+            <button class="btn" onclick="testLock()" style="background:#9C27B0;margin-top:5px;">اختبار القفل</button>
+        </div>`;
+    }, 500);
+    
+    addLog('log', ['✅ اكتمل التشخيص']);
+}
+
+window.testIslamic = async function() {
+    addLog('log', ['🧪 اختبار الإسلامي...']);
+    if (typeof postIslamicContent !== 'function') {
+        addLog('error', ['❌ postIslamicContent غير موجودة']);
+        return;
+    }
+    try {
+        await postIslamicContent();
+        addLog('log', ['✅ تم تنفيذ postIslamicContent']);
+    } catch(e) {
+        addLog('error', ['❌ خطأ: ' + e.message]);
+    }
+};
+
+window.testQuiz = async function() {
+    addLog('log', ['🧪 اختبار المسابقة...']);
+    if (typeof tryPostQuizAndAnnounce !== 'function') {
+        addLog('error', ['❌ tryPostQuizAndAnnounce غير موجودة']);
+        return;
+    }
+    try {
+        await tryPostQuizAndAnnounce();
+        addLog('log', ['✅ تم تنفيذ tryPostQuizAndAnnounce']);
+    } catch(e) {
+        addLog('error', ['❌ خطأ: ' + e.message]);
+    }
+};
+
+window.testLock = async function() {
+    addLog('log', ['🧪 اختبار القفل...']);
+    if (typeof tryAcquireLock !== 'function') {
+        addLog('error', ['❌ tryAcquireLock غير موجودة']);
+        return;
+    }
+    try {
+        const ok = await tryAcquireLock('test', 5000);
+        addLog('log', [ok ? '✅ حصلت على القفل' : '⚠️ القفل مشغول (هذا طبيعي)']);
+    } catch(e) {
+        addLog('error', ['❌ خطأ: ' + e.message]);
+    }
+};
+
+// التحميل
+window.addEventListener('load', () => {
+    setTimeout(check, 2000);
+});
+</script>
+
+<!-- 🔴 حمّل نفس ملفات المشروع -->
+<script src="config.js"></script>
+<script src="ranks.js"></script>
+<script src="utils.js"></script>
+<script src="auth.js"></script>
+<script src="bots.js"></script>
+
+</body>
+</html>
