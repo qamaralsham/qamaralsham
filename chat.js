@@ -1720,12 +1720,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-function restorePrivateChat() {
-    if (!ChatState.minimizedChat) return;
-    const c = ChatState.minimizedChat;
-    openPrivateChatWith(c.otherUid, c.otherName, c.otherAvatar);
-}
-
 window.addEventListener('message', (e) => {
     if (e.data && e.data.action === 'openPrivateChat') {
         openPrivateChatWith(e.data.uid, e.data.name, e.data.avatar || '');
