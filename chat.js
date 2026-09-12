@@ -1,6 +1,6 @@
 // ==============================================
-// قمر الشام - منطق الشات الرئيسي (v1.3)
-// Qamar Al Sham - Main Chat Logic v1.3
+// قمر الشام - منطق الشات الرئيسي (v1.4)
+// Qamar Al Sham - Main Chat Logic v1.4
 // ==============================================
 // يعتمد على:
 //   - config.js (QAMAR)
@@ -37,7 +37,10 @@ const ChatState = {
     seenPrivateMessages: new Set(),
 
     invisibleMode: false,
-    isInitialized: false
+    isInitialized: false,
+
+    _lastSentText: null,
+    _lastSentAt: 0
 };
 
 // ==============================================
@@ -221,9 +224,8 @@ function switchRoom(roomId, roomTitle, element) {
         ChatState.messagesListener = null;
     }
 
-    // ✅ لا نمسح seenMessages — هذا سبب التكرار عند تبديل الرومات
-// نستخدم مفتاح مركّب (roomId_msgId) لمنع التداخل
-ChatState.currentRoom = roomId;
+    // ✅ نستخدم مفاتيح مركّبة (roomId_msgId) فلا حاجة لمسح seenMessages
+    ChatState.currentRoom = roomId;
 
     const titleEl = document.getElementById('room-title');
     if (titleEl) titleEl.innerText = roomTitle;
@@ -249,7 +251,7 @@ ChatState.currentRoom = roomId;
 }
 
 // ==============================================
-// 6. المستمع للرسائل العامة
+// 6. المستمع للرسائل العامة (v1.4)
 // ==============================================
 
 function startMessagesListener() {
@@ -264,30 +266,31 @@ function startMessagesListener() {
     ChatState.messagesListener = ref;
 
     ref.on('child_added', (snap) => {
-        if (ChatState.seenMessages.has(snap.key)) return;
-        ChatState.seenMessages.add(snap.key);
-
         const msg = snap.val();
         if (!msg) return;
 
         const user = getCurrentUser();
         if (!user) return;
 
-        // ✅ ملاحظة: أزلنا سطر "if (msg.senderUid === user.uid) return;"
-        // لأن رسائلك تُعرض محلياً عند الإرسال، ونتجاهل التكرار عبر seenMessages
+        // ✅ مفتاح مركّب — يمنع تداخل الرسائل بين الرومات
+        const compositeKey = roomId + '_' + snap.key;
 
-        // ✅ معالجة البوتات (فلترة العمر داخل bots.js)
-if (typeof processIncomingMessage === 'function') {
-    try {
-        processIncomingMessage({ ...msg, _key: snap.key })
-            .catch(e => console.warn('Bot error:', e));
-    } catch(e) { console.warn('Bot error:', e); }
-}
+        // ✅ العرض مرة واحدة فقط
+        if (!ChatState.seenMessages.has(compositeKey)) {
+            ChatState.seenMessages.add(compositeKey);
+            displayMessage(msg, snap.key);
 
-        displayMessage(msg, snap.key);
+            if (msg.mentions && msg.mentions.includes(user.name)) {
+                playBirdSound();
+            }
+        }
 
-        if (msg.mentions && msg.mentions.includes(user.name)) {
-            playBirdSound();
+        // ✅ معالجة البوتات — القفل الموزّع في bots.js يضمن مرة واحدة
+        if (typeof processIncomingMessage === 'function') {
+            try {
+                processIncomingMessage({ ...msg, _key: compositeKey })
+                    .catch(e => console.warn('Bot error:', e));
+            } catch(e) { console.warn('Bot error:', e); }
         }
     });
 
@@ -338,7 +341,6 @@ function displayMessage(msg, msgId) {
 
     const avatarImg = document.createElement('img');
     avatarImg.className = 'message-avatar';
-    // ✅ للرسائل التي أرسلتها أنت — استخدم صورتك الحالية
     let avatarUrl = msg.senderAvatar;
     if (msg.senderUid === user?.uid && user?.avatar) {
         avatarUrl = user.avatar;
@@ -350,7 +352,6 @@ function displayMessage(msg, msgId) {
     avatarImg.onclick = () => openUserProfile(msg.senderUid, msg.senderName);
     avatarWrapper.appendChild(avatarImg);
 
-    // إطار الأفاتار
     if (msg.senderFrame && msg.senderFrame !== 'none' && typeof getFrameStyleById === 'function') {
         const frameData = getFrameStyleById(msg.senderFrame);
         if (frameData) {
@@ -520,7 +521,7 @@ function buildAttachmentElement(attachment) {
 }
 
 // ==============================================
-// 9. إرسال رسالة
+// 9. إرسال رسالة (v1.4)
 // ==============================================
 
 function sendMessage() {
@@ -531,6 +532,15 @@ function sendMessage() {
     const user = getCurrentUser();
 
     if (!text || !user) return;
+
+    // ✅ حماية من الإرسال المزدوج (touch + click على الجوال)
+    const _nowCheck = Date.now();
+    if (ChatState._lastSentText === text &&
+        (_nowCheck - (ChatState._lastSentAt || 0)) < 1500) {
+        return;
+    }
+    ChatState._lastSentText = text;
+    ChatState._lastSentAt = _nowCheck;
 
     const now = Date.now();
     if (now - ChatState.lastMessageTime < QAMAR.RATE_LIMIT.MESSAGE_INTERVAL_MS) {
@@ -579,30 +589,22 @@ function sendMessage() {
     };
 
     const msgRef = db.ref(`room_messages/${ChatState.currentRoom}`).push();
+
+    // ✅ أضف المفتاح المركّب قبل العرض المحلي
+    const compositeKey = ChatState.currentRoom + '_' + msgRef.key;
+    ChatState.seenMessages.add(compositeKey);
+
     msgRef.set(messageData).catch(err => {
         console.error('Send error:', err);
         showToast('fa-exclamation-circle', '⚠️ فشل الإرسال');
     });
 
-    // ✅ عرض محلياً + منع التكرار عند وصول Firebase
+    // عرض محلياً
     const localMsg = { ...messageData, time: Date.now() };
-    ChatState.seenMessages.add(msgRef.key);
     displayMessage(localMsg, msgRef.key);
 
-    // ✅ استدعِ البوتات على رسالتك أيضاً
-    if (typeof processIncomingMessage === 'function') {
-        try {
-            processIncomingMessage({
-                senderUid: user.uid,
-                senderName: user.name,
-                senderRank: user.rank,
-                text: text,
-                time: Date.now(),
-                isBot: false,
-                _key: msgRef.key
-            }).catch(e => console.warn('Bot error:', e));
-        } catch(e) { console.warn('Bot error:', e); }
-    }
+    // ✅ لا نستدعي processIncomingMessage هنا — سيُستدعى من child_added
+    // (مع قفل موزّع في bots.js يضمن مرة واحدة فقط)
 
     if (mentions.length > 0) {
         notifyMentions(mentions, text);
@@ -793,7 +795,7 @@ function closeAllMenus() {
 }
 
 // ==============================================
-// 13. التفاعلات (Reactions)
+// 13. التفاعلات
 // ==============================================
 
 async function toggleReaction(msgId, emoji) {
@@ -804,7 +806,6 @@ async function toggleReaction(msgId, emoji) {
         const ref = db.ref(`room_messages/${ChatState.currentRoom}/${msgId}/reactions/${emoji}`);
         const snap = await ref.once('value');
         const uids = snap.val() || [];
-
         const index = Array.isArray(uids) ? uids.indexOf(user.uid) : -1;
 
         if (index >= 0) {
@@ -1047,7 +1048,6 @@ function loadPrivateMessages() {
 
         if (!isSent && !msg.read) {
             db.ref(`user_private_messages/${user.uid}/${otherUid}/${snap.key}/read`).set(true).catch(() => {});
-
             db.ref(`user_private_chats/${user.uid}/${otherUid}/unread`).transaction(count => {
                 return Math.max(0, (count || 1) - 1);
             });
@@ -1417,7 +1417,7 @@ async function toggleInvisible() {
 }
 
 // ==============================================
-// 19. المايكات (UI فقط)
+// 19. المايكات (UI)
 // ==============================================
 
 function updateMicsUI() {
@@ -1786,4 +1786,4 @@ function startUserDataListener() {
 
 window.startUserDataListener = startUserDataListener;
 
-console.log('✅ chat.js v1.3 loaded');
+console.log('✅ chat.js v1.4 loaded');
