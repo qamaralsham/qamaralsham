@@ -221,8 +221,9 @@ function switchRoom(roomId, roomTitle, element) {
         ChatState.messagesListener = null;
     }
 
-    ChatState.seenMessages.clear();
-    ChatState.currentRoom = roomId;
+    // ✅ لا نمسح seenMessages — هذا سبب التكرار عند تبديل الرومات
+// نستخدم مفتاح مركّب (roomId_msgId) لمنع التداخل
+ChatState.currentRoom = roomId;
 
     const titleEl = document.getElementById('room-title');
     if (titleEl) titleEl.innerText = roomTitle;
