@@ -2,7 +2,26 @@
 // قمر الشام — بيانات الإطارات (v1)
 // ==============================================
 
-const FRAMES_DATA = {};
+const FRAMES_DATA = {
+    metal_wings: {
+        id: 'metal_wings',
+        name: 'الأجنحة المعدنية',
+        category: 'rare',
+        minRank: 'Owner',
+        price: 1500,
+        url: 'https://i.ibb.co/VcX7TfvC/st-128401-1786669813-fc0002c6.gif',
+        size: 'large',
+        offset: 0
+    },
+
+    fire_red: {
+        ...
+    },
+
+    butterflies_gold: {
+        ...
+    }
+};
     // ═══ إطارات جاهزة (روابط للاستبدال لاحقاً) ═══
     // لما تلاقي روابط جديدة، بس عدّل الحقول "url"
 
