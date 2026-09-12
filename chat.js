@@ -348,15 +348,10 @@ function displayMessage(msg, msgId) {
     avatarImg.onclick = () => openUserProfile(msg.senderUid, msg.senderName);
     avatarWrapper.appendChild(avatarImg);
 
-    if (msg.senderFrame && msg.senderFrame !== 'none' && typeof getFrameStyleById === 'function') {
-        const frameData = getFrameStyleById(msg.senderFrame);
-        if (frameData) {
-            const frameEl = document.createElement('div');
-            frameEl.className = 'message-avatar-frame';
-            frameEl.style.cssText = frameData.style;
-            avatarWrapper.appendChild(frameEl);
-        }
-    }
+    // ✅ تطبيق الإطار الجديد (GIF/WebM)
+if (msg.senderFrame && msg.senderFrame !== 'none' && typeof applyFrame === 'function') {
+    applyFrame(avatarWrapper, msg.senderFrame);
+}
 
     // ====== المحتوى ======
     const content = document.createElement('div');
