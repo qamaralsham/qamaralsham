@@ -1792,13 +1792,18 @@ function startUserDataListener() {
 
         const current = JSON.parse(localStorage.getItem('qamar_current_user') || '{}');
         const updated = { ...current, ...data };
+
+        // ✅ تحديث localStorage
         localStorage.setItem('qamar_current_user', JSON.stringify(updated));
         localStorage.setItem('qamar_user', JSON.stringify(updated));
 
-        console.log('🔄 User data synced:', data.name);
+        // ✅ الأهم: تحديث currentUser الداخلي في auth.js
+        if (typeof saveSession === 'function') {
+            saveSession(updated, updated.isGuest === true);
+        }
+
+        console.log('🔄 User synced:', data.name, '| Avatar:', (data.avatar || '').slice(0, 50));
     });
 }
-
-window.startUserDataListener = startUserDataListener;
 
 console.log('✅ chat.js v1.4 loaded');
