@@ -1,6 +1,6 @@
 // ==============================================
-// قمر الشام - نظام الدخول والمصادقة (v6)
-// Qamar Al Sham - Auth v6 (Fixed & Fast)
+// قمر الشام - نظام الدخول والمصادقة (v7)
+// Qamar Al Sham - Auth v7 (Fixed Session Update)
 // ==============================================
 
 let currentUser = null;
@@ -37,7 +37,6 @@ async function registerGuest(name, age, gender) {
     const trimmedName = name.trim();
 
     try {
-        // ⭐ انتظار auth
         const ok = await waitForAuth(5000);
         if (!ok) {
             return { success: false, error: 'Firebase لم يجهز بعد — انتظر ثوانٍ وأعد المحاولة' };
@@ -106,7 +105,6 @@ async function registerMember(name, age, gender, email, password) {
     const trimmedName = name.trim();
 
     try {
-        // ⭐ انتظار auth
         const ok = await waitForAuth(5000);
         if (!ok) {
             return { success: false, error: 'Firebase لم يجهز بعد — انتظر ثوانٍ وأعد المحاولة' };
@@ -168,7 +166,6 @@ async function login(email, password) {
     }
 
     try {
-        // ⭐ انتظار auth
         const ok = await waitForAuth(5000);
         if (!ok) {
             return { success: false, error: 'Firebase لم يجهز بعد — انتظر ثوانٍ وأعد المحاولة' };
@@ -196,6 +193,21 @@ async function login(email, password) {
             if (snapshot.exists()) {
                 userData = { ...userData, ...snapshot.val() };
                 userData.rankLevel = QAMAR.getRankLevel(userData.rank);
+
+                // ✅ فحص: هل هذا الحساب هو الملك؟
+                try {
+                    const kingSnap = await db.ref('config/king_uid').once('value');
+                    const kingUid = kingSnap.val();
+                    if (kingUid && firebaseUser.uid === kingUid && userData.rank !== 'King') {
+                        console.log('👑 This is the King — updating rank');
+                        userData.rank = 'King';
+                        userData.rankLevel = 100;
+                        await db.ref('users/' + firebaseUser.uid + '/rank').set('King');
+                        await db.ref('users/' + firebaseUser.uid + '/rankLevel').set(100);
+                    }
+                } catch (e) {
+                    console.warn('King check error:', e);
+                }
 
                 Promise.all([
                     db.ref('users/' + firebaseUser.uid + '/lastSeen').set(now),
@@ -236,7 +248,7 @@ async function login(email, password) {
 }
 
 // ==============================================
-// 4. حفظ الجلسة
+// 4. حفظ الجلسة (v7 — محدّث)
 // ==============================================
 function saveSession(user, isGuestFlag) {
     try {
@@ -249,6 +261,10 @@ function saveSession(user, isGuestFlag) {
         } else {
             localStorage.removeItem(QAMAR.STORAGE_KEYS.GUEST);
         }
+
+        // ✅ تحديث المتغير الداخلي — الإصلاح الأساسي
+        currentUser = user;
+        isUserGuest = isGuestFlag;
     } catch (e) {
         console.error('❌ Save session error:', e);
     }
@@ -360,30 +376,44 @@ function isHigherOrEqualThan(rank) {
 // 8. مراقبة حالة المصادقة
 // ==============================================
 async function startAuthListener() {
-    // انتظار auth قبل بدء المراقبة
     const ok = await waitForAuth(10000);
     if (!ok) {
         console.warn('⚠️ auth not available for listener');
         return;
     }
 
-    auth.onAuthStateChanged((firebaseUser) => {
+    auth.onAuthStateChanged(async (firebaseUser) => {
         _authReady = true;
         if (firebaseUser) {
             if (!currentUser || currentUser.uid !== firebaseUser.uid) {
-                db.ref('users/' + firebaseUser.uid).once('value')
-                    .then((snap) => {
-                        if (snap.exists()) {
-                            currentUser = snap.val();
-                            currentUser.rankLevel = QAMAR.getRankLevel(currentUser.rank);
-                            isUserGuest = currentUser.isGuest === true;
-                            saveSession(currentUser, isUserGuest);
-                            console.log('🔄 Auth restored:', currentUser.name);
+                try {
+                    const snap = await db.ref('users/' + firebaseUser.uid).once('value');
+                    if (snap.exists()) {
+                        currentUser = snap.val();
+                        currentUser.rankLevel = QAMAR.getRankLevel(currentUser.rank);
+                        isUserGuest = currentUser.isGuest === true;
+
+                        // ✅ فحص: هل هذا الحساب هو الملك؟
+                        try {
+                            const kingSnap = await db.ref('config/king_uid').once('value');
+                            const kingUid = kingSnap.val();
+                            if (kingUid && firebaseUser.uid === kingUid && currentUser.rank !== 'King') {
+                                console.log('👑 King detected — updating');
+                                currentUser.rank = 'King';
+                                currentUser.rankLevel = 100;
+                                await db.ref('users/' + firebaseUser.uid + '/rank').set('King');
+                                await db.ref('users/' + firebaseUser.uid + '/rankLevel').set(100);
+                            }
+                        } catch (e) {
+                            console.warn('King check failed:', e);
                         }
-                    })
-                    .catch((e) => {
-                        console.warn('⚠️ Fetch user failed:', e);
-                    });
+
+                        saveSession(currentUser, isUserGuest);
+                        console.log('🔄 Auth restored:', currentUser.name, '| Rank:', currentUser.rank);
+                    }
+                } catch (e) {
+                    console.warn('⚠️ Fetch user failed:', e);
+                }
             }
         }
     });
@@ -397,5 +427,5 @@ async function startAuthListener() {
 window.addEventListener('DOMContentLoaded', () => {
     loadSession();
     startAuthListener();
-    console.log('📦 Auth.js v6 loaded');
+    console.log('📦 Auth.js v7 loaded');
 });
