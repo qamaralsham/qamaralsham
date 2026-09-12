@@ -1,13 +1,13 @@
 // ==============================================
-// قمر الشام - البوتات الأربعة (v2 — Leader Lock)
-// Qamar Al Sham - The Four Bots v2
+// قمر الشام - البوتات الأربعة (v3 — Age Filter)
+// Qamar Al Sham - The Four Bots v3
 // ==============================================
-// التغييرات الرئيسية:
-//   ✅ Leader Lock — منع تكرار رسائل البوتات مع عدة عملاء
-//   ✅ Shared Quiz State — السؤال الحالي في Firebase وليس محلياً
-//   ✅ First-Winner Transaction — من يجيب أولاً يكسب فقط
-//   ✅ أسماء بوتات موحّدة مع QAMAR.BOTS
-//   ✅ حماية الإداريين من بوت السجان
+// الجديد في v3:
+//   ✅ فلترة الرسائل القديمة (> 60 ثانية) — منع الردود المكررة
+//   ✅ حماية السجان من التكرار (فحص السجن الحالي)
+//   ✅ Leader Lock على السجان لكل رسالة
+//   ✅ حكواتي يرد فقط على الرسائل الحديثة (< 15 ثانية)
+//   ✅ أسماء البوتات موحّدة مع QAMAR.BOTS
 // ==============================================
 
 const BotsState = {
@@ -43,12 +43,6 @@ const BotsState = {
 // 1. أداة القفل (Leader Lock)
 // ==============================================
 
-/**
- * يحاول الحصول على قفل للنشر.
- * @param {string} lockName - اسم القفل
- * @param {number} cooldownMs - المدة قبل ما يسمح لعميل آخر
- * @returns {boolean} - هل نجح؟
- */
 async function tryAcquireLock(lockName, cooldownMs) {
     if (!db) return false;
     const now = Date.now();
@@ -60,7 +54,7 @@ async function tryAcquireLock(lockName, cooldownMs) {
             if (now - lastAt >= (cooldownMs - bufferMs)) {
                 return { at: now, by: (getCurrentUser()?.uid) || 'anon' };
             }
-            return undefined; // abort
+            return undefined;
         });
         return result.committed === true;
     } catch (e) {
@@ -94,7 +88,7 @@ async function initBots() {
 }
 
 // ==============================================
-// 3. تحميل البيانات (نفس السابق — بدون تغيير)
+// 3. تحميل البيانات
 // ==============================================
 
 async function loadBotsData() {
@@ -153,7 +147,7 @@ function flattenToArray(obj) {
 }
 
 // ==============================================
-// 4. البيانات الافتراضية (بدون تغيير)
+// 4. البيانات الافتراضية
 // ==============================================
 
 async function seedDefaultBannedWords() {
@@ -163,7 +157,8 @@ async function seedDefaultBannedWords() {
     BotsState.criticalWords = defaultCritical;
     try {
         await db.ref('config/banned_words').set({
-            words: defaultBanned, critical: defaultCritical,
+            words: defaultBanned,
+            critical: defaultCritical,
             updatedBy: (getCurrentUser()?.uid) || 'system',
             updatedAt: Date.now()
         });
@@ -278,11 +273,23 @@ function guardianCheck(text, user) {
 }
 
 async function applyGuardianAction(user, action, reason, word) {
-    // ✅ حماية: لا تعاقب الإداريين (Admin+ = level 65)
+    // ✅ حماية 1: لا تعاقب الإداريين
     const userRankLevel = (typeof getRankLevel === 'function')
         ? getRankLevel(user.rank)
         : (typeof getRank === 'function' ? getRank(user.rank).level : 0);
     if (userRankLevel >= 65) return;
+
+    // ✅ حماية 2: لا تعاقب إذا فيه سجن نشط لنفس المستخدم
+    if (db) {
+        try {
+            const snap = await db.ref('jails/' + user.uid).once('value');
+            const existing = snap.val();
+            if (existing && existing.until > Date.now()) {
+                console.log('⏭️ Already jailed — skipping');
+                return;
+            }
+        } catch (e) { /* تجاهل */ }
+    }
 
     const uid = user.uid;
     const now = Date.now();
@@ -318,7 +325,8 @@ async function jailUser(uid, name, reason, durationMs, byName) {
         await db.ref(`jails/${uid}`).set({
             byUid: 'guardian_bot',
             byRank: byName || 'Bot',
-            reason, until,
+            reason,
+            until,
             jailedAt: Date.now(),
             name
         });
@@ -369,7 +377,7 @@ async function banUser(uid, name, reason, byName) {
 }
 
 // ==============================================
-// 6. الإسلامي (Islamic) — Leader Lock
+// 6. الإسلامي (Islamic)
 // ==============================================
 
 function startIslamicBot() {
@@ -391,7 +399,6 @@ async function postIslamicContent() {
     if (content.prayers.length > 0) categories.push('prayers');
     if (categories.length === 0) return;
 
-    // ✅ Leader Lock — واحد فقط ينشر
     const ok = await tryAcquireLock('islamic', QAMAR.BOTS.ISLAMIC.intervalMs);
     if (!ok) return;
 
@@ -406,12 +413,11 @@ async function postIslamicContent() {
         prayers: 'ﷺ صلاة على النبي:'
     };
 
-    // ✅ الاسم الصحيح من QAMAR.BOTS.ISLAMIC
     await sendBotMessage('قمر الشام', `${prefix[category]} ${text}`);
 }
 
 // ==============================================
-// 7. المسابقات (Quiz) — Shared State + Transaction
+// 7. المسابقات (Quiz)
 // ==============================================
 
 function startQuizBot() {
@@ -422,9 +428,6 @@ function startQuizBot() {
     console.log('🎯 Quiz bot started');
 }
 
-/**
- * المستمع للسؤال الحالي — كل العملاء يتابعونه
- */
 function startQuizListener() {
     if (!db) return;
     if (BotsState.quizListener) BotsState.quizListener.off();
@@ -436,7 +439,6 @@ function startQuizListener() {
 
         if (!q) return;
 
-        // إعادة جدولة المؤقت بناءً على الحالة المشتركة
         if (BotsState.quizRevealTimeout) clearTimeout(BotsState.quizRevealTimeout);
 
         if (!q.revealed) {
@@ -449,10 +451,6 @@ function startQuizListener() {
     });
 }
 
-/**
- * محاولة نشر سؤال جديد (transactionally)
- * @returns {boolean} - هل فزت بالنشر؟
- */
 async function tryPostQuiz() {
     if (!db) return false;
     if (BotsState.quizQuestions.length === 0) return false;
@@ -476,8 +474,8 @@ async function tryPostQuiz() {
             const t = Date.now();
             if (!current) return newQuiz;
             if (current.revealed && t - (current.revealedAt || 0) > 60000) return newQuiz;
-            if (!current.revealed && t - (current.startedAt || 0) > 90000) return newQuiz; // عالق
-            return undefined; // اترك الحالي
+            if (!current.revealed && t - (current.startedAt || 0) > 90000) return newQuiz;
+            return undefined;
         });
         return result.committed === true;
     } catch (e) {
@@ -486,9 +484,6 @@ async function tryPostQuiz() {
     }
 }
 
-/**
- * نشر سؤال + إعلان (يُستدعى من المؤقت)
- */
 async function tryPostQuizAndAnnounce() {
     if (ChatState.currentRoom !== 'quiz') return;
 
@@ -502,9 +497,6 @@ async function tryPostQuizAndAnnounce() {
     await sendBotMessage('الشاطر', `🎯 سؤال: ${q.question}`);
 }
 
-/**
- * محاولة كشف الجواب (transaction — واحد فقط يعلن)
- */
 async function tryRevealQuiz() {
     if (!db) return;
 
@@ -527,9 +519,6 @@ async function tryRevealQuiz() {
     }
 }
 
-/**
- * فحص إجابة المستخدم — First-Winner Transaction
- */
 async function checkQuizAnswer(text, user) {
     if (!db) return false;
     if (ChatState.currentRoom !== 'quiz') return false;
@@ -545,15 +534,13 @@ async function checkQuizAnswer(text, user) {
     const clean = text.toLowerCase().trim();
     if (clean !== q.answer) return false;
 
-    // محاولة الفوز
     const result = await db.ref('bot_data/quiz/winners/' + q.id).transaction((current) => {
         if (current) return undefined;
         return { uid: user.uid, name: user.name, at: Date.now() };
     });
 
-    if (!result.committed) return true; // شخص آخر فاز — تجاهل بهدوء
+    if (!result.committed) return true;
 
-    // أنا الفائز
     await db.ref('bot_data/quiz/current').transaction((c) => {
         if (c && !c.revealed) {
             c.revealed = true;
@@ -576,7 +563,7 @@ async function addQuizPoints(uid, points) {
 }
 
 // ==============================================
-// 8. حكواتي الشام (Hakawati) — بدون تغيير
+// 8. حكواتي الشام (Hakawati)
 // ==============================================
 
 function initHakawati() {
@@ -642,7 +629,7 @@ async function hakawatiWelcomeUser(user) {
 }
 
 // ==============================================
-// 9. إرسال رسالة بوت (أسماء موحّدة)
+// 9. إرسال رسالة بوت
 // ==============================================
 
 async function sendBotMessage(botName, text) {
@@ -680,7 +667,7 @@ async function sendBotMessage(botName, text) {
 }
 
 // ==============================================
-// 10. أوامر المستخدم (بدون تغيير جوهري)
+// 10. أوامر المستخدم
 // ==============================================
 
 async function handleBotCommand(text) {
@@ -757,7 +744,7 @@ async function showHelp(user) {
 }
 
 // ==============================================
-// 11. معالجة الرسائل الواردة
+// 11. معالجة الرسائل الواردة (مع فلترة العمر)
 // ==============================================
 
 async function processIncomingMessage(msg) {
@@ -765,14 +752,22 @@ async function processIncomingMessage(msg) {
     if (msg.isBot) return;
     if (msg.senderUid && msg.senderUid.startsWith('bot_')) return;
 
+    // ✅ تجاهل الرسائل القديمة (أكثر من 60 ثانية)
+    const age = Date.now() - (msg.time || 0);
+    if (age > 60000) return;
+
     const senderUid = msg.senderUid;
     if (!senderUid) return;
 
     const sender = { uid: senderUid, name: msg.senderName, rank: msg.senderRank };
 
-    // السجان
+    // السجان — مع قفل لكل رسالة (لمنع التكرار بين عدة عملاء)
     const violation = guardianCheck(msg.text, sender);
     if (violation) {
+        const msgId = msg._key || (senderUid + '_' + msg.time);
+        const lockOk = await tryAcquireLock('guardian_' + msgId, 300000);
+        if (!lockOk) return;
+        
         await applyGuardianAction(sender, violation.action, violation.reason, violation.word);
         return;
     }
@@ -780,8 +775,10 @@ async function processIncomingMessage(msg) {
     // المسابقات
     await checkQuizAnswer(msg.text, sender);
 
-    // حكواتي
-    await hakawatiRespond(msg.text, sender);
+    // حكواتي — فقط للرسائل الحديثة (أقل من 15 ثانية)
+    if (age < 15000) {
+        await hakawatiRespond(msg.text, sender);
+    }
 }
 
 // ==============================================
@@ -824,4 +821,4 @@ window.banUser = banUser;
 window.hakawatiWelcomeUser = hakawatiWelcomeUser;
 window.onRoomChanged = onRoomChanged;
 
-console.log('✅ bots.js v2 loaded — Leader Lock active 🤖');
+console.log('✅ bots.js v3 loaded — Age Filter + Leader Lock 🤖');
