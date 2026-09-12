@@ -910,16 +910,12 @@ function applyAvatarFrame(fid) {
         localStorage.setItem('saved_avatar_frame_motion', '');
         return;
     }
-
-    // ✅ جرب النظام الجديد أولاً
-    if (typeof applyFrame === 'function' && typeof getFrameData === 'function') {
-        const newFrame = getFrameData(fid);
-        if (newFrame && newFrame.url) {
-            applyFrame(box, fid);
-            localStorage.setItem('saved_avatar_frame_motion', fid);
-            return;
-        }
-    }
+    // ✅ فحص 1: هل هذا إطار CSS؟
+if (typeof CSS_FRAMES_DATA !== 'undefined' && CSS_FRAMES_DATA[fid] && typeof applyCSSFrame === 'function') {
+    applyCSSFrame(box, fid);
+    localStorage.setItem('saved_avatar_frame_motion', fid);
+    return;
+}
 
     // fallback: الإطارات القديمة
     const fr = FRAMES.find(f => f.id === fid);
