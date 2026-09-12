@@ -1635,6 +1635,47 @@ if (typeof FRAMES_DATA !== 'undefined') {
         c.appendChild(card);
     });
 }
+   
+// ✅ إضافة إطارات CSS
+if (typeof CSS_FRAMES_DATA !== 'undefined') {
+    Object.values(CSS_FRAMES_DATA).forEach(f => {
+        const card = document.createElement('div');
+        card.className = 'frame-preview-card';
+
+        const p = document.createElement('div');
+        p.className = 'mini-frame-preview';
+        p.style.cssText = 'background:#1a0e2e; position:relative; width:44px; height:44px; border-radius:50%;';
+
+        const avatar = document.createElement('img');
+        avatar.src = 'https://ui-avatars.com/api/?name=U&background=333&color=fff';
+        avatar.style.cssText = 'width:70%; height:70%; border-radius:50%; position:absolute; top:15%; left:15%;';
+        p.appendChild(avatar);
+
+        const framePreview = document.createElement('div');
+        framePreview.className = 'qcf qcf--' + f.cssClass;
+        framePreview.style.cssText = 'position:absolute; inset:-3px; z-index:15;';
+        p.appendChild(framePreview);
+
+        const n = document.createElement('span');
+        n.textContent = f.name;
+
+        const u = document.createElement('button');
+        u.className = 'use-now-btn';
+        u.textContent = 'USE NOW';
+        u.onclick = (e) => {
+            e.stopPropagation();
+            applyAvatarFrame(f.id);
+            saveToChat();
+            showToast('✅ تم التطبيق');
+        };
+
+        card.appendChild(p);
+        card.appendChild(n);
+        card.appendChild(u);
+        card.onclick = () => { applyAvatarFrame(f.id); saveToChat(); };
+        c.appendChild(card);
+    });
+} 
 }
 
 function openAppModal(title, text, type, options, currentVal, onSave) {
