@@ -137,7 +137,8 @@ function initChat() {
     }
 
     startInvisibleListener();
-
+startUserDataListener();
+    
     console.log('✅ Chat initialized');
 }
 
