@@ -392,33 +392,17 @@ function selectRegGender(g) {
 
 // ====== الدخول ======
 async function handleGuestLogin() {
-    alert('1. الزر يعمل');
-    
+async function handleGuestLogin() {
     const name = document.getElementById('guest-name').value.trim();
     const age = document.getElementById('guest-age').value.trim();
-    
-    alert('2. الاسم=' + name + ' | العمر=' + age);
-    alert('3. registerGuest=' + typeof registerGuest);
-    alert('4. auth=' + typeof auth);
-    alert('5. db=' + typeof db);
-    
+
     const result = await registerGuest(name, age, selectedGender);
-    alert('6. success=' + result.success + '\n\nخطأ: ' + (result.error || 'لا يوجد'));
     if (result.success) {
-        alert('7. نوع initChat=' + typeof initChat);
-        
-        try {
-            if (typeof initChat === 'function') {
-                await initChat();
-                alert('8. initChat نجح!');
-            } else {
-                alert('8. initChat غير موجودة!');
-            }
-        } catch(e) {
-            alert('8. خطأ في initChat:\n' + e.message);
+        if (typeof initChat === 'function') {
+            await initChat();
         }
     } else {
-        alert('7. خطأ: ' + result.error);
+        alert('⚠️ ' + result.error);
     }
 }
     
