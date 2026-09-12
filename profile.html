@@ -913,27 +913,43 @@ function updateShapeButtonLabel() {
 function applyAvatarFrame(fid) {
     const box = document.getElementById('avatar-box');
     if (!box) return;
-    const old = box.querySelector('.dynamic-frame-wrapper');
-    if (old) old.remove();
-    if (fid === 'none') {
+
+    // ✅ امسح أي إطار (قديم أو جديد)
+    box.querySelectorAll('.dynamic-frame-wrapper, .qamar-frame').forEach(el => el.remove());
+
+    if (!fid || fid === 'none') {
         localStorage.setItem('saved_avatar_frame_motion', '');
         return;
     }
+
+    // ✅ جرب النظام الجديد أولاً
+    if (typeof applyFrame === 'function' && typeof getFrameData === 'function') {
+        const newFrame = getFrameData(fid);
+        if (newFrame && newFrame.url) {
+            applyFrame(box, fid);
+            localStorage.setItem('saved_avatar_frame_motion', fid);
+            return;
+        }
+    }
+
+    // fallback: الإطارات القديمة
     const fr = FRAMES.find(f => f.id === fid);
     if (!fr) return;
+
     const wrapper = document.createElement('div');
     wrapper.className = 'dynamic-frame-wrapper';
     wrapper.style.cssText = fr.style;
+
     if (fr.badge && fr.badge !== '❌') {
         const bd = document.createElement('div');
         bd.className = 'frame-badge-top';
         bd.innerHTML = fr.badge;
         wrapper.appendChild(bd);
     }
+
     box.appendChild(wrapper);
     localStorage.setItem('saved_avatar_frame_motion', fid);
 }
-
 function initNotifications() {
     const s = localStorage.getItem('notifications');
     if (s) notifications = JSON.parse(s);
