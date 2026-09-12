@@ -13,20 +13,15 @@ function applyFrame(container, frameId) {
         return;
     }
 
-    const frame = getFrameData(frameId);
-    if (!frame || !frame.url) {
-        clearFrame(container);
+    // ✅ فحص: هل هذا إطار CSS؟
+    if (typeof CSS_FRAMES_DATA !== 'undefined' && CSS_FRAMES_DATA[frameId]) {
+        if (typeof applyCSSFrame === 'function') {
+            applyCSSFrame(container, frameId);
+        }
         return;
     }
 
-    // مسح الإطار القديم
-    clearFrame(container);
-
-    // تأكد من أن container relative
-    if (getComputedStyle(container).position === 'static') {
-        container.style.position = 'relative';
-    }
-
+    const frame = getFrameData(frameId);
     // إضافة الإطار
     const frameEl = document.createElement('div');
     frameEl.className = 'qamar-frame';
