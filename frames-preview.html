@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>معاينة الإطارات — قمر الشام</title>
+<style>
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: radial-gradient(ellipse at center, #1a0e2e 0%, #050508 100%);
+    font-family: sans-serif;
+    color: #fff;
+    padding: 40px 20px;
+    text-align: center;
+}
+h1 { color: #ffd700; font-size: 22px; margin-bottom: 10px; }
+.sub { color: #888; font-size: 12px; margin-bottom: 30px; }
+
+.preview-container {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 30px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 20px;
+}
+
+#frame-target {
+    width: 250px;
+    height: 250px;
+    margin: 0 auto 20px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.qamar-frame {
+    animation: framePulse 3s ease-in-out infinite;
+}
+
+@keyframes framePulse {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.95; }
+    50% { transform: translate(-50%, -50%) scale(1.02); opacity: 1; }
+}
+
+button {
+    padding: 12px 24px;
+    background: #d4af37;
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    font-weight: 900;
+    cursor: pointer;
+    font-size: 14px;
+    font-family: inherit;
+}
+button:active { transform: scale(0.95); }
+
+#status { margin-top: 15px; color: #4CAF50; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<h1>🎨 معاينة الإطارات</h1>
+<p class="sub">يجرّب النظام الجديد — بدون لمس أي كود قديم</p>
+
+<div class="preview-container">
+    <div id="frame-target"></div>
+    <button onclick="testFrame()">🔄 جرّب الإطار</button>
+    <p id="status"></p>
+</div>
+
+<script src="frames-data.js"></script>
+<script src="frames-renderer.js"></script>
+<script>
+function testFrame() {
+    const target = document.getElementById('frame-target');
+    renderFramePreview('metal_wings', null, target);
+    document.getElementById('status').textContent = '✅ الإطار يعمل!';
+}
+// تشغيل تلقائي
+window.addEventListener('load', testFrame);
+</script>
+
+</body>
+</html>
