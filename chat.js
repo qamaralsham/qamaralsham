@@ -1,6 +1,6 @@
 // ==============================================
-// قمر الشام - منطق الشات الرئيسي (v1.2)
-// Qamar Al Sham - Main Chat Logic v1.2
+// قمر الشام - منطق الشات الرئيسي (v1.3)
+// Qamar Al Sham - Main Chat Logic v1.3
 // ==============================================
 // يعتمد على:
 //   - config.js (QAMAR)
@@ -137,8 +137,8 @@ function initChat() {
     }
 
     startInvisibleListener();
-startUserDataListener();
-    
+    startUserDataListener();
+
     console.log('✅ Chat initialized');
 }
 
@@ -240,7 +240,6 @@ function switchRoom(roomId, roomTitle, element) {
 
     startMessagesListener();
 
-    // ✅ أعلم البوتات بتغيير الروم
     if (typeof onRoomChanged === 'function') {
         try { onRoomChanged(roomId); } catch(e) { console.warn('onRoomChanged error:', e); }
     }
@@ -260,7 +259,6 @@ function startMessagesListener() {
     }
 
     const roomId = ChatState.currentRoom;
-    // ✅ limitToLast(30) بدل 100 — أسرع
     const ref = db.ref(`room_messages/${roomId}`).limitToLast(30);
     ChatState.messagesListener = ref;
 
@@ -274,7 +272,8 @@ function startMessagesListener() {
         const user = getCurrentUser();
         if (!user) return;
 
-        if (msg.senderUid === user.uid) return;
+        // ✅ ملاحظة: أزلنا سطر "if (msg.senderUid === user.uid) return;"
+        // لأن رسائلك تُعرض محلياً عند الإرسال، ونتجاهل التكرار عبر seenMessages
 
         // ✅ معالجة البوتات (فلترة العمر داخل bots.js)
         if (typeof processIncomingMessage === 'function') {
@@ -338,7 +337,12 @@ function displayMessage(msg, msgId) {
 
     const avatarImg = document.createElement('img');
     avatarImg.className = 'message-avatar';
-    avatarImg.src = msg.senderAvatar || getDefaultAvatar(msg.senderName);
+    // ✅ للرسائل التي أرسلتها أنت — استخدم صورتك الحالية
+    let avatarUrl = msg.senderAvatar;
+    if (msg.senderUid === user?.uid && user?.avatar) {
+        avatarUrl = user.avatar;
+    }
+    avatarImg.src = avatarUrl || getDefaultAvatar(msg.senderName);
     avatarImg.alt = msg.senderName;
     avatarImg.loading = 'lazy';
     avatarImg.onerror = () => { avatarImg.src = getDefaultAvatar(msg.senderName); };
@@ -579,10 +583,10 @@ function sendMessage() {
         showToast('fa-exclamation-circle', '⚠️ فشل الإرسال');
     });
 
-    // عرض محلياً
+    // ✅ عرض محلياً + منع التكرار عند وصول Firebase
     const localMsg = { ...messageData, time: Date.now() };
-ChatState.seenMessages.add(msgRef.key);
-displayMessage(localMsg, msgRef.key);
+    ChatState.seenMessages.add(msgRef.key);
+    displayMessage(localMsg, msgRef.key);
 
     // ✅ استدعِ البوتات على رسالتك أيضاً
     if (typeof processIncomingMessage === 'function') {
@@ -1781,4 +1785,4 @@ function startUserDataListener() {
 
 window.startUserDataListener = startUserDataListener;
 
-console.log('✅ chat.js v1.2 loaded');
+console.log('✅ chat.js v1.3 loaded');
