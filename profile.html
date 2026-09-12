@@ -113,7 +113,9 @@ body.owner-mode .visitor-only { display: none !important; }
 @keyframes megaGlow { 0% { opacity: 0.7; filter: brightness(1); } 50% { opacity: 1; filter: brightness(1.4); } 100% { opacity: 0.7; filter: brightness(1); } }
 @media (max-width: 480px) { .profile { top: 5%; left: 5%; right: 5%; width: 90%; border-radius: 16px 16px 0 0; } .colors-grid { grid-template-columns: repeat(6, 1fr); } .emoji-grid { grid-template-columns: repeat(7, 1fr); } }
 </style>
-</head><body><!-- ⭐ ملفات مخفية للرفع -->
+</head>
+<body>
+
 <input type="file" id="cover-file-input" accept="image/*" style="display:none">
 <input type="file" id="avatar-file-input" accept="image/*" style="display:none">
 <input type="file" id="profile-bg-input" accept="image/*,video/*" style="display:none">
@@ -478,7 +480,8 @@ body.owner-mode .visitor-only { display: none !important; }
 
 <script src="config.js"></script>
 <script src="ranks.js"></script>
-<script src="utils.js"></script><script>
+<script src="utils.js"></script>
+<script>
 // ==============================================
 // متغيرات عامة
 // ==============================================
@@ -559,7 +562,12 @@ const EMOJIS = [
 
 function getCurrentUser() {
     try {
-        return JSON.parse(localStorage.getItem('qamar_user') || localStorage.getItem('qamar_profile_user') || 'null');
+        return JSON.parse(
+            localStorage.getItem('qamar_current_user') ||
+            localStorage.getItem('qamar_user') ||
+            localStorage.getItem('qamar_profile_user') ||
+            'null'
+        );
     } catch(e) { return null; }
 }
 
@@ -627,7 +635,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initPrivateChats();
     loadPoetry();
 
-    console.log('✅ Profile v3 loaded | Mode:', viewMode);
+    console.log('✅ Profile v3.1 loaded | Mode:', viewMode);
 });
 
 function applyViewMode() {
@@ -998,33 +1006,39 @@ async function uploadWithLoading(file, maxSizeMB = 5) {
 }
 
 // ==============================================
-// ⭐ saveToChat — مع postMessage
+// saveToChat — محسّن (يحافظ على البيانات الأصلية)
 // ==============================================
 
 function saveToChat() {
     if (!currentUser) return;
 
+    const existing = JSON.parse(
+        localStorage.getItem('qamar_current_user') ||
+        localStorage.getItem('qamar_user') ||
+        '{}'
+    );
+
     const u = {
+        ...existing,
         uid: currentUser.uid,
-        name: localStorage.getItem('profile_name') || currentUser.name || 'مستخدم',
-        bio: localStorage.getItem('profile_bio') || currentUser.bio || '',
-        cover: localStorage.getItem('saved_cover') || currentUser.cover || '',
-        rank: currentUser.rank || 'User',
-        avatar: localStorage.getItem('saved_avatar') || currentUser.avatar || '',
+        name: localStorage.getItem('profile_name') || existing.name || currentUser.name || 'مستخدم',
+        bio: localStorage.getItem('profile_bio') || existing.bio || '',
+        cover: localStorage.getItem('saved_cover') || existing.cover || '',
+        avatar: localStorage.getItem('saved_avatar') || existing.avatar || '',
         nameGradient: nameGradient,
         nameGlow: nameGlow,
-        avatarFrame: localStorage.getItem('saved_avatar_frame_motion') || null,
+        avatarFrame: localStorage.getItem('saved_avatar_frame_motion') || existing.avatarFrame || null,
         nameEmoji: nameEmoji,
         nameShape: nameShape,
-        poetry: localStorage.getItem('poetry_text') || '',
-        color: currentUser.color || '#ffffff'
+        poetry: localStorage.getItem('poetry_text') || existing.poetry || '',
+        color: existing.color || '#ffffff'
     };
 
     localStorage.setItem('qamar_current_user', JSON.stringify(u));
     localStorage.setItem('qamar_user', JSON.stringify(u));
 
     if (currentUser.uid && typeof db !== 'undefined' && db) {
-        db.ref('users/' + currentUser.uid).set(u).catch(e => console.warn(e));
+        db.ref('users/' + currentUser.uid).update(u).catch(e => console.warn(e));
     }
 }
 
@@ -1725,11 +1739,10 @@ function openPrivateChat(uid, name) {
 }
 
 window.addEventListener('load', async () => {
-    // ⚠️ لا نستدعي saveToChat هنا — فقط عند حفظ فعلي
     console.log('✅ Profile ready | Mode:', viewMode);
 });
 
-console.log('📦 Profile v3 loaded — with postMessage 📤');
+console.log('📦 Profile v3.1 loaded — saveToChat fixed 📤');
 </script>
 
 </body>
