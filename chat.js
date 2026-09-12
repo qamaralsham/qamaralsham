@@ -1573,12 +1573,27 @@ function openProfile() {
     if (frame) frame.style.display = 'block';
 }
 
-function closeProfileFrame() {
+async function closeProfileFrame() {
     const frame = document.getElementById('profile-frame-container');
     if (frame) frame.style.display = 'none';
 
     const iframe = document.getElementById('profile-iframe');
     if (iframe) iframe.src = iframe.src;
+
+    // ✅ جلب أحدث بيانات المستخدم من Firebase بعد إغلاق البروفايل
+    const user = getCurrentUser();
+    if (user && user.uid && db) {
+        try {
+            const snap = await db.ref('users/' + user.uid).once('value');
+            const data = snap.val();
+            if (data) {
+                const updated = { ...user, ...data };
+                localStorage.setItem('qamar_current_user', JSON.stringify(updated));
+                localStorage.setItem('qamar_user', JSON.stringify(updated));
+                console.log('🔄 User refreshed after profile close:', updated.name);
+            }
+        } catch(e) { console.warn('Refresh user error:', e); }
+    }
 }
 
 function toggleToolbar() {
