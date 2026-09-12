@@ -1018,6 +1018,8 @@ function saveToChat() {
         '{}'
     );
 
+    const frameValue = localStorage.getItem('saved_avatar_frame_motion');
+
     const u = {
         ...existing,
         uid: currentUser.uid,
@@ -1025,11 +1027,13 @@ function saveToChat() {
         bio: localStorage.getItem('profile_bio') || existing.bio || '',
         cover: localStorage.getItem('saved_cover') || existing.cover || '',
         avatar: localStorage.getItem('saved_avatar') || existing.avatar || '',
-        nameGradient: nameGradient,
-        nameGlow: nameGlow,
-        avatarFrame: localStorage.getItem('saved_avatar_frame_motion') || existing.avatarFrame || null,
-        nameEmoji: nameEmoji,
-        nameShape: nameShape,
+        nameGradient: nameGradient || null,
+        // ✅ الإصلاح: null بدل 'none'
+        nameGlow: (nameGlow && nameGlow !== 'none') ? nameGlow : null,
+        // ✅ نفس الشي للإطار
+        avatarFrame: (frameValue && frameValue !== 'none' && frameValue !== '') ? frameValue : null,
+        nameEmoji: nameEmoji || null,
+        nameShape: (nameShape && nameShape !== 'none') ? nameShape : null,
         poetry: localStorage.getItem('poetry_text') || existing.poetry || '',
         color: existing.color || '#ffffff'
     };
@@ -1038,7 +1042,14 @@ function saveToChat() {
     localStorage.setItem('qamar_user', JSON.stringify(u));
 
     if (currentUser.uid && typeof db !== 'undefined' && db) {
-        db.ref('users/' + currentUser.uid).update(u).catch(e => console.warn(e));
+        db.ref('users/' + currentUser.uid).update(u).catch(e => console.warn('Update error:', e));
+    }
+
+    // ✅ إرسال تحديث للـ parent مباشرة
+    if (window.parent && window.parent !== window) {
+        try {
+            window.parent.postMessage({ action: 'userDataUpdated', userData: u }, '*');
+        } catch(e) { console.warn('postMessage error:', e); }
     }
 }
 
