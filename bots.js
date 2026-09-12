@@ -1,41 +1,25 @@
 // ==============================================
-// قمر الشام - البوتات الأربعة (v3 — Age Filter)
-// Qamar Al Sham - The Four Bots v3
+// قمر الشام - البوتات الأربعة (v4)
+// Qamar Al Sham - The Four Bots v4
 // ==============================================
-// الجديد في v3:
-//   ✅ فلترة الرسائل القديمة (> 60 ثانية) — منع الردود المكررة
-//   ✅ حماية السجان من التكرار (فحص السجن الحالي)
-//   ✅ Leader Lock على السجان لكل رسالة
-//   ✅ حكواتي يرد فقط على الرسائل الحديثة (< 15 ثانية)
-//   ✅ أسماء البوتات موحّدة مع QAMAR.BOTS
+// الجديد في v4:
+//   ✅ قفل موزّع لكل رسالة — يمنع معالجة مزدوجة من عدة عملاء
+//   ✅ تبسيط منطق processIncomingMessage
 // ==============================================
 
 const BotsState = {
     initialized: false,
-
-    // مؤقتات
     islamicTimer: null,
     quizTimer: null,
     quizRevealTimeout: null,
-
-    // المسابقة — مشتركة عبر Firebase
     currentQuiz: null,
     quizListener: null,
-
-    // السجان
     violationTracker: {},
-
-    // محتوى
     bannedWords: [],
     criticalWords: [],
     hakawatiResponses: [],
     hakawatiWelcome: [],
-    islamicContent: {
-        duas: [],
-        adhkar: [],
-        istighfar: [],
-        prayers: []
-    },
+    islamicContent: { duas: [], adhkar: [], istighfar: [], prayers: [] },
     quizQuestions: []
 };
 
@@ -69,9 +53,7 @@ async function tryAcquireLock(lockName, cooldownMs) {
 
 async function initBots() {
     if (BotsState.initialized) return;
-
     console.log('🤖 Initializing bots...');
-
     try {
         await loadBotsData();
         startIslamicBot();
@@ -79,7 +61,6 @@ async function initBots() {
         startQuizListener();
         startGuardianBot();
         initHakawati();
-
         BotsState.initialized = true;
         console.log('✅ All bots initialized');
     } catch (e) {
@@ -128,12 +109,7 @@ async function loadBotsData() {
         const welcome = welcomeSnap.val();
         if (welcome) BotsState.hakawatiWelcome = Array.isArray(welcome) ? welcome : [welcome];
         if (BotsState.hakawatiWelcome.length === 0) {
-            BotsState.hakawatiWelcome = [
-                'أهلاً وسهلاً 🌸',
-                'نورت المكان 🌟',
-                'مرحباً بك 👋',
-                'يا هلا ومرحبا 💫'
-            ];
+            BotsState.hakawatiWelcome = ['أهلاً وسهلاً 🌸','نورت المكان 🌟','مرحباً بك 👋','يا هلا ومرحبا 💫'];
         }
     } catch (e) {
         console.warn('⚠️ Could not load bots data:', e);
@@ -157,8 +133,7 @@ async function seedDefaultBannedWords() {
     BotsState.criticalWords = defaultCritical;
     try {
         await db.ref('config/banned_words').set({
-            words: defaultBanned,
-            critical: defaultCritical,
+            words: defaultBanned, critical: defaultCritical,
             updatedBy: (getCurrentUser()?.uid) || 'system',
             updatedAt: Date.now()
         });
@@ -248,17 +223,14 @@ async function seedDefaultHakawati() {
 }
 
 // ==============================================
-// 5. السجان (Guardian)
+// 5. السجان
 // ==============================================
 
-function startGuardianBot() {
-    console.log('👮 Guardian bot ready');
-}
+function startGuardianBot() { console.log('👮 Guardian bot ready'); }
 
 function guardianCheck(text, user) {
     if (!text || !user) return null;
     const lower = text.toLowerCase();
-
     for (const word of BotsState.criticalWords) {
         if (lower.includes(word.toLowerCase())) {
             return { action: 'ban', reason: `كلمة محظورة: ${word}`, word };
@@ -273,21 +245,16 @@ function guardianCheck(text, user) {
 }
 
 async function applyGuardianAction(user, action, reason, word) {
-    // ✅ حماية 1: لا تعاقب الإداريين
     const userRankLevel = (typeof getRankLevel === 'function')
         ? getRankLevel(user.rank)
         : (typeof getRank === 'function' ? getRank(user.rank).level : 0);
     if (userRankLevel >= 65) return;
 
-    // ✅ حماية 2: لا تعاقب إذا فيه سجن نشط لنفس المستخدم
     if (db) {
         try {
             const snap = await db.ref('jails/' + user.uid).once('value');
             const existing = snap.val();
-            if (existing && existing.until > Date.now()) {
-                console.log('⏭️ Already jailed — skipping');
-                return;
-            }
+            if (existing && existing.until > Date.now()) return;
         } catch (e) { /* تجاهل */ }
     }
 
@@ -323,20 +290,14 @@ async function jailUser(uid, name, reason, durationMs, byName) {
     const until = Date.now() + durationMs;
     try {
         await db.ref(`jails/${uid}`).set({
-            byUid: 'guardian_bot',
-            byRank: byName || 'Bot',
-            reason,
-            until,
-            jailedAt: Date.now(),
-            name
+            byUid: 'guardian_bot', byRank: byName || 'Bot',
+            reason, until, jailedAt: Date.now(), name
         });
         await db.ref(`user_notifications/${uid}`).push({
-            fromUid: 'system',
-            fromName: byName || 'النظام',
+            fromUid: 'system', fromName: byName || 'النظام',
             type: 'jail',
             preview: `تم سجنك: ${reason} — لمدة ${Math.ceil(durationMs / 60000)} دقيقة`,
-            time: Date.now(),
-            read: false
+            time: Date.now(), read: false
         });
         scheduleUnjail(uid, durationMs);
     } catch (e) { console.warn('Jail error:', e); }
@@ -359,38 +320,29 @@ async function banUser(uid, name, reason, byName) {
     if (!db) return;
     try {
         await db.ref(`bans/${uid}`).set({
-            byUid: 'guardian_bot',
-            byRank: byName || 'Bot',
-            reason,
-            time: Date.now(),
-            name
+            byUid: 'guardian_bot', byRank: byName || 'Bot',
+            reason, time: Date.now(), name
         });
         await db.ref(`user_notifications/${uid}`).push({
-            fromUid: 'system',
-            fromName: byName || 'النظام',
-            type: 'system',
-            preview: `تم حظرك: ${reason}`,
-            time: Date.now(),
-            read: false
+            fromUid: 'system', fromName: byName || 'النظام',
+            type: 'system', preview: `تم حظرك: ${reason}`,
+            time: Date.now(), read: false
         });
     } catch (e) { console.warn('Ban error:', e); }
 }
 
 // ==============================================
-// 6. الإسلامي (Islamic)
+// 6. الإسلامي
 // ==============================================
 
 function startIslamicBot() {
     if (BotsState.islamicTimer) clearInterval(BotsState.islamicTimer);
-    BotsState.islamicTimer = setInterval(() => {
-        postIslamicContent();
-    }, QAMAR.BOTS.ISLAMIC.intervalMs);
+    BotsState.islamicTimer = setInterval(() => { postIslamicContent(); }, QAMAR.BOTS.ISLAMIC.intervalMs);
     console.log('🕌 Islamic bot started');
 }
 
 async function postIslamicContent() {
     if (ChatState.currentRoom !== 'islamic') return;
-
     const content = BotsState.islamicContent;
     const categories = [];
     if (content.duas.length > 0) categories.push('duas');
@@ -405,42 +357,29 @@ async function postIslamicContent() {
     const category = categories[Math.floor(Math.random() * categories.length)];
     const list = content[category];
     const text = list[Math.floor(Math.random() * list.length)];
-
-    const prefix = {
-        duas: '🤲 دعاء:',
-        adhkar: '📿 ذكر:',
-        istighfar: '🤲 استغفار:',
-        prayers: 'ﷺ صلاة على النبي:'
-    };
-
+    const prefix = { duas: '🤲 دعاء:', adhkar: '📿 ذكر:', istighfar: '🤲 استغفار:', prayers: 'ﷺ صلاة على النبي:' };
     await sendBotMessage('قمر الشام', `${prefix[category]} ${text}`);
 }
 
 // ==============================================
-// 7. المسابقات (Quiz)
+// 7. المسابقات
 // ==============================================
 
 function startQuizBot() {
     if (BotsState.quizTimer) clearInterval(BotsState.quizTimer);
-    BotsState.quizTimer = setInterval(() => {
-        tryPostQuizAndAnnounce();
-    }, QAMAR.BOTS.QUIZ.intervalMs);
+    BotsState.quizTimer = setInterval(() => { tryPostQuizAndAnnounce(); }, QAMAR.BOTS.QUIZ.intervalMs);
     console.log('🎯 Quiz bot started');
 }
 
 function startQuizListener() {
     if (!db) return;
     if (BotsState.quizListener) BotsState.quizListener.off();
-
     BotsState.quizListener = db.ref('bot_data/quiz/current');
     BotsState.quizListener.on('value', (snap) => {
         const q = snap.val();
         BotsState.currentQuiz = q;
-
         if (!q) return;
-
         if (BotsState.quizRevealTimeout) clearTimeout(BotsState.quizRevealTimeout);
-
         if (!q.revealed) {
             const delay = Math.max(1000, (q.startedAt + 60000) - Date.now());
             BotsState.quizRevealTimeout = setTimeout(tryRevealQuiz, delay);
@@ -454,21 +393,15 @@ function startQuizListener() {
 async function tryPostQuiz() {
     if (!db) return false;
     if (BotsState.quizQuestions.length === 0) return false;
-
-    const random = BotsState.quizQuestions[
-        Math.floor(Math.random() * BotsState.quizQuestions.length)
-    ];
+    const random = BotsState.quizQuestions[Math.floor(Math.random() * BotsState.quizQuestions.length)];
     const now = Date.now();
     const newQuiz = {
         id: 'q_' + now + '_' + Math.random().toString(36).slice(2, 8),
         question: random.question,
         answer: random.answer.toLowerCase().trim(),
         originalAnswer: random.answer,
-        startedAt: now,
-        revealed: false,
-        revealedAt: 0
+        startedAt: now, revealed: false, revealedAt: 0
     };
-
     try {
         const result = await db.ref('bot_data/quiz/current').transaction((current) => {
             const t = Date.now();
@@ -478,28 +411,21 @@ async function tryPostQuiz() {
             return undefined;
         });
         return result.committed === true;
-    } catch (e) {
-        console.warn('Post quiz error:', e);
-        return false;
-    }
+    } catch (e) { console.warn('Post quiz error:', e); return false; }
 }
 
 async function tryPostQuizAndAnnounce() {
     if (ChatState.currentRoom !== 'quiz') return;
-
     const ok = await tryPostQuiz();
     if (!ok) return;
-
     const snap = await db.ref('bot_data/quiz/current').once('value');
     const q = snap.val();
     if (!q) return;
-
     await sendBotMessage('الشاطر', `🎯 سؤال: ${q.question}`);
 }
 
 async function tryRevealQuiz() {
     if (!db) return;
-
     try {
         const result = await db.ref('bot_data/quiz/current').transaction((current) => {
             if (!current) return undefined;
@@ -509,28 +435,22 @@ async function tryRevealQuiz() {
             current.revealedAt = Date.now();
             return current;
         });
-
         if (result.committed) {
             const q = result.snapshot.val();
             await sendBotMessage('الشاطر', `⏱️ انتهى الوقت! الجواب: ${q.originalAnswer}`);
         }
-    } catch (e) {
-        console.warn('Reveal error:', e);
-    }
+    } catch (e) { console.warn('Reveal error:', e); }
 }
 
 async function checkQuizAnswer(text, user) {
     if (!db) return false;
     if (ChatState.currentRoom !== 'quiz') return false;
-
     let q;
     try {
         const snap = await db.ref('bot_data/quiz/current').once('value');
         q = snap.val();
     } catch (e) { return false; }
-
     if (!q || q.revealed) return false;
-
     const clean = text.toLowerCase().trim();
     if (clean !== q.answer) return false;
 
@@ -538,21 +458,15 @@ async function checkQuizAnswer(text, user) {
         if (current) return undefined;
         return { uid: user.uid, name: user.name, at: Date.now() };
     });
-
     if (!result.committed) return true;
 
     await db.ref('bot_data/quiz/current').transaction((c) => {
-        if (c && !c.revealed) {
-            c.revealed = true;
-            c.revealedAt = Date.now();
-        }
+        if (c && !c.revealed) { c.revealed = true; c.revealedAt = Date.now(); }
         return c;
     });
-
     await addQuizPoints(user.uid, 10);
     await sendBotMessage('الشاطر', `🎉 إجابة صحيحة! ${user.name} كسب 10 نقاط`);
     await sendBotMessage('الشاطر', `💡 الجواب: ${q.originalAnswer}`);
-
     return true;
 }
 
@@ -563,41 +477,34 @@ async function addQuizPoints(uid, points) {
 }
 
 // ==============================================
-// 8. حكواتي الشام (Hakawati)
+// 8. حكواتي
 // ==============================================
 
-function initHakawati() {
-    console.log('📖 Hakawati ready');
-}
+function initHakawati() { console.log('📖 Hakawati ready'); }
 
 async function hakawatiRespond(text, user) {
     if (!text || !user) return false;
     const lower = text.toLowerCase().trim();
-
     for (const r of BotsState.hakawatiResponses) {
         if (lower.includes(r.trigger.toLowerCase())) {
             await sendBotMessage('حكواتي الشام', r.reply);
             return true;
         }
     }
-
     if (lower.includes('صلاحيات') || lower.includes('صلاحية')) {
         await answerAboutPermissions(user);
         return true;
     }
-
     if (lower.includes('كيف') && (lower.includes('الموقع') || lower.includes('شات'))) {
         await sendBotMessage('حكواتي الشام', `${user.name}، اسألني عن أي شي بالموقع وسأساعدك 🌟`);
         return true;
     }
-
     return false;
 }
 
 async function answerAboutPermissions(user) {
     const rank = getRank(user.rank);
     const perms = [];
-
     if (user.rank === 'King') {
         perms.push('أنت الملك 👑 — كل الصلاحيات مطلقة');
     } else if (user.rank === 'Queen') {
@@ -615,7 +522,6 @@ async function answerAboutPermissions(user) {
         perms.push('❌ لا صلاحيات إدارية');
         perms.push('💬 شات نصي فقط');
     }
-
     const msg = `📋 ${user.name} — رتبتك: ${rank.badge} ${user.rank}\n${perms.join('\n')}`;
     await sendBotMessage('حكواتي الشام', msg);
 }
@@ -634,15 +540,8 @@ async function hakawatiWelcomeUser(user) {
 
 async function sendBotMessage(botName, text) {
     if (!db || !ChatState.currentRoom) return;
-
     const botData = Object.values(QAMAR.BOTS).find(b => b.name === botName);
-    const fallback = {
-        id: 'bot',
-        name: botName,
-        icon: '🤖',
-        color: '#ffd700'
-    };
-    const bot = botData || fallback;
+    const bot = botData || { id: 'bot', name: botName, icon: '🤖', color: '#ffd700' };
     const colorHex = (bot.color || '#ffd700').replace('#', '');
 
     const messageData = {
@@ -651,14 +550,10 @@ async function sendBotMessage(botName, text) {
         senderAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(bot.name)}&background=222&color=${colorHex}&bold=true`,
         senderColor: bot.color,
         senderRank: 'Bot',
-        text,
-        mentions: [],
-        replyTo: null,
+        text, mentions: [], replyTo: null,
         time: firebase.database.ServerValue.TIMESTAMP,
-        edited: false,
-        deleted: false,
-        isBot: true,
-        botIcon: bot.icon
+        edited: false, deleted: false,
+        isBot: true, botIcon: bot.icon
     };
 
     try {
@@ -673,19 +568,14 @@ async function sendBotMessage(botName, text) {
 async function handleBotCommand(text) {
     const user = getCurrentUser();
     if (!user) return false;
-
     const parts = text.trim().split(' ');
     const command = parts[0].toLowerCase();
-
     switch (command) {
         case '!نقاطي': await showMyPoints(user); return true;
         case '!المتصدرون': await showTopPlayers(); return true;
         case '!مسابقة':
-            if (can(user, 'canTrainBots')) {
-                await tryPostQuizAndAnnounce();
-            } else {
-                showToast('fa-lock', '🔒 للملك/الملكة فقط');
-            }
+            if (can(user, 'canTrainBots')) await tryPostQuizAndAnnounce();
+            else showToast('fa-lock', '🔒 للملك/الملكة فقط');
             return true;
         case '!توقف':
             if (can(user, 'canTrainBots')) stopQuizBot();
@@ -744,7 +634,7 @@ async function showHelp(user) {
 }
 
 // ==============================================
-// 11. معالجة الرسائل الواردة (مع فلترة العمر)
+// 11. معالجة الرسائل الواردة (v4 — قفل موزّع)
 // ==============================================
 
 async function processIncomingMessage(msg) {
@@ -752,31 +642,30 @@ async function processIncomingMessage(msg) {
     if (msg.isBot) return;
     if (msg.senderUid && msg.senderUid.startsWith('bot_')) return;
 
-    // ✅ تجاهل الرسائل القديمة (أكثر من 60 ثانية)
     const age = Date.now() - (msg.time || 0);
     if (age > 60000) return;
 
+    // ✅ قفل موزّع — يمنع معالجة نفس الرسالة من عدة عملاء
+    const msgId = msg._key || (msg.senderUid + '_' + (msg.time || Date.now()));
+    const processLock = await tryAcquireLock('processed_' + msgId, 300000);
+    if (!processLock) {
+        console.log('⏭️ Message already processed:', msgId);
+        return;
+    }
+
     const senderUid = msg.senderUid;
     if (!senderUid) return;
-
     const sender = { uid: senderUid, name: msg.senderName, rank: msg.senderRank };
 
-    // السجان — مع قفل لكل رسالة (لمنع التكرار بين عدة عملاء)
     const violation = guardianCheck(msg.text, sender);
     if (violation) {
-        const msgId = msg._key || (senderUid + '_' + msg.time);
-        const lockOk = await tryAcquireLock('guardian_' + msgId, 300000);
-        if (!lockOk) return;
-        
         await applyGuardianAction(sender, violation.action, violation.reason, violation.word);
         return;
     }
 
-    // المسابقات
     await checkQuizAnswer(msg.text, sender);
 
-    // حكواتي — فقط للرسائل الحديثة (أقل من 15 ثانية)
-    if (age < 15000) {
+    if (age < 55000) {
         await hakawatiRespond(msg.text, sender);
     }
 }
@@ -787,7 +676,6 @@ async function processIncomingMessage(msg) {
 
 function onRoomChanged(newRoomId) {
     if (!db) return;
-
     if (newRoomId === 'quiz') {
         setTimeout(async () => {
             try {
@@ -801,7 +689,6 @@ function onRoomChanged(newRoomId) {
             } catch (e) { console.warn(e); }
         }, 2000);
     }
-
     if (newRoomId === 'islamic') {
         setTimeout(() => { postIslamicContent(); }, 2000);
     }
@@ -821,4 +708,4 @@ window.banUser = banUser;
 window.hakawatiWelcomeUser = hakawatiWelcomeUser;
 window.onRoomChanged = onRoomChanged;
 
-console.log('✅ bots.js v3 loaded — Age Filter + Leader Lock 🤖');
+console.log('✅ bots.js v4 loaded — Distributed Lock 🤖');
