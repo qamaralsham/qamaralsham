@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>فحص قمر الشام</title>
+<style>
+body{background:#000;color:#0f0;font-family:monospace;font-size:13px;padding:10px;direction:ltr;text-align:left;line-height:1.7;margin:0}
+.ok{color:#0f0}.bad{color:#f44}.warn{color:#ff0}.info{color:#0af}
+h2{color:#ff0;font-size:15px;margin:5px 0 15px 0;border-bottom:1px solid #333;padding-bottom:8px}
+.row{padding:3px 0;border-bottom:1px solid #111}
+</style>
+</head>
+<body>
+<h2>فحص قمر الشام</h2>
+<div id="out"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+
+<script src="config.js"></script>
+<script src="ranks.js"></script>
+<script src="utils.js"></script>
+<script src="auth.js"></script>
+<script src="chat.js"></script>
+<script src="bots.js"></script>
+
+<script>
+var out = document.getElementById('out');
+
+function line(text, status) {
+    var d = document.createElement('div');
+    d.className = 'row ' + (status || 'info');
+    var icon = status === 'ok' ? '[OK]' : status === 'bad' ? '[!!]' : status === 'warn' ? '[??]' : '[--]';
+    d.textContent = icon + ' ' + text;
+    out.appendChild(d);
+}
+
+function check(name, value, expectedType) {
+    var t = typeof value;
+    var ok = t === expectedType;
+    line(name + ' = ' + t, ok ? 'ok' : 'bad');
+    return ok;
+}
+
+line('=== فحص الملفات المحلية ===', 'warn');
+check('firebase', typeof firebase === 'undefined' ? undefined : firebase, 'object');
+check('QAMAR (config.js)', typeof QAMAR === 'undefined' ? undefined : QAMAR, 'object');
+check('RANKS (ranks.js)', typeof RANKS === 'undefined' ? undefined : RANKS, 'object');
+check('getRankBadge', typeof getRankBadge === 'undefined' ? undefined : getRankBadge, 'function');
+check('getRankLevel', typeof getRankLevel === 'undefined' ? undefined : getRankLevel, 'function');
+check('can (ranks.js)', typeof can === 'undefined' ? undefined : can, 'function');
+check('escapeHtml (utils.js)', typeof escapeHtml === 'undefined' ? undefined : escapeHtml, 'function');
+check('showToast (utils.js)', typeof showToast === 'undefined' ? undefined : showToast, 'function');
+check('registerGuest (auth.js)', typeof registerGuest === 'undefined' ? undefined : registerGuest, 'function');
+check('login (auth.js)', typeof login === 'undefined' ? undefined : login, 'function');
+check('getCurrentUser', typeof getCurrentUser === 'undefined' ? undefined : getCurrentUser, 'function');
+check('initChat (chat.js)', typeof initChat === 'undefined' ? undefined : initChat, 'function');
+check('sendMessage (chat.js)', typeof sendMessage === 'undefined' ? undefined : sendMessage, 'function');
+check('initBots (bots.js)', typeof initBots === 'undefined' ? undefined : initBots, 'function');
+
+line('=== فحص Firebase ===', 'warn');
+check('auth', typeof auth === 'undefined' ? undefined : auth, 'object');
+check('db', typeof db === 'undefined' ? undefined : db, 'object');
+check('storage', typeof storage === 'undefined' ? undefined : storage, 'object');
+
+line('=== فحص عناصر HTML ===', 'warn');
+var els = ['login-screen','chat-container','guest-form','member-form','register-form','rooms-sidebar','messages','message-input','overlay','private-chat-modal','profile-iframe'];
+for (var i = 0; i < els.length; i++) {
+    var found = document.getElementById(els[i]);
+    line(els[i] + ' → ' + (found ? 'موجود' : 'مفقود'), found ? 'ok' : 'bad');
+}
+
+line('=== اختبار Firebase ===', 'warn');
+setTimeout(function() {
+    if (typeof auth !== 'object' || !auth) {
+        line('لا يمكن اختبار Firebase — auth مفقود', 'bad');
+        return;
+    }
+    auth.signInAnonymously()
+        .then(function(u) {
+            line('Auth OK — uid: ' + u.user.uid.substring(0, 12) + '...', 'ok');
+            return db.ref('test_' + Date.now()).set({ ok: true });
+        })
+        .then(function() {
+            line('DB Write OK — الكتابة تعمل', 'ok');
+            line('=== كل شي يعمل! المشكلة في styles.css أو index.html ===', 'ok');
+        })
+        .catch(function(e) {
+            var code = e.code || '';
+            var msg = e.message || String(e);
+            line('Firebase FAIL: ' + code + ' — ' + msg, 'bad');
+            if (code === 'auth/operation-not-allowed') {
+                line('الحل: Firebase Console → Authentication → Sign-in method → Anonymous → Enable', 'warn');
+            } else if (code === 'PERMISSION_DENIED' || msg.indexOf('permission') !== -1) {
+                line('الحل: Firebase Console → Realtime Database → Rules → اسمح بالكتابة', 'warn');
+            }
+        });
+}, 1500);
+
+window.onerror = function(msg, url, ln, col) {
+    var f = (url || '').split('/').pop();
+    line('JS ERROR: ' + msg + ' @ ' + f + ':' + ln, 'bad');
+    return false;
+};
+
+window.addEventListener('unhandledrejection', function(ev) {
+    var r = ev.reason;
+    line('PROMISE ERROR: ' + (r && (r.message || r.code || r)), 'bad');
+});
+</script>
+</body>
+</html>
