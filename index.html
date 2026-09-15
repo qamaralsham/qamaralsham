@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="frames-engine.css">
 
 <style>
-/* ============ QAMAR GLASS v11 — شفافية 95% ============ */
+/* ============ QAMAR GLASS v12 — شفافية 98% (بدون backdrop-filter) ============ */
 
 html {
     background: radial-gradient(ellipse at top, rgba(212, 175, 55, 0.1) 0%, transparent 55%),
@@ -24,9 +24,7 @@ html {
                 linear-gradient(to bottom, #050508, #0a0a15) !important;
     min-height: 100% !important;
 }
-body {
-    background: transparent !important;
-}
+body { background: transparent !important; }
 .starfield {
     position: fixed !important;
     inset: 0 !important;
@@ -48,34 +46,36 @@ body {
 }
 .messages { background: transparent !important; }
 
-/* ⭐⭐⭐ الأشرطة — شفافية 95% (0.05) */
-.header {
-    background: rgba(5, 5, 12, 0.05) !important;
-    border-bottom: 1px solid rgba(255, 215, 0, 0.6) !important;
-}
-.bottom-nav {
-    background: rgba(5, 5, 12, 0.05) !important;
-    border-top: 1px solid rgba(255, 215, 0, 0.6) !important;
-}
-.input-area {
-    background: rgba(5, 5, 12, 0.05) !important;
-    border-top: 1px solid rgba(255, 215, 0, 0.6) !important;
-}
-.mics-bar {
-    background: rgba(5, 5, 12, 0.05) !important;
-    border-bottom: 1px solid rgba(255, 215, 0, 0.45) !important;
+/* ⭐⭐⭐ الأشرطة والقوائم — شفافية 98% + بدون blur */
+.header,
+.bottom-nav,
+.input-area,
+.mics-bar,
+.sidebar,
+.sidebar-header,
+.private-chat-modal,
+.private-chat-header,
+.private-chat-input {
+    background: rgba(5, 5, 12, 0.02) !important;
+    background-color: rgba(5, 5, 12, 0.02) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
 
-/* ⭐⭐⭐ القوائم الجانبية — شفافية 95% */
+.header { border-bottom: 1px solid rgba(255, 215, 0, 0.6) !important; }
+.bottom-nav { border-top: 1px solid rgba(255, 215, 0, 0.6) !important; }
+.input-area { border-top: 1px solid rgba(255, 215, 0, 0.6) !important; }
+.mics-bar { border-bottom: 1px solid rgba(255, 215, 0, 0.45) !important; }
+
 .overlay {
-    background: rgba(0, 0, 0, 0.05) !important;
+    background: rgba(0, 0, 0, 0.03) !important;
 }
 .overlay.show {
-    background: rgba(0, 0, 0, 0.05) !important;
+    background: rgba(0, 0, 0, 0.03) !important;
     opacity: 1 !important;
 }
+
 .sidebar {
-    background: rgba(5, 5, 12, 0.05) !important;
     border: 1px solid rgba(255, 215, 0, 0.65) !important;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 40px rgba(255, 215, 0, 0.18) !important;
     width: 45vw !important;
@@ -94,9 +94,6 @@ body {
 .sidebar-item.active {
     background: rgba(255, 215, 0, 0.35) !important;
     border-color: rgba(255, 215, 0, 0.9) !important;
-}
-.sidebar-header {
-    background: rgba(0, 0, 0, 0.1) !important;
 }
 
 #btn-name-frame { display: none !important; }
@@ -119,7 +116,7 @@ body {
     justify-content: space-around !important;
     gap: 10px !important;
     z-index: 9500 !important;
-    background: rgba(5, 5, 12, 0.7) !important;
+    background: rgba(5, 5, 12, 0.85) !important;
     border: 1px solid rgba(255, 215, 0, 0.4) !important;
 }
 .floating-toolbar.open { display: flex !important; }
@@ -136,7 +133,7 @@ body {
 }
 .upgrade-modal.active { display: flex !important; }
 .upgrade-content {
-    background: rgba(17, 7, 36, 0.9) !important;
+    background: rgba(17, 7, 36, 0.95) !important;
     border: 2px solid #ffd700 !important;
     padding: 25px !important;
     border-radius: 16px !important;
@@ -170,7 +167,6 @@ body {
 }
 .upgrade-content .upgrade-btn.cancel { background: rgba(255,255,255,0.15) !important; color: #fff !important; }
 
-/* ⭐⭐⭐ نافذة الخاص — شفافية 95% */
 .private-chat-modal {
     top: auto !important;
     bottom: 0 !important;
@@ -179,16 +175,9 @@ body {
     border-radius: 20px 20px 0 0 !important;
     border-bottom: none !important;
     border-top: 2px solid #ffd700 !important;
-    background: rgba(5, 5, 12, 0.05) !important;
 }
-.private-chat-header {
-    background: rgba(5, 5, 12, 0.05) !important;
-    border-bottom: 1px solid rgba(255, 215, 0, 0.5) !important;
-}
-.private-chat-input {
-    background: rgba(5, 5, 12, 0.05) !important;
-    border-top: 1px solid rgba(255, 215, 0, 0.5) !important;
-}
+.private-chat-header { border-bottom: 1px solid rgba(255, 215, 0, 0.5) !important; }
+.private-chat-input { border-top: 1px solid rgba(255, 215, 0, 0.5) !important; }
 
 body.pm-open .input-area,
 body.pm-open .bottom-nav,
@@ -245,10 +234,12 @@ body.pm-open .floating-toolbar {
     50% { box-shadow: 0 0 22px rgba(255, 215, 0, 1); transform: scale(1.08); }
 }
 
-/* ⭐⭐⭐ الرسائل نفسها — خلفية شبه معدومة */
+/* الرسائل نفسها */
 .message:not(.system):not(.bot) {
-    background: rgba(5, 5, 12, 0.15) !important;
+    background: rgba(5, 5, 12, 0.08) !important;
     border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
 </style>
 
@@ -428,14 +419,14 @@ body.pm-open .floating-toolbar {
 
 <div id="profile-frame-container" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.95);display:none;">
 <div style="position:relative;width:100%;height:100%;">
-<iframe id="profile-iframe" src="profile.html?v=14" style="width:100%;height:100%;border:none;display:block;"></iframe>
+<iframe id="profile-iframe" src="profile.html?v=15" style="width:100%;height:100%;border:none;display:block;"></iframe>
 </div>
 </div>
 
-<script src="config.js?v=23"></script>
-<script src="ranks.js?v=23"></script>
-<script src="utils.js?v=23"></script>
-<script src="frames-engine.js?v=23"></script>
+<script src="config.js?v=24"></script>
+<script src="ranks.js?v=24"></script>
+<script src="utils.js?v=24"></script>
+<script src="frames-engine.js?v=24"></script>
 <script>window.FRAMES = window.FRAMES || []; window.FRAMES_DATA = window.FRAMES_DATA || {}; window.CSS_FRAMES_DATA = window.CSS_FRAMES_DATA || {};</script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -454,6 +445,33 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         obs.observe(floatingAvatar, { attributes: true, attributeFilter: ['class', 'style'] });
     }
+
+    // ⭐⭐⭐ إجبار الشفافية على كل العناصر - أعلى أولوية ممكنة
+    var targets = [
+        '.header', '.bottom-nav', '.input-area', '.mics-bar',
+        '.sidebar', '.sidebar-header', '.sidebar-item',
+        '.private-chat-modal', '.private-chat-header', '.private-chat-input',
+        '.message', '.reply-preview', '.notif-item'
+    ];
+    function forceTransparency() {
+        targets.forEach(function(sel) {
+            document.querySelectorAll(sel).forEach(function(el) {
+                if (sel === '.sidebar-item' || sel === '.message' || sel === '.notif-item') {
+                    // نخلي خلفيتها خفيفة جداً
+                    el.style.setProperty('backdrop-filter', 'none', 'important');
+                    el.style.setProperty('-webkit-backdrop-filter', 'none', 'important');
+                } else {
+                    el.style.setProperty('background', 'rgba(5, 5, 12, 0.02)', 'important');
+                    el.style.setProperty('background-color', 'rgba(5, 5, 12, 0.02)', 'important');
+                    el.style.setProperty('backdrop-filter', 'none', 'important');
+                    el.style.setProperty('-webkit-backdrop-filter', 'none', 'important');
+                }
+            });
+        });
+    }
+    forceTransparency();
+    setInterval(forceTransparency, 2000);
+
     setInterval(syncPMSlot, 800);
     setTimeout(syncPMSlot, 1500);
 });
@@ -487,9 +505,9 @@ window.showFriends = showFriends;
 window.openMinimizedChat = openMinimizedChat;
 window.syncPMSlot = syncPMSlot;
 </script>
-<script src="auth.js?v=23"></script>
-<script src="chat.js?v=23"></script>
-<script src="bots.js?v=23"></script>
+<script src="auth.js?v=24"></script>
+<script src="chat.js?v=24"></script>
+<script src="bots.js?v=24"></script>
 
 <script>
 let selectedGender = 'male';
