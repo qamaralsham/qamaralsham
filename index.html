@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <meta name="google-site-verification" content="googledef67db6e90c3077">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-<meta name="description" content="قمر الشام — منصة الدردشة الملكية الفاخرة">
-<meta name="theme-color" content="#050508">
 <title>شات قمر الشام 👑</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌙%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -16,7 +14,106 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="frames-engine.css">
-<link rel="stylesheet" href="qamar-fixes.css">
+
+<style>
+/* ============ QAMAR FIXES — مدمج ============ */
+#btn-name-frame { display: none !important; }
+
+.sidebar {
+    width: 45vw !important;
+    min-width: 0 !important;
+    max-width: 400px !important;
+}
+@media (max-width: 480px) {
+    .sidebar { width: 50vw !important; }
+}
+
+.floating-toolbar {
+    position: fixed !important;
+    bottom: 135px !important;
+    top: auto !important;
+    left: 12px !important;
+    right: 12px !important;
+    padding: 12px !important;
+    border-radius: 20px !important;
+    display: none !important;
+    justify-content: space-around !important;
+    gap: 10px !important;
+    z-index: 9500 !important;
+    background: rgba(15, 15, 25, 0.95) !important;
+    border: 1px solid rgba(255, 215, 0, 0.4) !important;
+    backdrop-filter: blur(15px) !important;
+    -webkit-backdrop-filter: blur(15px) !important;
+}
+.floating-toolbar.open { display: flex !important; }
+
+.upgrade-modal {
+    position: fixed !important;
+    top: 0 !important; left: 0 !important;
+    right: 0 !important; bottom: 0 !important;
+    width: 100% !important; height: 100% !important;
+    background: rgba(0, 0, 0, 0.85) !important;
+    display: none !important;
+    justify-content: center !important;
+    align-items: center !important;
+    z-index: 9999 !important;
+    padding: 20px !important;
+}
+.upgrade-modal.active { display: flex !important; }
+.upgrade-content {
+    background: #110724 !important;
+    border: 2px solid #ffd700 !important;
+    padding: 25px !important;
+    border-radius: 16px !important;
+    width: 100% !important;
+    max-width: 400px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    direction: rtl !important;
+}
+.upgrade-content h3 { color: #ffd700 !important; text-align: center !important; margin-bottom: 8px !important; }
+.upgrade-content input {
+    padding: 12px !important;
+    border-radius: 8px !important;
+    border: 1px solid #ffd700 !important;
+    background: rgba(255,255,255,0.08) !important;
+    color: #fff !important;
+    font-size: 14px !important;
+    text-align: right !important;
+    outline: none !important;
+}
+.upgrade-content .upgrade-btn {
+    padding: 12px !important;
+    border-radius: 8px !important;
+    border: none !important;
+    background: #ffd700 !important;
+    color: #000 !important;
+    font-weight: 900 !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+}
+.upgrade-content .upgrade-btn.cancel { background: rgba(255,255,255,0.15) !important; color: #fff !important; }
+
+.private-chat-modal {
+    top: auto !important;
+    bottom: 0 !important;
+    height: 78vh !important;
+    max-height: 78vh !important;
+    border-radius: 20px 20px 0 0 !important;
+    border-bottom: none !important;
+    border-top: 2px solid #ffd700 !important;
+}
+
+body.pm-open .input-area,
+body.pm-open .bottom-nav,
+body.pm-open .mics-bar-wrapper,
+body.pm-open .floating-toolbar {
+    display: none !important;
+}
+/* ============ نهاية QAMAR FIXES ============ */
+</style>
+
 </head>
 <body>
 
@@ -173,7 +270,7 @@
 <div class="upgrade-modal" id="upgrade-modal">
 <div class="upgrade-content">
 <h3>🔑 ترقية لعضوية</h3>
-<p style="color:#ccc;font-size:13px;">احصل على حساب دائم</p>
+<p style="color:#ccc;font-size:13px;text-align:center;">احصل على حساب دائم</p>
 <input type="email" id="upgrade-email" placeholder="الإيميل..." autocomplete="email">
 <input type="password" id="upgrade-password" placeholder="كلمة السر..." autocomplete="new-password">
 <input type="password" id="upgrade-password-confirm" placeholder="تأكيد كلمة السر..." autocomplete="new-password">
@@ -196,17 +293,17 @@
 
 <div id="profile-frame-container" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.95);display:none;">
 <div style="position:relative;width:100%;height:100%;">
-<iframe id="profile-iframe" src="profile.html?v=3" style="width:100%;height:100%;border:none;display:block;" title="بروفايل المستخدم"></iframe>
+<iframe id="profile-iframe" src="profile.html?v=4" style="width:100%;height:100%;border:none;display:block;" title="بروفايل المستخدم"></iframe>
 </div>
 </div>
 
-<script src="config.js?v=12"></script>
-<script src="ranks.js?v=12"></script>
-<script src="utils.js?v=12"></script>
-<script src="frames-data.js?v=12"></script>
-<script src="frames-renderer.js?v=12"></script>
-<script src="css-frames.js?v=12"></script>
-<script src="frames-engine.js?v=12"></script>
+<script src="config.js?v=13"></script>
+<script src="ranks.js?v=13"></script>
+<script src="utils.js?v=13"></script>
+<script src="frames-data.js?v=13"></script>
+<script src="frames-renderer.js?v=13"></script>
+<script src="css-frames.js?v=13"></script>
+<script src="frames-engine.js?v=13"></script>
 <script>window.FRAMES = window.FRAMES || []; window.FRAMES_DATA = window.FRAMES_DATA || {}; window.CSS_FRAMES_DATA = window.CSS_FRAMES_DATA || {};</script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -218,9 +315,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-<script src="auth.js?v=12"></script>
-<script src="chat.js?v=12"></script>
-<script src="bots.js?v=12"></script>
+<script src="auth.js?v=13"></script>
+<script src="chat.js?v=13"></script>
+<script src="bots.js?v=13"></script>
 
 <script>
 let selectedGender = 'male';
