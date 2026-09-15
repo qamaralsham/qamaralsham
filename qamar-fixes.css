@@ -1,0 +1,51 @@
+/* ==============================================
+   قمر الشام — إصلاحات عاجلة v1
+   ============================================== */
+
+/* 1. إخفاء زر "إطار الاسم" لأنه يكسر التدرج */
+#btn-name-frame { display: none !important; }
+
+/* 2. القوائم الجانبية — 45% من عرض الشاشة */
+.sidebar {
+    width: 45vw !important;
+    min-width: 0 !important;
+    max-width: 400px !important;
+}
+@media (max-width: 480px) {
+    .sidebar {
+        width: 50vw !important;
+    }
+}
+
+/* 3. شريط الأدوات العائم — فوق صندوق الكتابة دائماً */
+.floating-toolbar {
+    position: fixed !important;
+    bottom: 155px !important;
+    top: auto !important;
+    left: 12px !important;
+    right: 12px !important;
+    display: none;
+    z-index: 9500 !important;
+}
+.floating-toolbar.open {
+    display: flex !important;
+}
+
+/* 4. مربع الرسائل الخاصة — يفتح من الأسفل */
+.private-chat-modal {
+    top: auto !important;
+    bottom: 0 !important;
+    height: 78vh !important;
+    max-height: 78vh !important;
+    border-radius: 20px 20px 0 0 !important;
+    border-bottom: none !important;
+    border-top: 2px solid var(--gold, #ffd700) !important;
+}
+
+/* 5. لما الخاص مفتوح → إخفاء صندوق الكتابة العام */
+body.pm-open .input-area,
+body.pm-open .bottom-nav,
+body.pm-open .mics-bar-wrapper,
+body.pm-open .floating-toolbar {
+    display: none !important;
+}
