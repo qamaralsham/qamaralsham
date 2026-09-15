@@ -1,12 +1,12 @@
 {
     "frames": [
-        { "id": "f1", "file": "frames/frame1.png", "name": "الفضي الملكي",      "animation": "royal-glow",   "rank": "User" },
-        { "id": "f2", "file": "frames/frame2.png", "name": "الأجنحة الوردية",   "animation": "wing-flutter", "rank": "User" },
-        { "id": "f3", "file": "frames/frame3.png", "name": "الياقوت الأزرق",    "animation": "wing-flutter", "rank": "Owner" },
-        { "id": "f4", "file": "frames/frame4.png", "name": "نجوم النار",        "animation": "flame-flicker","rank": "Owner" },
-        { "id": "f5", "file": "frames/frame5.png", "name": "وردة ذهبية",       "animation": "royal-glow",   "rank": "User" },
-        { "id": "f6", "file": "frames/frame6.png", "name": "إكليل الغار",       "animation": "royal-glow",   "rank": "Owner" },
-        { "id": "f7", "file": "frames/frame7.png", "name": "النجوم الحمراء",    "animation": "celestial-spin","rank": "Premium" },
-        { "id": "f8", "file": "frames/frame8.png", "name": "الجناح الأسود",     "animation": "wing-flutter", "rank": "Premium" }
+        { "id": "f1", "file": "frame1.png", "name": "الفضي الملكي",    "animation": "royal-glow",    "rank": "User" },
+        { "id": "f2", "file": "frame2.png", "name": "الأجنحة الوردية", "animation": "wing-flutter",  "rank": "User" },
+        { "id": "f3", "file": "frame3.png", "name": "الياقوت الأزرق",  "animation": "wing-flutter",  "rank": "Owner" },
+        { "id": "f4", "file": "frame4.png", "name": "نجوم النار",      "animation": "flame-flicker", "rank": "Owner" },
+        { "id": "f5", "file": "frame5.png", "name": "وردة ذهبية",      "animation": "royal-glow",    "rank": "User" },
+        { "id": "f6", "file": "frame6.png", "name": "إكليل الغار",     "animation": "royal-glow",    "rank": "Owner" },
+        { "id": "f7", "file": "frame7.png", "name": "النجوم الحمراء",  "animation": "celestial-spin","rank": "Premium" },
+        { "id": "f8", "file": "frame8.png", "name": "الجناح الأسود",   "animation": "wing-flutter",  "rank": "Premium" }
     ]
 }
