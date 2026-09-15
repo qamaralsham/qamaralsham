@@ -1,5 +1,5 @@
 // ==============================================
-// Frames Engine - محرك الإطارات (v2 - مدمج)
+// Frames Engine v3 - مع override صحيح
 // ==============================================
 
 const ALL_FRAMES = [
@@ -13,9 +13,7 @@ const ALL_FRAMES = [
     { id: "f8", file: "frame8.png", name: "الجناح الأسود",   animation: "wing-flutter",   rank: "Premium" }
 ];
 
-let CURRENT_FRAME_ID = null;
-
-console.log('✅ frames-engine.js loaded - ' + ALL_FRAMES.length + ' frames');
+let CURRENT_FRAME_ID = localStorage.getItem('saved_avatar_frame_motion') || null;
 
 function applyFrameTo(box, frameId) {
     if (!box) return;
@@ -33,21 +31,15 @@ function applyFrameTo(box, frameId) {
     const img = document.createElement('img');
     img.src = frame.file;
     img.alt = frame.name;
-    img.loading = 'lazy';
     el.appendChild(img);
     box.appendChild(el);
     localStorage.setItem('saved_avatar_frame_motion', frameId);
     CURRENT_FRAME_ID = frameId;
-    console.log('✅ Frame applied:', frame.name);
 }
 
 function renderFramesGrid(container) {
-    if (!container) {
-        console.warn('No frames container');
-        return;
-    }
+    if (!container) return;
     container.innerHTML = '';
-    console.log('Rendering ' + ALL_FRAMES.length + ' frames');
 
     // زر "بدون"
     const noneCard = document.createElement('div');
@@ -62,7 +54,7 @@ function renderFramesGrid(container) {
     };
     container.appendChild(noneCard);
 
-    // الإطارات
+    // الإطارات الثمانية
     ALL_FRAMES.forEach(f => {
         const card = document.createElement('div');
         card.style.cssText = 'background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:8px;text-align:center;cursor:pointer';
@@ -99,27 +91,54 @@ function renderFramesGrid(container) {
     });
 }
 
-window.renderFrames = function () {
-    const c = document.getElementById('frames-container');
-    if (c) renderFramesGrid(c);
-    else console.warn('frames-container not found');
-};
+// ══════════════════════════════════════════════
+// override كل شيء بعد ما الصفحة تحمّل بالكامل
+// ══════════════════════════════════════════════
+window.addEventListener('load', function () {
+    console.log('🎨 Frames Engine: overriding button handlers');
+
+    // اجبر كل دالة renderFrames على النسخة الجديدة
+    window.renderFrames = function () {
+        const c = document.getElementById('frames-container');
+        if (c) renderFramesGrid(c);
+    };
+
+    // override زر إطار الأفاتار
+    const fb = document.getElementById('avatar-frame-motion');
+    if (fb) {
+        fb.onclick = null;
+        fb.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const modal = document.getElementById('frames-modal');
+            if (modal) modal.classList.add('active');
+            const c = document.getElementById('frames-container');
+            if (c) renderFramesGrid(c);
+        });
+    }
+
+    // طبّق الإطار المحفوظ
+    const saved = localStorage.getItem('saved_avatar_frame_motion');
+    if (saved && saved !== 'none' && saved !== '') {
+        const box = document.getElementById('avatar-box');
+        if (box) applyFrameTo(box, saved);
+    }
+
+    // إذا كان المودال مفتوح، اعرض الإطارات
+    const modal = document.getElementById('frames-modal');
+    if (modal && modal.classList.contains('active')) {
+        const c = document.getElementById('frames-container');
+        if (c) renderFramesGrid(c);
+    }
+});
 
 window.applyAvatarFrame = function (fid) {
     const box = document.getElementById('avatar-box');
     if (box) applyFrameTo(box, fid);
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-    const saved = localStorage.getItem('saved_avatar_frame_motion');
-    if (saved && saved !== 'none') {
-        const box = document.getElementById('avatar-box');
-        if (box) applyFrameTo(box, saved);
-    }
-});
-
 window.applyFrameTo = applyFrameTo;
 window.renderFramesGrid = renderFramesGrid;
 window.ALL_FRAMES = ALL_FRAMES;
 
-console.log('✅ frames-engine v2 ready');
+console.log('✅ frames-engine.js v3 loaded');
