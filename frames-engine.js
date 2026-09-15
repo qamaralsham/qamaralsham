@@ -1,6 +1,9 @@
 // ==============================================
-// Frames Engine v3 - مع override صحيح
+// Frames Engine v4 - مع دعم الشات
 // ==============================================
+
+// ✅ إصلاح: تعريف FRAMES عشان chat.js ما يطلع خطأ
+window.FRAMES = window.FRAMES || [];
 
 const ALL_FRAMES = [
     { id: "f1", file: "frame1.png", name: "الفضي الملكي",    animation: "royal-glow",     rank: "User" },
@@ -15,6 +18,9 @@ const ALL_FRAMES = [
 
 let CURRENT_FRAME_ID = localStorage.getItem('saved_avatar_frame_motion') || null;
 
+// ══════════════════════════════════════════════
+// تطبيق إطار على صورة (بروفايل أو شات)
+// ══════════════════════════════════════════════
 function applyFrameTo(box, frameId) {
     if (!box) return;
     box.querySelectorAll('.qf').forEach(e => e.remove());
@@ -37,11 +43,38 @@ function applyFrameTo(box, frameId) {
     CURRENT_FRAME_ID = frameId;
 }
 
+// ══════════════════════════════════════════════
+// ⭐ دالة جديدة للشات — تطبّق الإطار على رسالة
+// ══════════════════════════════════════════════
+function applyFrameToMessage(wrapper, frameId) {
+    if (!wrapper) return;
+    // نظّف الإطارات السابقة
+    wrapper.querySelectorAll('.qf, .dynamic-frame-wrapper, .qcf, .qamar-frame, .avatar-frame').forEach(e => e.remove());
+
+    if (!frameId || frameId === 'none') return;
+
+    const frame = ALL_FRAMES.find(f => f.id === frameId);
+    if (!frame) return;
+
+    const el = document.createElement('div');
+    el.className = 'qf qf-msg ' + (frame.animation || '');
+    el.setAttribute('data-frame-id', frameId);
+    el.style.cssText = 'position:absolute;inset:-18%;pointer-events:none;z-index:20;';
+    const img = document.createElement('img');
+    img.src = frame.file;
+    img.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block;';
+    el.appendChild(img);
+    wrapper.appendChild(el);
+}
+
+// ══════════════════════════════════════════════
+// عرض شبكة الإطارات في البروفايل
+// ══════════════════════════════════════════════
 function renderFramesGrid(container) {
     if (!container) return;
     container.innerHTML = '';
 
-    // زر "بدون"
+    // "بدون"
     const noneCard = document.createElement('div');
     noneCard.style.cssText = 'background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:8px;text-align:center;cursor:pointer';
     if (!CURRENT_FRAME_ID) noneCard.style.borderColor = '#ffd700';
@@ -92,18 +125,15 @@ function renderFramesGrid(container) {
 }
 
 // ══════════════════════════════════════════════
-// override كل شيء بعد ما الصفحة تحمّل بالكامل
+// Override بعد تحميل كل الملفات
 // ══════════════════════════════════════════════
 window.addEventListener('load', function () {
-    console.log('🎨 Frames Engine: overriding button handlers');
 
-    // اجبر كل دالة renderFrames على النسخة الجديدة
     window.renderFrames = function () {
         const c = document.getElementById('frames-container');
         if (c) renderFramesGrid(c);
     };
 
-    // override زر إطار الأفاتار
     const fb = document.getElementById('avatar-frame-motion');
     if (fb) {
         fb.onclick = null;
@@ -117,14 +147,12 @@ window.addEventListener('load', function () {
         });
     }
 
-    // طبّق الإطار المحفوظ
     const saved = localStorage.getItem('saved_avatar_frame_motion');
     if (saved && saved !== 'none' && saved !== '') {
         const box = document.getElementById('avatar-box');
         if (box) applyFrameTo(box, saved);
     }
 
-    // إذا كان المودال مفتوح، اعرض الإطارات
     const modal = document.getElementById('frames-modal');
     if (modal && modal.classList.contains('active')) {
         const c = document.getElementById('frames-container');
@@ -138,7 +166,8 @@ window.applyAvatarFrame = function (fid) {
 };
 
 window.applyFrameTo = applyFrameTo;
+window.applyFrameToMessage = applyFrameToMessage;
 window.renderFramesGrid = renderFramesGrid;
 window.ALL_FRAMES = ALL_FRAMES;
 
-console.log('✅ frames-engine.js v3 loaded');
+console.log('✅ frames-engine.js v4 loaded — ' + ALL_FRAMES.length + ' frames');
