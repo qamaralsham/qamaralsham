@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html>1Ùƒ
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -404,14 +404,14 @@ body.visitor-mode .priv-sec{display:none!important}
             <div id="info-tab" class="tab-c">
                 <div class="info-card">
                     <div class="row"><span class="row-lb"> </span><span class="row-vl"><span class="link" id="profile-username-id">@user</span><span id="btn-copy-id" style="cursor:pointer;margin-right:8px;color:#64b5f6"></span></span></div>
-                    <div class="row"><span class="row-lb">  </span><span class="row-vl" style="display:flex;gap:8px;align-items:center"><span class="user-code" id="info-code-value">—</span><button id="btn-copy-code" class="share-btn"><i class="fas fa-copy"></i> </button></span></div>
-                    <div class="row" id="info-age-row"><span class="row-lb"> </span><span class="row-vl" id="info-age-value">—</span></div>
-                    <div class="row" id="info-gender-row"><span class="row-lb"> </span><span class="row-vl" id="info-gender-value">—</span></div>
-                    <div class="row" id="info-join-row"><span class="row-lb">  </span><span class="row-vl" id="info-join-value">—</span></div>
-                    <div class="row" id="info-lastseen-row"><span class="row-lb">  </span><span class="row-vl" id="info-lastseen-value">—</span></div>
-                    <div class="row" id="info-room-row"><span class="row-lb">  </span><span class="row-vl" id="info-room-value">—</span></div>
-                    <div class="row" id="info-country-row"><span class="row-lb"> </span><span class="row-vl" id="info-country-value">—</span></div>
-                    <div class="row" id="info-email-row"><span class="row-lb"> </span><span class="row-vl" id="info-email-value">—</span></div>
+                    <div class="row"><span class="row-lb">  </span><span class="row-vl" style="display:flex;gap:8px;align-items:center"><span class="user-code" id="info-code-value">Â—</span><button id="btn-copy-code" class="share-btn"><i class="fas fa-copy"></i> </button></span></div>
+                    <div class="row" id="info-age-row"><span class="row-lb"> </span><span class="row-vl" id="info-age-value">Â—</span></div>
+                    <div class="row" id="info-gender-row"><span class="row-lb"> </span><span class="row-vl" id="info-gender-value">Â—</span></div>
+                    <div class="row" id="info-join-row"><span class="row-lb">  </span><span class="row-vl" id="info-join-value">Â—</span></div>
+                    <div class="row" id="info-lastseen-row"><span class="row-lb">  </span><span class="row-vl" id="info-lastseen-value">Â—</span></div>
+                    <div class="row" id="info-room-row"><span class="row-lb">  </span><span class="row-vl" id="info-room-value">Â—</span></div>
+                    <div class="row" id="info-country-row"><span class="row-lb"> </span><span class="row-vl" id="info-country-value">Â—</span></div>
+                    <div class="row" id="info-email-row"><span class="row-lb"> </span><span class="row-vl" id="info-email-value">Â—</span></div>
                 </div>
             </div>
             <div id="friends-tab" class="tab-c">
@@ -424,7 +424,7 @@ body.visitor-mode .priv-sec{display:none!important}
                 <div class="info-card">
                     <h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">    </h3>
                     <div class="search-box">
-                        <input type="text" class="search-input" id="search-input" placeholder="   ( EM·4K7)..." maxlength="30">
+                        <input type="text" class="search-input" id="search-input" placeholder="   ( EMÂ·4K7)..." maxlength="30">
                         <button class="search-btn" id="search-btn"><i class="fas fa-search"></i> </button>
                     </div>
                     <div id="search-results"></div>
@@ -556,8 +556,8 @@ function rankBadge(r){const b={King:'',Queen:'','Master Owner':'','Room Owner
 function toast(m){const t=document.createElement('div');t.style.cssText='position:fixed;top:20px;right:20px;background:rgba(15,15,20,0.95);border:1px solid #ffd700;border-radius:12px;padding:12px 20px;color:#fff;font-size:13px;font-weight:600;z-index:10000;font-family:Cairo,sans-serif;max-width:80vw';t.innerText=m;document.body.appendChild(t);setTimeout(()=>t.remove(),3000)}
 function openModal(id){const m=document.getElementById(id);if(m)m.classList.add('active')}
 function closeModal(id){const m=document.getElementById(id);if(m)m.classList.remove('active')}
-function timeAgo(ts){if(!ts)return '—';const s=Math.floor((Date.now()-ts)/1000);if(s<60)return '';const m=Math.floor(s/60);if(m<60)return ' '+m+' ';const h=Math.floor(m/60);if(h<24)return ' '+h+' ';const d=Math.floor(h/24);if(d<30)return ' '+d+' ';return new Date(ts).toLocaleDateString('ar')}
-function formatDate(ts){if(!ts)return '—';const d=new Date(ts);return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear()}
+function timeAgo(ts){if(!ts)return 'Â—';const s=Math.floor((Date.now()-ts)/1000);if(s<60)return '';const m=Math.floor(s/60);if(m<60)return ' '+m+' ';const h=Math.floor(m/60);if(h<24)return ' '+h+' ';const d=Math.floor(h/24);if(d<30)return ' '+d+' ';return new Date(ts).toLocaleDateString('ar')}
+function formatDate(ts){if(!ts)return 'Â—';const d=new Date(ts);return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear()}
 document.addEventListener('click',e=>{if(e.target.classList&&e.target.classList.contains('modal'))e.target.classList.remove('active')});
 
 document.addEventListener('DOMContentLoaded',async function(){
@@ -672,7 +672,7 @@ function loadProfile(){
     const un=document.getElementById('profile-username-id');
     if(un){const uu=targetUser.username||'@'+(targetUser.name||'user').replace(/\s+/g,'_');un.innerText=uu.startsWith('@')?uu:'@'+uu}
     const codeEl=document.getElementById('info-code-value');
-    if(codeEl)codeEl.innerText=targetUser.code||'—';
+    if(codeEl)codeEl.innerText=targetUser.code||'Â—';
     if(targetUser.nameColor){nameColor=targetUser.nameColor;applyNameColor()}
     if(targetUser.nameGradient){nameGradient=targetUser.nameGradient;applyNameGradient()}
     if(targetUser.nameFrame){nameFrame=targetUser.nameFrame;applyNameFrame();const btn=document.getElementById('btn-name-frame');if(btn){const f=FRAMES_LIST.find(x=>x.id===nameFrame);if(f)btn.innerText=f.name}}
@@ -690,7 +690,7 @@ function loadProfile(){
     const ctRow=document.getElementById('info-country-row'),ctVal=document.getElementById('info-country-value');
     if(ctRow&&ctVal){if(targetUser.country||targetUser.city){ctVal.innerText=[targetUser.country,targetUser.city].filter(x=>x).join(' - ');ctRow.style.display=''}else ctRow.style.display='none'}
     const er=document.getElementById('info-email-row'),ev=document.getElementById('info-email-value');
-    if(er&&ev){if(viewMode==='owner'||(currentUser&&currentUser.rank==='King')){ev.innerText=targetUser.email||'—';er.style.display=''}else er.style.display='none'}
+    if(er&&ev){if(viewMode==='owner'||(currentUser&&currentUser.rank==='King')){ev.innerText=targetUser.email||'Â—';er.style.display=''}else er.style.display='none'}
     if(targetUser.musicURL){musicURL=targetUser.musicURL;const mb=document.getElementById('music-btn-mini');if(mb)mb.style.display='flex';const p=document.getElementById('music-player');if(p)p.src=musicURL}
 }
 
@@ -849,7 +849,7 @@ function initInfo(){
     const cc=document.getElementById('btn-copy-code');
     if(cc)cc.onclick=async()=>{
         const code=(targetUser&&targetUser.code)||(currentUser&&currentUser.code);
-        if(!code||code==='—'){toast('    —     ');return}
+        if(!code||code==='Â—'){toast('    Â—     ');return}
         try{
             await navigator.clipboard.writeText(code);
             toast('   : '+code+'\n  ');
@@ -873,7 +873,7 @@ async function doSearch(){
     if(!query){toast('     ');return}
     if(typeof db==='undefined'||!db){toast(' Firebase  ');return}
 
-    const codeMatch=query.match(/([A-Za-z0-9]{2,3})·([A-Za-z0-9]{3,4})/);
+    const codeMatch=query.match(/([A-Za-z0-9]{2,3})Â·([A-Za-z0-9]{3,4})/);
     if(codeMatch){
         results.innerHTML='<div class="search-loading">   ...</div>';
         try{
@@ -904,7 +904,7 @@ async function doSearch(){
         const q=query.toLowerCase().replace(/\s+/g,'');
         const matches=[];
         Object.values(all).forEach(u=>{if(!u||!u.name)return;const n=u.name.toLowerCase().replace(/\s+/g,'');if(n.includes(q))matches.push(u)});
-        if(matches.length===0){results.innerHTML='<div class="search-empty">    "'+query+'"<br><br>:<br>•   <br>•    </div>';return}
+        if(matches.length===0){results.innerHTML='<div class="search-empty">    "'+query+'"<br><br>:<br>Â•   <br>Â•    </div>';return}
         results.innerHTML='<div style="color:#ffd700;font-size:12px;margin-bottom:8px;"> '+matches.length+' :</div>';
         matches.slice(0,20).forEach(u=>renderSearchResult(u));
     }catch(e){console.error('Search error:',e);results.innerHTML='<div class="search-empty">    </div>'}
@@ -926,7 +926,7 @@ async function sendNotif(targetUid,type,icon,title){if(typeof db==='undefined'||
 
 function openChat(uid,name){window.parent.postMessage({action:'openPrivateChat',uid:uid,name:name},'*');if(window.parent===window){localStorage.setItem('open_chat_uid',uid);localStorage.setItem('open_chat_name',name);location.href='index.html?chat='+uid}}
 
-console.log(' Profile v5.8 loaded — 154 styles ');
+console.log(' Profile v5.8 loaded Â— 154 styles ');
 </script>
 </body>
 </html>
