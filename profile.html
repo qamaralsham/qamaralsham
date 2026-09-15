@@ -3,300 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>   - </title>
+<title>قمر الشام — البروفايل الشخصي</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-<style>
-:root{--gold:#ffd700;--glow:rgba(255,215,0,0.7);--bg:linear-gradient(160deg,rgba(27,10,58,0.4),rgba(11,4,23,0.6),rgba(3,1,8,0.85))}
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',Tahoma,sans-serif;background:#030108;min-height:100vh;color:#fff;overflow:hidden;font-size:14px}
-.profile{position:fixed;top:5%;bottom:0;left:5%;right:5%;background:var(--bg);border-radius:20px 20px 0 0;border-top:2px solid var(--gold);border-left:1px solid var(--glow);border-right:1px solid var(--glow);display:flex;flex-direction:column;overflow:hidden;z-index:200;box-shadow:0 25px 70px rgba(0,0,0,0.95)}
-.profile.glow-active{animation:profileGlowPulse 2s ease-in-out infinite}
-@keyframes profileGlowPulse{0%,100%{box-shadow:0 25px 70px rgba(0,0,0,0.95),0 0 20px var(--glow-color,#ffd700),0 0 40px var(--glow-color,#ffd700)}50%{box-shadow:0 25px 70px rgba(0,0,0,0.95),0 0 40px var(--glow-color,#ffd700),0 0 80px var(--glow-color,#ffd700)}}
-.bg-layer{position:absolute;top:290px;left:0;width:100%;height:calc(100% - 290px);z-index:1;pointer-events:none;background-size:cover;background-position:center;background-repeat:no-repeat}
-.top-btns{position:absolute;top:10px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:center;z-index:110}
-.top-btns button{background:rgba(0,0,0,0.4);border:1px solid var(--glow);border-radius:50%;width:34px;height:34px;color:#fff;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center}
-.owner-top{display:flex;gap:6px}
-.cover{width:100%;height:290px;position:relative;background:linear-gradient(135deg,#35136b,#190938,#070312);flex-shrink:0;z-index:2}
-.cover-img{width:100%;height:100%;object-fit:cover;opacity:0.75}
-.cover-edit{position:absolute;top:50px;left:12px;display:flex;gap:6px;z-index:100}
-.cover-edit button{background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.4);color:#fff;padding:5px 10px;font-size:11px;border-radius:10px;cursor:pointer;font-family:'Cairo',sans-serif}
-.cover-edit .del-cov{color:#ff6b6b}
-.avatar-cont{position:absolute;bottom:115px;left:50%;transform:translateX(-50%);width:100px;height:100px;z-index:10}
-.avatar{width:100%;height:100%;border-radius:50%;overflow:hidden;background:#111;box-shadow:0 10px 35px rgba(0,0,0,0.8);border:3px solid var(--gold);position:relative;aspect-ratio:1/1}
-.avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
-.avatar-edit{position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);display:flex;gap:16px;z-index:15;background:rgba(0,0,0,0.6);padding:2px 10px;border-radius:12px;border:1px solid var(--glow)}
-.avatar-edit span{font-size:13px;cursor:pointer;padding:2px}
-.avatar-edit .del-av{color:#ff6b6b}
-.header{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);width:100%;text-align:center;z-index:10;padding:0 10px;display:flex;flex-direction:column;align-items:center;gap:2px}
-.user-cont{display:flex;align-items:center;justify-content:center;gap:6px}
-.edit-pen{font-size:11px;cursor:pointer;color:var(--gold)}
-.role{font-size:11px;color:var(--gold);font-weight:bold;text-shadow:0 2px 8px rgba(0,0,0,0.9);display:flex;align-items:center;gap:6px;justify-content:center}
-.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#888;box-shadow:0 0 6px currentColor}
-.status-dot.online{background:#00ff00;box-shadow:0 0 8px #00ff00}
-.status-dot.offline{background:#888}
-.music-toggle-mini{background:rgba(0,0,0,0.5);border:1px solid var(--gold);border-radius:50%;width:24px;height:24px;color:var(--gold);cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;padding:0;font-family:inherit;margin:2px 0}
-.music-toggle-mini.playing{background:rgba(255,215,0,0.3);animation:musicPulse 1s ease-in-out infinite}
-@keyframes musicPulse{0%,100%{box-shadow:0 0 6px var(--gold)}50%{box-shadow:0 0 14px var(--gold)}}
-.username{font-size:20px;font-weight:900;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,0.95);padding:4px 16px;display:inline-block;line-height:1.3;position:relative;border-radius:50px}
-.bio{font-size:12px;color:#90caf9;text-shadow:0 1px 8px rgba(0,0,0,0.9);font-weight:600}
-.interact-btns{display:flex;justify-content:center;gap:14px;width:100%;padding:8px 0;flex-shrink:0;z-index:10}
-.interact-btns button{background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.25);border-radius:50%;width:42px;height:42px;color:#fff;cursor:pointer;font-size:18px;display:flex;justify-content:center;align-items:center}
-.main-content{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:10px 14px 14px;gap:10px;z-index:5}
-.tabs{background:rgba(0,0,0,0.5);display:flex;overflow-x:auto;white-space:nowrap;border:1px solid var(--glow);scrollbar-width:none;border-radius:12px;flex-shrink:0;padding:3px;gap:4px}
-.tabs::-webkit-scrollbar{display:none}
-.tab{padding:8px 12px;color:#b0bec5;font-size:11px;cursor:pointer;font-weight:bold;flex-shrink:0;border-radius:8px}
-.tab.active,.tab:hover{background:rgba(255,215,0,0.25);color:var(--gold)}
-.poetry-box{margin-top:8px;padding:10px 14px;background:rgba(0,0,0,0.55);border:1px dashed var(--glow);border-radius:12px;flex-shrink:0}
-.poetry-in{width:100%;min-height:50px;background:transparent;border:none;color:var(--gold);font-family:'Amiri',serif;font-size:15px;font-style:italic;text-align:center;outline:none;resize:none}
-.poetry-disp{text-align:center;color:var(--gold);font-family:'Amiri',serif;font-size:15px;font-style:italic;line-height:1.6;white-space:pre-wrap;word-wrap:break-word}
-.scroll-box{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:10px}
-.scroll-box::-webkit-scrollbar{display:none}
-.info-card{background:rgba(10,5,20,0.65);border-radius:16px;padding:14px;border:1px solid var(--glow);display:flex;flex-direction:column;gap:8px}
-.tab-c{display:none}
-.tab-c.active{display:block}
-.row{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.08);padding:9px 0}
-.row:last-child{border-bottom:none}
-.row-lb{font-size:0.95em;color:#ffab91;font-weight:bold;display:flex;align-items:center;gap:6px}
-.row-vl{font-size:0.9em;color:#f1f5f9}
-.share-btn{background:rgba(255,215,0,0.15);border:1px solid var(--gold);color:#ffd700;padding:6px 14px;border-radius:8px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:11px;font-weight:bold;display:flex;align-items:center;gap:6px}
-.share-btn:hover{background:rgba(255,215,0,0.3)}
-.user-code{color:#ffd700;font-weight:900;font-family:'Courier New',monospace;font-size:16px;letter-spacing:2px;background:rgba(255,215,0,0.1);padding:6px 14px;border-radius:8px;border:1px dashed rgba(255,215,0,0.4)}
-.link{color:#64b5f6;cursor:pointer}
-.priv-sec{margin-bottom:15px}
-.priv-sec h3{color:var(--gold);font-size:13px;font-weight:900;margin-bottom:8px}
-.priv-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.08)}
-.priv-lb{font-size:0.9em;color:#f1f5f9;font-weight:600}
-.priv-sel{background:rgba(255,255,255,0.08);border:1px solid var(--glow);border-radius:8px;color:#fff;font-size:12px;padding:6px 10px;outline:none;font-family:'Cairo',sans-serif;cursor:pointer;min-width:120px;text-align:center}
-.priv-sel option{background:#110724;color:#fff}
-body.visitor-mode .owner-only{display:none!important}
-body.owner-mode .visitor-only{display:none!important}
-body.visitor-mode .priv-sec{display:none!important}
-.search-box{display:flex;gap:8px;margin-bottom:12px}
-.search-input{flex:1;padding:10px 14px;background:rgba(255,255,255,0.08);border:1px solid var(--gold);border-radius:10px;color:#fff;font-size:13px;outline:none;font-family:'Cairo',sans-serif;text-align:right}
-.search-input::placeholder{color:#666}
-.search-btn{background:var(--gold);color:#030108;border:none;padding:10px 18px;border-radius:10px;font-weight:bold;cursor:pointer;font-size:12px;font-family:'Cairo',sans-serif;display:flex;align-items:center;gap:6px}
-.search-result{display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,215,0,0.2);border-radius:12px;margin-bottom:8px;cursor:pointer;transition:0.2s}
-.search-result:hover{background:rgba(255,215,0,0.1);border-color:var(--gold)}
-.search-result img{width:44px;height:44px;border-radius:50%;border:2px solid var(--gold);object-fit:cover}
-.search-result-info{flex:1;min-width:0}
-.search-result-name{font-weight:900;font-size:14px;color:#fff;margin-bottom:3px}
-.search-result-rank{font-size:11px;color:#ffd700}
-.search-empty{text-align:center;color:#666;padding:30px 10px;font-size:13px;line-height:1.8}
-.search-loading{text-align:center;color:#ffd700;padding:20px;font-size:13px}
-.friend-card{display:flex;gap:12px;padding:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,215,0,0.2);border-radius:14px;margin-bottom:10px;cursor:pointer;transition:0.2s}
-.friend-card:hover{background:rgba(255,215,0,0.08);border-color:var(--gold)}
-.friend-avatar{width:54px;height:54px;border-radius:50%;border:2px solid var(--gold);object-fit:cover;flex-shrink:0}
-.friend-info{flex:1;min-width:0}
-.friend-name{font-weight:900;font-size:14px;color:#fff;margin-bottom:4px}
-.friend-rank{font-size:11px;color:#ffd700;margin-bottom:6px}
-.friend-stats{display:flex;gap:8px;flex-wrap:wrap;font-size:10px}
-.stat-pill{background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.25);border-radius:20px;padding:3px 10px;color:#ffd700;display:flex;align-items:center;gap:4px}
-.stat-pill.gift{background:rgba(255,105,180,0.12);border-color:rgba(255,105,180,0.3);color:#ff69b4}
-.stat-pill.point{background:rgba(100,181,246,0.12);border-color:rgba(100,181,246,0.3);color:#64b5f6}
-.friend-priv-msg{text-align:center;color:#888;padding:40px 20px;font-size:13px;line-height:1.8}
-.friend-priv-msg i{font-size:32px;color:#666;margin-bottom:10px;display:block}
-.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:none;justify-content:center;align-items:center;z-index:1000}
-.modal.active{display:flex}
-.modal-c{background:#110724;border:2px solid var(--gold);padding:18px;border-radius:16px;width:90%;max-width:420px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.9);display:flex;flex-direction:column;gap:10px;max-height:85vh;overflow-y:auto;scrollbar-width:none}
-.modal-c h3{color:var(--gold);font-size:15px;font-weight:900}
-.modal-c input,.modal-c select,.modal-c textarea{width:100%;padding:9px 12px;background:rgba(255,255,255,0.08);border:1px solid var(--gold);border-radius:8px;color:#fff;font-size:13px;outline:none;text-align:center;font-family:'Cairo',sans-serif}
-.modal-btns{display:flex;justify-content:center;gap:8px;margin-top:5px;flex-wrap:wrap}
-.modal-c button{background:var(--gold);color:#030108;border:none;padding:7px 16px;font-weight:bold;border-radius:8px;cursor:pointer;font-size:12px;font-family:'Cairo',sans-serif}
-.modal-c button.cancel{background:rgba(255,255,255,0.15);color:#fff}
-.modal-tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;justify-content:center}
-.modal-tab{padding:6px 14px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,215,0,0.2);border-radius:20px;color:#fff;font-size:12px;cursor:pointer;font-weight:700;font-family:'Cairo',sans-serif}
-.modal-tab.active{background:rgba(255,215,0,0.3);border-color:var(--gold);color:#ffd700}
-.picker-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;max-height:60vh;overflow-y:auto;padding:4px}
-.picker-item{background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:12px 8px;cursor:pointer;text-align:center;transition:0.2s;min-height:64px;display:flex;align-items:center;justify-content:center}
-.picker-item:hover{border-color:var(--gold);transform:scale(1.02)}
-.picker-item.selected{border-color:var(--gold);background:rgba(255,215,0,0.1)}
-.picker-prev{font-family:'Cairo',sans-serif;font-weight:900;font-size:14px;padding:5px 10px;border-radius:20px;display:block;color:#fff;width:100%;text-align:center;line-height:1.4;text-shadow:0 1px 3px rgba(0,0,0,0.9)}
-.user-item{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,215,0,0.15);margin-bottom:8px}
-.user-item img{width:42px;height:42px;border-radius:50%;border:2px solid var(--gold);object-fit:cover}
-.user-item-info{flex:1;min-width:0}
-.user-item-nm{font-weight:900;font-size:13px;color:#fff;margin-bottom:2px}
-.user-item-sub{font-size:11px;color:#888}
-.empty{text-align:center;color:#666;padding:30px 10px;font-size:13px}
-.colors-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;max-height:280px;overflow-y:auto;padding:4px}
-.color-box{width:100%;aspect-ratio:1;border-radius:6px;cursor:pointer;border:1px solid rgba(255,255,255,0.15)}
-.nf{position:relative;z-index:1;display:inline-block;padding:4px 14px;border-radius:20px;overflow:hidden;max-width:100%;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,0.95);font-weight:900}
-@keyframes nfSlide{0%{background-position:0% 50%}100%{background-position:200% 50%}}
-@keyframes nfSlideFast{0%{background-position:0% 50%}100%{background-position:400% 50%}}
-.nf-rainbow{background:linear-gradient(90deg,#ff0000,#ffa500,#ffff00,#00ff00,#00ffff,#0000ff,#ff00ff,#ff0000)!important}
-.nf-fire{background:linear-gradient(90deg,#330000,#990000,#ff2200,#ff6600,#ffaa00,#ffdd00,#ffaa00,#ff6600,#ff2200,#990000)!important}
-.nf-smoke{background:linear-gradient(90deg,#111,#333,#555,#777,#999,#bbb,#ddd,#999,#777,#555,#333,#111)!important}
-.nf-fog{background:linear-gradient(90deg,#444,#666,#888,#aaa,#ccc,#aaa,#888,#666,#444)!important}
-.nf-waves{background:linear-gradient(90deg,#001a4d,#004080,#0080ff,#00bfff,#00ffff,#0080ff,#004080,#001a4d)!important}
-.nf-galaxy{background:linear-gradient(90deg,#1a0033,#4b0082,#8a2be2,#da70d6,#ff69b4,#da70d6,#8a2be2,#4b0082)!important}
-.nf-stars{background:radial-gradient(circle,#fff 1px,transparent 1px),radial-gradient(circle,#ffd700 1px,transparent 1px),linear-gradient(90deg,#000428,#004e92,#000428)!important;background-size:15px 15px,22px 22px,100% 100%!important}
-.nf-snow{background:linear-gradient(90deg,#87ceeb,#b3e5fc,#e0f7ff,#fff,#e0f7ff,#b3e5fc,#87ceeb)!important}
-.nf-sunset{background:linear-gradient(90deg,#ff006e,#fb5607,#ffbe0b,#ffd60a,#3a86ff,#8338ec,#c77dff,#8338ec,#3a86ff,#ffd60a,#ffbe0b,#fb5607)!important}
-.nf-neon{background:linear-gradient(90deg,#ff00ff,#00ffff,#ff00ff,#00ffff,#ff00ff)!important}
-.nf-gold{background:linear-gradient(90deg,#8b6914,#b8860b,#d4af37,#ffd700,#ffec8b,#fff8dc,#ffec8b,#ffd700,#d4af37,#b8860b,#8b6914)!important}
-.nf-diamond{background:linear-gradient(90deg,#c0c0c0,#e0e0e0,#fff,#f0f8ff,#87ceeb,#fff,#e0e0e0,#c0c0c0)!important}
-.nf-ocean{background:linear-gradient(90deg,#000040,#000080,#0066cc,#00ccff,#00ffff,#00ccff,#0066cc,#000080)!important}
-.nf-blood{background:linear-gradient(90deg,#1a0000,#4d0000,#8b0000,#b22222,#dc143c,#ff2244,#ff4466,#dc143c,#8b0000)!important}
-.nf-forest{background:linear-gradient(90deg,#001a00,#003300,#006600,#009900,#00cc00,#33ff33,#66ff66,#00cc00,#006600,#003300)!important}
-.nf-ruby{background:linear-gradient(90deg,#8b0000,#b22222,#dc143c,#ff0040,#ff3366,#ff6699,#ff3366,#ff0040,#dc143c)!important}
-.nf-emerald{background:linear-gradient(90deg,#004d40,#00695c,#00c853,#2ecc71,#69f0ae,#a5f5b0,#69f0ae,#2ecc71,#00c853,#00695c)!important}
-.nf-sapphire{background:linear-gradient(90deg,#001a4d,#003380,#0d47a1,#1e88e5,#42a5f5,#90caf9,#42a5f5,#1e88e5,#0d47a1)!important}
-.nf-lava{background:linear-gradient(90deg,#1a0000,#4d0000,#ff2200,#ff6600,#ffaa00,#ffff00,#ffaa00,#ff6600,#ff2200,#4d0000)!important}
-.nf-aurora{background:linear-gradient(90deg,#00ff87,#3affaa,#60efff,#80c0ff,#a070ff,#ff00ff,#a070ff,#80c0ff,#60efff,#3affaa)!important}
-.nf-cyber{background:linear-gradient(90deg,#00fff7,#00d4ff,#00aaff,#ff00e0,#ff00c0,#ff00a0,#ff00e0,#00aaff,#00d4ff,#00fff7)!important}
-.nf-lightning{background:linear-gradient(90deg,#000428,#003d99,#fff,#003d99,#000428)!important}
-.nf-sparkle{background:linear-gradient(90deg,#2d1b4e,#6a0dad,#da70d6,#6a0dad,#2d1b4e)!important}
-.nf-butterflies{background:linear-gradient(90deg,#4b0082,#8a2be2,#da70d6,#ff69b4,#da70d6,#8a2be2,#4b0082)!important}
-.nf-clouds{background:linear-gradient(90deg,#87ceeb,#add8e6,#e0f7ff,#add8e6,#87ceeb)!important}
-.nf-water{background:linear-gradient(90deg,#001a66,#0066cc,#00aaff,#00ffff,#00aaff,#0066cc,#001a66)!important}
-.nf-waterfall{background:linear-gradient(90deg,#004080,#00ccff,#e0ffff,#00ccff,#004080)!important}
-.nf-streams{background:linear-gradient(90deg,#0080ff,#00ccff,#00ffff,#00ccff,#0080ff)!important}
-.nf-blossom{background:linear-gradient(90deg,#ffe0ec,#ffb6d9,#ff69b4,#ffb6d9,#ffe0ec)!important}
-.nf-leaves{background:linear-gradient(90deg,#1b5e20,#388e3c,#8bc34a,#388e3c,#1b5e20)!important}
-.nf-hearts{background:linear-gradient(90deg,#660033,#cc0066,#ff1493,#cc0066,#660033)!important}
-.nf-sun{background:linear-gradient(90deg,#ff9900,#ffdd00,#ffff00,#ffdd00,#ff9900)!important}
-.nf-crystal{background:linear-gradient(90deg,#00bcd4,#e0f7fa,#00acc1,#e0f7fa,#00bcd4)!important}
-.nf-magic{background:linear-gradient(90deg,#4a148c,#8e24aa,#ce93d8,#8e24aa,#4a148c)!important}
-.nf-royal{background:linear-gradient(90deg,#4a148c,#8b0000,#d4af37,#ffd700,#d4af37,#8b0000,#4a148c)!important}
-.nf-rainbowstraight{background:linear-gradient(90deg,#ff0000,#ff8800,#ffff00,#00ff00,#00ffff,#0000ff,#8800ff,#ff00ff)!important}
-.nf-rainbowtext,.nf-starstext,.nf-watertext,.nf-firetext,.nf-icetext,.nf-goldtext,.nf-fogtext,.nf-smoketext{background:none!important;padding:0!important;-webkit-background-clip:text!important;background-clip:text!important;-webkit-text-fill-color:transparent!important;color:transparent!important;text-shadow:none!important;font-weight:900!important;background-size:400% 100%!important}
-.nf-rainbowtext{background-image:linear-gradient(90deg,#ff0000,#ff4400,#ff8800,#ffcc00,#ffff00,#ccff00,#88ff00,#44ff00,#00ff00,#00ff44,#00ff88,#00ffcc,#00ffff,#00ccff,#0088ff,#0044ff,#0000ff,#4400ff,#8800ff,#cc00ff,#ff00ff,#ff00cc,#ff0088,#ff0044,#ff0000)!important;animation:nfSlideFast 2s linear infinite!important}
-.nf-starstext{background-image:radial-gradient(circle,#fff 1.5px,transparent 2px),radial-gradient(circle,#ffd700 1.5px,transparent 2px),radial-gradient(circle,#fff 1px,transparent 1.5px),linear-gradient(90deg,#000428,#004e92,#6a0dad,#004e92,#000428)!important;background-size:15px 15px,22px 22px,30px 30px,200% 100%!important;animation:nfSlide 3s linear infinite!important}
-.nf-watertext{background-image:linear-gradient(90deg,#001a66,#0066cc,#00aaff,#00ffff,#e0ffff,#00ffff,#00aaff,#0066cc,#001a66)!important;animation:nfSlide 2s linear infinite!important}
-.nf-firetext{background-image:linear-gradient(90deg,#330000,#990000,#ff2200,#ff6600,#ffaa00,#ffdd00,#fff,#ffdd00,#ffaa00,#ff6600,#ff2200,#990000,#330000)!important;animation:nfSlide 1.2s linear infinite!important}
-.nf-icetext{background-image:linear-gradient(90deg,#0099cc,#00bfff,#87ceeb,#e0ffff,#fff,#e0ffff,#87ceeb,#00bfff,#0099cc)!important;animation:nfSlide 2.5s linear infinite!important}
-.nf-goldtext{background-image:linear-gradient(90deg,#8b6914,#b8860b,#d4af37,#ffd700,#ffec8b,#fff8dc,#ffec8b,#ffd700,#d4af37,#b8860b,#8b6914)!important;animation:nfSlide 2.5s linear infinite!important}
-.nf-fogtext{background-image:linear-gradient(90deg,#444,#666,#888,#aaa,#ccc,#fff,#ccc,#aaa,#888,#666,#444)!important;animation:nfSlide 3s linear infinite!important}
-.nf-smoketext{background-image:linear-gradient(90deg,#222,#444,#666,#888,#aaa,#ccc,#888,#666,#444,#222)!important;animation:nfSlide 3.5s linear infinite!important}
-.name-capsule{background:rgba(0,0,0,0.55);border:1px solid var(--glow);box-shadow:0 4px 20px rgba(0,0,0,0.5),inset 0 0 20px var(--glow)}
-.name-pill{background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.2);padding:4px 14px}
-.name-rounded{background:rgba(0,0,0,0.6);border-radius:14px;border:1px solid rgba(255,215,0,0.4)}
-.name-ellipse{background:rgba(0,0,0,0.6);border-radius:50%;padding:8px 30px}
-.name-square{background:rgba(0,0,0,0.6);border-radius:4px;border:1px solid rgba(255,255,255,0.3)}
-.picker-prev.nf{color:#fff!important}
-.picker-prev.nf-rainbowtext,.picker-prev.nf-starstext,.picker-prev.nf-watertext,.picker-prev.nf-firetext,.picker-prev.nf-icetext,.picker-prev.nf-goldtext,.picker-prev.nf-fogtext,.picker-prev.nf-smoketext{color:transparent!important}
-@keyframes nfTwinkle{0%,100%{opacity:1;filter:brightness(1)}50%{opacity:0.7;filter:brightness(1.6)}}
-@keyframes nfSpin{0%{background-position:0% 0%}100%{background-position:200% 200%}}
-@keyframes nfFloat{0%{background-position:0% 100%}100%{background-position:100% 0%}}
-.nf-galaxy2,.nf-nebula,.nf-comet,.nf-planet,.nf-meteor,.nf-blackhole,.nf-aurora2,.nf-mars,.nf-jupiter,.nf-saturn,.nf-solarwind,.nf-supernova,.nf-hell,.nf-volcano,.nf-nuclear,.nf-cyclone,.nf-earthquake,.nf-tsunami,.nf-storm,.nf-meteorrain,.nf-tidalwave,.nf-wildfire,.nf-rainforest,.nf-desert,.nf-waterfall2,.nf-snowpeak,.nf-river,.nf-ocean2,.nf-sunrise,.nf-sunset2,.nf-autumn,.nf-winter,.nf-arcade,.nf-pixel,.nf-retro,.nf-matrix,.nf-hologram,.nf-cyberpunk,.nf-plasma,.nf-laser,.nf-neon2,.nf-rgb,.nf-dragon,.nf-magic2,.nf-phoenix,.nf-unicorn,.nf-icemagic,.nf-inferno,.nf-candy,.nf-dreams,.nf-demon,.nf-angel,.nf-sugar,.nf-glitter,.nf-dust,.nf-stars2,.nf-sparkle2,.nf-confetti,.nf-bubbles,.nf-particles,.nf-atom,.nf-molecule,.nf-quantum,.nf-fairy,.nf-neon3,.nf-glitter2,.nf-chocolate,.nf-honey,.nf-coffee,.nf-strawberry,.nf-mint,.nf-orange,.nf-watermelon,.nf-bubblegum,.nf-disco,.nf-vinyl,.nf-jazz,.nf-rock,.nf-karaoke,.nf-classical,.nf-edm,.nf-pop,.nf-ruby2,.nf-emerald2,.nf-sapphire2,.nf-amethyst,.nf-topaz,.nf-pearl,.nf-opal,.nf-turquoise,.nf-syria,.nf-palestine,.nf-lebanon,.nf-egypt,.nf-iraq,.nf-jordan,.nf-blackwhite,.nf-gold2,.nf-royal2,.nf-glass{background:none!important;padding:0!important;-webkit-background-clip:text!important;background-clip:text!important;-webkit-text-fill-color:transparent!important;color:transparent!important;text-shadow:none!important;font-weight:900!important;background-size:400% 100%!important}
-.nf-galaxy2{background-image:linear-gradient(90deg,#0a001f,#330066,#6a0dad,#ba55d3,#da70d6,#ff69b4,#da70d6,#ba55d3,#6a0dad,#330066,#0a001f)!important;animation:nfSlide 4s linear infinite!important}
-.nf-nebula{background-image:linear-gradient(90deg,#2c003e,#5b1a7a,#9b30ff,#da70d6,#ffb6d9,#da70d6,#9b30ff,#5b1a7a,#2c003e)!important;animation:nfSlide 5s ease-in-out infinite!important}
-.nf-comet{background-image:linear-gradient(90deg,#000,#0a0a3a,#1e3a8a,#60a5fa,#e0f7ff,#60a5fa,#1e3a8a,#0a0a3a,#000)!important;animation:nfSlideFast 1.5s linear infinite!important}
-.nf-planet{background-image:linear-gradient(90deg,#1a0800,#8b4513,#d2691e,#ff8c00,#ffd700,#ffe4a0,#ffd700,#ff8c00,#d2691e,#8b4513,#1a0800)!important;animation:nfSlide 3s linear infinite!important}
-.nf-meteor{background-image:linear-gradient(90deg,#000,#4a4a4a,#fff,#ffd700,#fff,#4a4a4a,#000)!important;animation:nfSlideFast 1s linear infinite!important}
-.nf-blackhole{background-image:linear-gradient(90deg,#000,#000,#333,#8b6914,#ffd700,#8b6914,#333,#000,#000)!important;animation:nfSlide 4s ease-in-out infinite!important}
-.nf-aurora2{background-image:linear-gradient(90deg,#00ff87,#3affaa,#60efff,#80c0ff,#a070ff,#ff00ff,#a070ff,#80c0ff,#60efff,#3affaa,#00ff87)!important;animation:nfSlide 3s linear infinite!important}
-.nf-mars{background-image:linear-gradient(90deg,#1a0000,#8b0000,#cd5c5c,#ff6347,#cd5c5c,#8b0000,#1a0000)!important;animation:nfSlide 2.5s ease-in-out infinite!important}
-.nf-jupiter{background-image:linear-gradient(90deg,#4a2500,#8b6914,#d4af37,#ffd700,#fff8dc,#ffd700,#d4af37,#8b6914,#4a2500,#8b6914,#d4af37)!important;animation:nfSlide 4s linear infinite!important}
-.nf-saturn{background-image:linear-gradient(90deg,#4a3a00,#8b7a14,#d4c437,#ffe86b,#fff8dc,#ffe86b,#d4c437,#8b7a14,#4a3a00)!important;animation:nfSlide 3s ease-in-out infinite!important}
-.nf-solarwind{background-image:linear-gradient(90deg,#000,#ff6600,#ffaa00,#ffdd00,#fff,#ffdd00,#ffaa00,#ff6600,#000)!important;animation:nfSlideFast 1s linear infinite!important}
-.nf-supernova{background-image:linear-gradient(90deg,#fff,#ffdd00,#ff8800,#ff0066,#aa00ff,#0066ff,#00ffff,#0066ff,#aa00ff,#ff0066,#ff8800,#ffdd00,#fff)!important;animation:nfSlide 2s linear infinite,nfTwinkle 0.5s ease-in-out infinite!important}
-.nf-hell{background-image:linear-gradient(90deg,#000,#1a0000,#660000,#cc0000,#ff2200,#ff6600,#ffaa00,#ff6600,#ff2200,#cc0000,#660000,#1a0000,#000)!important;animation:nfSlide 1s linear infinite,nfTwinkle 0.6s ease-in-out infinite!important}
-.nf-volcano{background-image:linear-gradient(90deg,#000,#1a0000,#4a0000,#ff2200,#ff6600,#ffaa00,#fff,#ffaa00,#ff6600,#ff2200,#4a0000,#1a0000,#000)!important;animation:nfSlide 1.2s ease-in-out infinite!important}
-.nf-nuclear{background-image:linear-gradient(90deg,#000,#1a1a00,#4a4a00,#a0a000,#ffdd00,#ffff00,#fff,#ffff00,#ffdd00,#a0a000,#4a4a00,#1a1a00,#000)!important;animation:nfSlide 0.8s linear infinite,nfTwinkle 0.4s ease-in-out infinite!important}
-.nf-cyclone{background-image:linear-gradient(90deg,#000,#1a1a1a,#4a4a4a,#888,#ccc,#fff,#ccc,#888,#4a4a4a,#1a1a1a,#000)!important;animation:nfSpin 2s linear infinite!important}
-.nf-earthquake{background-image:linear-gradient(90deg,#1a0000,#4a2a00,#8b4513,#a0522d,#cd853f,#a0522d,#8b4513,#4a2a00,#1a0000)!important;animation:nfSlide 1.5s ease-in-out infinite!important}
-.nf-tsunami{background-image:linear-gradient(90deg,#000010,#001a4d,#003d99,#0080ff,#00ccff,#e0ffff,#00ccff,#0080ff,#003d99,#001a4d,#000010)!important;animation:nfSlide 1.8s linear infinite!important}
-.nf-storm{background-image:linear-gradient(90deg,#0a0a1a,#1a1a2e,#2c2c4a,#4a4a6a,#888,#fff,#888,#4a4a6a,#2c2c4a,#1a1a2e,#0a0a1a)!important;animation:nfSlide 1.5s linear infinite,nfTwinkle 0.3s ease-in-out infinite!important}
-.nf-meteorrain{background-image:linear-gradient(90deg,#000,#1a0a00,#4a2200,#ff6600,#ffaa00,#ffdd00,#fff,#ffdd00,#ffaa00,#ff6600,#4a2200,#1a0a00,#000)!important;animation:nfSlide 1s linear infinite!important}
-.nf-tidalwave{background-image:linear-gradient(90deg,#000,#001a4d,#0066cc,#00ccff,#e0ffff,#ffffff,#e0ffff,#00ccff,#0066cc,#001a4d,#000)!important;animation:nfSlide 2s linear infinite!important}
-.nf-wildfire{background-image:linear-gradient(90deg,#1a0000,#4a0000,#8b0000,#cc3300,#ff6600,#ffaa00,#ffdd00,#ffaa00,#ff6600,#cc3300,#8b0000,#4a0000,#1a0000)!important;animation:nfSlide 0.9s ease-in-out infinite!important}
-.nf-rainforest{background-image:linear-gradient(90deg,#001a00,#003300,#006600,#009900,#00cc00,#33ff33,#66ff66,#33ff33,#00cc00,#009900,#006600,#003300,#001a00)!important;animation:nfSlide 2.5s ease-in-out infinite!important}
-.nf-desert{background-image:linear-gradient(90deg,#4a2500,#8b6914,#b8860b,#d4af37,#ffd700,#ffe4a0,#ffd700,#d4af37,#b8860b,#8b6914,#4a2500)!important;animation:nfSlide 3s ease-in-out infinite!important}
-.nf-waterfall2{background-image:linear-gradient(90deg,#004080,#0066cc,#00aaff,#00ccff,#e0ffff,#fff,#e0ffff,#00ccff,#00aaff,#0066cc,#004080)!important;animation:nfFloat 2s linear infinite!important}
-.nf-snowpeak{background-image:linear-gradient(90deg,#0099cc,#00bfff,#87ceeb,#e0ffff,#fff,#e0ffff,#87ceeb,#00bfff,#0099cc)!important;animation:nfSlide 3s ease-in-out infinite!important}
-.nf-river{background-image:linear-gradient(90deg,#003366,#004d99,#0099ff,#00ccff,#e0ffff,#00ccff,#0099ff,#004d99,#003366)!important;animation:nfSlide 2s linear infinite!important}
-.nf-ocean2{background-image:linear-gradient(90deg,#000040,#000080,#0066cc,#00ccff,#00ffff,#00ccff,#0066cc,#000080,#000040)!important;animation:nfSlide 2.5s ease-in-out infinite!important}
-.nf-sunrise{background-image:linear-gradient(90deg,#ff69b4,#ffa500,#ffd700,#ffff00,#ffd700,#ffa500,#ff69b4)!important;animation:nfSlide 3s ease-in-out infinite!important}
-.nf-sunset2{background-image:linear-gradient(90deg,#ff006e,#fb5607,#ffbe0b,#ffd60a,#3a86ff,#8338ec,#c77dff,#8338ec,#3a86ff,#ffd60a,#ffbe0b,#fb5607,#ff006e)!important;animation:nfSlide 3s linear infinite!important}
-.nf-autumn{background-image:linear-gradient(90deg,#4a1a00,#8b4513,#cd853f,#ff8c00,#ffd700,#ff8c00,#cd853f,#8b4513,#4a1a00)!important;animation:nfSlide 3s ease-in-out infinite!important}
-.nf-winter{background-image:linear-gradient(90deg,#4a6080,#6080a0,#a0c0e0,#e0f0ff,#fff,#e0f0ff,#a0c0e0,#6080a0,#4a6080)!important;animation:nfSlide 3s ease-in-out infinite!important}
-.nf-arcade{background-image:linear-gradient(90deg,#ff0000,#ff8800,#ffff00,#00ff00,#00ffff,#0088ff,#8800ff,#ff00aa,#ff0000)!important;animation:nfSlideFast 1s linear infinite!important}
-.nf-pixel{background-image:linear-gradient(90deg,#ff0000,#00ff00,#0000ff,#ffff00,#ff00ff,#00ffff,#ff0000)!important;animation:nfSlide 0.8s linear infinite!important}
-.nf-retro{background-image:linear-gradient(90deg,#ff00ff,#ff6600,#ffcc00,#ff00ff,#ff6600,#ffcc00)!important;animation:nfSlide 2s linear infinite!important}
-.nf-matrix{background-image:linear-gradient(90deg,#000,#0a2a0a,#0f5e0f,#00cc00,#00ff00,#88ff88,#00ff00,#00cc00,#0f5e0f,#0a2a0a,#000)!important;animation:nfSlide 1.5s linear infinite!important}
-.nf-hologram{background-image:linear-gradient(90deg,#00ffff,#00ccff,#88ddff,#ffffff,#88ddff,#00ccff,#00ffff)!important;animation:nfSlide 2s linear infinite,nfTwinkle 1s ease-in-out infinite!important}
-.nf-cyberpunk{background-image:linear-gradient(90deg,#ff00ff,#ff00aa,#8800ff,#00ffff,#ff00ff,#ff00aa,#8800ff,#00ffff)!important;animation:nfSlideFast 1.5s linear infinite!important}
-.nf-plasma{background-image:linear-gradient(90deg,#4a0080,#8a2be2,#ba55d3,#da70d6,#00ffff,#da70d6,#ba55d3,#8a2be2,#4a0080)!important;animation:nfSlide 1.8s linear infinite,nfTwinkle 0.8s ease-in-out infinite!important}
-.nf-laser{background-image:linear-gradient(90deg,#ff0000,#ff0066,#ff00cc,#ff0000,#00ffff,#ff0000,#ff00cc,#ff0066,#ff0000)!important;animation:nfSlideFast 0.6s linear infinite!important}
-.nf-neon2{background-image:linear-gradient(90deg,#ff00ff,#00ffff,#ff00ff,#00ffff,#ff00ff)!important;animation:nfSlide 1s linear infinite,nfTwinkle 0.5s ease-in-out infinite!important}
-.nf-rgb{background-image:linear-gradient(90deg,#ff0000,#00ff00,#0000ff,#ff0000,#00ff00,#0000ff,#ff0000)!important;animation:nfSlideFast 0.8s linear infinite!important}
-.nf-dragon{background-image:linear-gradient(90deg,#4a0000,#8b0000,#cc0000,#ff2200,#ff6600,#ffaa00,#ffd700,#ffaa00,#ff6600,#ff2200,#cc0000,#8b0000,#4a0000)!important;animation:nfSlide 2s linear infinite,nfTwinkle 1s ease-in-out infinite!important}
-.nf-magic2{background-image:linear-gradient(90deg,#1a0033,#4a148c,#6a1b9a,#8e24aa,#ab47bc,#ce93d8,#f3e5f5,#ce93d8,#ab47bc,#8e24aa,#6a1b9a,#4a148c,#1a0033)!important;animation:nfSlide 3s linear infinite!important}
-.nf-phoenix{background-image:linear-gradient(90deg,#ff006e,#ff4400,#ff8800,#ffdd00,#fff,#ffdd00,#ff8800,#ff4400,#ff006e)!important;animation:nfSlide 1.5s linear infinite,nfTwinkle 0.7s ease-in-out infinite!important}
-.nf-unicorn{background-image:linear-gradient(90deg,#ffb6d9,#d9b3ff,#b3d9ff,#b3ffd9,#ffffb3,#ffd9b3,#ffb6d9)!important;animation:nfSlide 3s ease-in-out infinite!important}
-.nf-icemagic{background-image:linear-gradient(90deg,#0099cc,#00ccff,#88ddff,#e0ffff,#88ddff,#00ccff,#0099cc,#4a148c,#0099cc)!important;animation:nfSlide 2.5s ease-in-out infinite!important}
-.nf-inferno{background-image:linear-gradient(90deg,#000,#1a0000,#4a0000,#8b0000,#cc0000,#ff2200,#ff6600,#ff2200,#cc0000,#8b0000,#4a0000,#1a0000,#000)!important;animation:nfSlide 0.8s linear infinite,nfTwinkle 0.4s ease-in-out infinite!important}
-.nf-candy{background-image:linear-gradient(90deg,#ff69b4,#ffb6d9,#fff,#ffb6d9,#ff69b4,#fff,#ff69b4)!important;animation:nfSlide 2s linear infinite!important}
-.nf-dreams{background-image:linear-gradient(90deg,#e0d0ff,#ffe0f0,#d0e0ff,#e0f0ff,#d0e0ff,#ffe0f0,#e0d0ff)!important;animation:nfSlide 4s ease-in-out infinite!important}
-.nf-demon{background-image:linear-gradient(90deg,#000,#1a0000,#660000,#8b0000,#cc0000,#ff0000,#cc0000,#8b0000,#660000,#1a0000,#000)!important;animation:nfSlide 1s linear infinite,nfTwinkle 0.5s ease-in-out infinite!important}
-.nf-angel{background-image:linear-gradient(90deg,#fff8dc,#ffe4b5,#fff,#ffe4b5,#fff8dc,#ffe4b5,#fff)!important;animation:nfSlide 3s ease-in-out infinite!important}
-.nf-sugar{background-image:radial-gradient(circle,#fff 1px,transparent 1.5px),radial-gradient(circle,#ffd700 1px,transparent 1.5px),radial-gradient(circle,#ff69b4 1px,transparent 1.5px),radial-gradient(circle,#00ccff 1px,transparent 1.5px),linear-gradient(90deg,#ff69b4,#ffd700,#00ccff,#ff69b4)!important;background-size:12px 12px,15px 15px,18px 18px,20px 20px,400% 100%!important;animation:nfSlide 3s linear infinite,nfTwinkle 1s ease-in-out infinite!important}
-.nf-glitter{background-image:radial-gradient(circle,#ffd700 1px,transparent 1.5px),radial-gradient(circle,#fff 1px,transparent 1.5px),radial-gradient(circle,#ffec8b 1px,transparent 1.5px),linear-gradient(90deg,#8b6914,#ffd700,#fff8dc,#ffd700,#8b6914)!important;background-size:10px 10px,14px 14px,18px 18px,400% 100%!important;animation:nfSlide 2s linear infinite,nfTwinkle 0.6s ease-in-out infinite!important}
-.nf-dust{background-image:radial-gradient(circle,#ce93d8 1px,transparent 1.5px),radial-gradient(circle,#ba68c8 1px,transparent 1.5px),radial-gradient(circle,#f3e5f5 1px,transparent 1.5px),linear-gradient(90deg,#4a148c,#8e24aa,#ce93d8,#8e24aa,#4a148c)!important;background-size:14px 14px,18px 18px,22px 22px,400% 100%!important;animation:nfFloat 4s linear infinite,nfTwinkle 1.2s ease-in-out infinite!important}
-.nf-stars2{background-image:radial-gradient(circle,#fff 1px,transparent 1.5px),radial-gradient(circle,#ffd700 1px,transparent 1.5px),radial-gradient(circle,#87ceeb 1px,transparent 1.5px),linear-gradient(90deg,#000428,#004e92,#000428)!important;background-size:12px 12px,15px 15px,18px 18px,400% 100%!important;animation:nfSlide 4s linear infinite,nfTwinkle 0.8s ease-in-out infinite!important}
-.nf-sparkle2{background-image:radial-gradient(circle,#fff 1.5px,transparent 2px),radial-gradient(circle,#ffe4b5 1.5px,transparent 2px),radial-gradient(circle,#ffd700 1px,transparent 1.5px),linear-gradient(90deg,#2d1b4e,#6a0dad,#da70d6,#6a0dad,#2d1b4e)!important;background-size:15px 15px,20px 20px,25px 25px,400% 100%!important;animation:nfSlide 2.5s linear infinite,nfTwinkle 0.6s ease-in-out infinite!important}
-.nf-confetti{background-image:radial-gradient(circle,#ff0000 1.5px,transparent 2px),radial-gradient(circle,#00ff00 1.5px,transparent 2px),radial-gradient(circle,#0000ff 1.5px,transparent 2px),radial-gradient(circle,#ffff00 1.5px,transparent 2px),radial-gradient(circle,#ff00ff 1.5px,transparent 2px),radial-gradient(circle,#00ffff 1.5px,transparent 2px),linear-gradient(90deg,#ff006e,#ff8800,#00cc00,#0088ff,#aa00ff,#ff006e)!important;background-size:15px 15px,18px 18px,20px 20px,22px 22px,25px 25px,28px 28px,400% 100%!important;animation:nfSlideFast 1.5s linear infinite!important}
-.nf-bubbles{background-image:radial-gradient(circle at 50% 50%,#00ffff 1.5px,transparent 2px),radial-gradient(circle at 50% 50%,#87ceeb 1.5px,transparent 2px),radial-gradient(circle at 50% 50%,#e0ffff 1.5px,transparent 2px),linear-gradient(90deg,#001a66,#0066cc,#00aaff,#00ffff,#00aaff,#0066cc,#001a66)!important;background-size:15px 15px,20px 20px,25px 25px,400% 100%!important;animation:nfFloat 5s linear infinite!important}
-.nf-particles{background-image:radial-gradient(circle,#ff00ff 1px,transparent 1.5px),radial-gradient(circle,#00ffff 1px,transparent 1.5px),radial-gradient(circle,#ffff00 1px,transparent 1.5px),radial-gradient(circle,#ffffff 1px,transparent 1.5px),linear-gradient(90deg,#4a0080,#00ffff,#ff00ff,#ffff00,#00ffff,#4a0080)!important;background-size:10px 10px,14px 14px,18px 18px,22px 22px,400% 100%!important;animation:nfSlide 2s linear infinite,nfTwinkle 0.5s ease-in-out infinite!important}
-.nf-atom{background-image:radial-gradient(circle,#00ffff 1.5px,transparent 2px),radial-gradient(circle,#0088ff 1.5px,transparent 2px),radial-gradient(circle,#88ddff 1px,transparent 1.5px),linear-gradient(90deg,#000428,#004e92,#00ffff,#004e92,#000428)!important;background-size:12px 12px,16px 16px,20px 20px,400% 100%!important;animation:nfSpin 3s linear infinite,nfTwinkle 0.8s ease-in-out infinite!important}
-.nf-molecule{background-image:radial-gradient(circle,#ff00ff 1.5px,transparent 2px),radial-gradient(circle,#00ffff 1.5px,transparent 2px),radial-gradient(circle,#ffff00 1.5px,transparent 2px),radial-gradient(circle,#ffffff 1px,transparent 1.5px),linear-gradient(90deg,#000,#330066,#ff00ff,#00ffff,#ffff00,#330066,#000)!important;background-size:14px 14px,18px 18px,22px 22px,26px 26px,400% 100%!important;animation:nfSpin 4s linear infinite!important}
-.nf-quantum{background-image:radial-gradient(circle,#ffffff 1px,transparent 1.5px),radial-gradient(circle,#ff00ff 1px,transparent 1.5px),radial-gradient(circle,#00ffff 1px,transparent 1.5px),linear-gradient(90deg,#1a0033,#ff00ff,#00ffff,#ff00ff,#1a0033)!important;background-size:8px 8px,12px 12px,16px 16px,400% 100%!important;animation:nfSlideFast 0.5s linear infinite,nfTwinkle 0.3s ease-in-out infinite!important}
-.nf-fairy{background-image:radial-gradient(circle,#fff 1.5px,transparent 2px),radial-gradient(circle,#ffb6d9 1.5px,transparent 2px),radial-gradient(circle,#d9b3ff 1.5px,transparent 2px),linear-gradient(90deg,#ffb6d9,#d9b3ff,#b3d9ff,#d9b3ff,#ffb6d9)!important;background-size:15px 15px,20px 20px,25px 25px,400% 100%!important;animation:nfFloat 4s linear infinite,nfTwinkle 1s ease-in-out infinite!important}
-.nf-neon3{background-image:radial-gradient(circle,#ff00ff 1.5px,transparent 2px),radial-gradient(circle,#00ffff 1.5px,transparent 2px),linear-gradient(90deg,#000,#ff00ff,#00ffff,#ff00ff,#000)!important;background-size:12px 12px,16px 16px,400% 100%!important;animation:nfSlide 1s linear infinite,nfTwinkle 0.4s ease-in-out infinite!important}
-.nf-glitter2{background-image:radial-gradient(circle,#fff 1.5px,transparent 2px),radial-gradient(circle,#ffd700 1.5px,transparent 2px),radial-gradient(circle,#ffec8b 1px,transparent 1.5px),radial-gradient(circle,#ffa500 1px,transparent 1.5px),linear-gradient(90deg,#8b6914,#ffd700,#fff8dc,#ffd700,#8b6914)!important;background-size:10px 10px,14px 14px,18px 18px,22px 22px,400% 100%!important;animation:nfSlide 1.5s linear infinite,nfTwinkle 0.5s ease-in-out infinite!important}
-.nf-chocolate{background-image:linear-gradient(90deg,#1a0800,#3a1500,#5a2200,#7a2e00,#9a3d00,#7a2e00,#5a2200,#3a1500,#1a0800)!important;animation:nfSlide 3s ease-in-out infinite!important}
-.nf-honey{background-image:linear-gradient(90deg,#8b5a00,#c08000,#ffa500,#ffd700,#fff8dc,#ffd700,#ffa500,#c08000,#8b5a00)!important;animation:nfSlide 2s linear infinite!important}
-.nf-coffee{background-image:linear-gradient(90deg,#1a0800,#3a1a00,#6a3a00,#8b4513,#a0522d,#8b4513,#6a3a00,#3a1a00,#1a0800)!important;animation:nfSlide 2.5s ease-in-out infinite!important}
-.nf-strawberry{background-image:linear-gradient(90deg,#4a0000,#8b0000,#c00000,#ff0040,#ff6699,#ff0040,#c00000,#8b0000,#4a0000)!important;animation:nfSlide 2s linear infinite!important}
-.nf-mint{background-image:linear-gradient(90deg,#004d40,#00695c,#00a896,#3ddc97,#a8e6cf,#3ddc97,#00a896,#00695c,#004d40)!important;animation:nfSlide 2.5s ease-in-out infinite!important}
-.nf-orange{background-image:linear-gradient(90deg,#4a2500,#8b4513,#c0611c,#ff8c00,#ffb347,#ff8c00,#c0611c,#8b4513,#4a2500)!important;animation:nfSlide 2s linear infinite!important}
-.nf-watermelon{background-image:linear-gradient(90deg,#004d00,#008800,#00cc00,#ff0066,#ff69b4,#ff0066,#00cc00,#008800,#004d00)!important;animation:nfSlide 2.5s linear infinite!important}
-.nf-bubblegum{background-image:linear-gradient(90deg,#ff69b4,#ff99cc,#ffb6d9,#ffe0ec,#fff,#ffe0ec,#ffb6d9,#ff99cc,#ff69b4)!important;animation:nfSlide 3s ease-in-out infinite!important}
-.nf-disco{background-image:linear-gradient(90deg,#ff0000,#ffaa00,#ffff00,#00ff00,#00ffff,#0088ff,#aa00ff,#ff00aa,#ff0000)!important;animation:nfSlideFast 0.8s linear infinite!important}
-.nf-vinyl{background-image:linear-gradient(90deg,#000,#1a1a1a,#333,#666,#999,#333,#1a1a1a,#000)!important;animation:nfSpin 2s linear infinite!important}
-.nf-jazz{background-image:linear-gradient(90deg,#4a0080,#8a2be2,#ff69b4,#ffd700,#ff69b4,#8a2be2,#4a0080)!important;animation:nfSlide 3s ease-in-out infinite!important}
-.nf-rock{background-image:linear-gradient(90deg,#000,#1a0000,#4a0000,#8b0000,#ff2200,#8b0000,#4a0000,#1a0000,#000)!important;animation:nfSlide 1.5s linear infinite!important}
-.nf-karaoke{background-image:linear-gradient(90deg,#ff00ff,#ff69b4,#ff0066,#ff00aa,#ff00ff)!important;animation:nfSlide 1.2s linear infinite,nfTwinkle 0.6s ease-in-out infinite!important}
-.nf-classical{background-image:linear-gradient(90deg,#4a148c,#6a1b9a,#8e24aa,#ce93d8,#f3e5f5,#ce93d8,#8e24aa,#6a1b9a,#4a148c)!important;animation:nfSlide 3s ease-in-out infinite!important}
-.nf-edm{background-image:linear-gradient(90deg,#00ffff,#ff00ff,#00ffff,#ff00ff,#00ffff)!important;animation:nfSlideFast 0.6s linear infinite,nfTwinkle 0.3s ease-in-out infinite!important}
-.nf-pop{background-image:linear-gradient(90deg,#ff006e,#ff4400,#ffbe0b,#00cc00,#0088ff,#aa00ff,#ff006e)!important;animation:nfSlide 2s linear infinite!important}
-.nf-ruby2{background-image:linear-gradient(90deg,#4a0000,#8b0000,#b22222,#dc143c,#ff4466,#dc143c,#b22222,#8b0000,#4a0000)!important;animation:nfSlide 2s linear infinite!important}
-.nf-emerald2{background-image:linear-gradient(90deg,#003300,#006600,#00a651,#00d97e,#88ffcc,#00d97e,#00a651,#006600,#003300)!important;animation:nfSlide 2s linear infinite!important}
-.nf-sapphire2{background-image:linear-gradient(90deg,#000040,#000080,#0d47a1,#1e88e5,#90caf9,#1e88e5,#0d47a1,#000080,#000040)!important;animation:nfSlide 2s linear infinite!important}
-.nf-amethyst{background-image:linear-gradient(90deg,#2c003e,#4b0082,#6a1b9a,#8e24aa,#ce93d8,#8e24aa,#6a1b9a,#4b0082,#2c003e)!important;animation:nfSlide 2s linear infinite!important}
-.nf-topaz{background-image:linear-gradient(90deg,#4a2500,#8b6914,#d4af37,#ffd700,#fff8dc,#ffd700,#d4af37,#8b6914,#4a2500)!important;animation:nfSlide 2s linear infinite!important}
-.nf-pearl{background-image:linear-gradient(90deg,#e0e0e0,#f0f0f0,#fff,#fff8dc,#fff,#f0f0f0,#e0e0e0)!important;animation:nfSlide 3s ease-in-out infinite!important}
-.nf-opal{background-image:linear-gradient(90deg,#ffe0ec,#e0f0ff,#e0ffe0,#ffffe0,#ffe0f0,#e0f0ff,#ffe0ec)!important;animation:nfSlide 3s linear infinite!important}
-.nf-turquoise{background-image:linear-gradient(90deg,#004d4d,#008080,#00b3b3,#40e0d0,#b0fff0,#40e0d0,#00b3b3,#008080,#004d4d)!important;animation:nfSlide 2s linear infinite!important}
-.nf-syria{background-image:linear-gradient(90deg,#000,#4a0000,#8b0000,#cc0000,#ff0000,#fff,#00cc00,#fff,#ff0000,#cc0000,#8b0000,#4a0000,#000)!important;animation:nfSlide 2s linear infinite!important}
-.nf-palestine{background-image:linear-gradient(90deg,#000,#1a1a1a,#333,#555,#000,#fff,#00cc00,#fff,#ff0000,#fff,#00cc00,#000)!important;animation:nfSlide 2s linear infinite!important}
-.nf-lebanon{background-image:linear-gradient(90deg,#8b0000,#b22222,#dc143c,#fff,#00cc00,#fff,#dc143c,#b22222,#8b0000)!important;animation:nfSlide 2s linear infinite!important}
-.nf-egypt{background-image:linear-gradient(90deg,#000,#1a1a1a,#4a4a4a,#fff,#ffd700,#fff,#4a4a4a,#1a1a1a,#000)!important;animation:nfSlide 2s linear infinite!important}
-.nf-iraq{background-image:linear-gradient(90deg,#cc0000,#dc143c,#ff3366,#fff,#00cc00,#fff,#dc143c,#cc0000)!important;animation:nfSlide 2s linear infinite!important}
-.nf-jordan{background-image:linear-gradient(90deg,#000,#1a1a1a,#4a4a4a,#fff,#00cc00,#fff,#cc0000,#fff,#000)!important;animation:nfSlide 2s linear infinite!important}
-.nf-blackwhite{background-image:linear-gradient(90deg,#000,#333,#666,#999,#ccc,#fff,#ccc,#999,#666,#333,#000)!important;animation:nfSlide 2s linear infinite!important}
-.nf-gold2{background-image:linear-gradient(90deg,#4a3800,#8b6914,#d4af37,#ffd700,#ffec8b,#fff8dc,#ffec8b,#ffd700,#d4af37,#8b6914,#4a3800)!important;animation:nfSlide 2s linear infinite!important}
-.nf-royal2{background-image:linear-gradient(90deg,#1a0033,#4a148c,#8b0000,#d4af37,#ffd700,#d4af37,#8b0000,#4a148c,#1a0033)!important;animation:nfSlide 2.5s linear infinite!important}
-.nf-glass{background-image:linear-gradient(90deg,rgba(200,240,255,0.6),rgba(255,255,255,0.9),rgba(180,220,255,0.6),rgba(255,255,255,0.9),rgba(200,240,255,0.6))!important;animation:nfSlide 3s ease-in-out infinite!important}
-@keyframes nfSpiralCW{0%{background-position:0% 0%}100%{background-position:100% 100%}}
-@keyframes nfSpiralCCW{0%{background-position:100% 100%}100%{background-position:0% 0%}}
-@keyframes nfSpiralPulse{0%,100%{background-size:200% 200%}50%{background-size:280% 280%}}
-.nf-spiral-rainbow,.nf-spiral-fire,.nf-spiral-gold,.nf-spiral-ocean,.nf-spiral-purple,.nf-spiral-neon,.nf-spiral-candy,.nf-spiral-galaxy,.nf-spiral-emerald,.nf-spiral-ruby{background:none!important;padding:0!important;-webkit-background-clip:text!important;background-clip:text!important;-webkit-text-fill-color:transparent!important;color:transparent!important;text-shadow:none!important;font-weight:900!important;background-size:200% 200%!important;background-position:0% 0%!important}
-.nf-spiral-rainbow{background-image:repeating-radial-gradient(circle at 50% 50%,#ff0000 0px,#ff0000 3px,#ff8800 3px,#ff8800 6px,#ffff00 6px,#ffff00 9px,#00ff00 9px,#00ff00 12px,#00ffff 12px,#00ffff 15px,#0088ff 15px,#0088ff 18px,#aa00ff 18px,#aa00ff 21px,#ff00aa 21px,#ff00aa 24px,#ff0000 24px)!important;animation:nfSpiralCW 3s linear infinite,nfSpiralPulse 2s ease-in-out infinite!important}
-.nf-spiral-fire{background-image:repeating-radial-gradient(circle at 50% 50%,#000 0px,#000 2px,#660000 2px,#660000 4px,#cc0000 4px,#cc0000 6px,#ff2200 6px,#ff2200 8px,#ff8800 8px,#ff8800 10px,#ffdd00 10px,#ffdd00 12px,#fff 12px,#fff 14px,#ffdd00 14px,#ffdd00 16px,#ff8800 16px,#ff8800 18px,#cc0000 18px,#cc0000 20px,#000 20px)!important;animation:nfSpiralCW 2s linear infinite!important}
-.nf-spiral-gold{background-image:repeating-radial-gradient(circle at 50% 50%,#4a3800 0px,#4a3800 3px,#8b6914 3px,#8b6914 6px,#d4af37 6px,#d4af37 9px,#ffd700 9px,#ffd700 12px,#ffec8b 12px,#ffec8b 15px,#fff8dc 15px,#fff8dc 18px,#ffec8b 18px,#ffec8b 21px,#ffd700 21px,#ffd700 24px,#4a3800 24px)!important;animation:nfSpiralCW 2.5s linear infinite!important}
-.nf-spiral-ocean{background-image:repeating-radial-gradient(circle at 50% 50%,#000040 0px,#000040 3px,#000080 3px,#000080 6px,#0066cc 6px,#0066cc 9px,#00aaff 9px,#00aaff 12px,#00ffff 12px,#00ffff 15px,#e0ffff 15px,#e0ffff 18px,#00ffff 18px,#00ffff 21px,#0066cc 21px,#0066cc 24px,#000040 24px)!important;animation:nfSpiralCCW 3s linear infinite!important}
-.nf-spiral-purple{background-image:repeating-radial-gradient(circle at 50% 50%,#1a0033 0px,#1a0033 3px,#4a148c 3px,#4a148c 6px,#8e24aa 6px,#8e24aa 9px,#ba68c8 9px,#ba68c8 12px,#ce93d8 12px,#ce93d8 15px,#f3e5f5 15px,#f3e5f5 18px,#ce93d8 18px,#ce93d8 21px,#8e24aa 21px,#8e24aa 24px,#1a0033 24px)!important;animation:nfSpiralCW 3s linear infinite!important}
-.nf-spiral-neon{background-image:repeating-radial-gradient(circle at 50% 50%,#000 0px,#000 2px,#ff00ff 2px,#ff00ff 4px,#000 4px,#000 6px,#00ffff 6px,#00ffff 8px,#000 8px,#000 10px,#ff00ff 10px,#ff00ff 12px,#000 12px,#000 14px,#00ffff 14px,#00ffff 16px,#000 16px,#000 18px,#ff00ff 18px,#ff00ff 20px,#000 20px)!important;animation:nfSpiralCCW 1.5s linear infinite!important}
-.nf-spiral-candy{background-image:repeating-radial-gradient(circle at 50% 50%,#ff69b4 0px,#ff69b4 3px,#fff 3px,#fff 6px,#ffb6d9 6px,#ffb6d9 9px,#fff 9px,#fff 12px,#ff69b4 12px,#ff69b4 15px,#fff 15px,#fff 18px,#ffb6d9 18px,#ffb6d9 21px,#ff69b4 21px,#ff69b4 24px)!important;animation:nfSpiralCW 2s linear infinite!important}
-.nf-spiral-galaxy{background-image:repeating-radial-gradient(circle at 50% 50%,#000 0px,#000 2px,#1a0033 2px,#1a0033 4px,#4b0082 4px,#4b0082 6px,#8a2be2 6px,#8a2be2 8px,#da70d6 8px,#da70d6 10px,#ff69b4 10px,#ff69b4 12px,#da70d6 12px,#da70d6 14px,#8a2be2 14px,#8a2be2 16px,#4b0082 16px,#4b0082 18px,#000 18px)!important;animation:nfSpiralCW 4s linear infinite!important}
-.nf-spiral-emerald{background-image:repeating-radial-gradient(circle at 50% 50%,#002200 0px,#002200 3px,#006600 3px,#006600 6px,#00a651 6px,#00a651 9px,#00d97e 9px,#00d97e 12px,#88ffcc 12px,#88ffcc 15px,#e0fff0 15px,#e0fff0 18px,#88ffcc 18px,#88ffcc 21px,#00a651 21px,#00a651 24px,#002200 24px)!important;animation:nfSpiralCCW 3s linear infinite!important}
-.nf-spiral-ruby{background-image:repeating-radial-gradient(circle at 50% 50%,#4a0000 0px,#4a0000 3px,#8b0000 3px,#8b0000 6px,#dc143c 6px,#dc143c 9px,#ff4466 9px,#ff4466 12px,#ffa0b0 12px,#ffa0b0 15px,#fff 15px,#fff 18px,#ffa0b0 18px,#ffa0b0 21px,#dc143c 21px,#dc143c 24px,#4a0000 24px)!important;animation:nfSpiralCW 2.5s linear infinite!important}
-</style>
+<link rel="stylesheet" href="profile-styles.css">
 </head>
 <body>
 
@@ -307,18 +20,20 @@ body.visitor-mode .priv-sec{display:none!important}
 
 <div class="profile" id="profile-container">
     <div id="profile-bg-layer" class="bg-layer"></div>
+
     <div class="top-btns">
-        <button id="btn-close" title=""></button>
+        <button id="btn-close" title="إغلاق">✕</button>
         <div class="owner-top">
-            <button class="owner-only"></button>
-            <button class="owner-only"></button>
+            <button class="owner-only" title="مشاركة">📤</button>
+            <button class="owner-only" title="حفظ">💾</button>
         </div>
     </div>
+
     <div class="cover" id="profile-cover-box">
         <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600" class="cover-img" id="profile-cover-img">
         <div class="cover-edit owner-only">
-            <button class="del-cov" id="btn-remove-cover"> </button>
-            <button id="btn-change-cover"> </button>
+            <button class="del-cov" id="btn-remove-cover">✕ إزالة</button>
+            <button id="btn-change-cover">🖼️ تغيير</button>
         </div>
         <div class="avatar-cont">
             <div class="avatar-box" id="avatar-box" style="position:relative;width:100px;height:100px;margin:0 auto">
@@ -326,160 +41,174 @@ body.visitor-mode .priv-sec{display:none!important}
                 <div id="activeAvatarFrame"></div>
             </div>
             <div class="avatar-edit owner-only">
-                <span class="del-av" id="btn-remove-avatar"></span>
-                <span id="btn-change-avatar"></span>
+                <span class="del-av" id="btn-remove-avatar">🗑️</span>
+                <span id="btn-change-avatar">📷</span>
             </div>
         </div>
         <div class="header">
             <div class="role" id="display-role">
                 <span class="status-dot" id="status-dot"></span>
-                <span id="role-text">User </span>
+                <span id="role-text">User 👤</span>
             </div>
-            <button class="music-toggle-mini visitor-only" id="music-btn-mini" style="display:none" title=""><i class="fas fa-play"></i></button>
+            <button class="music-toggle-mini visitor-only" id="music-btn-mini" style="display:none" title="الموسيقى"><i class="fas fa-play"></i></button>
             <div class="user-cont">
-                <div class="username" id="profile-username"></div>
-                <span class="edit-pen owner-only" id="btn-edit-username"></span>
+                <div class="username" id="profile-username">مستخدم</div>
+                <span class="edit-pen owner-only" id="btn-edit-username">✏️</span>
             </div>
             <div class="user-cont">
                 <div class="bio" id="profile-bio">@user</div>
-                <span class="edit-pen owner-only" id="btn-edit-bio"></span>
+                <span class="edit-pen owner-only" id="btn-edit-bio">✏️</span>
             </div>
         </div>
     </div>
+
     <div class="interact-btns visitor-only" style="display:none">
-        <button id="btn-heart"></button>
-        <button id="btn-mail"></button>
-        <button id="btn-block"></button>
-        <button id="btn-add-friend"></button>
-        <button id="btn-poke"></button>
+        <button id="btn-heart">❤️</button>
+        <button id="btn-mail">💬</button>
+        <button id="btn-block">🚫</button>
+        <button id="btn-add-friend">➕</button>
+        <button id="btn-poke">👋</button>
     </div>
+
     <div class="main-content">
         <div class="tabs">
-            <div class="tab active owner-only" data-target="privacy-tab"></div>
-            <div class="tab owner-only" data-target="appearance-tab"></div>
-            <div class="tab owner-only" data-target="commands-tab"></div>
-            <div class="tab" data-target="info-tab"></div>
-            <div class="tab" data-target="friends-tab"> </div>
-            <div class="tab owner-only" data-target="search-tab"> </div>
-            <div class="tab owner-only" data-target="visitors-tab"></div>
-            <div class="tab owner-only" data-target="likes-tab"></div>
-            <div class="tab owner-only" data-target="blocked-tab"></div>
+            <div class="tab active owner-only" data-target="privacy-tab">الخصوصية</div>
+            <div class="tab owner-only" data-target="appearance-tab">المظهر</div>
+            <div class="tab owner-only" data-target="commands-tab">الأوامر</div>
+            <div class="tab" data-target="info-tab">المعلومات</div>
+            <div class="tab" data-target="friends-tab">الأصدقاء</div>
+            <div class="tab owner-only" data-target="search-tab">البحث</div>
+            <div class="tab owner-only" data-target="visitors-tab">الزوار</div>
+            <div class="tab owner-only" data-target="likes-tab">الإعجابات</div>
+            <div class="tab owner-only" data-target="blocked-tab">المحظورين</div>
         </div>
+
         <div class="poetry-box">
-            <textarea id="poetry-input" class="poetry-in owner-only" placeholder="   ..." maxlength="300"></textarea>
+            <textarea id="poetry-input" class="poetry-in owner-only" placeholder="اكتب بيتاً من الشعر..." maxlength="300"></textarea>
             <div id="poetry-display" class="poetry-disp"></div>
         </div>
+
         <div class="scroll-box">
+
             <div id="privacy-tab" class="tab-c active">
                 <div class="priv-sec">
-                    <h3> </h3>
+                    <h3>إعدادات الخصوصية</h3>
                     <div class="info-card">
-                        <div class="priv-row"><span class="priv-lb"> </span><select class="priv-sel" id="privacy-email" data-field="email"><option value="public" selected> </option><option value="friends"> </option><option value="private">  </option></select></div>
-                        <div class="priv-row"><span class="priv-lb"> </span><select class="priv-sel" id="privacy-age" data-field="age"><option value="public" selected> </option><option value="friends"> </option><option value="private">  </option></select></div>
-                        <div class="priv-row"><span class="priv-lb"> </span><select class="priv-sel" id="privacy-gender" data-field="gender"><option value="public" selected> </option><option value="friends"> </option><option value="private">  </option></select></div>
-                        <div class="priv-row"><span class="priv-lb"> </span><select class="priv-sel" id="privacy-messages" data-field="messages"><option value="public" selected> </option><option value="friends"> </option><option value="private">  </option></select></div>
-                        <div class="priv-row"><span class="priv-lb">  </span><select class="priv-sel" id="privacy-friends" data-field="friends"><option value="public" selected> </option><option value="friends">  </option><option value="private">  </option></select></div>
+                        <div class="priv-row"><span class="priv-lb">البريد الإلكتروني</span><select class="priv-sel" id="privacy-email" data-field="email"><option value="public" selected>الجميع</option><option value="friends">الأصدقاء</option><option value="private">أنا فقط</option></select></div>
+                        <div class="priv-row"><span class="priv-lb">العمر</span><select class="priv-sel" id="privacy-age" data-field="age"><option value="public" selected>الجميع</option><option value="friends">الأصدقاء</option><option value="private">أنا فقط</option></select></div>
+                        <div class="priv-row"><span class="priv-lb">الجنس</span><select class="priv-sel" id="privacy-gender" data-field="gender"><option value="public" selected>الجميع</option><option value="friends">الأصدقاء</option><option value="private">أنا فقط</option></select></div>
+                        <div class="priv-row"><span class="priv-lb">الرسائل</span><select class="priv-sel" id="privacy-messages" data-field="messages"><option value="public" selected>الجميع</option><option value="friends">الأصدقاء</option><option value="private">أنا فقط</option></select></div>
+                        <div class="priv-row"><span class="priv-lb">قائمة الأصدقاء</span><select class="priv-sel" id="privacy-friends" data-field="friends"><option value="public" selected>الجميع</option><option value="friends">الأصدقاء فقط</option><option value="private">أنا فقط</option></select></div>
                     </div>
                 </div>
             </div>
+
             <div id="appearance-tab" class="tab-c">
                 <div class="info-card">
-                    <div class="row"><span class="row-lb">  </span><span class="row-vl"><span class="link" id="btn-name-color"></span></span></div>
-                    <div class="row"><span class="row-lb">  </span><span class="row-vl"><span class="link" id="btn-name-gradient"></span></span></div>
-                    <div class="row"><span class="row-lb">  </span><span class="row-vl"><span class="link" id="btn-name-frame"></span></span></div>
-                    <div class="row"><span class="row-lb">  </span><span class="row-vl"><span class="link" id="btn-name-shape"></span></span></div>
-                    <div class="row"><span class="row-lb">  </span><span class="row-vl"><span class="link" id="btn-name-glow"></span></span></div>
-                    <div class="row"><span class="row-lb">  </span><span class="row-vl"><span class="link" id="btn-profile-glow"></span></span></div>
-                    <div class="row"><span class="row-lb">  </span><span class="row-vl"><span class="link" id="btn-profile-bg"></span></span></div>
-                    <div class="row"><span class="row-lb"> </span><span class="row-vl"><span class="link" id="btn-profile-music"></span></span></div>
-                    <div class="row"><span class="row-lb">  </span><span class="row-vl"><span class="link" id="avatar-frame-motion"></span></span></div>
-                    <div class="row"><span class="row-lb">  </span><span class="row-vl"><span class="link" id="btn-visitor-view"></span></span></div>
+                    <div class="row"><span class="row-lb">لون الاسم</span><span class="row-vl"><span class="link" id="btn-name-color">تغيير</span></span></div>
+                    <div class="row"><span class="row-lb">تدرج الاسم</span><span class="row-vl"><span class="link" id="btn-name-gradient">تغيير</span></span></div>
+                    <div class="row"><span class="row-lb">إطار الاسم</span><span class="row-vl"><span class="link" id="btn-name-frame">تغيير</span></span></div>
+                    <div class="row"><span class="row-lb">شكل الاسم</span><span class="row-vl"><span class="link" id="btn-name-shape">تغيير</span></span></div>
+                    <div class="row"><span class="row-lb">توهج الاسم</span><span class="row-vl"><span class="link" id="btn-name-glow">تغيير</span></span></div>
+                    <div class="row"><span class="row-lb">توهج البروفايل</span><span class="row-vl"><span class="link" id="btn-profile-glow">تغيير</span></span></div>
+                    <div class="row"><span class="row-lb">خلفية البروفايل</span><span class="row-vl"><span class="link" id="btn-profile-bg">تغيير</span></span></div>
+                    <div class="row"><span class="row-lb">الموسيقى</span><span class="row-vl"><span class="link" id="btn-profile-music">اختيار</span></span></div>
+                    <div class="row"><span class="row-lb">إطار الأفاتار</span><span class="row-vl"><span class="link" id="avatar-frame-motion">تغيير</span></span></div>
+                    <div class="row"><span class="row-lb">وضع الزائر</span><span class="row-vl"><span class="link" id="btn-visitor-view">معاينة</span></span></div>
                 </div>
             </div>
+
             <div id="commands-tab" class="tab-c">
                 <div class="info-card">
-                    <div class="row"><span class="row-lb">  </span><span class="row-vl"><span class="link" id="btn-gift"></span></span></div>
+                    <div class="row"><span class="row-lb">🎁 إرسال هدية</span><span class="row-vl"><span class="link" id="btn-gift">قريباً</span></span></div>
                 </div>
             </div>
+
             <div id="info-tab" class="tab-c">
                 <div class="info-card">
-                    <div class="row"><span class="row-lb"> </span><span class="row-vl"><span class="link" id="profile-username-id">@user</span><span id="btn-copy-id" style="cursor:pointer;margin-right:8px;color:#64b5f6"></span></span></div>
-                    <div class="row"><span class="row-lb">  </span><span class="row-vl" style="display:flex;gap:8px;align-items:center"><span class="user-code" id="info-code-value"></span><button id="btn-copy-code" class="share-btn"><i class="fas fa-copy"></i> </button></span></div>
-                    <div class="row" id="info-age-row"><span class="row-lb"> </span><span class="row-vl" id="info-age-value"></span></div>
-                    <div class="row" id="info-gender-row"><span class="row-lb"> </span><span class="row-vl" id="info-gender-value"></span></div>
-                    <div class="row" id="info-join-row"><span class="row-lb">  </span><span class="row-vl" id="info-join-value"></span></div>
-                    <div class="row" id="info-lastseen-row"><span class="row-lb">  </span><span class="row-vl" id="info-lastseen-value"></span></div>
-                    <div class="row" id="info-room-row"><span class="row-lb">  </span><span class="row-vl" id="info-room-value"></span></div>
-                    <div class="row" id="info-country-row"><span class="row-lb"> </span><span class="row-vl" id="info-country-value"></span></div>
-                    <div class="row" id="info-email-row"><span class="row-lb"> </span><span class="row-vl" id="info-email-value"></span></div>
+                    <div class="row"><span class="row-lb">الاسم</span><span class="row-vl"><span class="link" id="profile-username-id">@user</span><span id="btn-copy-id" style="cursor:pointer;margin-right:8px;color:#64b5f6">📋</span></span></div>
+                    <div class="row"><span class="row-lb">كود التعريف</span><span class="row-vl" style="display:flex;gap:8px;align-items:center"><span class="user-code" id="info-code-value">—</span><button id="btn-copy-code" class="share-btn"><i class="fas fa-copy"></i> نسخ</button></span></div>
+                    <div class="row" id="info-age-row"><span class="row-lb">العمر</span><span class="row-vl" id="info-age-value">—</span></div>
+                    <div class="row" id="info-gender-row"><span class="row-lb">الجنس</span><span class="row-vl" id="info-gender-value">—</span></div>
+                    <div class="row" id="info-join-row"><span class="row-lb">تاريخ الانضمام</span><span class="row-vl" id="info-join-value">—</span></div>
+                    <div class="row" id="info-lastseen-row"><span class="row-lb">آخر ظهور</span><span class="row-vl" id="info-lastseen-value">—</span></div>
+                    <div class="row" id="info-room-row"><span class="row-lb">الغرفة الحالية</span><span class="row-vl" id="info-room-value">—</span></div>
+                    <div class="row" id="info-country-row"><span class="row-lb">الدولة</span><span class="row-vl" id="info-country-value">—</span></div>
+                    <div class="row" id="info-email-row"><span class="row-lb">البريد الإلكتروني</span><span class="row-vl" id="info-email-value">—</span></div>
                 </div>
             </div>
+
             <div id="friends-tab" class="tab-c">
                 <div class="info-card">
-                    <h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">  </h3>
-                    <div id="friends-container"><div class="empty">  ...</div></div>
+                    <h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">قائمة الأصدقاء</h3>
+                    <div id="friends-container"><div class="empty">جاري التحميل...</div></div>
                 </div>
             </div>
+
             <div id="search-tab" class="tab-c owner-only">
                 <div class="info-card">
-                    <h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">    </h3>
+                    <h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">البحث عن عضو</h3>
                     <div class="search-box">
-                        <input type="text" class="search-input" id="search-input" placeholder="   ( EM·4K7)..." maxlength="30">
-                        <button class="search-btn" id="search-btn"><i class="fas fa-search"></i> </button>
+                        <input type="text" class="search-input" id="search-input" placeholder="اكتب الاسم أو الكود (مثل EM·4K7)..." maxlength="30">
+                        <button class="search-btn" id="search-btn"><i class="fas fa-search"></i> بحث</button>
                     </div>
                     <div id="search-results"></div>
                 </div>
             </div>
+
             <div id="visitors-tab" class="tab-c owner-only">
-                <div class="info-card"><h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">  </h3><div id="visitors-container"><div class="empty">  </div></div></div>
+                <div class="info-card"><h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">الزوار الجدد</h3><div id="visitors-container"><div class="empty">لا يوجد زوار</div></div></div>
             </div>
+
             <div id="likes-tab" class="tab-c owner-only">
-                <div class="info-card"><h3 style="color:var(--gold);font-size:13px;margin-bottom:10px"> </h3><div id="likes-container"><div class="empty">  </div></div></div>
+                <div class="info-card"><h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">من أعجب بي</h3><div id="likes-container"><div class="empty">لا يوجد إعجابات</div></div></div>
             </div>
+
             <div id="blocked-tab" class="tab-c owner-only">
-                <div class="info-card"><h3 style="color:var(--gold);font-size:13px;margin-bottom:10px"> </h3><div id="blocked-container"><div class="empty">  </div></div></div>
+                <div class="info-card"><h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">قائمة المحظورين</h3><div id="blocked-container"><div class="empty">لا يوجد محظورين</div></div></div>
             </div>
+
         </div>
     </div>
 </div>
 
 <div class="modal" id="name-picker-modal">
     <div class="modal-c">
-        <h3></h3>
+        <h3>تخصيص الاسم</h3>
         <div class="modal-tabs" id="name-tabs">
-            <div class="modal-tab active" data-pick="color"></div>
-            <div class="modal-tab" data-pick="gradient"></div>
-            <div class="modal-tab" data-pick="frame"></div>
-            <div class="modal-tab" data-pick="shape"></div>
-            <div class="modal-tab" data-pick="glow"></div>
+            <div class="modal-tab active" data-pick="color">لون</div>
+            <div class="modal-tab" data-pick="gradient">تدرج</div>
+            <div class="modal-tab" data-pick="frame">إطار</div>
+            <div class="modal-tab" data-pick="shape">شكل</div>
+            <div class="modal-tab" data-pick="glow">توهج</div>
         </div>
         <div class="picker-grid" id="name-picker-grid"></div>
-        <div class="modal-btns"><button class="cancel" onclick="closeModal('name-picker-modal')"></button></div>
+        <div class="modal-btns"><button class="cancel" onclick="closeModal('name-picker-modal')">إغلاق</button></div>
     </div>
 </div>
 
 <div class="modal" id="profile-glow-modal">
     <div class="modal-c">
-        <h3>   </h3>
+        <h3>اختر لون التوهج</h3>
         <div class="colors-grid" id="profile-glow-grid"></div>
-        <div class="modal-btns"><button class="cancel" id="glow-off-btn"></button><button class="cancel" onclick="closeModal('profile-glow-modal')"></button></div>
+        <div class="modal-btns"><button class="cancel" id="glow-off-btn">إيقاف</button><button class="cancel" onclick="closeModal('profile-glow-modal')">إغلاق</button></div>
     </div>
 </div>
 
 <div class="modal" id="frames-modal">
     <div class="modal-c">
-        <h3>  </h3>
+        <h3>اختر إطار الأفاتار</h3>
         <div id="frames-container" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:60vh;overflow-y:auto;padding:6px"></div>
-        <div class="modal-btns"><button class="cancel" onclick="closeModal('frames-modal')"></button></div>
+        <div class="modal-btns"><button class="cancel" onclick="closeModal('frames-modal')">إغلاق</button></div>
     </div>
 </div>
 
 <div class="modal" id="app-modal">
     <div class="modal-c">
-        <h3 id="modal-title"></h3>
-        <p id="modal-text"></p>
+        <h3 id="modal-title">عنوان</h3>
+        <p id="modal-text">نص</p>
         <div id="modal-dyn"></div>
-        <div class="modal-btns"><button id="modal-ok"></button><button class="cancel" id="modal-cancel"></button></div>
+        <div class="modal-btns"><button id="modal-ok">موافق</button><button class="cancel" id="modal-cancel">إلغاء</button></div>
     </div>
 </div>
 
@@ -491,442 +220,7 @@ body.visitor-mode .priv-sec{display:none!important}
 <script src="frames-data.js"></script>
 <script src="frames-renderer.js"></script>
 <script src="css-frames.js"></script>
-<script>
-let currentUser=null,targetUser=null,viewMode='owner';
-let bgType='color',bgValue='#050508',musicURL=null,musicPlaying=false;
-let nameColor=null,nameGradient=null,nameFrame=null,nameShape=null,nameGlow='none';
-const IMGBB='80fd32c4ef79b5f25fbcf0893547de4f';
-const FRAMES=[];
-
-const COLORS=['#ffffff','#000000','#ffd700','#ff8c00','#ff69b4','#ff1493','#e0115f','#ff4757','#ff0000','#ff6347','#ff4500','#ffa500','#feca57','#ffff00','#adff2f','#39ff14','#00cc00','#00ff88','#2ecc71','#00b894','#00f3ff','#00bfff','#00bcd4','#1e90ff','#3498db','#0066ff','#0000ff','#8a2be2','#a855f7','#7c3aed','#6c5ce7','#9b59b6','#ff00ff','#da70d6','#e84393','#c0c0c0','#808080','#696969','#8b4513','#ff006e'];
-
-const GRADS=[['#ffd700','#ff8c00'],['#ff69b4','#ff1493'],['#00f3ff','#0066ff'],['#39ff14','#00cc00'],['#a855f7','#7c3aed'],['#e0115f','#ff4757'],['#feca57','#ff9f43'],['#00b894','#0984e3'],['#fd79a8','#e84393'],['#6c5ce7','#a29bfe'],['#74b9ff','#0984e3'],['#55efc4','#00b894'],['#ffeaa7','#fdcb6e'],['#e17055','#d35400'],['#81ecec','#00cec9'],['#fab1a0','#e17055'],['#ffffff','#cccccc'],['#000000','#333333'],['#ffd700','#ff006e'],['#00ff88','#0066ff'],['#ff0055','#ffd700'],['#8b00ff','#ff006e'],['#00f3ff','#ff00ff'],['#ffcc00','#ff6699'],['#00ffcc','#0066ff'],['#ff66cc','#9900ff'],['#ffaa00','#ff0000'],['#00ccff','#6600ff'],['#ff8c00','#ff1493'],['#c0c0c0','#ffd700']];
-
-const FRAMES_LIST=[
-{id:'nf-rainbow'},{id:'nf-fire'},{id:'nf-smoke'},{id:'nf-fog'},
-{id:'nf-waves'},{id:'nf-galaxy'},{id:'nf-stars'},{id:'nf-snow'},
-{id:'nf-sunset'},{id:'nf-neon'},{id:'nf-gold'},{id:'nf-diamond'},
-{id:'nf-ocean'},{id:'nf-blood'},{id:'nf-forest'},{id:'nf-ruby'},
-{id:'nf-emerald'},{id:'nf-sapphire'},{id:'nf-lava'},{id:'nf-aurora'},
-{id:'nf-cyber'},{id:'nf-lightning'},{id:'nf-sparkle'},{id:'nf-butterflies'},
-{id:'nf-clouds'},{id:'nf-water'},{id:'nf-waterfall'},{id:'nf-streams'},
-{id:'nf-blossom'},{id:'nf-leaves'},{id:'nf-hearts'},{id:'nf-sun'},
-{id:'nf-crystal'},{id:'nf-magic'},{id:'nf-royal'},{id:'nf-rainbowstraight'},
-{id:'nf-rainbowtext'},{id:'nf-starstext'},{id:'nf-watertext'},{id:'nf-firetext'},
-{id:'nf-icetext'},{id:'nf-goldtext'},{id:'nf-fogtext'},{id:'nf-smoketext'},
-{id:'nf-galaxy2'},{id:'nf-nebula'},{id:'nf-comet'},{id:'nf-planet'},
-{id:'nf-meteor'},{id:'nf-blackhole'},{id:'nf-aurora2'},{id:'nf-mars'},
-{id:'nf-jupiter'},{id:'nf-saturn'},{id:'nf-solarwind'},{id:'nf-supernova'},
-{id:'nf-hell'},{id:'nf-volcano'},{id:'nf-nuclear'},{id:'nf-cyclone'},
-{id:'nf-earthquake'},{id:'nf-tsunami'},{id:'nf-storm'},{id:'nf-meteorrain'},
-{id:'nf-tidalwave'},{id:'nf-wildfire'},
-{id:'nf-rainforest'},{id:'nf-desert'},{id:'nf-waterfall2'},{id:'nf-snowpeak'},
-{id:'nf-river'},{id:'nf-ocean2'},{id:'nf-sunrise'},{id:'nf-sunset2'},
-{id:'nf-autumn'},{id:'nf-winter'},
-{id:'nf-arcade'},{id:'nf-pixel'},{id:'nf-retro'},{id:'nf-matrix'},
-{id:'nf-hologram'},{id:'nf-cyberpunk'},{id:'nf-plasma'},{id:'nf-laser'},
-{id:'nf-neon2'},{id:'nf-rgb'},
-{id:'nf-dragon'},{id:'nf-magic2'},{id:'nf-phoenix'},{id:'nf-unicorn'},
-{id:'nf-icemagic'},{id:'nf-inferno'},{id:'nf-candy'},{id:'nf-dreams'},
-{id:'nf-demon'},{id:'nf-angel'},
-{id:'nf-sugar'},{id:'nf-glitter'},{id:'nf-dust'},{id:'nf-stars2'},
-{id:'nf-sparkle2'},{id:'nf-confetti'},{id:'nf-bubbles'},{id:'nf-particles'},
-{id:'nf-atom'},{id:'nf-molecule'},{id:'nf-quantum'},{id:'nf-fairy'},
-{id:'nf-neon3'},{id:'nf-glitter2'},
-{id:'nf-chocolate'},{id:'nf-honey'},{id:'nf-coffee'},{id:'nf-strawberry'},
-{id:'nf-mint'},{id:'nf-orange'},{id:'nf-watermelon'},{id:'nf-bubblegum'},
-{id:'nf-disco'},{id:'nf-vinyl'},{id:'nf-jazz'},{id:'nf-rock'},
-{id:'nf-karaoke'},{id:'nf-classical'},{id:'nf-edm'},{id:'nf-pop'},
-{id:'nf-ruby2'},{id:'nf-emerald2'},{id:'nf-sapphire2'},{id:'nf-amethyst'},
-{id:'nf-topaz'},{id:'nf-pearl'},{id:'nf-opal'},{id:'nf-turquoise'},
-{id:'nf-syria'},{id:'nf-palestine'},{id:'nf-lebanon'},{id:'nf-egypt'},
-{id:'nf-iraq'},{id:'nf-jordan'},
-{id:'nf-blackwhite'},{id:'nf-gold2'},{id:'nf-royal2'},{id:'nf-glass'},
-{id:'nf-spiral-rainbow'},{id:'nf-spiral-fire'},{id:'nf-spiral-gold'},
-{id:'nf-spiral-ocean'},{id:'nf-spiral-purple'},{id:'nf-spiral-neon'},
-{id:'nf-spiral-candy'},{id:'nf-spiral-galaxy'},{id:'nf-spiral-emerald'},
-{id:'nf-spiral-ruby'}
-];
-
-const SHAPES=[{id:'name-capsule',name:' '},{id:'name-pill',name:' '},{id:'name-rounded',name:' '},{id:'name-ellipse',name:' '},{id:'name-square',name:' '}];
-const GLOWS=[{id:'none',name:''},{id:'soft',name:' '},{id:'medium',name:' '},{id:'strong',name:' '}];
-
-function getUser(){try{return JSON.parse(localStorage.getItem('qamar_current_user')||localStorage.getItem('qamar_user')||'null')}catch(e){return null}}
-function rankBadge(r){const b={King:'',Queen:'','Master Owner':'','Room Owner':'','Grand Owner':'',Owner:'','Super Admin':'',Admin:'',Premium:'',User:''};return b[r]||''}
-function toast(m){const t=document.createElement('div');t.style.cssText='position:fixed;top:20px;right:20px;background:rgba(15,15,20,0.95);border:1px solid #ffd700;border-radius:12px;padding:12px 20px;color:#fff;font-size:13px;font-weight:600;z-index:10000;font-family:Cairo,sans-serif;max-width:80vw';t.innerText=m;document.body.appendChild(t);setTimeout(()=>t.remove(),3000)}
-function openModal(id){const m=document.getElementById(id);if(m)m.classList.add('active')}
-function closeModal(id){const m=document.getElementById(id);if(m)m.classList.remove('active')}
-function timeAgo(ts){if(!ts)return '';const s=Math.floor((Date.now()-ts)/1000);if(s<60)return '';const m=Math.floor(s/60);if(m<60)return ' '+m+' ';const h=Math.floor(m/60);if(h<24)return ' '+h+' ';const d=Math.floor(h/24);if(d<30)return ' '+d+' ';return new Date(ts).toLocaleDateString('ar')}
-function formatDate(ts){if(!ts)return '';const d=new Date(ts);return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear()}
-document.addEventListener('click',e=>{if(e.target.classList&&e.target.classList.contains('modal'))e.target.classList.remove('active')});
-
-document.addEventListener('DOMContentLoaded',async function(){
-    const params=new URLSearchParams(location.search);
-    const urlUid=params.get('uid');
-    const isOwner=params.get('owner');
-    currentUser=getUser();
-    if(isOwner||!urlUid){viewMode='owner';targetUser=currentUser}
-    else{
-        viewMode='visitor';targetUser=null;
-        try{const c=localStorage.getItem('profile_target_data_'+urlUid);if(c)targetUser=JSON.parse(c)}catch(e){}
-        if(!targetUser&&typeof db!=='undefined'&&db){try{const s=await db.ref('users/'+urlUid).once('value');targetUser=s.val();if(targetUser)localStorage.setItem('profile_target_data_'+urlUid,JSON.stringify(targetUser))}catch(e){}}
-        if(!targetUser)targetUser={uid:urlUid,name:'',rank:'User'};
-        if(currentUser&&currentUser.uid&&currentUser.uid!==urlUid&&typeof db!=='undefined'&&db){db.ref('users/'+urlUid+'/visitors/'+currentUser.uid).set({time:Date.now(),name:currentUser.name||'',avatar:currentUser.avatar||''}).catch(()=>{})}
-    }
-    document.body.classList.add(viewMode+'-mode');
-    applyMode();loadProfile();loadSaved();initTabs();initPriv();initMain();loadPoetry();renderFrames();
-    if(viewMode==='visitor'&&urlUid&&typeof db!=='undefined'&&db){
-        db.ref('users/'+urlUid).on('value',s=>{const f=s.val();if(f){targetUser=f;localStorage.setItem('profile_target_data_'+urlUid,JSON.stringify(f));loadProfile()}});
-        db.ref('user_presence/'+urlUid).on('value',s=>{const p=s.val()||{};const dot=document.getElementById('status-dot');if(dot){if(p.state==='online'){dot.className='status-dot online';dot.title=''}else{dot.className='status-dot offline';dot.title=' '}}const roomEl=document.getElementById('info-room-value');if(roomEl&&p.room){roomEl.innerText=p.room}});
-    }
-    if(viewMode==='owner'&&currentUser&&currentUser.uid&&typeof db!=='undefined'&&db){
-        db.ref('users/'+currentUser.uid).on('value',s=>{const f=s.val();if(f){targetUser=f;currentUser=Object.assign({},currentUser,f);loadProfile()}});
-        db.ref('users/'+currentUser.uid+'/visitors').limitToLast(50).on('value',s=>renderList('visitors-container',s.val(),'time'));
-        db.ref('users/'+currentUser.uid+'/likes').limitToLast(50).on('value',s=>renderList('likes-container',s.val(),'time'));
-        db.ref('users/'+currentUser.uid+'/blocked').on('value',s=>renderList('blocked-container',s.val(),null,true));
-    }
-    loadFriends();
-    console.log(' Profile v5.8 loaded | Mode:', viewMode);
-});
-
-async function loadFriends(){
-    const container=document.getElementById('friends-container');
-    if(!container)return;
-    if(typeof db==='undefined'||!db){container.innerHTML='<div class="empty"> Firebase  </div>';return}
-    if(!targetUser||!targetUser.uid){container.innerHTML='<div class="empty">  </div>';return}
-    if(viewMode==='visitor'){const p=(targetUser.privacy)||{};const pf=p.friends||'public';if(pf==='private'){container.innerHTML='<div class="friend-priv-msg"><i class="fas fa-lock"></i>     </div>';return}}
-    try{
-        const snap=await db.ref('users/'+targetUser.uid+'/friends').once('value');
-        const friends=snap.val()||{};
-        const list=Object.values(friends);
-        if(list.length===0){container.innerHTML='<div class="empty">   </div>';return}
-        container.innerHTML='';
-        list.sort((a,b)=>(b.time||0)-(a.time||0));
-        for(const f of list.slice(0,50)){
-            if(!f.uid)continue;
-            let points=0;
-            try{const ps=await db.ref('bot_data/quiz/scores/'+f.uid).once('value');points=ps.val()||0}catch(e){}
-            const giftsCount=Object.keys(f.gifts||{}).length;
-            renderFriendCard(container,f,points,giftsCount);
-        }
-    }catch(e){console.warn('Friends error:',e);container.innerHTML='<div class="empty">   </div>'}
-}
-
-function renderFriendCard(container,f,points,giftsCount){
-    const card=document.createElement('div');
-    card.className='friend-card';
-    const img=document.createElement('img');
-    img.className='friend-avatar';
-    img.src=f.avatar||('https://ui-avatars.com/api/?name='+encodeURIComponent(f.name||'User')+'&background=555&color=fff');
-    const info=document.createElement('div');
-    info.className='friend-info';
-    const nm=document.createElement('div');
-    nm.className='friend-name';
-    nm.textContent=f.name||'';
-    const rk=document.createElement('div');
-    rk.className='friend-rank';
-    rk.textContent=rankBadge(f.rank)+' '+(f.rank||'User');
-    const stats=document.createElement('div');
-    stats.className='friend-stats';
-    const level=Math.floor(points/100)+1;
-    stats.innerHTML='<span class="stat-pill">  '+level+'</span><span class="stat-pill point"> '+points+' </span><span class="stat-pill gift"> '+giftsCount+' </span>';
-    info.appendChild(nm);info.appendChild(rk);info.appendChild(stats);
-    card.appendChild(img);card.appendChild(info);
-    card.onclick=()=>{if(!f.uid)return;location.href=location.origin+location.pathname+'?uid='+f.uid};
-    container.appendChild(card);
-}
-
-function renderList(cid,data,sortField,isBlocked){
-    const c=document.getElementById(cid);if(!c)return;c.innerHTML='';
-    if(!data||!Object.keys(data).length){c.innerHTML='<div class="empty">  </div>';return}
-    let items=Object.entries(data).map(([uid,v])=>({uid,...v}));
-    if(sortField)items.sort((a,b)=>(b[sortField]||0)-(a[sortField]||0));
-    items.forEach(item=>{
-        const el=document.createElement('div');el.className='user-item';
-        const img=document.createElement('img');img.src=item.avatar||('https://ui-avatars.com/api/?name='+encodeURIComponent(item.name||'User')+'&background=555&color=fff');
-        const info=document.createElement('div');info.className='user-item-info';
-        const nm=document.createElement('div');nm.className='user-item-nm';nm.textContent=item.name||'';
-        const sub=document.createElement('div');sub.className='user-item-sub';
-        if(item.time){const d=Date.now()-item.time;const m=Math.floor(d/60000);sub.textContent=m<1?'':' '+m+' '}
-        if(isBlocked)sub.textContent='';
-        info.appendChild(nm);info.appendChild(sub);el.appendChild(img);el.appendChild(info);
-        if(isBlocked){const b=document.createElement('button');b.textContent='';b.style.cssText='background:#ff4444;color:#fff;border:none;padding:6px 12px;border-radius:8px;font-size:11px;cursor:pointer;font-weight:bold';b.onclick=e=>{e.stopPropagation();if(db&&currentUser)db.ref('users/'+currentUser.uid+'/blocked/'+item.uid).remove();toast(' ')};el.appendChild(b)}
-        c.appendChild(el);
-    });
-}
-
-function applyMode(){const o=document.querySelectorAll('.owner-only');const v=document.querySelectorAll('.visitor-only');if(viewMode==='visitor'){o.forEach(e=>e.style.display='none');v.forEach(e=>v.forEach(e=>e.style.display=''))}else{o.forEach(e=>e.style.display='');v.forEach(e=>e.style.display='none')}}
-
-function canView(field){if(viewMode==='owner')return true;const p=(targetUser&&targetUser.privacy)||{};const val=p[field]||'public';if(val==='public')return true;return false}
-
-function loadProfile(){
-    if(!targetUser)return;
-    //  v5.8 FIX:   owner  currentUser.name  ( )
-    const _displayName=(viewMode==='owner'&&currentUser&&currentUser.name)?currentUser.name:(targetUser.name||'');
-    const u=document.getElementById('profile-username');if(u)u.innerText=_displayName;
-    const b=document.getElementById('profile-bio');if(b)b.innerText=targetUser.bio||('@'+(targetUser.name||'user'));
-    const r=document.getElementById('role-text');if(r)r.innerText=rankBadge(targetUser.rank)+' '+(targetUser.rank||'User');
-    if(targetUser.avatar){const a=document.getElementById('profile-avatar-img');if(a)a.src=targetUser.avatar}
-    if(targetUser.cover){const c=document.getElementById('profile-cover-img');if(c)c.src=targetUser.cover}
-    if(targetUser.profileBgValue){const layer=document.getElementById('profile-bg-layer');if(layer){layer.innerHTML='';layer.style.backgroundImage='';layer.style.background='';if(targetUser.profileBgType==='color')layer.style.background=targetUser.profileBgValue;else if(targetUser.profileBgType==='image')layer.style.backgroundImage='url('+targetUser.profileBgValue+')'}}
-    const un=document.getElementById('profile-username-id');
-    if(un){const uu=targetUser.username||'@'+(targetUser.name||'user').replace(/\s+/g,'_');un.innerText=uu.startsWith('@')?uu:'@'+uu}
-    const codeEl=document.getElementById('info-code-value');
-    if(codeEl)codeEl.innerText=targetUser.code||'';
-    if(targetUser.nameColor){nameColor=targetUser.nameColor;applyNameColor()}
-    if(targetUser.nameGradient){nameGradient=targetUser.nameGradient;applyNameGradient()}
-    if(targetUser.nameFrame){nameFrame=targetUser.nameFrame;applyNameFrame();const btn=document.getElementById('btn-name-frame');if(btn){const f=FRAMES_LIST.find(x=>x.id===nameFrame);if(f)btn.innerText=f.name}}
-    if(targetUser.nameShape){nameShape=targetUser.nameShape;applyNameShape();updateShapeLbl()}
-    if(targetUser.nameGlow){nameGlow=targetUser.nameGlow;applyNameGlow();updateGlowLbl()}
-    if(targetUser.avatarFrame)applyAvatarFrame(targetUser.avatarFrame);
-    const ageRow=document.getElementById('info-age-row'),ageVal=document.getElementById('info-age-value');
-    if(ageRow&&ageVal){if(canView('age')&&targetUser.age){ageVal.innerText=targetUser.age+' ';ageRow.style.display=''}else ageRow.style.display='none'}
-    const genRow=document.getElementById('info-gender-row'),genVal=document.getElementById('info-gender-value');
-    if(genRow&&genVal){if(canView('gender')&&targetUser.gender){genVal.innerText=targetUser.gender==='male'?'':'';genRow.style.display=''}else genRow.style.display='none'}
-    const joinRow=document.getElementById('info-join-row'),joinVal=document.getElementById('info-join-value');
-    if(joinRow&&joinVal){if(targetUser.createdAt){joinVal.innerText=formatDate(targetUser.createdAt);joinRow.style.display=''}else joinRow.style.display='none'}
-    const lsRow=document.getElementById('info-lastseen-row'),lsVal=document.getElementById('info-lastseen-value');
-    if(lsRow&&lsVal){if(targetUser.lastSeen){lsVal.innerText=timeAgo(targetUser.lastSeen);lsRow.style.display=''}else lsRow.style.display='none'}
-    const ctRow=document.getElementById('info-country-row'),ctVal=document.getElementById('info-country-value');
-    if(ctRow&&ctVal){if(targetUser.country||targetUser.city){ctVal.innerText=[targetUser.country,targetUser.city].filter(x=>x).join(' - ');ctRow.style.display=''}else ctRow.style.display='none'}
-    const er=document.getElementById('info-email-row'),ev=document.getElementById('info-email-value');
-    if(er&&ev){if(viewMode==='owner'||(currentUser&&currentUser.rank==='King')){ev.innerText=targetUser.email||'';er.style.display=''}else er.style.display='none'}
-    if(targetUser.musicURL){musicURL=targetUser.musicURL;const mb=document.getElementById('music-btn-mini');if(mb)mb.style.display='flex';const p=document.getElementById('music-player');if(p)p.src=musicURL}
-}
-
-function initTabs(){const items=document.querySelectorAll(".tab");const contents=document.querySelectorAll(".tab-c");items.forEach(it=>it.addEventListener("click",function(){const t=this.getAttribute("data-target");items.forEach(x=>x.classList.remove("active"));contents.forEach(x=>x.classList.remove("active"));this.classList.add("active");const tc=document.getElementById(t);if(tc)tc.classList.add("active")}))}
-
-function initPriv(){document.querySelectorAll('.priv-sel').forEach(s=>{const f=s.getAttribute('data-field');s.value=localStorage.getItem('privacy_'+f)||'public';s.addEventListener('change',function(){const ff=this.getAttribute('data-field');localStorage.setItem('privacy_'+ff,this.value);if(currentUser&&currentUser.uid&&db)db.ref('users/'+currentUser.uid+'/privacy/'+ff).set(this.value).catch(()=>{});toast(' ')})})}
-
-function loadSaved(){
-    try{
-        //  v5.8 FIX:    localStorage  ( innerText)
-        if(localStorage.getItem('profile_name')){
-            const el=document.getElementById('profile-username');
-            if(el){el.dataset.name=localStorage.getItem('profile_name');el.innerText=localStorage.getItem('profile_name')}
-        }
-        if(localStorage.getItem('profile_bio')){const el=document.getElementById('profile-bio');if(el)el.innerText=localStorage.getItem('profile_bio')}
-        if(localStorage.getItem('saved_avatar')){const el=document.getElementById('profile-avatar-img');if(el)el.src=localStorage.getItem('saved_avatar')}
-        if(localStorage.getItem('saved_cover')){const el=document.getElementById('profile-cover-img');if(el)el.src=localStorage.getItem('saved_cover')}
-        const sf=localStorage.getItem('saved_avatar_frame_motion');if(sf){applyAvatarFrame(sf);const btn=document.getElementById('avatar-frame-motion');if(btn)btn.innerText=''}
-        if(localStorage.getItem('profile_bg_value')){bgType=localStorage.getItem('profile_bg_type')||'color';bgValue=localStorage.getItem('profile_bg_value');applyBg()}
-        if(localStorage.getItem('name_color')){nameColor=localStorage.getItem('name_color');applyNameColor()}
-        if(localStorage.getItem('name_gradient')){nameGradient=JSON.parse(localStorage.getItem('name_gradient'));applyNameGradient()}
-        if(localStorage.getItem('name_frame')){nameFrame=localStorage.getItem('name_frame');applyNameFrame();const btn=document.getElementById('btn-name-frame');if(btn){const f=FRAMES_LIST.find(x=>x.id===nameFrame);if(f)btn.innerText=f.name}}
-        if(localStorage.getItem('name_shape')){nameShape=localStorage.getItem('name_shape');applyNameShape();updateShapeLbl()}
-        if(localStorage.getItem('name_glow')){nameGlow=localStorage.getItem('name_glow');applyNameGlow();updateGlowLbl()}
-        if(localStorage.getItem('profile_glow')){applyGlow(localStorage.getItem('profile_glow'));const pgb=document.getElementById('btn-profile-glow');if(pgb)pgb.innerText=''}
-        if(localStorage.getItem('profile_music_url')){musicURL=localStorage.getItem('profile_music_url');const p=document.getElementById('music-player');if(p)p.src=musicURL;const mb=document.getElementById('music-btn-mini');if(mb)mb.style.display='flex'}
-    }catch(e){console.warn(e)}
-}
-
-function clearNameStyles(){const el=document.getElementById('profile-username');if(!el)return;const toRemove=[];el.classList.forEach(c=>{if(c.startsWith('nf-')||c.startsWith('name-'))toRemove.push(c)});toRemove.forEach(c=>el.classList.remove(c));el.style.cssText='';el.style.filter=''}
-function applyNameColor(){const el=document.getElementById('profile-username');if(!el)return;clearNameStyles();if(nameColor){el.style.color=nameColor;el.style.textShadow='0 2px 12px rgba(0,0,0,0.95)'}if(nameShape)el.classList.add(nameShape);if(nameFrame){el.classList.add('nf',nameFrame);el.style.color='#fff';el.style.textShadow='0 1px 4px rgba(0,0,0,0.95)'}if(nameGlow){if(nameGlow==='soft')el.style.filter='drop-shadow(0 0 8px currentColor)';else if(nameGlow==='medium')el.style.filter='drop-shadow(0 0 15px currentColor)';else if(nameGlow==='strong')el.style.filter='drop-shadow(0 0 25px currentColor) drop-shadow(0 0 40px currentColor)'}}
-function applyNameGradient(){const el=document.getElementById('profile-username');if(!el)return;clearNameStyles();if(nameGradient&&nameGradient.length>=2){el.style.background='linear-gradient(90deg,'+nameGradient[0]+','+nameGradient[1]+','+nameGradient[0]+')';el.style.backgroundSize='200% 200%';el.style.webkitBackgroundClip='text';el.style.backgroundClip='text';el.style.webkitTextFillColor='transparent';el.style.animation='nfSlide 3s linear infinite'}if(nameShape)el.classList.add(nameShape);if(nameFrame){el.classList.add('nf',nameFrame);el.style.color='#fff';el.style.textShadow='0 1px 4px rgba(0,0,0,0.95)'}if(nameGlow){if(nameGlow==='soft')el.style.filter='drop-shadow(0 0 8px currentColor)';else if(nameGlow==='medium')el.style.filter='drop-shadow(0 0 15px currentColor)';else if(nameGlow==='strong')el.style.filter='drop-shadow(0 0 25px currentColor) drop-shadow(0 0 40px currentColor)'}}
-function applyNameFrame(){const el=document.getElementById('profile-username');if(!el)return;const toRemove=[];el.classList.forEach(c=>{if(c.startsWith('nf-'))toRemove.push(c)});toRemove.forEach(c=>el.classList.remove(c));if(nameFrame){el.classList.add('nf',nameFrame);el.style.color='#fff';el.style.textShadow='0 1px 4px rgba(0,0,0,0.95)'}}
-function applyNameShape(){const el=document.getElementById('profile-username');if(!el)return;el.classList.remove('name-capsule','name-pill','name-rounded','name-ellipse','name-square');if(nameShape)el.classList.add(nameShape)}
-function applyNameGlow(){const el=document.getElementById('profile-username');if(!el)return;el.classList.remove('name-glow-soft','name-glow-medium','name-glow-strong');el.style.filter='';if(nameGlow==='soft')el.style.filter='drop-shadow(0 0 8px currentColor)';else if(nameGlow==='medium')el.style.filter='drop-shadow(0 0 15px currentColor)';else if(nameGlow==='strong')el.style.filter='drop-shadow(0 0 25px currentColor) drop-shadow(0 0 40px currentColor)'}
-function reapplyShapeFrame(){const el=document.getElementById('profile-username');if(!el)return;el.classList.remove('name-capsule','name-pill','name-rounded','name-ellipse','name-square');if(nameShape)el.classList.add(nameShape);applyNameFrame()}
-function updateShapeLbl(){const b=document.getElementById('btn-name-shape');if(b){const f=SHAPES.find(x=>x.id===nameShape);b.innerText=f?f.name:''}}
-function updateGlowLbl(){const b=document.getElementById('btn-name-glow');if(b){const f=GLOWS.find(x=>x.id===nameGlow);b.innerText=f?f.name:''}}
-function applyGlow(c){const p=document.getElementById('profile-container');if(!p)return;if(!c){p.classList.remove('glow-active');p.style.removeProperty('--glow-color')}else{p.style.setProperty('--glow-color',c);p.classList.add('glow-active')}}
-function applyBg(){const layer=document.getElementById('profile-bg-layer');if(!layer)return;layer.innerHTML='';layer.style.backgroundImage='';layer.style.background='';if(bgType==='color')layer.style.background=bgValue||'#050508';else if(bgType==='image')layer.style.backgroundImage='url('+bgValue+')';else if(bgType==='video'){const v=document.createElement('video');v.src=bgValue;v.autoplay=true;v.loop=true;v.muted=true;v.playsInline=true;layer.appendChild(v)}}
-
-function applyAvatarFrame(fid){const box=document.getElementById('avatar-box');if(!box)return;box.querySelectorAll('.dynamic-frame-wrapper,.qamar-frame,.qcf').forEach(e=>e.remove());if(!fid||fid==='none'){localStorage.setItem('saved_avatar_frame_motion','');return}if(typeof CSS_FRAMES_DATA!=='undefined'&&CSS_FRAMES_DATA[fid]&&typeof applyCSSFrame==='function'){applyCSSFrame(box,fid);localStorage.setItem('saved_avatar_frame_motion',fid);return}const fr=FRAMES.find(f=>f.id===fid);if(!fr)return;const w=document.createElement('div');w.className='dynamic-frame-wrapper';w.style.cssText=fr.style;if(fr.badge&&fr.badge!==''){const bd=document.createElement('div');bd.className='frame-badge-top';bd.innerHTML=fr.badge;w.appendChild(bd)}box.appendChild(w);localStorage.setItem('saved_avatar_frame_motion',fid)}
-
-function loadPoetry(){const s=localStorage.getItem('poetry_text')||'';const i=document.getElementById('poetry-input');const d=document.getElementById('poetry-display');if(i&&viewMode==='owner'){i.value=s;i.addEventListener('input',function(){localStorage.setItem('poetry_text',this.value);if(d)d.innerText=this.value;if(currentUser&&currentUser.uid&&db)db.ref('users/'+currentUser.uid+'/poetry').set(this.value).catch(()=>{})})}if(viewMode==='visitor'){const poetry=(targetUser&&targetUser.poetry)||'';if(poetry&&canView('messages')){if(d)d.innerText=poetry}}else{if(d)d.innerText=s}}
-
-async function uploadIB(file,maxMB){const mb=file.size/(1024*1024);if(mb>maxMB){toast('  ');return null}try{const fd=new FormData();fd.append('key',IMGBB);fd.append('image',file);const r=await fetch('https://api.imgbb.com/1/upload',{method:'POST',body:fd});const d=await r.json();if(d.success&&d.data&&d.data.url)return d.data.url;toast(' ');return null}catch(e){toast('  ');return null}}
-async function uploadLoad(file,maxMB){toast('  ...');const u=await uploadIB(file,maxMB);if(u)toast(' ');return u}
-
-function saveToChat(){
-    if(!currentUser)return;
-    const existing=JSON.parse(localStorage.getItem('qamar_current_user')||localStorage.getItem('qamar_user')||'{}');
-    const fv=localStorage.getItem('saved_avatar_frame_motion');
-    //  v5.8 FIX: currentUser.name  ()  localStorage 
-    const u=Object.assign({},existing,{uid:currentUser.uid,name:currentUser.name||existing.name||'',bio:localStorage.getItem('profile_bio')||existing.bio||'',cover:localStorage.getItem('saved_cover')||existing.cover||'',avatar:localStorage.getItem('saved_avatar')||existing.avatar||'',nameColor:nameColor||null,nameGradient:nameGradient||null,nameFrame:nameFrame||null,nameShape:nameShape||null,nameGlow:(nameGlow&&nameGlow!=='none')?nameGlow:null,avatarFrame:(fv&&fv!=='none'&&fv!=='')?fv:null,poetry:localStorage.getItem('poetry_text')||existing.poetry||'',profileBgType:bgType,profileBgValue:bgValue,musicURL:musicURL||null,color:existing.color||'#ffffff'});
-    localStorage.setItem('qamar_current_user',JSON.stringify(u));localStorage.setItem('qamar_user',JSON.stringify(u));
-    if(currentUser.uid&&typeof db!=='undefined'&&db){db.ref('users/'+currentUser.uid).update({name:u.name,bio:u.bio,cover:u.cover,avatar:u.avatar,nameColor:u.nameColor,nameGradient:u.nameGradient,nameFrame:u.nameFrame,nameShape:u.nameShape,nameGlow:u.nameGlow,avatarFrame:u.avatarFrame,poetry:u.poetry,profileBgType:u.profileBgType,profileBgValue:u.profileBgValue,musicURL:u.musicURL}).catch(()=>{})}
-    if(window.parent&&window.parent!==window){try{window.parent.postMessage({action:'userDataUpdated',userData:u},'*')}catch(e){}}
-}
-
-function initCover(){const ci=document.getElementById('cover-file-input'),cc=document.getElementById('btn-change-cover'),rc=document.getElementById('btn-remove-cover'),cimg=document.getElementById('profile-cover-img');if(cc&&ci&&viewMode==='owner')cc.onclick=()=>ci.click();if(ci&&viewMode==='owner')ci.onchange=async e=>{const f=e.target.files[0];if(!f)return;const u=await uploadLoad(f,5);if(u){if(cimg){cimg.src=u;cimg.style.display='block'}localStorage.setItem('saved_cover',u);saveToChat()}};if(rc&&cimg&&viewMode==='owner')rc.onclick=()=>{cimg.src='';cimg.style.display='none';localStorage.removeItem('saved_cover');if(currentUser&&currentUser.uid&&db)db.ref('users/'+currentUser.uid+'/cover').remove().catch(()=>{});saveToChat();toast(' ')}}
-function initAvatar(){const ai=document.getElementById('avatar-file-input'),ca=document.getElementById('btn-change-avatar'),ra=document.getElementById('btn-remove-avatar'),aimg=document.getElementById('profile-avatar-img');if(ca&&ai&&viewMode==='owner')ca.onclick=()=>ai.click();if(ai&&viewMode==='owner')ai.onchange=async e=>{const f=e.target.files[0];if(!f)return;const u=await uploadLoad(f,5);if(u){if(aimg)aimg.src=u;localStorage.setItem('saved_avatar',u);saveToChat()}};if(ra&&aimg&&viewMode==='owner')ra.onclick=()=>{aimg.src='https://ui-avatars.com/api/?name='+encodeURIComponent((currentUser&&currentUser.name)||'User')+'&background=555&color=fff';localStorage.removeItem('saved_avatar');if(currentUser&&currentUser.uid&&db)db.ref('users/'+currentUser.uid+'/avatar').remove().catch(()=>{});saveToChat();toast(' ')}}
-
-function initMain(){
-    const c=document.getElementById('btn-close');
-    if(c)c.onclick=()=>{try{if(window.parent&&window.parent!==window){window.parent.postMessage({action:'closeProfile'},'*');if(typeof window.parent.closeProfileFrame==='function')window.parent.closeProfileFrame()}}catch(e){}};
-    const eu=document.getElementById('btn-edit-username');
-    if(eu&&viewMode==='owner')eu.onclick=()=>{openAppModal(' ',' :','input',[],getCleanName(),v=>{
-        if(v.trim()){
-            //  v5.8 FIX:  currentUser + localStorage + Firebase  
-            if(currentUser) currentUser.name = v.trim();
-            const el=document.getElementById('profile-username');
-            if(el){el.dataset.name=v.trim();el.innerText=v.trim()}
-            localStorage.setItem('profile_name',v.trim());
-            try{localStorage.setItem('qamar_current_user',JSON.stringify(currentUser))}catch(e){}
-            try{localStorage.setItem('qamar_user',JSON.stringify(currentUser))}catch(e){}
-            if(currentUser&&currentUser.uid&&db)db.ref('users/'+currentUser.uid+'/name').set(v.trim()).catch(()=>{});
-            saveToChat();
-            toast(' ');
-        }
-    })};
-    const eb=document.getElementById('btn-edit-bio');
-    if(eb&&viewMode==='owner')eb.onclick=()=>{const bioEl=document.getElementById('profile-bio');openAppModal(' ',':','input',[],bioEl?bioEl.innerText:'',v=>{if(v.trim()){if(bioEl)bioEl.innerText=v;localStorage.setItem('profile_bio',v);if(currentUser&&currentUser.uid&&db)db.ref('users/'+currentUser.uid+'/bio').set(v).catch(()=>{});saveToChat();toast(' ')}})};
-    initCover();initAvatar();
-    const vb=document.getElementById('btn-visitor-view');
-    if(vb&&viewMode==='owner')vb.onclick=()=>{if(!currentUser||!currentUser.uid)return;localStorage.setItem('profile_target_data_'+currentUser.uid,JSON.stringify(currentUser));location.href='profile.html?uid='+currentUser.uid};
-    initVisitor();initAppearance();initCommands();initInfo();initMusic();initSearch();
-}
-
-function getCleanName(){const el=document.getElementById('profile-username');return el?(el.dataset.name||el.innerText):''}
-
-function initMusic(){const mb=document.getElementById('music-btn-mini');const p=document.getElementById('music-player');if(!mb||!p)return;mb.onclick=()=>{if(musicPlaying){p.pause();musicPlaying=false;mb.innerHTML='<i class="fas fa-play"></i>';mb.classList.remove('playing')}else{p.play().then(()=>{musicPlaying=true;mb.innerHTML='<i class="fas fa-pause"></i>';mb.classList.add('playing')}).catch(()=>toast('   '))}}}
-
-function initVisitor(){
-    if(viewMode!=='visitor')return;
-    const h=document.getElementById('btn-heart');
-    if(h)h.onclick=async()=>{h.style.transform='scale(1.4)';setTimeout(()=>h.style.transform='',300);if(targetUser&&targetUser.uid&&currentUser&&currentUser.uid){if(db)await db.ref('users/'+targetUser.uid+'/likes/'+currentUser.uid).set({time:Date.now(),name:currentUser.name||'',avatar:currentUser.avatar||''}).catch(()=>{});await sendNotif(targetUser.uid,'like','',' ')}toast(' ')};
-    const m=document.getElementById('btn-mail');
-    if(m)m.onclick=()=>{const p=(targetUser&&targetUser.privacy&&targetUser.privacy.messages)||'public';if(p==='private'){toast(' ');return}if(targetUser&&targetUser.uid)openChat(targetUser.uid,targetUser.name)};
-    const b=document.getElementById('btn-block');
-    if(b)b.onclick=()=>{if(!currentUser||!targetUser)return;if(!confirm(' '))return;if(db)db.ref('users/'+currentUser.uid+'/blocked/'+targetUser.uid).set({time:Date.now(),name:targetUser.name||'',avatar:targetUser.avatar||''}).then(()=>{toast(' ');setTimeout(()=>{try{window.parent.postMessage({action:'closeProfile'},'*')}catch(e){}},800)})};
-    const af=document.getElementById('btn-add-friend');
-    if(af)af.onclick=async()=>{if(targetUser&&targetUser.uid)await sendNotif(targetUser.uid,'friend_request','',' ');toast(' ')};
-    const pk=document.getElementById('btn-poke');
-    if(pk)pk.onclick=async()=>{if(targetUser&&targetUser.uid)await sendNotif(targetUser.uid,'poke','','');toast(' ')};
-}
-
-function initAppearance(){
-    if(viewMode!=='owner')return;
-    document.getElementById('btn-name-color').onclick=()=>openNamePicker('color');
-    document.getElementById('btn-name-gradient').onclick=()=>openNamePicker('gradient');
-    document.getElementById('btn-name-frame').onclick=()=>openNamePicker('frame');
-    document.getElementById('btn-name-shape').onclick=()=>openNamePicker('shape');
-    document.getElementById('btn-name-glow').onclick=()=>openNamePicker('glow');
-    const pgb=document.getElementById('btn-profile-glow');
-    if(pgb)pgb.onclick=()=>{const g=document.getElementById('profile-glow-grid');g.innerHTML='';['#ffd700','#ff69b4','#00f3ff','#39ff14','#a855f7','#ff0066','#ffffff','#ff4444','#ff8c00','#00ff88','#8b00ff','#feca57'].forEach(c=>{const b=document.createElement('div');b.className='color-box';b.style.background=c;b.onclick=()=>{applyGlow(c);localStorage.setItem('profile_glow',c);pgb.innerText='';closeModal('profile-glow-modal');saveToChat();toast(' ')};g.appendChild(b)});openModal('profile-glow-modal')};
-    const gob=document.getElementById('glow-off-btn');
-    if(gob)gob.onclick=()=>{applyGlow(null);localStorage.removeItem('profile_glow');pgb.innerText='';closeModal('profile-glow-modal')};
-    const bb=document.getElementById('btn-profile-bg');
-    if(bb)bb.onclick=()=>{openAppModal(' ',':','select',['','','',''],'',v=>{if(v===''||v==='')document.getElementById('profile-bg-input').click();else{bgType='color';bgValue='#050508';localStorage.setItem('profile_bg_type','color');localStorage.setItem('profile_bg_value','#050508');applyBg();saveToChat()}})};
-    const bi=document.getElementById('profile-bg-input');
-    if(bi)bi.onchange=async e=>{const f=e.target.files[0];if(!f)return;if(f.type.startsWith('video/')){const r=new FileReader();r.onload=ev=>{bgValue=ev.target.result;bgType='video';localStorage.setItem('profile_bg_type','video');localStorage.setItem('profile_bg_value',bgValue);applyBg();saveToChat()};r.readAsDataURL(f);return}const u=await uploadLoad(f,5);if(u){bgValue=u;bgType='image';localStorage.setItem('profile_bg_type','image');localStorage.setItem('profile_bg_value',u);applyBg();saveToChat()}};
-    const mb=document.getElementById('btn-profile-music'),mi=document.getElementById('music-file-input');
-    if(mb&&mi)mb.onclick=()=>mi.click();
-    if(mi)mi.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{musicURL=ev.target.result;localStorage.setItem('profile_music_url',musicURL);const p=document.getElementById('music-player');if(p)p.src=musicURL;const mbb=document.getElementById('music-btn-mini');if(mbb)mbb.style.display='flex';saveToChat();toast('   ')};r.readAsDataURL(f)};
-    const fb=document.getElementById('avatar-frame-motion');
-    if(fb)fb.onclick=()=>{openModal('frames-modal');renderFrames()};
-}
-
-function openNamePicker(tab){
-    document.querySelectorAll('#name-tabs .modal-tab').forEach(t=>{t.classList.toggle('active',t.getAttribute('data-pick')===tab);t.onclick=()=>openNamePicker(t.getAttribute('data-pick'))});
-    const grid=document.getElementById('name-picker-grid');
-    grid.innerHTML='';
-    //  v5.8 FIX:   owner  currentUser.name ()
-    const realName=(viewMode==='owner'&&currentUser&&currentUser.name)?currentUser.name:((targetUser&&targetUser.name)||'');
-    if(tab==='color'){COLORS.forEach(c=>{const d=document.createElement('div');d.className='picker-item';if(nameColor===c)d.classList.add('selected');const p=document.createElement('div');p.className='picker-prev';p.style.color=c;p.innerText=realName;d.appendChild(p);d.onclick=()=>{nameColor=c;nameGradient=null;localStorage.setItem('name_color',c);localStorage.removeItem('name_gradient');applyNameColor();saveToChat();toast('  ');closeModal('name-picker-modal')};grid.appendChild(d)})}
-    else if(tab==='gradient'){GRADS.forEach(g=>{const d=document.createElement('div');d.className='picker-item';const p=document.createElement('div');p.className='picker-prev';p.style.background='linear-gradient(90deg,'+g[0]+','+g[1]+','+g[0]+')';p.style.backgroundSize='200% 200%';p.style.webkitBackgroundClip='text';p.style.backgroundClip='text';p.style.webkitTextFillColor='transparent';p.style.animation='nfSlide 3s linear infinite';p.innerText=realName;d.appendChild(p);d.onclick=()=>{nameGradient=g;nameColor=null;localStorage.setItem('name_gradient',JSON.stringify(g));localStorage.removeItem('name_color');applyNameGradient();saveToChat();toast('  ');closeModal('name-picker-modal')};grid.appendChild(d)})}
-    else if(tab==='frame'){const dNone=document.createElement('div');dNone.className='picker-item';if(!nameFrame)dNone.classList.add('selected');const pNone=document.createElement('div');pNone.className='picker-prev';pNone.style.background='rgba(0,0,0,0.5)';pNone.innerText='';dNone.appendChild(pNone);dNone.onclick=()=>{nameFrame=null;localStorage.removeItem('name_frame');applyNameFrame();document.getElementById('btn-name-frame').innerText='';saveToChat();toast(' ');closeModal('name-picker-modal')};grid.appendChild(dNone);FRAMES_LIST.forEach(f=>{const d=document.createElement('div');d.className='picker-item';if(nameFrame===f.id)d.classList.add('selected');const p=document.createElement('div');p.className='picker-prev nf '+f.id;p.innerText=realName;d.appendChild(p);d.onclick=()=>{nameFrame=f.id;localStorage.setItem('name_frame',f.id);applyNameFrame();document.getElementById('btn-name-frame').innerText=f.id;saveToChat();toast('  ');closeModal('name-picker-modal')};grid.appendChild(d)})}
-    else if(tab==='shape'){const dNone=document.createElement('div');dNone.className='picker-item';if(!nameShape)dNone.classList.add('selected');const pNone=document.createElement('div');pNone.className='picker-prev';pNone.innerText=realName;dNone.appendChild(pNone);dNone.onclick=()=>{nameShape=null;localStorage.removeItem('name_shape');reapplyShapeFrame();updateShapeLbl();saveToChat();toast(' ');closeModal('name-picker-modal')};grid.appendChild(dNone);SHAPES.forEach(f=>{const d=document.createElement('div');d.className='picker-item';if(nameShape===f.id)d.classList.add('selected');const p=document.createElement('div');p.className='picker-prev '+f.id;p.innerText=realName;d.appendChild(p);const lbl=document.createElement('div');lbl.style.cssText='font-size:10px;color:#ffd700;margin-top:6px';lbl.textContent=f.name;d.style.flexDirection='column';d.appendChild(lbl);d.onclick=()=>{nameShape=f.id;localStorage.setItem('name_shape',f.id);reapplyShapeFrame();updateShapeLbl();saveToChat();toast(' ');closeModal('name-picker-modal')};grid.appendChild(d)})}
-    else if(tab==='glow'){GLOWS.forEach(g=>{const d=document.createElement('div');d.className='picker-item';if(nameGlow===g.id)d.classList.add('selected');const p=document.createElement('div');p.className='picker-prev';p.style.color='#ffd700';p.innerText=realName;if(g.id==='soft')p.style.filter='drop-shadow(0 0 8px currentColor)';else if(g.id==='medium')p.style.filter='drop-shadow(0 0 15px currentColor)';else if(g.id==='strong')p.style.filter='drop-shadow(0 0 25px currentColor) drop-shadow(0 0 40px currentColor)';d.appendChild(p);const lbl=document.createElement('div');lbl.style.cssText='font-size:10px;color:#ffd700;margin-top:6px';lbl.textContent=g.name;d.style.flexDirection='column';d.appendChild(lbl);d.onclick=()=>{nameGlow=g.id;localStorage.setItem('name_glow',g.id);applyNameGlow();updateGlowLbl();saveToChat();toast(' ');closeModal('name-picker-modal')};grid.appendChild(d)})}
-    openModal('name-picker-modal');
-}
-
-function renderFrames(){
-    const c=document.getElementById('frames-container');if(!c)return;c.innerHTML='';
-    if(typeof CSS_FRAMES_DATA!=='undefined'){Object.values(CSS_FRAMES_DATA).forEach(f=>{const card=document.createElement('div');card.style.cssText='background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:8px;text-align:center;cursor:pointer';const p=document.createElement('div');p.style.cssText='background:#1a0e2e;position:relative;width:44px;height:44px;border-radius:50%;margin:0 auto';const av=document.createElement('img');av.src='https://ui-avatars.com/api/?name=U&background=333&color=fff';av.style.cssText='width:70%;height:70%;border-radius:50%;position:absolute;top:15%;left:15%';p.appendChild(av);const fp=document.createElement('div');fp.className='qcf qcf--'+f.cssClass;fp.style.cssText='position:absolute;inset:-3px;z-index:15';p.appendChild(fp);const n=document.createElement('div');n.style.cssText='font-size:10px;color:#ffd700;margin-top:6px';n.textContent=f.name;card.appendChild(p);card.appendChild(n);card.onclick=()=>{applyAvatarFrame(f.id);saveToChat();toast(' ')};c.appendChild(card)})}
-    if(typeof FRAMES_DATA!=='undefined'){Object.values(FRAMES_DATA).forEach(f=>{if(!f.url)return;const card=document.createElement('div');card.style.cssText='background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:8px;text-align:center;cursor:pointer';const p=document.createElement('div');p.style.cssText='background:#1a0e2e;width:44px;height:44px;margin:0 auto;border-radius:50%';const img=document.createElement('img');img.src=f.url;img.style.cssText='width:100%;height:100%;object-fit:contain';p.appendChild(img);const n=document.createElement('div');n.style.cssText='font-size:10px;color:#ffd700;margin-top:6px';n.textContent=f.name;card.appendChild(p);card.appendChild(n);card.onclick=()=>{applyAvatarFrame(f.id);saveToChat();toast(' ')};c.appendChild(card)})}
-}
-
-function openAppModal(title,text,type,options,currentVal,onSave){const m=document.getElementById('app-modal');if(!m)return;document.getElementById('modal-title').innerText=title;document.getElementById('modal-text').innerText=text;const c=document.getElementById('modal-dyn');c.innerHTML='';if(type==='input'){const i=document.createElement('input');i.type='text';i.id='modal-input-val';i.value=currentVal||'';c.appendChild(i)}else if(type==='select'){const s=document.createElement('select');s.id='modal-select-val';(options||[]).forEach(o=>{const op=document.createElement('option');op.value=o;op.innerText=o;if(o===currentVal)op.selected=true;s.appendChild(op)});c.appendChild(s)}m.classList.add('active');document.getElementById('modal-ok').onclick=function(){let v='';if(type==='input'){const i=document.getElementById('modal-input-val');if(i)v=i.value}else if(type==='select'){const s=document.getElementById('modal-select-val');if(s)v=s.value}if(onSave)onSave(v);m.classList.remove('active')};document.getElementById('modal-cancel').onclick=()=>m.classList.remove('active')}
-
-function initCommands(){if(viewMode!=='owner')return;const g=document.getElementById('btn-gift');if(g)g.onclick=()=>toast(' ')}
-
-function initInfo(){
-    const ci=document.getElementById('btn-copy-id');
-    if(ci)ci.onclick=()=>{const el=document.getElementById('profile-username-id');if(el)navigator.clipboard.writeText(el.innerText).then(()=>toast('  '))};
-    const cc=document.getElementById('btn-copy-code');
-    if(cc)cc.onclick=async()=>{
-        const code=(targetUser&&targetUser.code)||(currentUser&&currentUser.code);
-        if(!code||code===''){toast('         ');return}
-        try{
-            await navigator.clipboard.writeText(code);
-            toast('   : '+code+'\n  ');
-        }catch(e){toast(' : '+code)}
-    };
-}
-
-function initSearch(){
-    const btn=document.getElementById('search-btn');
-    const inp=document.getElementById('search-input');
-    if(btn)btn.onclick=doSearch;
-    if(inp)inp.addEventListener('keypress',e=>{if(e.key==='Enter')doSearch()});
-}
-
-async function doSearch(){
-    const inp=document.getElementById('search-input');
-    const results=document.getElementById('search-results');
-    if(!inp||!results)return;
-    const query=inp.value.trim();
-    results.innerHTML='';
-    if(!query){toast('     ');return}
-    if(typeof db==='undefined'||!db){toast(' Firebase  ');return}
-
-    const codeMatch=query.match(/([A-Za-z0-9]{2,3})·([A-Za-z0-9]{3,4})/);
-    if(codeMatch){
-        results.innerHTML='<div class="search-loading">   ...</div>';
-        try{
-            const code=codeMatch[0].toUpperCase();
-            const s=await db.ref('user_codes/'+code).once('value');
-            const uid=s.val();
-            if(uid){
-                const us=await db.ref('users/'+uid).once('value');
-                const u=us.val();
-                if(u){results.innerHTML='';renderSearchResult(u);return}
-            }
-            results.innerHTML='<div class="search-empty">     </div>';
-            return;
-        }catch(e){results.innerHTML='<div class="search-empty">   </div>';return}
-    }
-
-    results.innerHTML='<div class="search-loading">  ...</div>';
-    try{
-        const nameSnap=await db.ref('user_names/'+query).once('value');
-        const uid=nameSnap.val();
-        if(uid){
-            const userSnap=await db.ref('users/'+uid).once('value');
-            const u=userSnap.val();
-            if(u){renderSearchResult(u);return}
-        }
-        const allSnap=await db.ref('users').limitToLast(300).once('value');
-        const all=allSnap.val()||{};
-        const q=query.toLowerCase().replace(/\s+/g,'');
-        const matches=[];
-        Object.values(all).forEach(u=>{if(!u||!u.name)return;const n=u.name.toLowerCase().replace(/\s+/g,'');if(n.includes(q))matches.push(u)});
-        if(matches.length===0){results.innerHTML='<div class="search-empty">    "'+query+'"<br><br>:<br>   <br>    </div>';return}
-        results.innerHTML='<div style="color:#ffd700;font-size:12px;margin-bottom:8px;"> '+matches.length+' :</div>';
-        matches.slice(0,20).forEach(u=>renderSearchResult(u));
-    }catch(e){console.error('Search error:',e);results.innerHTML='<div class="search-empty">    </div>'}
-}
-
-function renderSearchResult(u){
-    const results=document.getElementById('search-results');
-    const el=document.createElement('div');el.className='search-result';
-    const img=document.createElement('img');img.src=u.avatar||('https://ui-avatars.com/api/?name='+encodeURIComponent(u.name||'User')+'&background=555&color=fff');
-    const info=document.createElement('div');info.className='search-result-info';
-    const nm=document.createElement('div');nm.className='search-result-name';nm.textContent=u.name||'';
-    const rk=document.createElement('div');rk.className='search-result-rank';rk.textContent=rankBadge(u.rank)+' '+(u.rank||'User');
-    info.appendChild(nm);info.appendChild(rk);el.appendChild(img);el.appendChild(info);
-    el.onclick=()=>{if(!u.uid){toast('   ');return}location.href=location.origin+location.pathname+'?uid='+u.uid};
-    results.appendChild(el);
-}
-
-async function sendNotif(targetUid,type,icon,title){if(typeof db==='undefined'||!db||!targetUid)return;try{await db.ref('user_notifications/'+targetUid).push({fromUid:(currentUser&&currentUser.uid)||'',fromName:(currentUser&&currentUser.name)||'',fromAvatar:(currentUser&&currentUser.avatar)||'',type:type,icon:icon,preview:title,time:firebase.database.ServerValue.TIMESTAMP,read:false})}catch(e){}}
-
-function openChat(uid,name){window.parent.postMessage({action:'openPrivateChat',uid:uid,name:name},'*');if(window.parent===window){localStorage.setItem('open_chat_uid',uid);localStorage.setItem('open_chat_name',name);location.href='index.html?chat='+uid}}
-
-console.log(' Profile v5.8 loaded  154 styles ');
-</script>
+<script src="profile-core.js"></script>
+<script src="profile-appearance.js"></script>
 </body>
 </html>
