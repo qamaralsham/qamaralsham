@@ -18,74 +18,74 @@
 <link rel="stylesheet" href="frames-engine.css">
 
 <style>
-/* ============ QAMAR GLASS v3 ============ */
+/* ============ QAMAR GLASS v4 ============ */
 
-/* القوائم الجانبية */
+/* القوائم الجانبية — شفافية حقيقية 90% */
 .sidebar {
-    background: rgba(10, 10, 20, 0.35) !important;
-    backdrop-filter: blur(35px) saturate(190%) !important;
-    -webkit-backdrop-filter: blur(35px) saturate(190%) !important;
-    border: 1px solid rgba(255, 215, 0, 0.45) !important;
+    background: rgba(20, 25, 45, 0.10) !important;
+    backdrop-filter: blur(45px) saturate(180%) brightness(1.1) !important;
+    -webkit-backdrop-filter: blur(45px) saturate(180%) brightness(1.1) !important;
+    border: 1px solid rgba(255, 215, 0, 0.5) !important;
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.2),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.4),
-        0 20px 50px rgba(0, 0, 0, 0.6),
-        0 0 40px rgba(255, 215, 0, 0.12) !important;
+        inset 0 1px 0 rgba(255, 255, 255, 0.25),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+        0 20px 60px rgba(0, 0, 0, 0.5),
+        0 0 50px rgba(255, 215, 0, 0.15) !important;
 }
 .sidebar-item {
     background: rgba(255, 255, 255, 0.06) !important;
-    border: 1px solid rgba(255, 215, 0, 0.2) !important;
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(255, 215, 0, 0.25) !important;
+    backdrop-filter: blur(15px) !important;
+    -webkit-backdrop-filter: blur(15px) !important;
 }
 .sidebar-item:hover,
 .sidebar-item.active {
-    background: rgba(255, 215, 0, 0.28) !important;
-    border-color: rgba(255, 215, 0, 0.7) !important;
+    background: rgba(255, 215, 0, 0.35) !important;
+    border-color: rgba(255, 215, 0, 0.85) !important;
 }
 .sidebar-header {
-    background: rgba(0, 0, 0, 0.35) !important;
-    backdrop-filter: blur(15px) !important;
-    -webkit-backdrop-filter: blur(15px) !important;
+    background: rgba(0, 0, 0, 0.25) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
 }
 
 /* الشريط العلوي */
 .header {
-    background: rgba(10, 10, 20, 0.35) !important;
-    backdrop-filter: blur(30px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(30px) saturate(180%) !important;
-    border-bottom: 1px solid rgba(255, 215, 0, 0.4) !important;
+    background: rgba(20, 25, 45, 0.15) !important;
+    backdrop-filter: blur(35px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(35px) saturate(180%) !important;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.45) !important;
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.12),
-        0 8px 24px rgba(0, 0, 0, 0.4) !important;
+        inset 0 1px 0 rgba(255, 255, 255, 0.15),
+        0 8px 28px rgba(0, 0, 0, 0.45) !important;
 }
 
 /* الشريط السفلي */
 .bottom-nav {
-    background: rgba(10, 10, 20, 0.35) !important;
-    backdrop-filter: blur(30px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(30px) saturate(180%) !important;
-    border-top: 1px solid rgba(255, 215, 0, 0.4) !important;
+    background: rgba(20, 25, 45, 0.15) !important;
+    backdrop-filter: blur(35px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(35px) saturate(180%) !important;
+    border-top: 1px solid rgba(255, 215, 0, 0.45) !important;
     box-shadow:
-        inset 0 -1px 0 rgba(255, 255, 255, 0.12),
-        0 -8px 24px rgba(0, 0, 0, 0.4) !important;
+        inset 0 -1px 0 rgba(255, 255, 255, 0.15),
+        0 -8px 28px rgba(0, 0, 0, 0.45) !important;
 }
 
 /* صندوق الكتابة */
 .input-area {
-    background: rgba(10, 10, 20, 0.35) !important;
-    backdrop-filter: blur(30px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(30px) saturate(180%) !important;
-    border-top: 1px solid rgba(255, 215, 0, 0.4) !important;
-    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.4) !important;
+    background: rgba(20, 25, 45, 0.15) !important;
+    backdrop-filter: blur(35px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(35px) saturate(180%) !important;
+    border-top: 1px solid rgba(255, 215, 0, 0.45) !important;
+    box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.45) !important;
 }
 
 /* شريط المايكات */
 .mics-bar {
-    background: rgba(10, 10, 20, 0.28) !important;
-    backdrop-filter: blur(25px) saturate(170%) !important;
-    -webkit-backdrop-filter: blur(25px) saturate(170%) !important;
-    border-bottom: 1px solid rgba(255, 215, 0, 0.25) !important;
+    background: rgba(20, 25, 45, 0.10) !important;
+    backdrop-filter: blur(28px) saturate(170%) !important;
+    -webkit-backdrop-filter: blur(28px) saturate(170%) !important;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.3) !important;
 }
 
 /* حجم القوائم 45% */
@@ -169,7 +169,7 @@
 }
 .upgrade-content .upgrade-btn.cancel { background: rgba(255,255,255,0.15) !important; color: #fff !important; }
 
-/* ⭐ نافذة الخاص — 50% من الشاشة */
+/* نافذة الخاص — 50% */
 .private-chat-modal {
     top: auto !important;
     bottom: 0 !important;
@@ -191,12 +191,68 @@ body.pm-open .floating-toolbar {
     display: none !important;
 }
 
+/* ⭐ أيقونة الرسالة المصغرة — صارت زر في الشريط السفلي */
+.minimized-chat-avatar {
+    position: static !important;
+    display: none !important;
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 50% !important;
+    border: 2px solid #ffd700 !important;
+    overflow: visible !important;
+    cursor: pointer !important;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.6) !important;
+    bottom: auto !important;
+    right: auto !important;
+    top: auto !important;
+    left: auto !important;
+}
+.minimized-chat-avatar.show {
+    display: inline-block !important;
+}
+.minimized-chat-avatar img {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    display: block !important;
+}
+.mca-badge {
+    position: absolute !important;
+    top: -6px !important;
+    right: -6px !important;
+    min-width: 16px !important;
+    height: 16px !important;
+    font-size: 9px !important;
+    background: #ff4444 !important;
+    color: #fff !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    border: 2px solid #050508 !important;
+    font-weight: 900 !important;
+}
+
+/* زر الرسائل في الشريط السفلي */
+.nav-item.nav-pm {
+    position: relative;
+}
+.nav-item.nav-pm .nav-pm-icon {
+    position: relative;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 /* overlay شفاف */
 .overlay {
     background: rgba(0, 0, 0, 0.25) !important;
 }
 
-/* ============ نهاية QAMAR GLASS v3 ============ */
+/* ============ نهاية QAMAR GLASS v4 ============ */
 </style>
 
 </head>
@@ -288,15 +344,28 @@ body.pm-open .floating-toolbar {
 <button type="button" class="plus-btn" id="plus-btn" onclick="toggleToolbar()" title="المزيد"><i class="fas fa-plus"></i></button>
 </div>
 
+<!-- ⭐ الشريط السفلي الجديد — 6 أزرار -->
 <div class="bottom-nav">
 <button type="button" class="nav-item" onclick="openProfile()"><i class="fas fa-id-card"></i><span>بروفايلي</span></button>
-<button type="button" class="nav-item" onclick="toggleRooms()"><i class="fas fa-door-open"></i><span>الغرف</span></button>
 <button type="button" class="nav-item" onclick="showOnlineUsers()"><i class="fas fa-users"></i><span>المتواجدين</span></button>
 <button type="button" class="nav-item" id="upgrade-nav-btn" onclick="openUpgradeModal()"><i class="fas fa-key"></i><span>عضوية</span></button>
+<button type="button" class="nav-item" onclick="showFriends()"><i class="fas fa-user-friends"></i><span>الأصدقاء</span></button>
 <button type="button" class="nav-item" onclick="showStore()"><i class="fas fa-store"></i><span>المتجر</span></button>
-<button type="button" class="nav-item" onclick="toggleSettings()"><i class="fas fa-cog"></i><span>الخيارات</span></button>
+<button type="button" class="nav-item nav-pm" onclick="openMinimizedChat()">
+<span class="nav-pm-icon">
+<i class="fas fa-comments" style="font-size:18px;"></i>
+<span class="notif-badge" id="minimized-badge" style="display:none;">0</span>
+</span>
+<span>الرسائل</span>
+</button>
 </div>
 
+</div>
+
+<!-- ⭐ أيقونة الرسالة المصغرة (مخفية — نستخدم نسخة JS) -->
+<div class="minimized-chat-avatar" id="minimized-chat-avatar" onclick="restorePrivateChat()">
+<img id="mca-img" src="" alt="chat">
+<span class="mca-badge" id="mca-badge" style="display:none;">0</span>
 </div>
 
 <div class="sidebar right-sidebar" id="rooms-sidebar">
@@ -347,11 +416,6 @@ body.pm-open .floating-toolbar {
 </div>
 </div>
 
-<div class="minimized-chat-avatar" id="minimized-chat-avatar" onclick="restorePrivateChat()">
-<img id="mca-img" src="" alt="chat">
-<span class="mca-badge" id="mca-badge" style="display:none;">0</span>
-</div>
-
 <div class="upgrade-modal" id="upgrade-modal">
 <div class="upgrade-content">
 <h3>🔑 ترقية لعضوية</h3>
@@ -378,14 +442,14 @@ body.pm-open .floating-toolbar {
 
 <div id="profile-frame-container" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.95);display:none;">
 <div style="position:relative;width:100%;height:100%;">
-<iframe id="profile-iframe" src="profile.html?v=6" style="width:100%;height:100%;border:none;display:block;" title="بروفايل المستخدم"></iframe>
+<iframe id="profile-iframe" src="profile.html?v=7" style="width:100%;height:100%;border:none;display:block;" title="بروفايل المستخدم"></iframe>
 </div>
 </div>
 
-<script src="config.js?v=15"></script>
-<script src="ranks.js?v=15"></script>
-<script src="utils.js?v=15"></script>
-<script src="frames-engine.js?v=15"></script>
+<script src="config.js?v=16"></script>
+<script src="ranks.js?v=16"></script>
+<script src="utils.js?v=16"></script>
+<script src="frames-engine.js?v=16"></script>
 <script>window.FRAMES = window.FRAMES || []; window.FRAMES_DATA = window.FRAMES_DATA || {}; window.CSS_FRAMES_DATA = window.CSS_FRAMES_DATA || {};</script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -396,10 +460,33 @@ document.addEventListener('DOMContentLoaded', function() {
         }).observe(modal, { attributes: true, attributeFilter: ['class'] });
     }
 });
+
+// ⭐ دالة الأصدقاء — مؤقت
+function showFriends() {
+    if (typeof showToast === 'function') showToast('fa-user-friends', '👥 قريباً');
+}
+
+// ⭐ دالة فتح الرسائل — من الشريط السفلي
+function openMinimizedChat() {
+    if (typeof ChatState !== 'undefined' && ChatState.minimizedChat) {
+        if (typeof restorePrivateChat === 'function') restorePrivateChat();
+    } else if (typeof ChatState !== 'undefined' && ChatState.currentPrivateChat) {
+        var m = document.getElementById('private-chat-modal');
+        if (m) m.classList.add('open');
+        var mv = document.getElementById('minimized-chat-avatar');
+        if (mv) mv.classList.remove('show');
+    } else if (typeof togglePrivateMessages === 'function') {
+        togglePrivateMessages();
+    } else {
+        if (typeof showToast === 'function') showToast('fa-comments', 'لا توجد محادثات');
+    }
+}
+window.showFriends = showFriends;
+window.openMinimizedChat = openMinimizedChat;
 </script>
-<script src="auth.js?v=15"></script>
-<script src="chat.js?v=15"></script>
-<script src="bots.js?v=15"></script>
+<script src="auth.js?v=16"></script>
+<script src="chat.js?v=16"></script>
+<script src="bots.js?v=16"></script>
 
 <script>
 let selectedGender = 'male';
