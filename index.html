@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="frames-engine.css">
 
 <style>
-/* ============ QAMAR GLASS v13 — شفافية 75% ============ */
+/* ============ QAMAR GLASS v14 ============ */
 
 html {
     background: radial-gradient(ellipse at top, rgba(212, 175, 55, 0.1) 0%, transparent 55%),
@@ -46,16 +46,13 @@ body { background: transparent !important; }
 }
 .messages { background: transparent !important; }
 
-/* ⭐⭐⭐ الأشرطة والقوائم — شفافية 75% (0.25) */
+/* الأشرطة والقوائم — شفافية 75% (0.25) */
 .header,
 .bottom-nav,
 .input-area,
 .mics-bar,
 .sidebar,
-.sidebar-header,
-.private-chat-modal,
-.private-chat-header,
-.private-chat-input {
+.sidebar-header {
     background: rgba(5, 5, 12, 0.25) !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
@@ -66,13 +63,8 @@ body { background: transparent !important; }
 .input-area { border-top: 1px solid rgba(255, 215, 0, 0.6) !important; }
 .mics-bar { border-bottom: 1px solid rgba(255, 215, 0, 0.45) !important; }
 
-.overlay {
-    background: rgba(0, 0, 0, 0.05) !important;
-}
-.overlay.show {
-    background: rgba(0, 0, 0, 0.05) !important;
-    opacity: 1 !important;
-}
+.overlay { background: rgba(0, 0, 0, 0.05) !important; }
+.overlay.show { background: rgba(0, 0, 0, 0.05) !important; opacity: 1 !important; }
 
 .sidebar {
     border: 1px solid rgba(255, 215, 0, 0.65) !important;
@@ -166,6 +158,7 @@ body { background: transparent !important; }
 }
 .upgrade-content .upgrade-btn.cancel { background: rgba(255,255,255,0.15) !important; color: #fff !important; }
 
+/* ⭐⭐⭐ نافذة الخاص — معتمة 75% (0.75) */
 .private-chat-modal {
     top: auto !important;
     bottom: 0 !important;
@@ -174,9 +167,16 @@ body { background: transparent !important; }
     border-radius: 20px 20px 0 0 !important;
     border-bottom: none !important;
     border-top: 2px solid #ffd700 !important;
+    background: rgba(5, 5, 12, 0.75) !important;
 }
-.private-chat-header { border-bottom: 1px solid rgba(255, 215, 0, 0.5) !important; }
-.private-chat-input { border-top: 1px solid rgba(255, 215, 0, 0.5) !important; }
+.private-chat-header {
+    background: rgba(5, 5, 12, 0.75) !important;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.5) !important;
+}
+.private-chat-input {
+    background: rgba(5, 5, 12, 0.75) !important;
+    border-top: 1px solid rgba(255, 215, 0, 0.5) !important;
+}
 
 body.pm-open .input-area,
 body.pm-open .bottom-nav,
@@ -417,14 +417,14 @@ body.pm-open .floating-toolbar {
 
 <div id="profile-frame-container" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.95);display:none;">
 <div style="position:relative;width:100%;height:100%;">
-<iframe id="profile-iframe" src="profile.html?v=16" style="width:100%;height:100%;border:none;display:block;"></iframe>
+<iframe id="profile-iframe" src="profile.html?v=17" style="width:100%;height:100%;border:none;display:block;"></iframe>
 </div>
 </div>
 
-<script src="config.js?v=25"></script>
-<script src="ranks.js?v=25"></script>
-<script src="utils.js?v=25"></script>
-<script src="frames-engine.js?v=25"></script>
+<script src="config.js?v=26"></script>
+<script src="ranks.js?v=26"></script>
+<script src="utils.js?v=26"></script>
+<script src="frames-engine.js?v=26"></script>
 <script>window.FRAMES = window.FRAMES || []; window.FRAMES_DATA = window.FRAMES_DATA || {}; window.CSS_FRAMES_DATA = window.CSS_FRAMES_DATA || {};</script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -444,12 +444,10 @@ document.addEventListener('DOMContentLoaded', function() {
         obs.observe(floatingAvatar, { attributes: true, attributeFilter: ['class', 'style'] });
     }
 
-    // ⭐ إجبار الشفافية مرة واحدة فقط (بدون interval عشان ما يتعارض مع chat.js)
     setTimeout(function() {
         var targets = [
             '.header', '.bottom-nav', '.input-area', '.mics-bar',
-            '.sidebar', '.sidebar-header',
-            '.private-chat-modal', '.private-chat-header', '.private-chat-input'
+            '.sidebar', '.sidebar-header'
         ];
         targets.forEach(function(sel) {
             document.querySelectorAll(sel).forEach(function(el) {
@@ -493,9 +491,9 @@ window.showFriends = showFriends;
 window.openMinimizedChat = openMinimizedChat;
 window.syncPMSlot = syncPMSlot;
 </script>
-<script src="auth.js?v=25"></script>
-<script src="chat.js?v=25"></script>
-<script src="bots.js?v=25"></script>
+<script src="auth.js?v=26"></script>
+<script src="chat.js?v=26"></script>
+<script src="bots.js?v=26"></script>
 
 <script>
 let selectedGender = 'male';
