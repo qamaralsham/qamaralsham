@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>قمر الشام — البروفايل الشخصي</title>
+<title>قمر الشام — البروفايل</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -11,6 +11,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 <link rel="stylesheet" href="profile-styles.css">
 <link rel="stylesheet" href="frames-engine.css">
+<link rel="stylesheet" href="qamar-fixes.css">
 </head>
 <body>
 
@@ -21,7 +22,6 @@
 
 <div class="profile" id="profile-container">
     <div id="profile-bg-layer" class="bg-layer"></div>
-
     <div class="top-btns">
         <button id="btn-close" title="إغلاق">✕</button>
         <div class="owner-top">
@@ -29,7 +29,6 @@
             <button class="owner-only" title="حفظ">💾</button>
         </div>
     </div>
-
     <div class="cover" id="profile-cover-box">
         <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600" class="cover-img" id="profile-cover-img">
         <div class="cover-edit owner-only">
@@ -62,7 +61,6 @@
             </div>
         </div>
     </div>
-
     <div class="interact-btns visitor-only" style="display:none">
         <button id="btn-heart">❤️</button>
         <button id="btn-mail">💬</button>
@@ -70,7 +68,6 @@
         <button id="btn-add-friend">➕</button>
         <button id="btn-poke">👋</button>
     </div>
-
     <div class="main-content">
         <div class="tabs">
             <div class="tab active owner-only" data-target="privacy-tab">الخصوصية</div>
@@ -83,12 +80,10 @@
             <div class="tab owner-only" data-target="likes-tab">الإعجابات</div>
             <div class="tab owner-only" data-target="blocked-tab">المحظورين</div>
         </div>
-
         <div class="poetry-box">
             <textarea id="poetry-input" class="poetry-in owner-only" placeholder="اكتب بيتاً من الشعر..." maxlength="300"></textarea>
             <div id="poetry-display" class="poetry-disp"></div>
         </div>
-
         <div class="scroll-box">
             <div id="privacy-tab" class="tab-c active">
                 <div class="priv-sec">
@@ -102,12 +97,10 @@
                     </div>
                 </div>
             </div>
-
             <div id="appearance-tab" class="tab-c">
                 <div class="info-card">
                     <div class="row"><span class="row-lb">لون الاسم</span><span class="row-vl"><span class="link" id="btn-name-color">تغيير</span></span></div>
                     <div class="row"><span class="row-lb">تدرج الاسم</span><span class="row-vl"><span class="link" id="btn-name-gradient">تغيير</span></span></div>
-                    <div class="row"><span class="row-lb">إطار الاسم</span><span class="row-vl"><span class="link" id="btn-name-frame">تغيير</span></span></div>
                     <div class="row"><span class="row-lb">شكل الاسم</span><span class="row-vl"><span class="link" id="btn-name-shape">تغيير</span></span></div>
                     <div class="row"><span class="row-lb">توهج الاسم</span><span class="row-vl"><span class="link" id="btn-name-glow">تغيير</span></span></div>
                     <div class="row"><span class="row-lb">توهج البروفايل</span><span class="row-vl"><span class="link" id="btn-profile-glow">تغيير</span></span></div>
@@ -117,13 +110,11 @@
                     <div class="row"><span class="row-lb">وضع الزائر</span><span class="row-vl"><span class="link" id="btn-visitor-view">معاينة</span></span></div>
                 </div>
             </div>
-
             <div id="commands-tab" class="tab-c">
                 <div class="info-card">
                     <div class="row"><span class="row-lb">🎁 إرسال هدية</span><span class="row-vl"><span class="link" id="btn-gift">قريباً</span></span></div>
                 </div>
             </div>
-
             <div id="info-tab" class="tab-c">
                 <div class="info-card">
                     <div class="row"><span class="row-lb">الاسم</span><span class="row-vl"><span class="link" id="profile-username-id">@user</span><span id="btn-copy-id" style="cursor:pointer;margin-right:8px;color:#64b5f6">📋</span></span></div>
@@ -137,14 +128,12 @@
                     <div class="row" id="info-email-row"><span class="row-lb">البريد الإلكتروني</span><span class="row-vl" id="info-email-value">—</span></div>
                 </div>
             </div>
-
             <div id="friends-tab" class="tab-c">
                 <div class="info-card">
                     <h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">قائمة الأصدقاء</h3>
                     <div id="friends-container"><div class="empty">جاري التحميل...</div></div>
                 </div>
             </div>
-
             <div id="search-tab" class="tab-c owner-only">
                 <div class="info-card">
                     <h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">البحث عن عضو</h3>
@@ -155,15 +144,12 @@
                     <div id="search-results"></div>
                 </div>
             </div>
-
             <div id="visitors-tab" class="tab-c owner-only">
                 <div class="info-card"><h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">الزوار الجدد</h3><div id="visitors-container"><div class="empty">لا يوجد زوار</div></div></div>
             </div>
-
             <div id="likes-tab" class="tab-c owner-only">
                 <div class="info-card"><h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">من أعجب بي</h3><div id="likes-container"><div class="empty">لا يوجد إعجابات</div></div></div>
             </div>
-
             <div id="blocked-tab" class="tab-c owner-only">
                 <div class="info-card"><h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">قائمة المحظورين</h3><div id="blocked-container"><div class="empty">لا يوجد محظورين</div></div></div>
             </div>
@@ -177,7 +163,6 @@
         <div class="modal-tabs" id="name-tabs">
             <div class="modal-tab active" data-pick="color">لون</div>
             <div class="modal-tab" data-pick="gradient">تدرج</div>
-            <div class="modal-tab" data-pick="frame">إطار</div>
             <div class="modal-tab" data-pick="shape">شكل</div>
             <div class="modal-tab" data-pick="glow">توهج</div>
         </div>
@@ -213,11 +198,11 @@
 
 <audio id="music-player" loop></audio>
 
-<script src="config.js"></script>
-<script src="ranks.js"></script>
-<script src="utils.js"></script>
-<script src="frames-engine.js"></script>
-<script src="profile-core.js"></script>
-<script src="profile-appearance.js"></script>
+<script src="config.js?v=12"></script>
+<script src="ranks.js?v=12"></script>
+<script src="utils.js?v=12"></script>
+<script src="frames-engine.js?v=12"></script>
+<script src="profile-core.js?v=12"></script>
+<script src="profile-appearance.js?v=12"></script>
 </body>
 </html>
