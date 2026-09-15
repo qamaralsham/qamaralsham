@@ -2,8 +2,6 @@
 // قمر الشام - الإعدادات المشتركة (v2)
 // Qamar Al Sham - Shared Configuration v2
 // ==============================================
-// ✅ v2: INDEX_URL → index.html
-// ==============================================
 
 const firebaseConfig = {
     apiKey: "AIzaSyDOBWW4uACUSShJjwzfpnEzcL3KONZ-6FI",
@@ -15,7 +13,6 @@ const firebaseConfig = {
     appId: "1:1059424590289:web:176e82c30c8c7ec4c028f0"
 };
 
-// ====== تهيئة Firebase ======
 let auth = null;
 let db = null;
 let storage = null;
@@ -26,20 +23,19 @@ try {
         auth = firebase.auth();
         db = firebase.database();
         storage = firebase.storage();
-        console.log('✅ Firebase initialized');
+        console.log('Firebase initialized');
     } else if (firebase.apps.length) {
         auth = firebase.auth();
         db = firebase.database();
         storage = firebase.storage();
     }
 } catch (e) {
-    console.error('❌ Firebase init failed:', e);
+    console.error('Firebase init failed:', e);
 }
 
-// ====== ثوابت المشروع ======
 const QAMAR = {
     PROFILE_URL: 'profile.html',
-    INDEX_URL: 'index.html',      // ✅ مُصلَّح: كان index1.html
+    INDEX_URL: 'index.html',
 
     RANK_LEVELS: {
         'King': 100, 'Queen': 95, 'Master Owner': 90, 'Room Owner': 85,
@@ -148,7 +144,7 @@ const QAMAR = {
     }
 };
 
-console.log('📦 Qamar Config v2 loaded:', {
+console.log('Qamar Config v2 loaded:', {
     rooms: Object.keys(QAMAR.ROOMS).length,
     ranks: QAMAR.RANKS_ORDERED.length,
     bots: Object.keys(QAMAR.BOTS).length
