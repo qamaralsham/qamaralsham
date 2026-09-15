@@ -10,6 +10,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 <link rel="stylesheet" href="profile-styles.css">
+<link rel="stylesheet" href="frames-engine.css">
 </head>
 <body>
 
@@ -89,7 +90,6 @@
         </div>
 
         <div class="scroll-box">
-
             <div id="privacy-tab" class="tab-c active">
                 <div class="priv-sec">
                     <h3>إعدادات الخصوصية</h3>
@@ -149,7 +149,7 @@
                 <div class="info-card">
                     <h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">البحث عن عضو</h3>
                     <div class="search-box">
-                        <input type="text" class="search-input" id="search-input" placeholder="اكتب الاسم أو الكود (مثل EM·4K7)..." maxlength="30">
+                        <input type="text" class="search-input" id="search-input" placeholder="اكتب الاسم أو الكود..." maxlength="30">
                         <button class="search-btn" id="search-btn"><i class="fas fa-search"></i> بحث</button>
                     </div>
                     <div id="search-results"></div>
@@ -167,7 +167,6 @@
             <div id="blocked-tab" class="tab-c owner-only">
                 <div class="info-card"><h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">قائمة المحظورين</h3><div id="blocked-container"><div class="empty">لا يوجد محظورين</div></div></div>
             </div>
-
         </div>
     </div>
 </div>
@@ -217,9 +216,7 @@
 <script src="config.js"></script>
 <script src="ranks.js"></script>
 <script src="utils.js"></script>
-<script src="frames-data.js"></script>
-<script src="frames-renderer.js"></script>
-<script src="css-frames.js"></script>
+<script src="frames-engine.js"></script>
 <script src="profile-core.js"></script>
 <script src="profile-appearance.js"></script>
 </body>
