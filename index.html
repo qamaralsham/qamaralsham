@@ -18,23 +18,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="frames-engine.css">
 </head>
-</head>
-<script>
-window.onerror = function(msg, url, line, col, error) {
-    var el = document.createElement('div');
-    el.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#c00;color:#fff;padding:12px;font-size:13px;z-index:999999;direction:ltr;text-align:left;word-break:break-all;font-family:monospace;max-height:40vh;overflow:auto';
-    el.textContent = '🔴 ERROR: ' + msg + ' | Line ' + line + ' | File: ' + (url||'').split('/').pop();
-    document.body.appendChild(el);
-};
-window.addEventListener('unhandledrejection', function(e) {
-    var el = document.createElement('div');
-    el.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#c60;color:#fff;padding:12px;font-size:13px;z-index:999999;direction:ltr;text-align:left;word-break:break-all;font-family:monospace;max-height:40vh;overflow:auto';
-    el.textContent = '🟠 PROMISE: ' + (e.reason && e.reason.message ? e.reason.message : String(e.reason));
-    document.body.appendChild(el);
-});
-</script>
-<body>
 <body>
 
 <div class="starfield" id="starfield"></div>
@@ -287,15 +272,17 @@ window.addEventListener('unhandledrejection', function(e) {
 <!-- ============================================
      السكربتات
      ============================================ -->
-<script src="config.js?v=10"></script>
-<script src="ranks.js?v=10"></script>
-<script src="utils.js?v=10"></script>
-<script src="frames-data.js?v=10"></script>
-<script src="frames-renderer.js?v=10"></script>
-<script src="css-frames.js?v=10"></script>
-<script src="auth.js?v=10"></script>
-<script src="chat.js?v=10"></script>
-<script src="bots.js?v=10"></script>
+<script src="config.js?v=11"></script>
+<script src="ranks.js?v=11"></script>
+<script src="utils.js?v=11"></script>
+<script src="frames-data.js?v=11"></script>
+<script src="frames-renderer.js?v=11"></script>
+<script src="css-frames.js?v=11"></script>
+<script src="frames-engine.js?v=11"></script>
+<script>window.FRAMES = window.FRAMES || []; window.FRAMES_DATA = window.FRAMES_DATA || {}; window.CSS_FRAMES_DATA = window.CSS_FRAMES_DATA || {};</script>
+<script src="auth.js?v=11"></script>
+<script src="chat.js?v=11"></script>
+<script src="bots.js?v=11"></script>
 
 <script>
 let selectedGender = 'male';
@@ -397,7 +384,7 @@ async function handleUpgrade() {
         document.getElementById('upgrade-email').value = '';
         document.getElementById('upgrade-password').value = '';
         document.getElementById('upgrade-password-confirm').value = '';
-        showToast('fa-crown', '🎉 تم ترقيتك لعضو');
+        if (typeof showToast === 'function') showToast('fa-crown', '🎉 تم ترقيتك لعضو');
         setTimeout(() => location.reload(), 1500);
     } else {
         alert('⚠️ ' + (result?.error || 'فشل الترقية'));
