@@ -18,79 +18,90 @@
 <link rel="stylesheet" href="frames-engine.css">
 
 <style>
-/* ============ QAMAR GLASS + FIXES — مدمج ============ */
+/* ============ QAMAR GLASS v3 ============ */
 
-/* 1. البلور ثلاثي الأبعاد — الشريط العلوي */
+/* القوائم الجانبية */
+.sidebar {
+    background: rgba(10, 10, 20, 0.35) !important;
+    backdrop-filter: blur(35px) saturate(190%) !important;
+    -webkit-backdrop-filter: blur(35px) saturate(190%) !important;
+    border: 1px solid rgba(255, 215, 0, 0.45) !important;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.4),
+        0 20px 50px rgba(0, 0, 0, 0.6),
+        0 0 40px rgba(255, 215, 0, 0.12) !important;
+}
+.sidebar-item {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 215, 0, 0.2) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+}
+.sidebar-item:hover,
+.sidebar-item.active {
+    background: rgba(255, 215, 0, 0.28) !important;
+    border-color: rgba(255, 215, 0, 0.7) !important;
+}
+.sidebar-header {
+    background: rgba(0, 0, 0, 0.35) !important;
+    backdrop-filter: blur(15px) !important;
+    -webkit-backdrop-filter: blur(15px) !important;
+}
+
+/* الشريط العلوي */
 .header {
-    background: rgba(255, 255, 255, 0.02) !important;
-    backdrop-filter: blur(22px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(22px) saturate(180%) !important;
-    border-bottom: 1px solid rgba(255, 215, 0, 0.3) !important;
+    background: rgba(10, 10, 20, 0.35) !important;
+    backdrop-filter: blur(30px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(30px) saturate(180%) !important;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.4) !important;
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.12),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.4),
-        0 8px 24px rgba(0, 0, 0, 0.35) !important;
+        0 8px 24px rgba(0, 0, 0, 0.4) !important;
 }
 
-/* 2. البلور — الشريط السفلي */
+/* الشريط السفلي */
 .bottom-nav {
-    background: rgba(255, 255, 255, 0.02) !important;
-    backdrop-filter: blur(22px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(22px) saturate(180%) !important;
-    border-top: 1px solid rgba(255, 215, 0, 0.3) !important;
+    background: rgba(10, 10, 20, 0.35) !important;
+    backdrop-filter: blur(30px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(30px) saturate(180%) !important;
+    border-top: 1px solid rgba(255, 215, 0, 0.4) !important;
     box-shadow:
-        inset 0 1px 0 rgba(0, 0, 0, 0.4),
         inset 0 -1px 0 rgba(255, 255, 255, 0.12),
-        0 -8px 24px rgba(0, 0, 0, 0.35) !important;
+        0 -8px 24px rgba(0, 0, 0, 0.4) !important;
 }
 
-/* 3. البلور — صندوق الكتابة */
+/* صندوق الكتابة */
 .input-area {
-    background: rgba(255, 255, 255, 0.02) !important;
-    backdrop-filter: blur(22px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(22px) saturate(180%) !important;
-    border-top: 1px solid rgba(255, 215, 0, 0.3) !important;
-    box-shadow:
-        inset 0 1px 0 rgba(0, 0, 0, 0.4),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.12),
-        0 -8px 24px rgba(0, 0, 0, 0.35) !important;
+    background: rgba(10, 10, 20, 0.35) !important;
+    backdrop-filter: blur(30px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(30px) saturate(180%) !important;
+    border-top: 1px solid rgba(255, 215, 0, 0.4) !important;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.4) !important;
 }
 
-/* 4. البلور — شريط المايكات */
+/* شريط المايكات */
 .mics-bar {
-    background: rgba(255, 255, 255, 0.02) !important;
-    backdrop-filter: blur(18px) saturate(170%) !important;
-    -webkit-backdrop-filter: blur(18px) saturate(170%) !important;
-    border-bottom: 1px solid rgba(255, 215, 0, 0.2) !important;
+    background: rgba(10, 10, 20, 0.28) !important;
+    backdrop-filter: blur(25px) saturate(170%) !important;
+    -webkit-backdrop-filter: blur(25px) saturate(170%) !important;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.25) !important;
 }
 
-/* 5. البلور — القوائم الجانبية */
-.sidebar {
-    background: rgba(255, 255, 255, 0.02) !important;
-    backdrop-filter: blur(28px) saturate(190%) !important;
-    -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
-    border: 1px solid rgba(255, 215, 0, 0.35) !important;
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.15),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.4),
-        0 20px 50px rgba(0, 0, 0, 0.5),
-        0 0 0 1px rgba(255, 215, 0, 0.1) !important;
-}
-
-/* 6. حجم القوائم 45% */
+/* حجم القوائم 45% */
 .sidebar {
     width: 45vw !important;
     min-width: 0 !important;
     max-width: 400px !important;
 }
 @media (max-width: 480px) {
-    .sidebar { width: 50vw !important; }
+    .sidebar { width: 55vw !important; }
 }
 
-/* 7. إخفاء زر إطار الاسم */
+/* إخفاء زر إطار الاسم */
 #btn-name-frame { display: none !important; }
 
-/* 8. الشريط العائم — فوق صندوق الكتابة */
+/* الشريط العائم */
 .floating-toolbar {
     position: fixed !important;
     bottom: 135px !important;
@@ -110,12 +121,11 @@
 }
 .floating-toolbar.open { display: flex !important; }
 
-/* 9. نافذة الترقية */
+/* نافذة الترقية */
 .upgrade-modal {
     position: fixed !important;
     top: 0 !important; left: 0 !important;
     right: 0 !important; bottom: 0 !important;
-    width: 100% !important; height: 100% !important;
     background: rgba(0, 0, 0, 0.85) !important;
     display: none !important;
     justify-content: center !important;
@@ -159,18 +169,21 @@
 }
 .upgrade-content .upgrade-btn.cancel { background: rgba(255,255,255,0.15) !important; color: #fff !important; }
 
-/* 10. نافذة الخاص — فتح من الأسفل */
+/* ⭐ نافذة الخاص — 50% من الشاشة */
 .private-chat-modal {
     top: auto !important;
     bottom: 0 !important;
-    height: 78vh !important;
-    max-height: 78vh !important;
+    height: 50vh !important;
+    max-height: 50vh !important;
     border-radius: 20px 20px 0 0 !important;
     border-bottom: none !important;
     border-top: 2px solid #ffd700 !important;
+    background: rgba(15, 15, 25, 0.95) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
 }
 
-/* 11. لما الخاص مفتوح → إخفاء عناصر عامة */
+/* لما الخاص مفتوح */
 body.pm-open .input-area,
 body.pm-open .bottom-nav,
 body.pm-open .mics-bar-wrapper,
@@ -178,7 +191,12 @@ body.pm-open .floating-toolbar {
     display: none !important;
 }
 
-/* ============ نهاية QAMAR GLASS ============ */
+/* overlay شفاف */
+.overlay {
+    background: rgba(0, 0, 0, 0.25) !important;
+}
+
+/* ============ نهاية QAMAR GLASS v3 ============ */
 </style>
 
 </head>
@@ -360,14 +378,14 @@ body.pm-open .floating-toolbar {
 
 <div id="profile-frame-container" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.95);display:none;">
 <div style="position:relative;width:100%;height:100%;">
-<iframe id="profile-iframe" src="profile.html?v=5" style="width:100%;height:100%;border:none;display:block;" title="بروفايل المستخدم"></iframe>
+<iframe id="profile-iframe" src="profile.html?v=6" style="width:100%;height:100%;border:none;display:block;" title="بروفايل المستخدم"></iframe>
 </div>
 </div>
 
-<script src="config.js?v=14"></script>
-<script src="ranks.js?v=14"></script>
-<script src="utils.js?v=14"></script>
-<script src="frames-engine.js?v=14"></script>
+<script src="config.js?v=15"></script>
+<script src="ranks.js?v=15"></script>
+<script src="utils.js?v=15"></script>
+<script src="frames-engine.js?v=15"></script>
 <script>window.FRAMES = window.FRAMES || []; window.FRAMES_DATA = window.FRAMES_DATA || {}; window.CSS_FRAMES_DATA = window.CSS_FRAMES_DATA || {};</script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -379,9 +397,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-<script src="auth.js?v=14"></script>
-<script src="chat.js?v=14"></script>
-<script src="bots.js?v=14"></script>
+<script src="auth.js?v=15"></script>
+<script src="chat.js?v=15"></script>
+<script src="bots.js?v=15"></script>
 
 <script>
 let selectedGender = 'male';
