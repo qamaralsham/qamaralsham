@@ -1,0 +1,58 @@
+/* ==============================================
+   profile-styles-patch.css v1
+   يُحمَّل بعد profile-styles.css
+   يُصلح 4 مشاكل بدون تعديل الأصل
+   ============================================== */
+
+/* 1) حذف الإطار الذهبي من الأفاتار */
+.avatar {
+    border: none !important;
+    box-shadow: 0 10px 35px rgba(0,0,0,0.8) !important;
+}
+
+/* 2) تعطيل text-shadow القديم للتوهج (يُستبدل بـ filter في JS) */
+.username.glow-soft,
+.username.glow-medium,
+.username.glow-strong,
+.username.glow-soft.name-bg-active,
+.username.glow-medium.name-bg-active,
+.username.glow-strong.name-bg-active {
+    text-shadow: none !important;
+}
+
+/* 3) استبدال سحابة الخلفية الضبابية بكبسولة حقيقية */
+.username.name-bg-active::before {
+    content: none !important;
+    display: none !important;
+}
+
+.username.name-bg-active {
+    padding: 4px 16px !important;
+    border-radius: 999px !important;
+    display: inline-block !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+/* 4) منع حجم الاسم من إزاحة الرتبة والبايو */
+.header .user-cont {
+    height: 32px !important;
+    min-height: 32px !important;
+    max-height: 32px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: visible !important;
+}
+
+.header .user-cont .username {
+    line-height: 1 !important;
+    white-space: nowrap !important;
+}
+
+/* 5) البايو يظهر دائماً */
+.bio {
+    display: block !important;
+    min-height: 14px !important;
+    line-height: 1.4 !important;
+}
