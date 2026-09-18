@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>قمر الشام — البروفايل</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<link rel="stylesheet" href="profile-styles.css">
+<link rel="stylesheet" href="frames-engine.css">
+</head>
+<body>
+
+<input type="file" id="cover-file-input" accept="image/*" style="display:none">
+<input type="file" id="avatar-file-input" accept="image/*" style="display:none">
+<input type="file" id="profile-bg-input" accept="image/*,video/*" style="display:none">
+<input type="file" id="music-file-input" accept="audio/*" style="display:none">
+
+<div class="profile" id="profile-container">
+    <div id="profile-bg-layer" class="bg-layer"></div>
+    <div class="top-btns">
+        <button id="btn-close" title="إغلاق">✕</button>
+        <div class="owner-top">
+            <button class="owner-only" title="مشاركة">📤</button>
+            <button class="owner-only" title="حفظ">💾</button>
+        </div>
+    </div>
+    <div class="cover" id="profile-cover-box">
+        <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600" class="cover-img" id="profile-cover-img">
+        <div class="cover-edit owner-only">
+            <button class="del-cov" id="btn-remove-cover">✕ إزالة</button>
+            <button id="btn-change-cover">🖼️ تغيير</button>
+        </div>
+        <div class="avatar-cont">
+            <div class="avatar-box" id="avatar-box" style="position:relative;width:100px;height:100px;margin:0 auto">
+                <div class="avatar"><img src="https://ui-avatars.com/api/?name=User&background=555&color=fff" id="profile-avatar-img"></div>
+                <div id="activeAvatarFrame"></div>
+            </div>
+            <div class="avatar-edit owner-only">
+                <span class="del-av" id="btn-remove-avatar">🗑️</span>
+                <span id="btn-change-avatar">📷</span>
+            </div>
+        </div>
+        <div class="header">
+            <div class="role" id="display-role">
+                <span class="status-dot" id="status-dot"></span>
+                <span id="role-text">User 👤</span>
+            </div>
+            <button class="music-toggle-mini visitor-only" id="music-btn-mini" style="display:none" title="الموسيقى"><i class="fas fa-play"></i></button>
+            <div class="user-cont">
+                <div class="username" id="profile-username">مستخدم</div>
+                <span class="edit-pen owner-only" id="btn-edit-username">✏️</span>
+            </div>
+            <div class="user-cont">
+                <div class="bio" id="profile-bio">@user</div>
+                <span class="edit-pen owner-only" id="btn-edit-bio">✏️</span>
+            </div>
+        </div>
+    </div>
+    <div class="interact-btns visitor-only" style="display:none">
+        <button id="btn-heart">❤️</button>
+        <button id="btn-mail">💬</button>
+        <button id="btn-block">🚫</button>
+        <button id="btn-add-friend">➕</button>
+        <button id="btn-poke">👋</button>
+        <button id="btn-admin-actions" style="display:none;background:linear-gradient(135deg,#8b0000,#d4af37);border-color:#ffd700;color:#fff;font-weight:900;" title="أوامر إدارية">⚔️</button>
+    </div>
+    <div class="main-content">
+        <div class="tabs">
+            <div class="tab active owner-only" data-target="privacy-tab">الخصوصية</div>
+            <div class="tab owner-only" data-target="appearance-tab">المظهر</div>
+            <div class="tab owner-only" data-target="commands-tab">الأوامر</div>
+            <div class="tab" data-target="info-tab">المعلومات</div>
+            <div class="tab" data-target="friends-tab">الأصدقاء</div>
+            <div class="tab owner-only" data-target="search-tab">البحث</div>
+            <div class="tab owner-only" data-target="visitors-tab">الزوار</div>
+            <div class="tab owner-only" data-target="likes-tab">الإعجابات</div>
+            <div class="tab owner-only" data-target="blocked-tab">المحظورين</div>
+        </div>
+        <div class="poetry-box">
+            <textarea id="poetry-input" class="poetry-in owner-only" placeholder="اكتب بيتاً من الشعر..." maxlength="300"></textarea>
+            <div id="poetry-display" class="poetry-disp"></div>
+        </div>
+        <div class="scroll-box">
+
+            <!-- ═══ تبويب الخصوصية ═══ -->
+            <div id="privacy-tab" class="tab-c active">
+                <div class="priv-sec">
+                    <h3>إعدادات الخصوصية</h3>
+                    <div class="info-card">
+                        <div class="priv-row"><span class="priv-lb">البريد الإلكتروني</span><select class="priv-sel" id="privacy-email" data-field="email"><option value="public" selected>الجميع</option><option value="friends">الأصدقاء</option><option value="private">أنا فقط</option></select></div>
+                        <div class="priv-row"><span class="priv-lb">العمر</span><select class="priv-sel" id="privacy-age" data-field="age"><option value="public" selected>الجميع</option><option value="friends">الأصدقاء</option><option value="private">أنا فقط</option></select></div>
+                        <div class="priv-row"><span class="priv-lb">الجنس</span><select class="priv-sel" id="privacy-gender" data-field="gender"><option value="public" selected>الجميع</option><option value="friends">الأصدقاء</option><option value="private">أنا فقط</option></select></div>
+                        <div class="priv-row"><span class="priv-lb">الرسائل</span><select class="priv-sel" id="privacy-messages" data-field="messages"><option value="public" selected>الجميع</option><option value="friends">الأصدقاء</option><option value="private">أنا فقط</option></select></div>
+                        <div class="priv-row"><span class="priv-lb">قائمة الأصدقاء</span><select class="priv-sel" id="privacy-friends" data-field="friends"><option value="public" selected>الجميع</option><option value="friends">الأصدقاء فقط</option><option value="private">أنا فقط</option></select></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ تبويب المظهر ═══ -->
+            <div id="appearance-tab" class="tab-c">
+                <div class="info-card">
+                    <div class="row"><span class="row-lb">لون الاسم</span><span class="row-vl"><span class="link" id="btn-name-color">تغيير</span></span></div>
+                    <div class="row"><span class="row-lb">تدرج الاسم</span><span class="row-vl"><span class="link" id="btn-name-gradient">تغيير</span></span></div>
+                    <div class="row"><span class="row-lb">خلفية الاسم</span><span class="row-vl"><span class="link" id="btn-name-shape">تغيير</span></span></div>
+                    <div class="row"><span class="row-lb">توهج الاسم</span><span class="row-vl"><span class="link" id="btn-name-glow">تغيير</span></span></div>
+
+                    <!-- حجم الاسم -->
+                    <div class="row">
+                        <span class="row-lb">حجم الاسم</span>
+                        <span class="row-vl" style="display:flex;gap:8px;align-items:center;min-width:180px;">
+                            <input type="range" id="name-size-slider" min="12" max="40" value="20" style="flex:1;accent-color:#ffd700;">
+                            <span id="name-size-label" style="color:#ffd700;font-size:11px;font-weight:900;min-width:40px;text-align:center;">20px</span>
+                        </span>
+                    </div>
+
+                    <!-- حجم الإطار -->
+                    <div class="row">
+                        <span class="row-lb">حجم الإطار</span>
+                        <span class="row-vl" style="display:flex;gap:8px;align-items:center;min-width:180px;">
+                            <input type="range" id="frame-size-slider" min="-30" max="20" value="-8" style="flex:1;accent-color:#ffd700;">
+                            <span id="frame-size-label" style="color:#ffd700;font-size:11px;font-weight:900;min-width:40px;text-align:center;">-8%</span>
+                        </span>
+                    </div>
+
+                    <div class="row"><span class="row-lb">توهج البروفايل</span><span class="row-vl"><span class="link" id="btn-profile-glow">تغيير</span></span></div>
+                    <div class="row"><span class="row-lb">خلفية البروفايل</span><span class="row-vl"><span class="link" id="btn-profile-bg">تغيير</span></span></div>
+                    <div class="row"><span class="row-lb">الموسيقى</span><span class="row-vl"><span class="link" id="btn-profile-music">اختيار</span></span></div>
+                    <div class="row"><span class="row-lb">إطار الأفاتار</span><span class="row-vl"><span class="link" id="avatar-frame-motion">تغيير</span></span></div>
+                    <div class="row"><span class="row-lb">وضع الزائر</span><span class="row-vl"><span class="link" id="btn-visitor-view">معاينة</span></span></div>
+                </div>
+            </div>
+
+            <!-- ═══ تبويب الأوامر ═══ -->
+            <div id="commands-tab" class="tab-c">
+                <div class="info-card">
+                    <div class="row"><span class="row-lb">🎁 إرسال هدية</span><span class="row-vl"><span class="link" id="btn-gift">قريباً</span></span></div>
+                </div>
+            </div>
+
+            <!-- ═══ تبويب المعلومات ═══ -->
+            <div id="info-tab" class="tab-c">
+                <div class="info-card">
+                    <div class="row"><span class="row-lb">الاسم</span><span class="row-vl"><span class="link" id="profile-username-id">@user</span><span id="btn-copy-id" style="cursor:pointer;margin-right:8px;color:#64b5f6">📋</span></span></div>
+                    <div class="row"><span class="row-lb">كود التعريف</span><span class="row-vl" style="display:flex;gap:8px;align-items:center"><span class="user-code" id="info-code-value">—</span><button id="btn-copy-code" class="share-btn"><i class="fas fa-copy"></i> نسخ</button></span></div>
+                    <div class="row" id="info-points-row" style="display:none;"><span class="row-lb">النقاط</span><span class="row-vl" id="info-points-value" style="color:#ffd700;font-weight:900;">—</span></div>
+                    <div class="row" id="info-level-row" style="display:none;"><span class="row-lb">المستوى</span><span class="row-vl" id="info-level-value" style="color:#84cc16;font-weight:900;">—</span></div>
+                    <div class="row" id="info-age-row"><span class="row-lb">العمر</span><span class="row-vl" id="info-age-value">—</span></div>
+                    <div class="row" id="info-gender-row"><span class="row-lb">الجنس</span><span class="row-vl" id="info-gender-value">—</span></div>
+                    <div class="row" id="info-join-row"><span class="row-lb">تاريخ الانضمام</span><span class="row-vl" id="info-join-value">—</span></div>
+                    <div class="row" id="info-lastseen-row"><span class="row-lb">آخر ظهور</span><span class="row-vl" id="info-lastseen-value">—</span></div>
+                    <div class="row" id="info-room-row"><span class="row-lb">الغرفة الحالية</span><span class="row-vl" id="info-room-value">—</span></div>
+                    <div class="row" id="info-country-row"><span class="row-lb">الدولة</span><span class="row-vl" id="info-country-value">—</span></div>
+                    <div class="row" id="info-email-row"><span class="row-lb">البريد الإلكتروني</span><span class="row-vl" id="info-email-value">—</span></div>
+                </div>
+            </div>
+
+            <!-- ═══ تبويب الأصدقاء ═══ -->
+            <div id="friends-tab" class="tab-c">
+                <div class="info-card">
+                    <h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">قائمة الأصدقاء</h3>
+                    <div id="friends-container"><div class="empty">جاري التحميل...</div></div>
+                </div>
+            </div>
+
+            <!-- ═══ تبويب البحث ═══ -->
+            <div id="search-tab" class="tab-c owner-only">
+                <div class="info-card">
+                    <h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">البحث عن عضو</h3>
+                    <div class="search-box">
+                        <input type="text" class="search-input" id="search-input" placeholder="اكتب الاسم أو الكود..." maxlength="30">
+                        <button class="search-btn" id="search-btn"><i class="fas fa-search"></i> بحث</button>
+                    </div>
+                    <div id="search-results"></div>
+                </div>
+            </div>
+
+            <!-- ═══ تبويب الزوار ═══ -->
+            <div id="visitors-tab" class="tab-c owner-only">
+                <div class="info-card"><h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">الزوار الجدد</h3><div id="visitors-container"><div class="empty">لا يوجد زوار</div></div></div>
+            </div>
+
+            <!-- ═══ تبويب الإعجابات ═══ -->
+            <div id="likes-tab" class="tab-c owner-only">
+                <div class="info-card"><h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">من أعجب بي</h3><div id="likes-container"><div class="empty">لا يوجد إعجابات</div></div></div>
+            </div>
+
+            <!-- ═══ تبويب المحظورين ═══ -->
+            <div id="blocked-tab" class="tab-c owner-only">
+                <div class="info-card"><h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">قائمة المحظورين</h3><div id="blocked-container"><div class="empty">لا يوجد محظورين</div></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ Modal اختيار الاسم ═══ -->
+<div class="modal" id="name-picker-modal">
+    <div class="modal-c">
+        <h3>تخصيص الاسم</h3>
+        <div class="modal-tabs" id="name-tabs">
+            <div class="modal-tab active" data-pick="color">لون</div>
+            <div class="modal-tab" data-pick="gradient">تدرج</div>
+            <div class="modal-tab" data-pick="shape">خلفية</div>
+            <div class="modal-tab" data-pick="glow">توهج</div>
+        </div>
+        <div class="picker-grid" id="name-picker-grid"></div>
+        <div class="modal-btns"><button class="cancel" onclick="closeModal('name-picker-modal')">إغلاق</button></div>
+    </div>
+</div>
+
+<!-- ═══ Modal توهج البروفايل ═══ -->
+<div class="modal" id="profile-glow-modal">
+    <div class="modal-c">
+        <h3>اختر لون التوهج</h3>
+        <div class="colors-grid" id="profile-glow-grid"></div>
+        <div class="modal-btns"><button class="cancel" id="glow-off-btn">إيقاف</button><button class="cancel" onclick="closeModal('profile-glow-modal')">إغلاق</button></div>
+    </div>
+</div>
+
+<!-- ═══ Modal الإطارات ═══ -->
+<div class="modal" id="frames-modal">
+    <div class="modal-c">
+        <h3>اختر إطار الأفاتار</h3>
+        <div id="frames-container" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:60vh;overflow-y:auto;padding:6px"></div>
+        <div class="modal-btns"><button class="cancel" onclick="closeModal('frames-modal')">إغلاق</button></div>
+    </div>
+</div>
+
+<!-- ═══ Modal عام ═══ -->
+<div class="modal" id="app-modal">
+    <div class="modal-c">
+        <h3 id="modal-title">عنوان</h3>
+        <p id="modal-text">نص</p>
+        <div id="modal-dyn"></div>
+        <div class="modal-btns"><button id="modal-ok">موافق</button><button class="cancel" id="modal-cancel">إلغاء</button></div>
+    </div>
+</div>
+
+<audio id="music-player" loop></audio>
+
+<script src="config.js?v=26"></script>
+<script src="ranks.js?v=26"></script>
+<script src="utils.js?v=26"></script>
+<script src="frames-engine.js?v=26"></script>
+<script src="profile-core.js?v=26"></script>
+<script src="profile-appearance.js?v=26"></script>
+</body>
+</html>
