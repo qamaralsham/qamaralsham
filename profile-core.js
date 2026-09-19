@@ -1,5 +1,5 @@
 // ==============================================
-// profile-core.js v2 — كامل
+// profile-core.js v2.1 — كامل + قفل الوميض
 // ==============================================
 
 let currentUser = null, targetUser = null, viewMode = 'owner';
@@ -329,7 +329,21 @@ function canView(field) {
 function loadProfile() {
     if (!targetUser) return;
     const _displayName = (viewMode === 'owner' && currentUser && currentUser.name) ? currentUser.name : (targetUser.name || 'مستخدم');
-    const u = document.getElementById('profile-username'); if (u) u.innerText = _displayName;
+    const u = document.getElementById('profile-username');
+    if (u) {
+        u.dataset.name = _displayName;
+        // إن كان الاسم داخل بنية معقدة (nf-*) لا نستبدل النص
+        if (!u.querySelector('span[data-name-inner]') && !u.classList.contains('name-has-effects')) {
+            // فقط إن لم يكن هناك تأثيرات
+            if (u.children.length === 0) {
+                u.innerText = _displayName;
+            } else {
+                u.dataset.name = _displayName;
+            }
+        } else {
+            u.dataset.name = _displayName;
+        }
+    }
     const b = document.getElementById('profile-bio'); if (b) b.innerText = targetUser.bio || ('@' + (targetUser.name || 'user'));
     const r = document.getElementById('role-text'); if (r) r.innerText = rankBadge(targetUser.rank) + ' ' + (targetUser.rank || 'User');
     if (targetUser.avatar) { const a = document.getElementById('profile-avatar-img'); if (a) a.src = targetUser.avatar; }
@@ -361,11 +375,6 @@ function loadProfile() {
         if (Date.now() > _localLockUntil) {
             applyAvatarFrame(targetUser.avatarFrame);
         }
-    }
-
-    if (targetUser.nameGradient && typeof applyNameGradient === 'function') {
-        nameGradient = targetUser.nameGradient;
-        applyNameGradient();
     }
 
     if (targetUser.nameBgGradient && typeof NameBgState !== 'undefined' && typeof applyNameBg === 'function') {
@@ -517,8 +526,10 @@ async function uploadLoad(file, maxMB) {
     return u;
 }
 
+/* ⭐⭐⭐ قفل الوميض */
 function saveToChat() {
     if (!currentUser) return;
+    _localLockUntil = Date.now() + 2500;
     const existing = JSON.parse(localStorage.getItem('qamar_current_user') || localStorage.getItem('qamar_user') || '{}');
     const fv = localStorage.getItem('saved_avatar_frame_motion');
     const u = Object.assign({}, existing, {
@@ -912,4 +923,4 @@ function openAppModal(title, text, type, options, currentVal, onSave) {
     document.getElementById('modal-cancel').onclick = () => m.classList.remove('active');
 }
 
-console.log('✅ profile-core.js v2 loaded');
+console.log('✅ profile-core.js v2.1 loaded — anti-flash lock');
