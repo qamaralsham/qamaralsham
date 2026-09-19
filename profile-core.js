@@ -1,8 +1,7 @@
 // ==============================================
-// profile-core.js v2.3 — إصلاحات:
-//   1) منع إعادة كتابة النص (الرتبة لا تقفز)
-//   2) منع حفظ الفيديو في Firebase (يُحفظ محلياً فقط)
-//   3) منع الوميض (قفل 10 ثوان)
+// profile-core.js v2.4 — إصلاح sendNotif
+//   - time: Date.now() بدل firebase.ServerValue
+//   - console.error بدل catch صامت
 // ==============================================
 
 let currentUser = null, targetUser = null, viewMode = 'owner';
@@ -346,16 +345,14 @@ function canView(field) {
     return val === 'public';
 }
 
-/* ⭐⭐⭐ loadProfile — لا يُعيد كتابة النص إن لم يتغير */
 function loadProfile() {
     if (!targetUser) return;
     const _displayName = (viewMode === 'owner' && currentUser && currentUser.name) ? currentUser.name : (targetUser.name || 'مستخدم');
     const u = document.getElementById('profile-username');
     if (u) {
         u.dataset.name = _displayName;
-        // ⭐ لا تُعِد كتابة النص إن لم يتغير + لا تكسر البنية
         const currentText = u.textContent;
-        const hasStructure = u.querySelector('*'); // nf-* has spans
+        const hasStructure = u.querySelector('*');
         if (currentText !== _displayName && !hasStructure) {
             u.innerText = _displayName;
         }
@@ -379,10 +376,8 @@ function loadProfile() {
         if (c && c.getAttribute('src') !== targetUser.cover) c.src = targetUser.cover;
     }
 
-    /* ⭐⭐⭐ الخلفية الذكية — تقرأ من localStorage إن Firebase فارغ */
     const layer = document.getElementById('profile-bg-layer');
     if (layer) {
-        // الأولوية: Firebase → localStorage
         let bgT = targetUser.profileBgType;
         let bgV = targetUser.profileBgValue;
         if (!bgV) {
@@ -591,14 +586,12 @@ async function uploadLoad(file, maxMB) {
     return u;
 }
 
-/* ⭐⭐⭐ saveToChat — لا يحفظ الفيديو في Firebase */
 function saveToChat() {
     if (!currentUser) return;
-    _localLockUntil = Date.now() + 10000; // ⭐ قفل 10 ثوان
+    _localLockUntil = Date.now() + 10000;
     const existing = JSON.parse(localStorage.getItem('qamar_current_user') || localStorage.getItem('qamar_user') || '{}');
     const fv = localStorage.getItem('saved_avatar_frame_motion');
 
-    // ⭐ لا نُرسل الفيديو إلى Firebase (ضخم)
     const isVideo = bgType === 'video';
     const u = Object.assign({}, existing, {
         uid: currentUser.uid,
@@ -620,7 +613,7 @@ function saveToChat() {
         avatarFrame: (fv && fv !== 'none' && fv !== '') ? fv : null,
         poetry: localStorage.getItem('poetry_text') || existing.poetry || '',
         profileBgType: bgType,
-        profileBgValue: isVideo ? null : bgValue, // ⭐ الفيديو لا يُحفظ
+        profileBgValue: isVideo ? null : bgValue,
         musicURL: musicURL || null,
         color: existing.color || '#ffffff'
     });
@@ -929,18 +922,29 @@ function renderSearchResult(u) {
     results.appendChild(el);
 }
 
+/* ⭐⭐⭐ sendNotif v2 — Date.now() بدل firebase.ServerValue */
 async function sendNotif(targetUid, type, icon, title) {
-    if (typeof db === 'undefined' || !db || !targetUid) return;
+    if (!targetUid) return;
+    if (typeof db === 'undefined' || !db) {
+        console.warn('[sendNotif] Firebase غير متاح');
+        return;
+    }
+    var payload = {
+        fromUid: (currentUser && currentUser.uid) || '',
+        fromName: (currentUser && currentUser.name) || 'زائر',
+        fromAvatar: (currentUser && currentUser.avatar) || '',
+        type: type || 'unknown',
+        icon: icon || '🔔',
+        preview: title || '',
+        time: Date.now(),
+        read: false
+    };
     try {
-        await db.ref('user_notifications/' + targetUid).push({
-            fromUid: (currentUser && currentUser.uid) || '',
-            fromName: (currentUser && currentUser.name) || 'زائر',
-            fromAvatar: (currentUser && currentUser.avatar) || '',
-            type: type, icon: icon, preview: title,
-            time: firebase.database.ServerValue.TIMESTAMP,
-            read: false
-        });
-    } catch(e) {}
+        await db.ref('user_notifications/' + targetUid).push(payload);
+        console.log('[sendNotif] ✅ أُرسل:', type, '→', targetUid);
+    } catch (e) {
+        console.error('[sendNotif] ❌ فشل:', e && e.message, e);
+    }
 }
 
 function openChat(uid, name) {
@@ -992,4 +996,4 @@ function openAppModal(title, text, type, options, currentVal, onSave) {
     document.getElementById('modal-cancel').onclick = () => m.classList.remove('active');
 }
 
-console.log('✅ profile-core.js v2.3 loaded — no text rewrite + no video in FB + 10s lock');
+console.log('✅ profile-core.js v2.4 loaded — sendNotif fixed (Date.now)');
