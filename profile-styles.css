@@ -1,10 +1,9 @@
 /* ==============================================
-   profile-styles.css v3 — نظيف
-   التعديلات:
-     - لا إطار ذهبي على الأفاتار
-     - أزرار بدون خلفية سوداء
-     - الرتبة والبايو لا يقفزان (min-height)
-     - كل الكتابة بدون خلفية
+   profile-styles.css v3.1
+   الجديد عن v3:
+     - الرتبة والبايو لا يقفزان (grid layout)
+     - الخلفية الذكية تعمل (bg-layer)
+     - الكبسولة لا تغطي على الاسم
    ============================================== */
 
 :root {
@@ -23,7 +22,6 @@ body {
     color: #fff;
     overflow: hidden;
     font-size: 14px;
-    /* منع الزوم على مستوى الصفحة */
     touch-action: pan-y;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
@@ -53,6 +51,7 @@ body {
     50%     { box-shadow: 0 25px 70px rgba(0,0,0,0.95), 0 0 40px var(--glow-color,#ffd700), 0 0 80px var(--glow-color,#ffd700); }
 }
 
+/* ⭐ الخلفية الذكية — تبدأ من أسفل الغلاف */
 .bg-layer {
     position: absolute;
     top: 290px; left: 0;
@@ -63,6 +62,14 @@ body {
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+    background-attachment: local;
+}
+
+.bg-layer video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 
 .top-btns {
@@ -144,7 +151,6 @@ body {
     margin: 0 auto;
 }
 
-/* ⭐ الأفاتار — بدون إطار ذهبي */
 .avatar {
     width: 100%; height: 100%;
     border-radius: 50%;
@@ -163,7 +169,6 @@ body {
     display: block;
 }
 
-/* الإطار — يبقى يعمل إن اختاره المستخدم */
 .qf {
     position: absolute;
     inset: var(--frame-inset, -8%);
@@ -181,7 +186,6 @@ body {
     display: block;
 }
 
-/* إزالة كل أنيميشنات الإطارات القديمة */
 .qf.royal-glow,
 .qf.wing-flutter,
 .qf.flame-flicker,
@@ -190,7 +194,6 @@ body {
     filter: none !important;
 }
 
-/* ⭐ أزرار الأفاتار — بدون خلفية / بدون حد */
 .avatar-edit {
     position: absolute;
     bottom: -22px; left: 50%;
@@ -215,6 +218,7 @@ body {
 .avatar-edit span:active { transform: scale(0.9); }
 .avatar-edit .del-av { color:#ff6b6b; }
 
+/* ⭐⭐⭐ الحاوية الرئيسية للهيدر — grid layout يمنع القفز */
 .header {
     position: absolute;
     bottom: 10px; left: 50%;
@@ -223,20 +227,45 @@ body {
     text-align: center;
     z-index: 10;
     padding: 0 10px;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-rows: auto auto auto;
+    gap: 3px;
+    justify-items: center;
     align-items: center;
-    gap: 4px;
 }
 
-/* ⭐ منع الاسم من إزاحة الرتبة والبايو */
+/* ⭐ حاوية الاسم — ارتفاع ثابت ديناميكي */
 .header .user-cont {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto auto;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    min-height: 26px;
-    line-height: 1.2;
+    width: 100%;
+    min-height: 32px;
+    line-height: 1;
+}
+
+/* ⭐⭐⭐ الاسم — ثابت لا يقفز */
+.header .user-cont .username {
+    display: inline-block;
+    line-height: 1;
+    vertical-align: middle;
+    padding: 6px 18px;
+    transition: font-size 0.15s ease, padding 0.15s ease;
+    white-space: nowrap;
+    overflow: visible;
+    position: relative;
+}
+
+/* ⭐ الرتبة والبايو — ثابتة في مكانها */
+.header .role,
+.header .bio {
+    display: block;
+    width: 100%;
+    text-align: center;
+    line-height: 1.3;
+    min-height: 16px;
 }
 
 .edit-pen {
@@ -246,9 +275,9 @@ body {
     text-shadow: 0 1px 3px rgba(0,0,0,0.9);
     padding: 4px;
     -webkit-tap-highlight-color: transparent;
+    align-self: center;
 }
 
-/* الرتبة */
 .role {
     font-size: 12px;
     color: var(--gold);
@@ -258,7 +287,6 @@ body {
     align-items: center;
     gap: 6px;
     justify-content: center;
-    line-height: 1.3;
 }
 
 .status-dot {
@@ -272,7 +300,6 @@ body {
 .status-dot.online { background:#00ff00; box-shadow:0 0 8px #00ff00; }
 .status-dot.offline { background:#888; }
 
-/* ⭐ زر الموسيقى — بدون خلفية */
 .music-toggle-mini {
     background: transparent !important;
     border: 1px solid rgba(255,215,0,0.5) !important;
@@ -299,33 +326,26 @@ body {
     50%     { box-shadow: 0 0 16px var(--gold); }
 }
 
-/* ⭐ الاسم — بدون خلفية افتراضية */
 .username {
     font-size: 20px;
     font-weight: 900;
     color: #fff;
     text-shadow: 0 2px 12px rgba(0,0,0,0.95);
-    padding: 4px 16px;
     display: inline-block;
-    line-height: 1.2;
     position: relative;
     border-radius: 50px;
-    transition: font-size 0.2s;
     background: transparent;
 }
 
-/* البايو */
+/* ⭐ البايو — لا يقفز */
 .bio {
     font-size: 12px;
     color: #90caf9;
     text-shadow: 0 1px 8px rgba(0,0,0,0.9);
     font-weight: 600;
-    line-height: 1.3;
-    min-height: 16px;
     display: block;
 }
 
-/* ⭐ أزرار الزيارة — بدون خلفية */
 .interact-btns {
     display: flex;
     justify-content: center;
@@ -363,9 +383,9 @@ body {
     padding: 10px 14px 14px;
     gap: 10px;
     z-index: 5;
+    position: relative;
 }
 
-/* ⭐ شريط التبويبات — بدون خلفية */
 .tabs {
     background: transparent !important;
     display: flex;
@@ -416,7 +436,6 @@ body {
     box-shadow: 0 0 8px rgba(255,215,0,0.5);
 }
 
-/* صندوق النبذة — بدون خلفية */
 .poetry-box {
     margin-top: 8px;
     padding: 10px 14px;
@@ -461,7 +480,6 @@ body {
 
 .scroll-box::-webkit-scrollbar { display:none; }
 
-/* ⭐ info-card — بدون خلفية */
 .info-card {
     background: transparent !important;
     border-radius: 0;
@@ -1087,7 +1105,6 @@ body.visitor-mode .priv-sec { display:none!important; }
     .interact-btns button { width: 38px; height: 38px; font-size: 16px; }
 }
 
-/* ⭐ منع الزوم في البروفايل */
 html, body {
     touch-action: pan-y !important;
     overscroll-behavior: none;
