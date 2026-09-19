@@ -1,5 +1,5 @@
 // ==============================================
-// chat.js v3.6 — تصفير عداد المحادثة عند فتحها
+// chat.js v3.8 — تحميل متدرج + 5 موجات
 // ==============================================
 
 const ChatState = {
@@ -19,6 +19,43 @@ const ChatState = {
     _friendRequestsCache: {}
 };
 
+/* ⭐⭐⭐ v3.8: تحميل السكربتات ديناميكياً */
+function _isScriptLoaded(srcPart) {
+    var scripts = document.querySelectorAll('script[src]');
+    for (var i = 0; i < scripts.length; i++) {
+        if (scripts[i].src.indexOf(srcPart) !== -1) return true;
+    }
+    return false;
+}
+function _loadScript(src, callback) {
+    if (_isScriptLoaded(src.split('?')[0])) {
+        if (callback) setTimeout(callback, 0);
+        return;
+    }
+    var s = document.createElement('script');
+    s.src = src;
+    s.async = true;
+    if (callback) {
+        s.onload = callback;
+        s.onerror = function () { console.warn('⚠️ Failed to load:', src); };
+    }
+    document.body.appendChild(s);
+}
+window._isScriptLoaded = _isScriptLoaded;
+window._loadScript = _loadScript;
+
+/* ⭐ متغير يمنع استدعاء initBots مرتين */
+window._botsInitDone = false;
+function _tryInitBots() {
+    if (window._botsInitDone) return;
+    if (typeof initBots === 'function') {
+        try {
+            initBots();
+            window._botsInitDone = true;
+        } catch (e) { console.warn('Bots error:', e); }
+    }
+}
+
 function safeColor(c) {
     if (!c || typeof c !== 'string') return null;
     const s = c.trim();
@@ -31,7 +68,6 @@ function safeGradient(g) {
     return (a && b) ? [a, b] : null;
 }
 
-/* ⭐⭐⭐ AudioContext موحّد — يُفتح عند أول لمسة */
 var _audioCtx = null;
 function getAudioCtx() {
     if (!_audioCtx) {
@@ -212,22 +248,23 @@ function startPunishmentWatcher() {
     ChatState._punishmentCheckInterval = setInterval(check, 60000);
 }
 
+/* ⭐⭐⭐ initChat — بموجات متدرجة */
 function initChat(){
     if(ChatState.isInitialized)return;
     const user=getCurrentUser();
     if(!user)return;
     ChatState.isInitialized=true;
+
     const ls=document.getElementById('login-screen');if(ls)ls.style.display='none';
     const cc=document.getElementById('chat-container');if(cc)cc.style.display='flex';
     const sb=localStorage.getItem(QAMAR.STORAGE_KEYS.BACKGROUND);if(sb)changeBackground(sb);
     if(typeof generateStars==='function')generateStars();
     buildBackgroundsList();
     buildRoomsList();
-    if(typeof applyRoomSettings==='function'){
-        applyRoomSettings().then(function(){buildRoomsList();});
-    }
+
     if(!user.isGuest){const ub=document.getElementById('upgrade-nav-btn');if(ub)ub.style.display='none'}
     addSystemMessage('👑 مرحباً '+user.name+' — رتبتك: '+getRankBadge(user.rank)+' '+user.rank);
+
     if(ChatState.currentRoom!=='general'){
         const room=QAMAR.ROOMS[ChatState.currentRoom];
         if(room){
@@ -235,13 +272,39 @@ function initChat(){
             if(titleEl)titleEl.innerText=room.name+' '+room.icon;
         }
     }
-    startMessagesListener();startNotificationsListener();startPrivateChatsListener();
-    startPresenceHeartbeat();startBlockedListener();
-    if(typeof initBots==='function'){try{initBots()}catch(e){console.warn('Bots error:',e)}}
-    startInvisibleListener();startUserDataListener();
-    startPunishmentWatcher();
-    if(typeof applyRoomBackground==='function'){applyRoomBackground(ChatState.currentRoom);}
-    console.log('✅ Chat initialized | Room:', ChatState.currentRoom);
+
+    /* ═══ الموجة 0 — فوري ═══ */
+    startMessagesListener();
+
+    /* ═══ الموجة 1 — 500ms ═══ */
+    setTimeout(function () {
+        startPrivateChatsListener();
+        startNotificationsListener();
+    }, 500);
+
+    /* ═══ الموجة 2 — 1200ms ═══ */
+    setTimeout(function () {
+        startPresenceHeartbeat();
+        startBlockedListener();
+        startPunishmentWatcher();
+    }, 1200);
+
+    /* ═══ الموجة 3 — 2200ms ═══ */
+    setTimeout(function () {
+        startInvisibleListener();
+        startUserDataListener();
+        _tryInitBots();
+    }, 2200);
+
+    /* ═══ الموجة 4 — 3200ms ═══ */
+    setTimeout(function () {
+        if(typeof applyRoomBackground==='function'){applyRoomBackground(ChatState.currentRoom);}
+        if(typeof applyRoomSettings==='function'){
+            applyRoomSettings().then(function(){buildRoomsList();});
+        }
+    }, 3200);
+
+    console.log('✅ Chat initialized (waves) | Room:', ChatState.currentRoom);
 }
 
 function startBlockedListener(){
@@ -302,11 +365,12 @@ function switchRoom(roomId,roomTitle){
     closeAllPanels();
 }
 
+/* ⭐⭐⭐ v3.8: 15 رسالة بدل 30 */
 function startMessagesListener(){
     if(!db)return;
     if(ChatState.messagesListener)ChatState.messagesListener.off();
     const roomId=ChatState.currentRoom;
-    const ref=db.ref('room_messages/'+roomId).limitToLast(30);
+    const ref=db.ref('room_messages/'+roomId).limitToLast(15);
     ChatState.messagesListener=ref;
     ref.on('child_added',s=>{
         const msg=s.val();if(!msg)return;
@@ -328,11 +392,8 @@ function startMessagesListener(){
 
 function applyFrameToWrapper(wrapper,frameId){
     if(!frameId||frameId==='none')return;
-    wrapper.querySelectorAll('.dynamic-frame-wrapper,.qcf,.avatar-frame,.qamar-frame,.qf').forEach(el=>el.remove());
-    wrapper.style.position='relative';
     if(typeof applyFrameToMessage==='function'){
         applyFrameToMessage(wrapper,frameId);
-        return;
     }
 }
 
@@ -727,7 +788,6 @@ function openPrivateChatWith(uid,name,av){
     ChatState.minimizedChat=null;
     ChatState.seenPrivateMessages.clear();
 
-    // ⭐⭐⭐ v3.6: صفّر عدّاد هذه المحادثة فوراً في Firebase
     db.ref('user_private_chats/' + user.uid + '/' + uid + '/unread').set(0).catch(function(){});
 
     loadPrivateMessages();
@@ -753,7 +813,6 @@ function loadPrivateMessages(){
     });
 }
 
-/* ⭐⭐⭐ حذف إشعارات الرسائل الخاصة من مُرسل معيّن */
 function _clearPrivateNotifsFrom(fromUid) {
     var user = getCurrentUser();
     if (!user || !user.uid || !fromUid || !db) return;
@@ -819,11 +878,6 @@ function toggleNotifications(){
     if(o){loadNotifications();ChatState.unreadCount=0;updateNotifBadge();markAllNotificationsRead()}
 }
 
-/* ⭐⭐⭐ startNotificationsListener — v3.6
-   - فلتر بمفتاح الرسالة (Firebase key) — دقيق 100% مهما كانت الساعة
-   - لا صوت/توست للإشعارات القديمة (قبل فتح الصفحة)
-   - عداد 🔔 يعرض العدد الحقيقي للإشعارات غير المقروءة
-*/
 function startNotificationsListener(){
     const user = getCurrentUser();
     if (!user || !user.uid) return;
@@ -882,7 +936,6 @@ function startNotificationsListener(){
     }).catch(function () {});
 }
 
-/* ⭐⭐⭐ loadNotifications — فلترة قوية */
 function loadNotifications(){
     const user=getCurrentUser();if(!user||!user.uid)return;
     const list=document.getElementById('notif-list');if(!list)return;list.innerHTML='';
@@ -1281,6 +1334,49 @@ function startUserDataListener(){
 }
 window.startUserDataListener=startUserDataListener;
 
+/* ⭐⭐⭐ v3.8: الموجات الخمس لتحميل الملفات (فقط لو index جديد) */
+(function _initScriptWaves() {
+    // إذا كان index القديم → كل السكربتات محمّلة → نتوقف
+    var isOldIndex = _isScriptLoaded('pm-enhanced.js') || _isScriptLoaded('bots.js') || _isScriptLoaded('frames-engine.js');
+    if (isOldIndex) {
+        console.log('📌 Old index detected — scripts already loaded');
+        return;
+    }
+
+    console.log('⚡ New index detected — starting script waves');
+
+    // الموجة 1 — 800ms
+    setTimeout(function () {
+        _loadScript('pm-enhanced.js?v=27');
+        _loadScript('chat-fixes.js?v=27');
+    }, 800);
+
+    // الموجة 2 — 1800ms
+    setTimeout(function () {
+        _loadScript('bots.js?v=27', function () { _tryInitBots(); });
+        _loadScript('guardian-hide.js?v=27');
+        _loadScript('dice.js?v=27');
+    }, 1800);
+
+    // الموجة 3 — 2800ms
+    setTimeout(function () {
+        _loadScript('frames-engine.js?v=27', function () {
+            // load event قد مرّ → نستدعي initFrames يدوياً
+            if (document.readyState === 'complete' && typeof initFrames === 'function') {
+                setTimeout(function () { try { initFrames(); } catch (e) {} }, 50);
+            }
+        });
+        _loadScript('media-picker.js?v=27');
+        _loadScript('room-alerts.js?v=27');
+    }, 2800);
+
+    // الموجة 4 — 3800ms
+    setTimeout(function () {
+        _loadScript('king-room.js?v=27');
+        _loadScript('invisible-mode.js?v=27');
+    }, 3800);
+})();
+
 window.ChatState=ChatState;
 window.initChat=initChat;
 window.sendMessage=sendMessage;
@@ -1324,4 +1420,4 @@ window.applyRoomBackground=applyRoomBackground;
 window.buildRoomsList=buildRoomsList;
 window.clearPrivateNotifsFrom = _clearPrivateNotifsFrom;
 
-console.log('✅ chat.js v3.6 loaded — unread reset on open');
+console.log('✅ chat.js v3.8 loaded — wave loading + 15 messages');
