@@ -1,0 +1,158 @@
+// ==============================================
+// sw.js v1 — Service Worker لتسريع التحميل
+// ==============================================
+
+var CACHE_NAME = 'qamar-v1';
+
+/* ═══ Install — تفعيل فوري ═══ */
+self.addEventListener('install', function(event) {
+    self.skipWaiting();
+});
+
+/* ═══ Activate — تنظيف caches قديمة + تحكم فوري ═══ */
+self.addEventListener('activate', function(event) {
+    event.waitUntil(
+        caches.keys().then(function(names) {
+            return Promise.all(
+                names.filter(function(n) { return n !== CACHE_NAME; })
+                    .map(function(n) { return caches.delete(n); })
+            );
+        }).then(function() {
+            return self.clients.claim();
+        })
+    );
+});
+
+/* ═══ هل نتجاهل هذا الطلب؟ ═══ */
+function shouldSkip(url) {
+    // Firebase — لا نتدخل (المتصفح يديرها بنفسه)
+    if (url.hostname.indexOf('firebaseio.com') !== -1) return true;
+    if (url.hostname.indexOf('firebaseapp.com') !== -1) return true;
+    if (url.hostname.indexOf('googleapis.com') !== -1) return true;
+    if (url.hostname === 'www.gstatic.com') return true;
+    // بروتوكولات أخرى
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return true;
+    return false;
+}
+
+/* ═══ Network-First مع مهلة → Cache عند الفشل ═══ */
+async function networkFirstWithTimeout(request, timeoutMs) {
+    var controller = new AbortController();
+    var timer = setTimeout(function() { controller.abort(); }, timeoutMs);
+    try {
+        var response = await fetch(request, { signal: controller.signal });
+        clearTimeout(timer);
+        if (response && response.ok) {
+            var cache = await caches.open(CACHE_NAME);
+            cache.put(request, response.clone());
+        }
+        return response;
+    } catch (e) {
+        clearTimeout(timer);
+        var cached = await caches.match(request);
+        if (cached) return cached;
+        if (request.mode === 'navigate') {
+            var fallback = await caches.match('./index.html');
+            if (fallback) return fallback;
+        }
+        throw e;
+    }
+}
+
+/* ═══ Stale-While-Revalidate — من cache فوراً + تحديث بالخلفية ═══ */
+async function staleWhileRevalidate(request) {
+    var cache = await caches.open(CACHE_NAME);
+    var cached = await cache.match(request);
+    var fetchPromise = fetch(request).then(function(response) {
+        if (response && response.ok) {
+            cache.put(request, response.clone());
+        }
+        return response;
+    }).catch(function() { return null; });
+    return cached || await fetchPromise;
+}
+
+/* ═══ Cache-First — للصور والخطوط ═══ */
+async function cacheFirst(request) {
+    var cached = await caches.match(request);
+    if (cached) return cached;
+    try {
+        var response = await fetch(request);
+        if (response && response.ok) {
+            var cache = await caches.open(CACHE_NAME);
+            cache.put(request, response.clone());
+        }
+        return response;
+    } catch (e) {
+        if (request.mode === 'navigate') {
+            var fallback = await caches.match('./index.html');
+            if (fallback) return fallback;
+        }
+        throw e;
+    }
+}
+
+/* ═══ الموزّع الرئيسي ═══ */
+self.addEventListener('fetch', function(event) {
+    var request = event.request;
+    if (request.method !== 'GET') return;
+
+    var url;
+    try { url = new URL(request.url); } catch (e) { return; }
+    if (shouldSkip(url)) return;
+
+    // HTML navigation → Network-First بمهلة 4 ثواني
+    if (request.mode === 'navigate') {
+        event.respondWith(networkFirstWithTimeout(request, 4000));
+        return;
+    }
+
+    // Google Fonts + FontAwesome CDN → Cache-First
+    if (url.hostname === 'fonts.googleapis.com' ||
+        url.hostname === 'fonts.gstatic.com' ||
+        url.hostname === 'cdnjs.cloudflare.com') {
+        event.respondWith(cacheFirst(request));
+        return;
+    }
+
+    // ui-avatars.com → Cache-First (صور ثابتة)
+    if (url.hostname === 'ui-avatars.com') {
+        event.respondWith(cacheFirst(request));
+        return;
+    }
+
+    // jsDelivr CDN (صور الإيموجيات والإطارات) → Cache-First
+    if (url.hostname === 'cdn.jsdelivr.net') {
+        event.respondWith(cacheFirst(request));
+        return;
+    }
+
+    // GitHub Raw (إطارات قديمة) → Cache-First
+    if (url.hostname === 'raw.githubusercontent.com') {
+        event.respondWith(cacheFirst(request));
+        return;
+    }
+
+    // jsDelivr API (قائمة الإيموجيات) → Network-First بمهلة 3 ثواني
+    if (url.hostname === 'data.jsdelivr.com') {
+        event.respondWith(networkFirstWithTimeout(request, 3000));
+        return;
+    }
+
+    // JS / CSS → Stale-While-Revalidate
+    if (/\.(js|css)$/i.test(url.pathname)) {
+        event.respondWith(staleWhileRevalidate(request));
+        return;
+    }
+
+    // صور + خطوط + أيقونات → Cache-First
+    if (/\.(png|jpg|jpeg|gif|webp|svg|ico|woff|woff2|ttf|eot)$/i.test(url.pathname)) {
+        event.respondWith(cacheFirst(request));
+        return;
+    }
+
+    // أي شيء آخر → Network-First بمهلة 5 ثواني
+    event.respondWith(networkFirstWithTimeout(request, 5000));
+});
+
+console.log('✅ sw.js v1 loaded');
