@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>قمر الشام — البروفايل</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -86,7 +88,6 @@
         </div>
         <div class="scroll-box">
 
-            <!-- ═══ تبويب الخصوصية ═══ -->
             <div id="privacy-tab" class="tab-c active">
                 <div class="priv-sec">
                     <h3>إعدادات الخصوصية</h3>
@@ -100,7 +101,6 @@
                 </div>
             </div>
 
-            <!-- ═══ تبويب المظهر ═══ -->
             <div id="appearance-tab" class="tab-c">
                 <div class="info-card">
                     <div class="row"><span class="row-lb">لون الاسم</span><span class="row-vl"><span class="link" id="btn-name-color">تغيير</span></span></div>
@@ -108,7 +108,6 @@
                     <div class="row"><span class="row-lb">خلفية الاسم</span><span class="row-vl"><span class="link" id="btn-name-shape">تغيير</span></span></div>
                     <div class="row"><span class="row-lb">توهج الاسم</span><span class="row-vl"><span class="link" id="btn-name-glow">تغيير</span></span></div>
 
-                    <!-- حجم الاسم -->
                     <div class="row">
                         <span class="row-lb">حجم الاسم</span>
                         <span class="row-vl" style="display:flex;gap:8px;align-items:center;min-width:180px;">
@@ -117,7 +116,6 @@
                         </span>
                     </div>
 
-                    <!-- حجم الإطار -->
                     <div class="row">
                         <span class="row-lb">حجم الإطار</span>
                         <span class="row-vl" style="display:flex;gap:8px;align-items:center;min-width:180px;">
@@ -134,14 +132,12 @@
                 </div>
             </div>
 
-            <!-- ═══ تبويب الأوامر ═══ -->
             <div id="commands-tab" class="tab-c">
                 <div class="info-card">
                     <div class="row"><span class="row-lb">🎁 إرسال هدية</span><span class="row-vl"><span class="link" id="btn-gift">قريباً</span></span></div>
                 </div>
             </div>
 
-            <!-- ═══ تبويب المعلومات ═══ -->
             <div id="info-tab" class="tab-c">
                 <div class="info-card">
                     <div class="row"><span class="row-lb">الاسم</span><span class="row-vl"><span class="link" id="profile-username-id">@user</span><span id="btn-copy-id" style="cursor:pointer;margin-right:8px;color:#64b5f6">📋</span></span></div>
@@ -158,7 +154,6 @@
                 </div>
             </div>
 
-            <!-- ═══ تبويب الأصدقاء ═══ -->
             <div id="friends-tab" class="tab-c">
                 <div class="info-card">
                     <h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">قائمة الأصدقاء</h3>
@@ -166,7 +161,6 @@
                 </div>
             </div>
 
-            <!-- ═══ تبويب البحث ═══ -->
             <div id="search-tab" class="tab-c owner-only">
                 <div class="info-card">
                     <h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">البحث عن عضو</h3>
@@ -178,23 +172,56 @@
                 </div>
             </div>
 
-            <!-- ═══ تبويب الزوار ═══ -->
             <div id="visitors-tab" class="tab-c owner-only">
                 <div class="info-card"><h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">الزوار الجدد</h3><div id="visitors-container"><div class="empty">لا يوجد زوار</div></div></div>
             </div>
 
-            <!-- ═══ تبويب الإعجابات ═══ -->
             <div id="likes-tab" class="tab-c owner-only">
                 <div class="info-card"><h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">من أعجب بي</h3><div id="likes-container"><div class="empty">لا يوجد إعجابات</div></div></div>
             </div>
 
-            <!-- ═══ تبويب المحظورين ═══ -->
             <div id="blocked-tab" class="tab-c owner-only">
                 <div class="info-card"><h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">قائمة المحظورين</h3><div id="blocked-container"><div class="empty">لا يوجد محظورين</div></div></div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- ⭐⭐⭐ v3: كشف مستقل عن Firebase (الأضمن) -->
+<script>
+(function() {
+    var revealed = false;
+    function reveal() {
+        if (revealed) return;
+        revealed = true;
+        var p = document.getElementById('profile-container');
+        if (p) {
+            p.style.transition = 'opacity 0.15s ease-in';
+            p.style.opacity = '1';
+        }
+    }
+
+    // 1. شبكة أمان: 1500ms كحد أقصى مطلق
+    setTimeout(reveal, 1500);
+
+    // 2. الكشف العادي: عند HTML جاهز + خطوط + 250ms
+    function tryReveal() {
+        var fontsReady = Promise.resolve();
+        if (document.fonts && document.fonts.ready) {
+            fontsReady = document.fonts.ready;
+        }
+        fontsReady.then(function() {
+            setTimeout(reveal, 250);
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', tryReveal);
+    } else {
+        tryReveal();
+    }
+})();
+</script>
 
 <!-- ═══ Modal اختيار الاسم ═══ -->
 <div class="modal" id="name-picker-modal">
@@ -211,7 +238,6 @@
     </div>
 </div>
 
-<!-- ═══ Modal توهج البروفايل ═══ -->
 <div class="modal" id="profile-glow-modal">
     <div class="modal-c">
         <h3>اختر لون التوهج</h3>
@@ -220,7 +246,6 @@
     </div>
 </div>
 
-<!-- ═══ Modal الإطارات ═══ -->
 <div class="modal" id="frames-modal">
     <div class="modal-c">
         <h3>اختر إطار الأفاتار</h3>
@@ -229,7 +254,6 @@
     </div>
 </div>
 
-<!-- ═══ Modal عام ═══ -->
 <div class="modal" id="app-modal">
     <div class="modal-c">
         <h3 id="modal-title">عنوان</h3>
@@ -241,11 +265,11 @@
 
 <audio id="music-player" loop></audio>
 
-<script src="config.js?v=26"></script>
-<script src="ranks.js?v=26"></script>
-<script src="utils.js?v=26"></script>
-<script src="frames-engine.js?v=26"></script>
-<script src="profile-core.js?v=27"></script>
-<script src="profile-appearance.js?v=26"></script>
+<script src="config.js?v=28"></script>
+<script src="ranks.js?v=28"></script>
+<script src="utils.js?v=28"></script>
+<script src="frames-engine.js?v=28"></script>
+<script src="profile-core.js?v=28"></script>
+<script src="profile-appearance.js?v=28"></script>
 </body>
 </html>
