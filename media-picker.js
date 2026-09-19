@@ -1,31 +1,33 @@
 // ==============================================
-// قمر الشام — منتقي الوسائط (v6) — cache + fallback
+// قمر الشام — منتقي الوسائط (v7) — jsDelivr بدون rate limit
 // ==============================================
 
 (function () {
     'use strict';
-    if (window.__mediaPickerV6) return;
-    window.__mediaPickerV6 = true;
+    if (window.__mediaPickerV7) return;
+    window.__mediaPickerV7 = true;
 
     var REPO = 'qamaralsham/qamaralsham';
-    var RAW_BASE = 'https://raw.githubusercontent.com/' + REPO + '/main/emojis/';
+    var BRANCH = 'main';
+    var JSDELIVR_API = 'https://data.jsdelivr.com/v1/package/gh/' + REPO + '@' + BRANCH + '/flat';
+    var JSDELIVR_CDN = 'https://cdn.jsdelivr.net/gh/' + REPO + '@' + BRANCH + '/emojis/';
     var IMGBB_KEY = '80fd32c4ef79b5f25fbcf0893547de4f';
     var PAGE_SIZE = 30;
-    var CACHE_KEY = 'qamar_emoji_cache_v1';
-    var CACHE_TTL = 24 * 60 * 60 * 1000; // 24 ساعة
+    var CACHE_KEY = 'qamar_emoji_cache_v2';   // v2 لإبطال cache قديم
+    var CACHE_TTL = 24 * 60 * 60 * 1000;      // 24 ساعة
 
     var CACHE = { files: null, urlMap: null, fetchedAt: 0 };
     var currentContext = 'private';
     var currentTab = 'emojis1';
 
-    // ⭐ محاولة قراءة cache من localStorage أولاً
+    // قراءة cache من localStorage
     try {
         var saved = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
         if (saved.files && saved.urlMap && saved.fetchedAt && (Date.now() - saved.fetchedAt) < CACHE_TTL) {
             CACHE.files = saved.files;
             CACHE.urlMap = saved.urlMap;
             CACHE.fetchedAt = saved.fetchedAt;
-            console.log('📦 media-picker: loaded from localStorage cache (' + CACHE.files.length + ' files)');
+            console.log('📦 media-picker v7: loaded from cache (' + CACHE.files.length + ' files)');
         }
     } catch (e) {}
 
@@ -144,34 +146,48 @@
         document.head.appendChild(s);
     })();
 
-    /* ⭐⭐ بناء الخريطة — مع معالجة Rate Limit */
+    /* ⭐⭐⭐ جلب قائمة الإيموجيات من jsDelivr (بدون rate limit) */
     async function fetchEmojis() {
         try {
-            var res = await fetch('https://api.github.com/repos/' + REPO + '/contents/emojis?t=' + Date.now());
-
-            // ⭐ معالجة Rate Limit
-            if (res.status === 403) {
-                console.warn('⚠️ GitHub API rate limited (60/hour). استخدم زر "إعادة المحاولة" بعد ساعة، أو انتظر.');
-                return { files: [], error: 'rate_limit' };
-            }
+            var res = await fetch(JSDELIVR_API + '?t=' + Date.now());
             if (!res.ok) {
-                console.warn('⚠️ GitHub API error:', res.status);
+                console.warn('⚠️ jsDelivr API error:', res.status);
                 return { files: [], error: 'api_error' };
             }
-
             var data = await res.json();
-            if (!Array.isArray(data)) return { files: [], error: 'invalid' };
+            if (!data || !Array.isArray(data.files)) return { files: [], error: 'invalid' };
 
-            var files = data
-                .filter(function (f) {
-                    if (f.type !== 'file') return false;
-                    if (f.name.charAt(0) === '.') return false;
-                    var ext = (f.name.split('.').pop() || '').toLowerCase();
-                    return ['gif', 'webp', 'png', 'jpg', 'jpeg'].indexOf(ext) !== -1;
-                })
-                .sort(function (a, b) { return a.name.localeCompare(b.name); });
+            // فلترة: فقط ملفات داخل مجلد /emojis/
+            var emojiFiles = data.files.filter(function (f) {
+                if (!f.name) return false;
+                if (f.name.indexOf('/emojis/') !== 0) return false;
+                // تجاهل الملفات المخفية
+                var base = f.name.split('/').pop();
+                if (!base || base.charAt(0) === '.') return false;
+                // أنواع الصور المسموحة
+                var ext = (base.split('.').pop() || '').toLowerCase();
+                return ['gif', 'webp', 'png', 'jpg', 'jpeg', 'apng', 'svg'].indexOf(ext) !== -1;
+            });
 
-            return { files: files.map(function (f) { return f.name; }), error: null };
+            // ترتيب طبيعي (a2 قبل a10)
+            emojiFiles.sort(function (a, b) {
+                var na = a.name.match(/\d+/g) || [];
+                var nb = b.name.match(/\d+/g) || [];
+                for (var i = 0; i < Math.max(na.length, nb.length); i++) {
+                    var va = parseInt(na[i] || 0);
+                    var vb = parseInt(nb[i] || 0);
+                    if (va !== vb) return va - vb;
+                }
+                return a.name.localeCompare(b.name);
+            });
+
+            // استخراج أسماء الملفات فقط
+            var names = emojiFiles.map(function (f) {
+                return f.name.split('/').pop();
+            });
+
+            console.log('📦 media-picker v7: fetched ' + names.length + ' emojis from jsDelivr');
+            return { files: names, error: null };
         } catch (e) {
             console.warn('❌ fetch error:', e.message);
             return { files: [], error: 'network' };
@@ -184,22 +200,23 @@
 
         var res = await fetchEmojis();
         if (res.error && res.files.length === 0) {
-            // فشل الجلب — احتفظ بالـ cache القديم إن وُجد
             if (CACHE.files && CACHE.files.length > 0) {
                 console.warn('⚠️ fetch فشل، أستخدم cache قديم');
                 return false;
             }
             return false;
         }
+        if (res.files.length === 0) {
+            return false;
+        }
 
         CACHE.files = res.files;
         CACHE.urlMap = {};
         CACHE.files.forEach(function (name, i) {
-            CACHE.urlMap[i + 1] = RAW_BASE + name;
+            CACHE.urlMap[i + 1] = JSDELIVR_CDN + name;
         });
         CACHE.fetchedAt = now;
 
-        // ⭐ احفظ في localStorage
         try {
             localStorage.setItem(CACHE_KEY, JSON.stringify({
                 files: CACHE.files,
@@ -208,7 +225,6 @@
             }));
         } catch (e) {}
 
-        console.log('📦 media-picker: fetched ' + CACHE.files.length + ' emojis');
         return true;
     }
 
@@ -262,18 +278,17 @@
 
         var all = CACHE.files || [];
         if (all.length === 0) {
-            // ⭐ رسالة خطأ مع زر retry
             var err = document.createElement('div');
             err.className = 'mp-retry';
             err.innerHTML = '<div style="color:#ff6666;font-size:14px;margin-bottom:10px;">⚠️ تعذّر تحميل الإيموجيات</div>' +
-                '<div style="color:#888;font-size:11px;margin-bottom:14px;">سبب محتمل: تجاوز حد GitHub API (60 طلب/ساعة)</div>';
+                '<div style="color:#888;font-size:11px;margin-bottom:14px;">تأكد من الاتصال بالإنترنت</div>';
             var btn = document.createElement('button');
             btn.textContent = '🔄 إعادة المحاولة';
             btn.onclick = async function () {
                 btn.textContent = '⏳ جاري التحميل...';
                 var ok = await ensureCache(true);
                 if (ok) renderTab();
-                else btn.textContent = '❌ فشل — حاول بعد ساعة';
+                else btn.textContent = '❌ فشل — حاول مجدداً';
             };
             err.appendChild(btn);
             c.appendChild(err);
@@ -286,7 +301,7 @@
         else if (currentTab === 'emojis3') { startNum = PAGE_SIZE * 2 + 1; endNum = all.length; }
 
         if (startNum > all.length) {
-            c.innerHTML = '<div class="mp-empty">لا توجد ملفات.</div>';
+            c.innerHTML = '<div class="mp-empty">لا توجد ملفات في هذا القسم.</div>';
             return;
         }
 
@@ -299,6 +314,7 @@
                 var img = document.createElement('img');
                 img.src = url;
                 img.loading = 'lazy';
+                img.onerror = function () { d.style.opacity = '0.3'; };
                 d.appendChild(img);
                 var nb = document.createElement('span');
                 nb.className = 'mp-num';
@@ -521,5 +537,5 @@
         installObserver();
     }
 
-    console.log('✅ media-picker.js v6 loaded — localStorage cache + retry');
+    console.log('✅ media-picker.js v7 loaded — jsDelivr CDN, no rate limit');
 })();
