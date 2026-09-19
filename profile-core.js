@@ -1,7 +1,8 @@
 // ==============================================
-// profile-core.js v2.4 — إصلاح sendNotif
-//   - time: Date.now() بدل firebase.ServerValue
-//   - console.error بدل catch صامت
+// profile-core.js v2.5 — قلب بوضعيتين
+//   - الزر يعرض إعجاب أو إلغاء إعجاب
+//   - إلغاء الإعجاب يحذف من likes
+//   - عند الفتح: يفحص هل أنا من المُعجبين
 // ==============================================
 
 let currentUser = null, targetUser = null, viewMode = 'owner';
@@ -11,6 +12,7 @@ let nameSize = 20;
 let frameInset = -8;
 let _localLockUntil = 0;
 let _lastUserHash = '';
+let _iLiked = false; // ⭐ جديد: هل أنا معجب بهذا البروفايل؟
 
 const IMGBB = '80fd32c4ef79b5f25fbcf0893547de4f';
 const FRAMES = [];
@@ -756,20 +758,88 @@ function initMusic() {
     };
 }
 
+/* ⭐⭐⭐ تحديث زر الإعجاب — وضعيتان */
+function _updateHeartUI() {
+    const h = document.getElementById('btn-heart');
+    if (!h) return;
+    if (_iLiked) {
+        h.textContent = '💔';
+        h.title = 'إلغاء الإعجاب';
+        h.style.filter = 'grayscale(0.4)';
+    } else {
+        h.textContent = '❤️';
+        h.title = 'إعجاب';
+        h.style.filter = '';
+    }
+}
+
+async function _checkIfILiked() {
+    _iLiked = false;
+    if (viewMode !== 'visitor') return;
+    if (!currentUser || !currentUser.uid) return;
+    if (!targetUser || !targetUser.uid) return;
+    if (!db) return;
+    try {
+        const s = await db.ref('users/' + targetUser.uid + '/likes/' + currentUser.uid).once('value');
+        _iLiked = s.exists();
+    } catch(e) { _iLiked = false; }
+    _updateHeartUI();
+}
+
+/* ⭐⭐⭐ toggleLike — يضيف أو يحذف */
+async function _toggleLike(btn) {
+    if (!targetUser || !targetUser.uid || !currentUser || !currentUser.uid) return;
+
+    // أنيميشن
+    if (btn) {
+        btn.style.transform = 'scale(1.4)';
+        setTimeout(() => btn.style.transform = '', 300);
+    }
+
+    if (!_iLiked) {
+        // ⭐ إعجاب
+        try {
+            await db.ref('users/' + targetUser.uid + '/likes/' + currentUser.uid).set({
+                time: Date.now(),
+                name: currentUser.name || 'زائر',
+                avatar: currentUser.avatar || ''
+            });
+            _iLiked = true;
+            _updateHeartUI();
+            await sendNotif(targetUser.uid, 'like', '❤️', 'أعجب بك');
+            toast('❤️ تم الإعجاب');
+        } catch(e) {
+            console.warn('[toggleLike] فشل الإعجاب:', e);
+            toast('⚠️ فشل الإعجاب');
+            _iLiked = false;
+            _updateHeartUI();
+        }
+    } else {
+        // ⭐ إلغاء الإعجاب
+        try {
+            await db.ref('users/' + targetUser.uid + '/likes/' + currentUser.uid).remove();
+            _iLiked = false;
+            _updateHeartUI();
+            toast('💔 أُلغي الإعجاب');
+        } catch(e) {
+            console.warn('[toggleLike] فشل الإلغاء:', e);
+            toast('⚠️ فشل الإلغاء');
+            _iLiked = true;
+            _updateHeartUI();
+        }
+    }
+}
+
 function initVisitor() {
     if (viewMode !== 'visitor') return;
+
+    // ⭐ زر الإعجاب — نستخدم toggleLike
     const h = document.getElementById('btn-heart');
-    if (h) h.onclick = async () => {
-        h.style.transform = 'scale(1.4)';
-        setTimeout(() => h.style.transform = '', 300);
-        if (targetUser && targetUser.uid && currentUser && currentUser.uid) {
-            if (db) await db.ref('users/' + targetUser.uid + '/likes/' + currentUser.uid).set({
-                time: Date.now(), name: currentUser.name || 'زائر', avatar: currentUser.avatar || ''
-            }).catch(() => {});
-            await sendNotif(targetUser.uid, 'like', '❤️', 'أعجب بك');
-        }
-        toast('❤️ تم');
-    };
+    if (h) {
+        h.onclick = () => _toggleLike(h);
+        _checkIfILiked(); // ⭐ يفحص الحالة عند الفتح
+    }
+
     const m = document.getElementById('btn-mail');
     if (m) m.onclick = () => {
         const p = (targetUser && targetUser.privacy && targetUser.privacy.messages) || 'public';
@@ -922,7 +992,6 @@ function renderSearchResult(u) {
     results.appendChild(el);
 }
 
-/* ⭐⭐⭐ sendNotif v2 — Date.now() بدل firebase.ServerValue */
 async function sendNotif(targetUid, type, icon, title) {
     if (!targetUid) return;
     if (typeof db === 'undefined' || !db) {
@@ -996,4 +1065,4 @@ function openAppModal(title, text, type, options, currentVal, onSave) {
     document.getElementById('modal-cancel').onclick = () => m.classList.remove('active');
 }
 
-console.log('✅ profile-core.js v2.4 loaded — sendNotif fixed (Date.now)');
+console.log('✅ profile-core.js v2.5 loaded — heart toggle (like/unlike)');
