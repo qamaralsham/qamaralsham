@@ -538,8 +538,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }, 500);
 
-    setInterval(syncPMSlot, 800);
-    setTimeout(syncPMSlot, 1500);
+    // ⭐ تعديل: من 800ms إلى 3000ms
+    setInterval(syncPMSlot, 3000);
+    setTimeout(syncPMSlot, 2000);
 });
 function showFriends() { if (typeof showToast === 'function') showToast('fa-user-friends', '👥 قريباً'); }
 function openMinimizedChat() {
