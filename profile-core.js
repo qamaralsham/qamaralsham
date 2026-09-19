@@ -1,5 +1,5 @@
 // ==============================================
-// profile-core.js v2.7 — friends grid 80x80
+// profile-core.js v2.8 — friends 68x68 name overlay
 // ==============================================
 
 let currentUser = null, targetUser = null, viewMode = 'owner';
@@ -195,7 +195,7 @@ function _userHash(u) {
     } catch(e) { return ''; }
 }
 
-/* ⭐⭐⭐ loadFriends — شبكة مربعات 80×80 (صورة + اسم فقط) */
+/* ⭐⭐⭐ loadFriends — شبكة 68×68 */
 async function loadFriends() {
     const container = document.getElementById('friends-container');
     if (!container) return;
@@ -233,7 +233,7 @@ async function loadFriends() {
         container.innerHTML = '';
 
         var grid = document.createElement('div');
-        grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:10px;padding:10px 4px;';
+        grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:8px;padding:8px 4px;';
 
         list.sort(function(a, b) { return (b.time || 0) - (a.time || 0); });
 
@@ -248,24 +248,31 @@ async function loadFriends() {
     }
 }
 
-/* ⭐⭐⭐ مربع صديق — 80×80 */
+/* ⭐⭐⭐ مربع صديق — 68×68 — الاسم داخل الصورة */
 function _buildFriendTile(f) {
     var tile = document.createElement('div');
-    tile.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;';
+    tile.style.cssText = 'position:relative;width:68px;height:68px;border-radius:10px;overflow:hidden;cursor:pointer;border:1px solid rgba(212,175,55,0.4);background:#111;transition:transform .15s ease;';
+
+    tile.addEventListener('mouseenter', function () { tile.style.transform = 'scale(1.05)'; });
+    tile.addEventListener('mouseleave', function () { tile.style.transform = 'scale(1)'; });
 
     var img = document.createElement('img');
     img.src = f.avatar || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(f.name || 'User') + '&background=555&color=fff');
     img.alt = f.name || '';
     img.loading = 'lazy';
-    img.style.cssText = 'width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid rgba(212,175,55,0.5);background:#111;';
+    img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;';
     img.onerror = function () { this.src = 'https://ui-avatars.com/api/?name=U&background=555&color=fff'; };
+
+    var nameOverlay = document.createElement('div');
+    nameOverlay.style.cssText = 'position:absolute;left:0;right:0;bottom:0;background:linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 60%, transparent 100%);padding:12px 3px 3px 3px;text-align:center;';
 
     var name = document.createElement('div');
     name.textContent = f.name || '—';
-    name.style.cssText = 'font-size:11px;color:#fff;text-align:center;font-weight:700;font-family:Cairo,sans-serif;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,0.9);';
+    name.style.cssText = 'font-size:9px;color:#fff;font-weight:900;font-family:Cairo,sans-serif;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,0.9);';
 
+    nameOverlay.appendChild(name);
     tile.appendChild(img);
-    tile.appendChild(name);
+    tile.appendChild(nameOverlay);
 
     tile.addEventListener('click', function (e) {
         e.stopPropagation();
@@ -298,7 +305,6 @@ async function loadPoints() {
 }
 
 function renderFriendCard(container, f, points, giftsCount) {
-    // لم يُعد يُستخدم — يبقى للتوافق
     container.appendChild(_buildFriendTile(f));
 }
 
@@ -1083,4 +1089,4 @@ function openAppModal(title, text, type, options, currentVal, onSave) {
     document.getElementById('modal-cancel').onclick = () => m.classList.remove('active');
 }
 
-console.log('✅ profile-core.js v2.7 loaded — friends grid 80x80');
+console.log('✅ profile-core.js v2.8 loaded — friends 68x68 name overlay');
