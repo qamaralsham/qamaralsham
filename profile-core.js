@@ -1,5 +1,5 @@
 // ==============================================
-// profile-core.js v2.8 — friends 68x68 name overlay
+// profile-core.js v2.9 — منع FOUC عند التحميل
 // ==============================================
 
 let currentUser = null, targetUser = null, viewMode = 'owner';
@@ -92,6 +92,14 @@ function formatDate(ts) {
     return d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear();
 }
 
+/* ⭐⭐⭐ v2.9: إظهار البروفايل بعد التحميل الكامل (منع FOUC) */
+function _revealProfile() {
+    var p = document.getElementById('profile-container');
+    if (!p) return;
+    p.style.transition = 'opacity 0.18s ease-in';
+    p.style.opacity = '1';
+}
+
 document.addEventListener('click', e => {
     if (e.target.classList && e.target.classList.contains('modal')) e.target.classList.remove('active');
 });
@@ -181,6 +189,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     setTimeout(loadFriends, 800);
     setTimeout(loadPoints, 800);
+
+    // ⭐⭐⭐ v2.9: إظهار البروفايل بعد استقرار الصفحة (منع FOUC)
+    setTimeout(_revealProfile, 180);
+
     console.log('Profile loaded | Mode:', viewMode);
 });
 
@@ -1089,4 +1101,4 @@ function openAppModal(title, text, type, options, currentVal, onSave) {
     document.getElementById('modal-cancel').onclick = () => m.classList.remove('active');
 }
 
-console.log('✅ profile-core.js v2.8 loaded — friends 68x68 name overlay');
+console.log('✅ profile-core.js v2.9 loaded — FOUC fixed');
