@@ -1,5 +1,8 @@
 // ==============================================
-// profile-core.js v2.2 — anti-flash + fast load
+// profile-core.js v2.3 — إصلاحات:
+//   1) منع إعادة كتابة النص (الرتبة لا تقفز)
+//   2) منع حفظ الفيديو في Firebase (يُحفظ محلياً فقط)
+//   3) منع الوميض (قفل 10 ثوان)
 // ==============================================
 
 let currentUser = null, targetUser = null, viewMode = 'owner';
@@ -9,7 +12,6 @@ let nameSize = 20;
 let frameInset = -8;
 let _localLockUntil = 0;
 let _lastUserHash = '';
-let _renderCount = 0;
 
 const IMGBB = '80fd32c4ef79b5f25fbcf0893547de4f';
 const FRAMES = [];
@@ -184,7 +186,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('Profile loaded | Mode:', viewMode);
 });
 
-/* ⭐ hash لتجنّب إعادة الرسم */
 function _userHash(u) {
     if (!u) return '';
     try {
@@ -217,7 +218,6 @@ async function loadFriends() {
         container.innerHTML = '';
         list.sort((a,b) => (b.time||0) - (a.time||0));
         const slice = list.slice(0, 50).filter(f => f.uid);
-        // ⭐ طلب متوازي بدل متسلسل
         const pointsArr = await Promise.all(slice.map(f =>
             db.ref('bot_data/quiz/scores/' + f.uid).once('value')
                 .then(s => s.val() || 0).catch(() => 0)
@@ -346,16 +346,18 @@ function canView(field) {
     return val === 'public';
 }
 
-/* ⭐⭐⭐ loadProfile — مع منع إعادة تحميل الصور */
+/* ⭐⭐⭐ loadProfile — لا يُعيد كتابة النص إن لم يتغير */
 function loadProfile() {
     if (!targetUser) return;
-    _renderCount++;
     const _displayName = (viewMode === 'owner' && currentUser && currentUser.name) ? currentUser.name : (targetUser.name || 'مستخدم');
     const u = document.getElementById('profile-username');
     if (u) {
         u.dataset.name = _displayName;
-        if (!u.classList.contains('name-has-effects') && !u.classList.contains('name-bg-active') && !u.classList.contains('text-gradient')) {
-            if (u.textContent !== _displayName) u.innerText = _displayName;
+        // ⭐ لا تُعِد كتابة النص إن لم يتغير + لا تكسر البنية
+        const currentText = u.textContent;
+        const hasStructure = u.querySelector('*'); // nf-* has spans
+        if (currentText !== _displayName && !hasStructure) {
+            u.innerText = _displayName;
         }
     }
     const b = document.getElementById('profile-bio');
@@ -368,7 +370,6 @@ function loadProfile() {
         const rk = rankBadge(targetUser.rank) + ' ' + (targetUser.rank || 'User');
         if (r.textContent !== rk) r.innerText = rk;
     }
-    // ⭐ لا نعيد تحميل الصورة إن كانت نفسها
     if (targetUser.avatar) {
         const a = document.getElementById('profile-avatar-img');
         if (a && a.getAttribute('src') !== targetUser.avatar) a.src = targetUser.avatar;
@@ -377,22 +378,43 @@ function loadProfile() {
         const c = document.getElementById('profile-cover-img');
         if (c && c.getAttribute('src') !== targetUser.cover) c.src = targetUser.cover;
     }
-    if (targetUser.profileBgValue) {
-        const layer = document.getElementById('profile-bg-layer');
-        if (layer) {
-            const newType = targetUser.profileBgType || 'color';
-            const newVal = targetUser.profileBgValue;
-            const curBg = layer.dataset.curBg;
-            if (curBg !== newType + '|' + newVal) {
-                layer.dataset.curBg = newType + '|' + newVal;
-                layer.innerHTML = '';
-                layer.style.backgroundImage = '';
-                layer.style.background = '';
-                if (newType === 'color') layer.style.background = newVal;
-                else if (newType === 'image') layer.style.backgroundImage = 'url(' + newVal + ')';
+
+    /* ⭐⭐⭐ الخلفية الذكية — تقرأ من localStorage إن Firebase فارغ */
+    const layer = document.getElementById('profile-bg-layer');
+    if (layer) {
+        // الأولوية: Firebase → localStorage
+        let bgT = targetUser.profileBgType;
+        let bgV = targetUser.profileBgValue;
+        if (!bgV) {
+            bgT = localStorage.getItem('profile_bg_type') || 'color';
+            bgV = localStorage.getItem('profile_bg_value');
+        }
+        const key = bgT + '|' + (bgV || '').substring(0, 100);
+        if (layer.dataset.curBg !== key && bgV) {
+            layer.dataset.curBg = key;
+            layer.innerHTML = '';
+            layer.style.backgroundImage = '';
+            layer.style.background = '';
+            if (bgT === 'color') {
+                layer.style.background = bgV;
+            } else if (bgT === 'image') {
+                layer.style.backgroundImage = 'url("' + bgV + '")';
+                layer.style.backgroundSize = 'cover';
+                layer.style.backgroundPosition = 'center';
+            } else if (bgT === 'video') {
+                const v = document.createElement('video');
+                v.src = bgV;
+                v.autoplay = true;
+                v.loop = true;
+                v.muted = true;
+                v.playsInline = true;
+                v.setAttribute('playsinline', '');
+                v.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;';
+                layer.appendChild(v);
             }
         }
     }
+
     const un = document.getElementById('profile-username-id');
     if (un) {
         const uu = targetUser.username || '@' + (targetUser.name || 'user').replace(/\s+/g, '_');
@@ -509,7 +531,11 @@ function loadSaved() {
         if (sf && typeof applyAvatarFrame === 'function') {
             applyAvatarFrame(sf);
         }
-        if (localStorage.getItem('profile_bg_value')) { bgType = localStorage.getItem('profile_bg_type') || 'color'; bgValue = localStorage.getItem('profile_bg_value'); if (typeof applyBg === 'function') applyBg(); }
+        if (localStorage.getItem('profile_bg_value')) {
+            bgType = localStorage.getItem('profile_bg_type') || 'color';
+            bgValue = localStorage.getItem('profile_bg_value');
+            if (typeof applyBg === 'function') applyBg();
+        }
         if (localStorage.getItem('name_color') && typeof applyNameColor === 'function') { nameColor = localStorage.getItem('name_color'); applyNameColor(); }
         if (localStorage.getItem('name_gradient') && typeof applyNameGradient === 'function') { nameGradient = JSON.parse(localStorage.getItem('name_gradient')); applyNameGradient(); }
         if (localStorage.getItem('name_glow') && typeof applyNameGlow === 'function') { nameGlow = localStorage.getItem('name_glow'); applyNameGlow(); if (typeof updateGlowLbl === 'function') updateGlowLbl(); }
@@ -565,11 +591,15 @@ async function uploadLoad(file, maxMB) {
     return u;
 }
 
+/* ⭐⭐⭐ saveToChat — لا يحفظ الفيديو في Firebase */
 function saveToChat() {
     if (!currentUser) return;
-    _localLockUntil = Date.now() + 2500;
+    _localLockUntil = Date.now() + 10000; // ⭐ قفل 10 ثوان
     const existing = JSON.parse(localStorage.getItem('qamar_current_user') || localStorage.getItem('qamar_user') || '{}');
     const fv = localStorage.getItem('saved_avatar_frame_motion');
+
+    // ⭐ لا نُرسل الفيديو إلى Firebase (ضخم)
+    const isVideo = bgType === 'video';
     const u = Object.assign({}, existing, {
         uid: currentUser.uid,
         name: currentUser.name || existing.name || 'مستخدم',
@@ -590,14 +620,14 @@ function saveToChat() {
         avatarFrame: (fv && fv !== 'none' && fv !== '') ? fv : null,
         poetry: localStorage.getItem('poetry_text') || existing.poetry || '',
         profileBgType: bgType,
-        profileBgValue: bgValue,
+        profileBgValue: isVideo ? null : bgValue, // ⭐ الفيديو لا يُحفظ
         musicURL: musicURL || null,
         color: existing.color || '#ffffff'
     });
     localStorage.setItem('qamar_current_user', JSON.stringify(u));
     localStorage.setItem('qamar_user', JSON.stringify(u));
     if (currentUser.uid && typeof db !== 'undefined' && db) {
-        db.ref('users/' + currentUser.uid).update({
+        const firebaseData = {
             name: u.name, bio: u.bio, cover: u.cover, avatar: u.avatar,
             nameColor: u.nameColor, nameGradient: u.nameGradient,
             nameFrame: u.nameFrame, nameShape: u.nameShape, nameGlow: u.nameGlow,
@@ -605,7 +635,8 @@ function saveToChat() {
             avatarFrame: u.avatarFrame, poetry: u.poetry,
             profileBgType: u.profileBgType, profileBgValue: u.profileBgValue,
             musicURL: u.musicURL
-        }).catch(() => {});
+        };
+        db.ref('users/' + currentUser.uid).update(firebaseData).catch(() => {});
     }
     if (window.parent && window.parent !== window) {
         try { window.parent.postMessage({action:'userDataUpdated', userData:u}, '*'); } catch(e) {}
@@ -961,4 +992,4 @@ function openAppModal(title, text, type, options, currentVal, onSave) {
     document.getElementById('modal-cancel').onclick = () => m.classList.remove('active');
 }
 
-console.log('✅ profile-core.js v2.2 loaded — no flash + fast load');
+console.log('✅ profile-core.js v2.3 loaded — no text rewrite + no video in FB + 10s lock');
