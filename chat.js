@@ -16,7 +16,7 @@ const ChatState = {
     presenceInterval: null,
     _lastCodeLookup: 0,
     _punishmentCheckInterval: null,
-    _friendRequestsCache: {} // ⭐ جديد
+    _friendRequestsCache: {}
 };
 
 function safeColor(c) {
@@ -752,7 +752,11 @@ function loadNotifications(){
     db.ref('user_notifications/'+user.uid).limitToLast(50).once('value',s=>{
         const arr=[];s.forEach(c=>arr.push(Object.assign({id:c.key},c.val())));arr.reverse();
         if(arr.length===0){const e=document.createElement('div');e.style.cssText='text-align:center;color:var(--text-dim);font-size:12px;padding:20px;';e.textContent='لا إشعارات';list.appendChild(e);return}
-        arr.forEach(n=>list.appendChild(buildNotificationElement(n)));
+        arr.forEach(n=>{
+            var el = buildNotificationElement(n);
+            el.dataset.notifId = n.id;
+            list.appendChild(el);
+        });
     });
 }
 /* ⭐⭐⭐ buildNotificationElement — مع أزرار قبول/رفض الصداقة */
@@ -765,6 +769,7 @@ function buildNotificationElement(n){
     if(n.type==='mention'){const r=QAMAR.ROOMS[n.roomId];t.textContent='📢 أشار في '+(r?r.name:n.roomId)}
     else if(n.type==='private')t.textContent='💬 '+(n.preview||'رسالة');
     else if(n.type==='friend_request')t.textContent='➕ طلب صداقة';
+    else if(n.type==='friend_accepted')t.textContent='✅ '+(n.preview||'قبل صداقتك');
     else if(n.type==='like')t.textContent='❤️ '+(n.preview||'أعجب بك');
     else if(n.type==='poke')t.textContent='👋 '+(n.preview||'نكزك');
     else t.textContent=n.preview||'';
@@ -774,26 +779,33 @@ function buildNotificationElement(n){
     inf.appendChild(nm);inf.appendChild(t);inf.appendChild(tm);
 
     // ⭐⭐ أزرار قبول/رفض الصداقة
+    var acceptBtn = null, rejectBtn = null;
     if (n.type === 'friend_request' && n.fromUid) {
         const actions = document.createElement('div');
         actions.style.cssText = 'display:flex;gap:6px;margin-top:8px;';
 
-        const acceptBtn = document.createElement('button');
+        acceptBtn = document.createElement('button');
         acceptBtn.type = 'button';
         acceptBtn.textContent = '✅ قبول';
         acceptBtn.style.cssText = 'flex:1;padding:6px 10px;background:#84cc16;color:#fff;border:none;border-radius:8px;font-family:Cairo,sans-serif;font-weight:900;font-size:11px;cursor:pointer;';
         acceptBtn.onclick = function (e) {
             e.stopPropagation();
-            acceptFriendRequest(user && user.uid, n.fromUid, n.fromName, n.fromAvatar, i, acceptBtn, rejectBtn);
+            var me = getCurrentUser();
+            if (me && me.uid) {
+                acceptFriendRequest(me.uid, n.fromUid, n.fromName, n.fromAvatar, i, acceptBtn, rejectBtn);
+            }
         };
 
-        const rejectBtn = document.createElement('button');
+        rejectBtn = document.createElement('button');
         rejectBtn.type = 'button';
         rejectBtn.textContent = '❌ رفض';
         rejectBtn.style.cssText = 'flex:1;padding:6px 10px;background:rgba(255,68,68,0.85);color:#fff;border:none;border-radius:8px;font-family:Cairo,sans-serif;font-weight:900;font-size:11px;cursor:pointer;';
         rejectBtn.onclick = function (e) {
             e.stopPropagation();
-            rejectFriendRequest(user && user.uid, n.fromUid, i, acceptBtn, rejectBtn);
+            var me = getCurrentUser();
+            if (me && me.uid) {
+                rejectFriendRequest(me.uid, n.fromUid, i, acceptBtn, rejectBtn);
+            }
         };
 
         actions.appendChild(acceptBtn);
@@ -805,11 +817,10 @@ function buildNotificationElement(n){
 
     // ⭐ عند الضغط على الإشعار (باستثناء الأزرار)
     i.onclick=(e)=>{
-        if (e.target.closest('button')) return; // لا تفعل شيئاً إن ضغط زراً
+        if (e.target.closest('button')) return;
         if(n.type==='mention'&&n.roomId&&QAMAR.ROOMS[n.roomId]){const r=QAMAR.ROOMS[n.roomId];switchRoom(n.roomId,r.name+' '+r.icon)}
         else if(n.type==='private'&&n.fromUid)openPrivateChatWith(n.fromUid,n.fromName,n.fromAvatar);
-        else if((n.type==='like'||n.type==='poke'||n.type==='friend_request')&&n.fromUid)openUserProfile(n.fromUid,n.fromName);
-        else if(n.type==='mention'){}
+        else if((n.type==='like'||n.type==='poke'||n.type==='friend_request'||n.type==='friend_accepted')&&n.fromUid)openUserProfile(n.fromUid,n.fromName);
         closeAllPanels();
     };
     return i;
@@ -819,7 +830,6 @@ function buildNotificationElement(n){
 async function acceptFriendRequest(myUid, fromUid, fromName, fromAvatar, notifEl, acceptBtn, rejectBtn) {
     if (!myUid || !fromUid) return;
 
-    // تعطيل الأزرار
     if (acceptBtn) { acceptBtn.disabled = true; acceptBtn.textContent = '⏳'; }
     if (rejectBtn) rejectBtn.disabled = true;
 
@@ -827,7 +837,6 @@ async function acceptFriendRequest(myUid, fromUid, fromName, fromAvatar, notifEl
         const now = Date.now();
         const myData = getCurrentUser() || {};
 
-        // ⭐ إضافة في الجانبين
         await Promise.all([
             db.ref('users/' + myUid + '/friends/' + fromUid).set({
                 status: 'accepted',
@@ -843,7 +852,6 @@ async function acceptFriendRequest(myUid, fromUid, fromName, fromAvatar, notifEl
             })
         ]);
 
-        // ⭐ إشعار الطرف الآخر بأنه تم القبول
         try {
             await db.ref('user_notifications/' + fromUid).push({
                 fromUid: myUid,
@@ -857,12 +865,10 @@ async function acceptFriendRequest(myUid, fromUid, fromName, fromAvatar, notifEl
             });
         } catch(e) { console.warn('send friend_accepted notif failed:', e); }
 
-        // ⭐ حذف إشعار الطلب
         if (notifEl && notifEl.dataset && notifEl.dataset.notifId) {
             db.ref('user_notifications/' + myUid + '/' + notifEl.dataset.notifId).remove().catch(()=>{});
         }
 
-        // تحديث الواجهة
         if (acceptBtn) { acceptBtn.textContent = '✅ تم'; acceptBtn.style.background = '#65a30d'; }
         if (rejectBtn) rejectBtn.style.display = 'none';
 
@@ -883,12 +889,10 @@ async function rejectFriendRequest(myUid, fromUid, notifEl, acceptBtn, rejectBtn
     if (rejectBtn) { rejectBtn.disabled = true; rejectBtn.textContent = '⏳'; }
 
     try {
-        // ⭐ حذف إشعار الطلب
         if (notifEl && notifEl.dataset && notifEl.dataset.notifId) {
             await db.ref('user_notifications/' + myUid + '/' + notifEl.dataset.notifId).remove();
         }
 
-        // تحديث الواجهة
         if (notifEl) {
             notifEl.style.opacity = '0.4';
             if (acceptBtn) acceptBtn.style.display = 'none';
