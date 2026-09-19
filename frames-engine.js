@@ -1,5 +1,5 @@
 // ==============================================
-// frames-engine.js v9 — كامل
+// frames-engine.js v10 — قفل observer + أداء أفضل
 // ==============================================
 
 const FRAMES_REPO = 'qamaralsham/qamaralsham';
@@ -8,6 +8,9 @@ const FRAMES_EXTS = ['png', 'gif', 'webp', 'jpg', 'jpeg', 'apng'];
 const FRAMES_CACHE_TTL = 24 * 60 * 60 * 1000;
 const FRAMES_CACHE_KEY = 'qamar_frames_cache_v1';
 const ANIM_CYCLE = ['royal-glow', 'wing-flutter', 'flame-flicker', 'celestial-spin', 'none'];
+
+// ⭐ قفل عام — يمنع observer من الرد على تغييراتنا
+var _framesApplying = false;
 
 const FRAMES_OVERRIDES = {
     // "frame1.png": { name: "الفضي الملكي", animation: "royal-glow", rank: "User" },
@@ -138,7 +141,6 @@ async function initFrames() {
     }
 }
 
-/* ⭐⭐ التحديث اليدوي */
 window.reloadFrames = async function () {
     if (_refreshing) return;
     _refreshing = true;
@@ -360,8 +362,10 @@ function applyFramesToExistingMessages() {
     }).catch(e => console.warn('Frame apply error:', e));
 }
 
+// ⭐⭐⭐ observer مع قفل + subtree:false
 document.addEventListener('DOMContentLoaded', function () {
     var observer = new MutationObserver(function (mutations) {
+        if (_framesApplying) return;   // ⭐ لا يستجيب أثناء تطبيقنا
         mutations.forEach(function (m) {
             m.addedNodes.forEach(function (node) {
                 if (node.nodeType !== 1) return;
@@ -372,9 +376,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (!wrapper) return;
                 if (wrapper.querySelector('.qf')) return;
 
-                var msgId = node.getAttribute('data-msg-id');
-                if (!msgId) return;
-
                 var senderUid = node.getAttribute('data-sender-uid');
                 if (!senderUid) return;
                 if (senderUid.indexOf('bot_') === 0) return;
@@ -383,7 +384,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 db.ref('users/' + senderUid + '/avatarFrame').once('value').then(function (s) {
                     var frame = s.val();
                     if (frame && frame !== 'none' && !wrapper.querySelector('.qf')) {
+                        _framesApplying = true;   // ⭐ قفل
                         applyFrameToMessage(wrapper, frame);
+                        setTimeout(function(){ _framesApplying = false; }, 80);   // ⭐ فك بعد 80ms
                     }
                 }).catch(function () {});
             });
@@ -392,7 +395,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var messagesContainer = document.getElementById('messages');
     if (messagesContainer) {
-        observer.observe(messagesContainer, { childList: true, subtree: true });
+        // ⭐ subtree: false — يمنع المراقبة العميقة
+        observer.observe(messagesContainer, { childList: true, subtree: false });
     }
 });
 
@@ -401,4 +405,4 @@ window.applyFrameToMessage = applyFrameToMessage;
 window.renderFramesGrid = renderFramesGrid;
 window.getFrames = function () { return ALL_FRAMES; };
 
-console.log('✅ frames-engine.js v9 loaded — AUTO-discovery + refresh button');ك
+console.log('✅ frames-engine.js v10 loaded — observer lock + subtree:false');
