@@ -4,6 +4,40 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>قمر الشام — البروفايل</title>
+
+<!-- ⭐⭐⭐ v4: كشف فوري — في الـ head قبل Firebase -->
+<script>
+(function() {
+    var startTime = Date.now();
+    var revealed = false;
+    var interval = null;
+
+    function tryReveal() {
+        if (revealed) return true;
+        var p = document.getElementById('profile-container');
+        if (!p) return false;
+        revealed = true;
+        p.style.transition = 'opacity 0.15s ease-in';
+        p.style.opacity = '1';
+        if (interval) { clearInterval(interval); interval = null; }
+        return true;
+    }
+
+    // فحص كل 30ms
+    interval = setInterval(function() {
+        if (tryReveal()) {
+            if (interval) { clearInterval(interval); interval = null; }
+            return;
+        }
+        // شبكة أمان: 1500ms من بداية الصفحة
+        if (Date.now() - startTime > 1500) {
+            if (interval) { clearInterval(interval); interval = null; }
+            tryReveal();
+        }
+    }, 30);
+})();
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
@@ -187,42 +221,6 @@
     </div>
 </div>
 
-<!-- ⭐⭐⭐ v3: كشف مستقل عن Firebase (الأضمن) -->
-<script>
-(function() {
-    var revealed = false;
-    function reveal() {
-        if (revealed) return;
-        revealed = true;
-        var p = document.getElementById('profile-container');
-        if (p) {
-            p.style.transition = 'opacity 0.15s ease-in';
-            p.style.opacity = '1';
-        }
-    }
-
-    // 1. شبكة أمان: 1500ms كحد أقصى مطلق
-    setTimeout(reveal, 1500);
-
-    // 2. الكشف العادي: عند HTML جاهز + خطوط + 250ms
-    function tryReveal() {
-        var fontsReady = Promise.resolve();
-        if (document.fonts && document.fonts.ready) {
-            fontsReady = document.fonts.ready;
-        }
-        fontsReady.then(function() {
-            setTimeout(reveal, 250);
-        });
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', tryReveal);
-    } else {
-        tryReveal();
-    }
-})();
-</script>
-
 <!-- ═══ Modal اختيار الاسم ═══ -->
 <div class="modal" id="name-picker-modal">
     <div class="modal-c">
@@ -265,11 +263,11 @@
 
 <audio id="music-player" loop></audio>
 
-<script src="config.js?v=28"></script>
-<script src="ranks.js?v=28"></script>
-<script src="utils.js?v=28"></script>
-<script src="frames-engine.js?v=28"></script>
-<script src="profile-core.js?v=28"></script>
-<script src="profile-appearance.js?v=28"></script>
+<script src="config.js?v=31"></script>
+<script src="ranks.js?v=31"></script>
+<script src="utils.js?v=31"></script>
+<script src="frames-engine.js?v=31"></script>
+<script src="profile-core.js?v=31"></script>
+<script src="profile-appearance.js?v=31"></script>
 </body>
 </html>
