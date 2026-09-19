@@ -1,5 +1,5 @@
 // ==============================================
-// chat.js v3.4 — إصلاح إشعارات الرسائل الخاصة
+// chat.js v3.5 — صوت موحّد + فلتر دقيق
 // ==============================================
 
 const ChatState = {
@@ -31,8 +31,65 @@ function safeGradient(g) {
     return (a && b) ? [a, b] : null;
 }
 
-function playBirdSound(){try{const ctx=new(window.AudioContext||window.webkitAudioContext)();const now=ctx.currentTime;[0,0.15,0.3].forEach((d,i)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';const b=2000+(i*300);o.frequency.setValueAtTime(b,now+d);o.frequency.linearRampToValueAtTime(b+800,now+d+0.05);o.frequency.linearRampToValueAtTime(b-300,now+d+0.1);g.gain.setValueAtTime(0,now+d);g.gain.linearRampToValueAtTime(0.3,now+d+0.02);g.gain.exponentialRampToValueAtTime(0.01,now+d+0.13);o.connect(g);g.connect(ctx.destination);o.start(now+d);o.stop(now+d+0.15)})}catch(e){}}
-function playPrivateMsgSound(){try{const ctx=new(window.AudioContext||window.webkitAudioContext)();const now=ctx.currentTime;[0,0.12].forEach((d,i)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.setValueAtTime(800+(i*200),now+d);o.frequency.linearRampToValueAtTime(1200+(i*200),now+d+0.08);g.gain.setValueAtTime(0,now+d);g.gain.linearRampToValueAtTime(0.25,now+d+0.02);g.gain.exponentialRampToValueAtTime(0.01,now+d+0.1);o.connect(g);g.connect(ctx.destination);o.start(now+d);o.stop(now+d+0.12)})}catch(e){}}
+/* ⭐⭐⭐ AudioContext موحّد — يُفتح عند أول لمسة */
+var _audioCtx = null;
+function getAudioCtx() {
+    if (!_audioCtx) {
+        try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; }
+    }
+    if (_audioCtx && _audioCtx.state === 'suspended') {
+        _audioCtx.resume().catch(function () {});
+    }
+    return _audioCtx;
+}
+function _unlockAudio() {
+    getAudioCtx();
+    document.removeEventListener('touchstart', _unlockAudio);
+    document.removeEventListener('click', _unlockAudio);
+    document.removeEventListener('keydown', _unlockAudio);
+}
+document.addEventListener('touchstart', _unlockAudio, { passive: true });
+document.addEventListener('click', _unlockAudio);
+document.addEventListener('keydown', _unlockAudio);
+
+function playBirdSound() {
+    try {
+        const ctx = getAudioCtx();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        [0, 0.15, 0.3].forEach((d, i) => {
+            const o = ctx.createOscillator(), g = ctx.createGain();
+            o.type = 'sine';
+            const b = 2000 + (i * 300);
+            o.frequency.setValueAtTime(b, now + d);
+            o.frequency.linearRampToValueAtTime(b + 800, now + d + 0.05);
+            o.frequency.linearRampToValueAtTime(b - 300, now + d + 0.1);
+            g.gain.setValueAtTime(0, now + d);
+            g.gain.linearRampToValueAtTime(0.3, now + d + 0.02);
+            g.gain.exponentialRampToValueAtTime(0.01, now + d + 0.13);
+            o.connect(g); g.connect(ctx.destination);
+            o.start(now + d); o.stop(now + d + 0.15);
+        });
+    } catch (e) {}
+}
+function playPrivateMsgSound() {
+    try {
+        const ctx = getAudioCtx();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        [0, 0.12].forEach((d, i) => {
+            const o = ctx.createOscillator(), g = ctx.createGain();
+            o.type = 'sine';
+            o.frequency.setValueAtTime(800 + (i * 200), now + d);
+            o.frequency.linearRampToValueAtTime(1200 + (i * 200), now + d + 0.08);
+            g.gain.setValueAtTime(0, now + d);
+            g.gain.linearRampToValueAtTime(0.25, now + d + 0.02);
+            g.gain.exponentialRampToValueAtTime(0.01, now + d + 0.1);
+            o.connect(g); g.connect(ctx.destination);
+            o.start(now + d); o.stop(now + d + 0.12);
+        });
+    } catch (e) {}
+}
 
 function cleanupAllListeners() {
     try {
@@ -758,75 +815,76 @@ function toggleNotifications(){
     if(o){loadNotifications();ChatState.unreadCount=0;updateNotifBadge();markAllNotificationsRead()}
 }
 
-/* ⭐⭐⭐ startNotificationsListener — v3.4
+/* ⭐⭐⭐ startNotificationsListener — v3.5
+   - فلتر بمفتاح الرسالة (Firebase key) — دقيق 100% مهما كانت الساعة
    - لا صوت/توست للإشعارات القديمة (قبل فتح الصفحة)
    - عداد 🔔 يعرض العدد الحقيقي للإشعارات غير المقروءة
-   - الرسائل الخاصة (private) لا تُحسب في عداد 🔔 (تُدار من pm-enhanced)
-   - لا صوت/توست للإشعارات الصادرة مني
 */
 function startNotificationsListener(){
     const user = getCurrentUser();
     if (!user || !user.uid) return;
     if (ChatState.notificationsListener) ChatState.notificationsListener.off();
 
-    // 1. لحظة بدء الاستماع — أي إشعار أقدم من هذا لا يُعرض كـ toast/صوت
-    const listenStart = Date.now();
+    // متغيّر يحفظ آخر مفتاح معروف
+    let lastKnownKey = '';
 
-    // 2. اقرأ الإشعارات القديمة غير المقروءة → ضعها في عداد 🔔
+    // 1. اقرأ الإشعارات الموجودة → ضعها في عداد 🔔، واحفظ آخر مفتاح
     db.ref('user_notifications/' + user.uid).limitToLast(50).once('value').then(function (s) {
         var unread = 0;
         s.forEach(function (c) {
             var n = c.val();
             if (!n) return;
+            lastKnownKey = c.key; // آخر مفتاح سيُحفظ
             if (n.read) return;
             if (n.fromUid === user.uid) return;
-            if (n.type === 'private') return; // الرسائل الخاصة تُدار في badge آخر
+            if (n.type === 'private') return;
             unread++;
         });
         ChatState.unreadCount = unread;
         updateNotifBadge();
+
+        // 2. الآن اربط الـ listener
+        const ref = db.ref('user_notifications/' + user.uid).limitToLast(20);
+        ChatState.notificationsListener = ref;
+
+        ref.on('child_added', function (s) {
+            var n = s.val();
+            if (!n) return;
+
+            // ⭐ فلتر دقيق: Firebase keys تتزايد — أي مفتاح ≤ lastKnownKey = قديم
+            if (s.key <= lastKnownKey) return;
+
+            // تجاهل الصادر مني
+            if (n.fromUid === user.uid) return;
+            // تجاهل المقروء
+            if (n.read) return;
+
+            // حدّث المفتاح الأخير
+            lastKnownKey = s.key;
+
+            // ⭐ الآن الإشعار جديد وحقيقي → اعرضه
+            if (n.type === 'mention') {
+                playBirdSound();
+                showToast('fa-bell', '🔔 ' + n.fromName + ' أشار إليك');
+                ChatState.unreadCount++;
+                updateNotifBadge();
+            } else if (n.type === 'private') {
+                playPrivateMsgSound();
+            } else if (n.type === 'friend_request') {
+                showToast('fa-user-plus', '➕ طلب صداقة من ' + n.fromName);
+                ChatState.unreadCount++;
+                updateNotifBadge();
+            } else if (n.type === 'like') {
+                showToast('fa-heart', '❤️ ' + n.fromName + ' أعجب بك');
+                ChatState.unreadCount++;
+                updateNotifBadge();
+            } else if (n.type === 'poke') {
+                showToast('fa-hand-peace', '👋 ' + n.fromName + ' نكزك');
+                ChatState.unreadCount++;
+                updateNotifBadge();
+            }
+        });
     }).catch(function () {});
-
-    // 3. الاستماع فقط للإشعارات الجديدة (بعد listenStart)
-    const ref = db.ref('user_notifications/' + user.uid).limitToLast(20);
-    ChatState.notificationsListener = ref;
-
-    ref.on('child_added', function (s) {
-        var n = s.val();
-        if (!n) return;
-
-        // تجاهل الإشعارات القديمة (قبل فتح الصفحة)
-        if ((n.time || 0) < listenStart) return;
-
-        // تجاهل الإشعارات الصادرة مني
-        if (n.fromUid === user.uid) return;
-
-        // تجاهل المقروء
-        if (n.read) return;
-
-        // ⭐ الآن الإشعار جديد وحقيقي ووارد
-        if (n.type === 'mention') {
-            playBirdSound();
-            showToast('fa-bell', '🔔 ' + n.fromName + ' أشار إليك');
-            ChatState.unreadCount++;
-            updateNotifBadge();
-        } else if (n.type === 'private') {
-            // الرسائل الخاصة: صوت فقط، لا عداد في 🔔 (يُدار في pm-badge)
-            playPrivateMsgSound();
-        } else if (n.type === 'friend_request') {
-            showToast('fa-user-plus', '➕ طلب صداقة من ' + n.fromName);
-            ChatState.unreadCount++;
-            updateNotifBadge();
-        } else if (n.type === 'like') {
-            showToast('fa-heart', '❤️ ' + n.fromName + ' أعجب بك');
-            ChatState.unreadCount++;
-            updateNotifBadge();
-        } else if (n.type === 'poke') {
-            showToast('fa-hand-peace', '👋 ' + n.fromName + ' نكزك');
-            ChatState.unreadCount++;
-            updateNotifBadge();
-        }
-    });
 }
 
 /* ⭐⭐⭐ loadNotifications — فلترة قوية */
@@ -1273,4 +1331,4 @@ window.applyRoomBackground=applyRoomBackground;
 window.buildRoomsList=buildRoomsList;
 window.clearPrivateNotifsFrom = _clearPrivateNotifsFrom;
 
-console.log('✅ chat.js v3.4 loaded — private notifications filtered by listenStart');
+console.log('✅ chat.js v3.5 loaded — unified audio + key-based filter');
