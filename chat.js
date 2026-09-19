@@ -1,5 +1,5 @@
 // ==============================================
-// chat.js v3.0 — أزرار قبول/رفض الصداقة
+// chat.js v3.2 — private msg notifications fixed
 // ==============================================
 
 const ChatState = {
@@ -544,7 +544,7 @@ function notifyMentions(mentions,text){
         try{
             const s=await db.ref('user_names/'+name).once('value');
             const uid=s.val();
-            if(uid)db.ref('user_notifications/'+uid).push({fromUid:user.uid,fromName:user.name,fromAvatar:user.avatar||'',type:'mention',roomId:ChatState.currentRoom,preview:truncate(text,80),time:firebase.database.ServerValue.TIMESTAMP,read:false});
+            if(uid)db.ref('user_notifications/'+uid).push({fromUid:user.uid,fromName:user.name,fromAvatar:user.avatar||'',type:'mention',roomId:ChatState.currentRoom,preview:truncate(text,80),time:Date.now(),read:false});
         }catch(e){}
     });
 }
@@ -668,7 +668,9 @@ function openPrivateChatWith(uid,name,av){
     if(m)m.classList.add('open');
     const min=document.getElementById('minimized-chat-avatar');if(min)min.classList.remove('show');
     ChatState.minimizedChat=null;
-    ChatState.seenPrivateMessages.clear();loadPrivateMessages();
+    ChatState.seenPrivateMessages.clear();
+    loadPrivateMessages();
+    _clearPrivateNotifsFrom(uid);
 }
 function loadPrivateMessages(){
     if(!ChatState.currentPrivateChat)return;
@@ -689,6 +691,26 @@ function loadPrivateMessages(){
         }
     });
 }
+
+/* ⭐⭐⭐ حذف إشعارات الرسائل الخاصة من مُرسل معيّن */
+function _clearPrivateNotifsFrom(fromUid) {
+    var user = getCurrentUser();
+    if (!user || !user.uid || !fromUid || !db) return;
+    db.ref('user_notifications/' + user.uid).once('value').then(function(s) {
+        var data = s.val() || {};
+        var toRemove = {};
+        Object.keys(data).forEach(function(k) {
+            var n = data[k] || {};
+            if (n.type === 'private' && n.fromUid === fromUid) {
+                toRemove[k] = null;
+            }
+        });
+        if (Object.keys(toRemove).length > 0) {
+            db.ref('user_notifications/' + user.uid).update(toRemove).catch(function(){});
+        }
+    }).catch(function(){});
+}
+
 function displayPrivateMsg(msg,isSent){
     const c=document.getElementById('pc-messages');if(!c)return;
     const e=document.createElement('div');e.className='pc-msg '+(isSent?'sent':'received');
@@ -719,7 +741,7 @@ async function sendPrivateMsg(){
         ]);
         db.ref('user_private_chats/'+o+'/'+user.uid+'/unread').transaction(c=>(c||0)+1);
         ChatState.seenPrivateMessages.add(msgKey);
-        db.ref('user_notifications/'+o).push({fromUid:user.uid,fromName:user.name,fromAvatar:user.avatar||'',type:'private',preview:truncate(text,80),time:firebase.database.ServerValue.TIMESTAMP,read:false});
+        db.ref('user_notifications/'+o).push({fromUid:user.uid,fromName:user.name,fromAvatar:user.avatar||'',type:'private',preview:truncate(text,80),time:Date.now(),read:false});
         i.value='';i.focus();
     }catch(e){showToast('fa-exclamation-circle','⚠️ فشل')}
 }
@@ -731,6 +753,8 @@ function toggleNotifications(){
     const ov=document.getElementById('overlay');if(ov)ov.classList.toggle('show',o);
     if(o){loadNotifications();ChatState.unreadCount=0;updateNotifBadge();markAllNotificationsRead()}
 }
+
+/* ⭐⭐⭐ startNotificationsListener — فلترة */
 function startNotificationsListener(){
     const user=getCurrentUser();if(!user||!user.uid)return;
     if(ChatState.notificationsListener)ChatState.notificationsListener.off();
@@ -739,13 +763,21 @@ function startNotificationsListener(){
     ref.on('child_added',s=>{
         const n=s.val();if(!n)return;
         const age=Date.now()-(n.time||0);
-        if(age<30000&&!n.read){
-            if(n.type==='mention'){playBirdSound();showToast('fa-bell','🔔 '+n.fromName+' أشار إليك')}
-            else if(n.type==='private')playPrivateMsgSound();
-            ChatState.unreadCount++;updateNotifBadge();
-        }
+        // ⭐ تجاهل: رسائلي الخاصة + القديمة
+        if(n.fromUid===user.uid)return;
+        if(age>15000)return;
+        if(n.read)return;
+
+        if(n.type==='mention'){playBirdSound();showToast('fa-bell','🔔 '+n.fromName+' أشار إليك')}
+        else if(n.type==='private')playPrivateMsgSound();
+        else if(n.type==='friend_request')showToast('fa-user-plus','➕ طلب صداقة من '+n.fromName);
+        else if(n.type==='like')showToast('fa-heart','❤️ '+n.fromName+' أعجب بك');
+        else if(n.type==='poke')showToast('fa-hand-peace','👋 '+n.fromName+' نكزك');
+
+        ChatState.unreadCount++;updateNotifBadge();
     });
 }
+
 function loadNotifications(){
     const user=getCurrentUser();if(!user||!user.uid)return;
     const list=document.getElementById('notif-list');if(!list)return;list.innerHTML='';
@@ -754,103 +786,115 @@ function loadNotifications(){
         if(arr.length===0){const e=document.createElement('div');e.style.cssText='text-align:center;color:var(--text-dim);font-size:12px;padding:20px;';e.textContent='لا إشعارات';list.appendChild(e);return}
         arr.forEach(n=>{
             var el = buildNotificationElement(n);
-            el.dataset.notifId = n.id;
+            el.dataset.notifId = n.id || '';
             list.appendChild(el);
         });
     });
 }
-/* ⭐⭐⭐ buildNotificationElement — مع أزرار قبول/رفض الصداقة */
 function buildNotificationElement(n){
-    const i=document.createElement('div');i.className='notif-item';if(!n.read)i.classList.add('unread');
-    const img=document.createElement('img');img.src=n.fromAvatar||getDefaultAvatar(n.fromName);img.style.cssText='width:32px;height:32px;border-radius:50%;border:1px solid var(--gold);flex-shrink:0;';
-    const inf=document.createElement('div');inf.style.cssText='flex:1;min-width:0;';
-    const nm=document.createElement('div');nm.style.cssText='color:var(--gold);font-weight:900;font-size:12px;';nm.textContent=n.fromName||'';
-    const t=document.createElement('div');t.style.cssText='color:var(--text-dim);font-size:11px;margin-top:2px;word-break:break-word;';
-    if(n.type==='mention'){const r=QAMAR.ROOMS[n.roomId];t.textContent='📢 أشار في '+(r?r.name:n.roomId)}
-    else if(n.type==='private')t.textContent='💬 '+(n.preview||'رسالة');
-    else if(n.type==='friend_request')t.textContent='➕ طلب صداقة';
-    else if(n.type==='friend_accepted')t.textContent='✅ '+(n.preview||'قبل صداقتك');
-    else if(n.type==='like')t.textContent='❤️ '+(n.preview||'أعجب بك');
-    else if(n.type==='poke')t.textContent='👋 '+(n.preview||'نكزك');
-    else t.textContent=n.preview||'';
+    var i = document.createElement('div');
+    i.className = 'notif-item';
+    if (!n.read) i.classList.add('unread');
+    i.dataset.notifId = n.id || '';
 
-    const tm=document.createElement('div');tm.style.cssText='color:#666;font-size:10px;margin-top:2px;';tm.textContent=formatTime(n.time);
+    var img = document.createElement('img');
+    img.src = n.fromAvatar || getDefaultAvatar(n.fromName);
+    img.style.cssText = 'width:32px;height:32px;border-radius:50%;border:1px solid var(--gold);flex-shrink:0;';
 
-    inf.appendChild(nm);inf.appendChild(t);inf.appendChild(tm);
+    var inf = document.createElement('div');
+    inf.style.cssText = 'flex:1;min-width:0;';
 
-    // ⭐⭐ أزرار قبول/رفض الصداقة
-    var acceptBtn = null, rejectBtn = null;
+    var nm = document.createElement('div');
+    nm.style.cssText = 'color:var(--gold);font-weight:900;font-size:12px;';
+    nm.textContent = n.fromName || '';
+
+    var t = document.createElement('div');
+    t.style.cssText = 'color:var(--text-dim);font-size:11px;margin-top:2px;word-break:break-word;';
+    if (n.type === 'mention') { const r = QAMAR.ROOMS[n.roomId]; t.textContent = '📢 أشار في ' + (r ? r.name : n.roomId); }
+    else if (n.type === 'private') t.textContent = '💬 ' + (n.preview || 'رسالة');
+    else if (n.type === 'friend_request') t.textContent = '➕ طلب صداقة';
+    else if (n.type === 'friend_accepted') t.textContent = '✅ ' + (n.preview || 'قبل صداقتك');
+    else if (n.type === 'like') t.textContent = '❤️ ' + (n.preview || 'أعجب بك');
+    else if (n.type === 'poke') t.textContent = '👋 ' + (n.preview || 'نكزك');
+    else t.textContent = n.preview || '';
+
+    var tm = document.createElement('div');
+    tm.style.cssText = 'color:#666;font-size:10px;margin-top:2px;';
+    tm.textContent = formatTime(n.time);
+
+    inf.appendChild(nm);
+    inf.appendChild(t);
+    inf.appendChild(tm);
+
     if (n.type === 'friend_request' && n.fromUid) {
-        const actions = document.createElement('div');
+        var actions = document.createElement('div');
         actions.style.cssText = 'display:flex;gap:6px;margin-top:8px;';
 
-        acceptBtn = document.createElement('button');
+        var acceptBtn = document.createElement('button');
         acceptBtn.type = 'button';
         acceptBtn.textContent = '✅ قبول';
-        acceptBtn.style.cssText = 'flex:1;padding:6px 10px;background:#84cc16;color:#fff;border:none;border-radius:8px;font-family:Cairo,sans-serif;font-weight:900;font-size:11px;cursor:pointer;';
-        acceptBtn.onclick = function (e) {
+        acceptBtn.style.cssText = 'flex:1;padding:8px 10px;background:#84cc16;color:#fff;border:none;border-radius:8px;font-family:Cairo,sans-serif;font-weight:900;font-size:12px;cursor:pointer;';
+        acceptBtn.addEventListener('click', function (e) {
+            e.preventDefault();
             e.stopPropagation();
             var me = getCurrentUser();
             if (me && me.uid) {
                 acceptFriendRequest(me.uid, n.fromUid, n.fromName, n.fromAvatar, i, acceptBtn, rejectBtn);
+            } else {
+                showToast('fa-user', '⚠️ لا يوجد مستخدم');
             }
-        };
+        });
 
-        rejectBtn = document.createElement('button');
+        var rejectBtn = document.createElement('button');
         rejectBtn.type = 'button';
         rejectBtn.textContent = '❌ رفض';
-        rejectBtn.style.cssText = 'flex:1;padding:6px 10px;background:rgba(255,68,68,0.85);color:#fff;border:none;border-radius:8px;font-family:Cairo,sans-serif;font-weight:900;font-size:11px;cursor:pointer;';
-        rejectBtn.onclick = function (e) {
+        rejectBtn.style.cssText = 'flex:1;padding:8px 10px;background:rgba(255,68,68,0.85);color:#fff;border:none;border-radius:8px;font-family:Cairo,sans-serif;font-weight:900;font-size:12px;cursor:pointer;';
+        rejectBtn.addEventListener('click', function (e) {
+            e.preventDefault();
             e.stopPropagation();
             var me = getCurrentUser();
             if (me && me.uid) {
                 rejectFriendRequest(me.uid, n.fromUid, i, acceptBtn, rejectBtn);
             }
-        };
+        });
 
         actions.appendChild(acceptBtn);
         actions.appendChild(rejectBtn);
         inf.appendChild(actions);
     }
 
-    i.appendChild(img);i.appendChild(inf);
+    i.appendChild(img);
+    i.appendChild(inf);
 
-    // ⭐ عند الضغط على الإشعار (باستثناء الأزرار)
-    i.onclick=(e)=>{
+    i.addEventListener('click', function (e) {
         if (e.target.closest('button')) return;
-        if(n.type==='mention'&&n.roomId&&QAMAR.ROOMS[n.roomId]){const r=QAMAR.ROOMS[n.roomId];switchRoom(n.roomId,r.name+' '+r.icon)}
-        else if(n.type==='private'&&n.fromUid)openPrivateChatWith(n.fromUid,n.fromName,n.fromAvatar);
-        else if((n.type==='like'||n.type==='poke'||n.type==='friend_request'||n.type==='friend_accepted')&&n.fromUid)openUserProfile(n.fromUid,n.fromName);
+        if (n.type === 'mention' && n.roomId && QAMAR.ROOMS[n.roomId]) { const r = QAMAR.ROOMS[n.roomId]; switchRoom(n.roomId, r.name + ' ' + r.icon); }
+        else if (n.type === 'private' && n.fromUid) { openPrivateChatWith(n.fromUid, n.fromName, n.fromAvatar); }
+        else if ((n.type === 'like' || n.type === 'poke' || n.type === 'friend_request' || n.type === 'friend_accepted') && n.fromUid) openUserProfile(n.fromUid, n.fromName);
         closeAllPanels();
-    };
+    });
+
     return i;
 }
 
-/* ⭐⭐⭐ قبول طلب صداقة */
 async function acceptFriendRequest(myUid, fromUid, fromName, fromAvatar, notifEl, acceptBtn, rejectBtn) {
-    if (!myUid || !fromUid) return;
-
+    if (!myUid || !fromUid) { showToast('fa-times', '⚠️ بيانات ناقصة'); return; }
     if (acceptBtn) { acceptBtn.disabled = true; acceptBtn.textContent = '⏳'; }
     if (rejectBtn) rejectBtn.disabled = true;
 
     try {
-        const now = Date.now();
-        const myData = getCurrentUser() || {};
+        var now = Date.now();
+        var myData = getCurrentUser() || {};
 
-        await Promise.all([
-            db.ref('users/' + myUid + '/friends/' + fromUid).set({
-                status: 'accepted',
-                time: now,
-                name: fromName || 'صديق',
-                avatar: fromAvatar || ''
-            }),
-            db.ref('users/' + fromUid + '/friends/' + myUid).set({
-                status: 'accepted',
-                time: now,
-                name: myData.name || 'صديق',
-                avatar: myData.avatar || ''
-            })
-        ]);
+        await db.ref('users/' + myUid + '/friends/' + fromUid).set({
+            status: 'accepted', time: now,
+            name: fromName || 'صديق', avatar: fromAvatar || ''
+        });
+
+        await db.ref('users/' + fromUid + '/friends/' + myUid).set({
+            status: 'accepted', time: now,
+            name: myData.name || 'صديق', avatar: myData.avatar || ''
+        });
 
         try {
             await db.ref('user_notifications/' + fromUid).push({
@@ -863,28 +907,26 @@ async function acceptFriendRequest(myUid, fromUid, fromName, fromAvatar, notifEl
                 time: Date.now(),
                 read: false
             });
-        } catch(e) { console.warn('send friend_accepted notif failed:', e); }
+        } catch (e) { console.warn('notif failed:', e); }
 
         if (notifEl && notifEl.dataset && notifEl.dataset.notifId) {
-            db.ref('user_notifications/' + myUid + '/' + notifEl.dataset.notifId).remove().catch(()=>{});
+            db.ref('user_notifications/' + myUid + '/' + notifEl.dataset.notifId).remove().catch(function(){});
         }
 
         if (acceptBtn) { acceptBtn.textContent = '✅ تم'; acceptBtn.style.background = '#65a30d'; }
         if (rejectBtn) rejectBtn.style.display = 'none';
 
-        if (typeof showToast === 'function') showToast('fa-check', '✅ تمت الصداقة');
-    } catch(e) {
+        showToast('fa-check', '✅ تمت الصداقة');
+    } catch (e) {
         console.error('[acceptFriendRequest] فشل:', e);
-        if (typeof showToast === 'function') showToast('fa-times', '⚠️ فشل القبول');
+        showToast('fa-times', '⚠️ فشل القبول: ' + (e.message || ''));
         if (acceptBtn) { acceptBtn.disabled = false; acceptBtn.textContent = '✅ قبول'; }
         if (rejectBtn) rejectBtn.disabled = false;
     }
 }
 
-/* ⭐⭐⭐ رفض طلب صداقة */
 async function rejectFriendRequest(myUid, fromUid, notifEl, acceptBtn, rejectBtn) {
-    if (!myUid || !fromUid) return;
-
+    if (!myUid || !fromUid) { showToast('fa-times', '⚠️ بيانات ناقصة'); return; }
     if (acceptBtn) acceptBtn.disabled = true;
     if (rejectBtn) { rejectBtn.disabled = true; rejectBtn.textContent = '⏳'; }
 
@@ -899,8 +941,8 @@ async function rejectFriendRequest(myUid, fromUid, notifEl, acceptBtn, rejectBtn
             if (rejectBtn) { rejectBtn.textContent = '❌ مرفوض'; rejectBtn.style.background = '#666'; }
         }
 
-        if (typeof showToast === 'function') showToast('fa-times', '❌ تم الرفض');
-    } catch(e) {
+        showToast('fa-times', '❌ تم الرفض');
+    } catch (e) {
         console.error('[rejectFriendRequest] فشل:', e);
         if (acceptBtn) acceptBtn.disabled = false;
         if (rejectBtn) { rejectBtn.disabled = false; rejectBtn.textContent = '❌ رفض'; }
@@ -1158,5 +1200,6 @@ window.startPunishmentWatcher=startPunishmentWatcher;
 window.applyRoomSettings=applyRoomSettings;
 window.applyRoomBackground=applyRoomBackground;
 window.buildRoomsList=buildRoomsList;
+window.clearPrivateNotifsFrom = _clearPrivateNotifsFrom;
 
-console.log('✅ chat.js v3.0 loaded — friend request accept/reject');
+console.log('✅ chat.js v3.2 loaded — private notifications fixed');
