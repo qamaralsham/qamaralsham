@@ -1,8 +1,7 @@
 // ==============================================
-// profile-core.js v2.5 — قلب بوضعيتين
-//   - الزر يعرض إعجاب أو إلغاء إعجاب
-//   - إلغاء الإعجاب يحذف من likes
-//   - عند الفتح: يفحص هل أنا من المُعجبين
+// profile-core.js v2.6 — إصلاح loadFriends
+//   - استخراج uid من مفتاح الكائن
+//   - لا مزيد من filter(f => f.uid)
 // ==============================================
 
 let currentUser = null, targetUser = null, viewMode = 'owner';
@@ -12,7 +11,7 @@ let nameSize = 20;
 let frameInset = -8;
 let _localLockUntil = 0;
 let _lastUserHash = '';
-let _iLiked = false; // ⭐ جديد: هل أنا معجب بهذا البروفايل؟
+let _iLiked = false;
 
 const IMGBB = '80fd32c4ef79b5f25fbcf0893547de4f';
 const FRAMES = [];
@@ -198,6 +197,7 @@ function _userHash(u) {
     } catch(e) { return ''; }
 }
 
+/* ⭐⭐⭐ loadFriends — مُصلَح */
 async function loadFriends() {
     const container = document.getElementById('friends-container');
     if (!container) return;
@@ -214,17 +214,39 @@ async function loadFriends() {
     try {
         const snap = await db.ref('users/' + targetUser.uid + '/friends').once('value');
         const friends = snap.val() || {};
-        const list = Object.values(friends);
-        if (list.length === 0) { container.innerHTML = '<div class="empty">لا يوجد أصدقاء بعد</div>'; return; }
+
+        // ⭐ استخراج uid من المفتاح — لا من داخل الكائن
+        var list = [];
+        Object.keys(friends).forEach(function(uid) {
+            var f = friends[uid] || {};
+            // نقبل: status accepted أو صديق قديم (بلا status)
+            if (f.status && f.status !== 'accepted') return;
+            list.push({
+                uid: uid,
+                name: f.name || 'مجهول',
+                avatar: f.avatar || '',
+                rank: f.rank || 'User',
+                time: f.time || 0
+            });
+        });
+
+        if (list.length === 0) {
+            container.innerHTML = '<div class="empty">لا يوجد أصدقاء بعد</div>';
+            return;
+        }
+
         container.innerHTML = '';
-        list.sort((a,b) => (b.time||0) - (a.time||0));
-        const slice = list.slice(0, 50).filter(f => f.uid);
-        const pointsArr = await Promise.all(slice.map(f =>
-            db.ref('bot_data/quiz/scores/' + f.uid).once('value')
-                .then(s => s.val() || 0).catch(() => 0)
-        ));
-        slice.forEach((f, i) => {
-            const giftsCount = Object.keys(f.gifts||{}).length;
+        list.sort(function(a, b) { return (b.time || 0) - (a.time || 0); });
+
+        var slice = list.slice(0, 50);
+        var pointsArr = await Promise.all(slice.map(function(f) {
+            return db.ref('bot_data/quiz/scores/' + f.uid).once('value')
+                .then(function(s) { return s.val() || 0; })
+                .catch(function() { return 0; });
+        }));
+
+        slice.forEach(function(f, i) {
+            var giftsCount = 0;
             renderFriendCard(container, f, pointsArr[i], giftsCount);
         });
     } catch(e) {
@@ -758,7 +780,6 @@ function initMusic() {
     };
 }
 
-/* ⭐⭐⭐ تحديث زر الإعجاب — وضعيتان */
 function _updateHeartUI() {
     const h = document.getElementById('btn-heart');
     if (!h) return;
@@ -786,18 +807,15 @@ async function _checkIfILiked() {
     _updateHeartUI();
 }
 
-/* ⭐⭐⭐ toggleLike — يضيف أو يحذف */
 async function _toggleLike(btn) {
     if (!targetUser || !targetUser.uid || !currentUser || !currentUser.uid) return;
 
-    // أنيميشن
     if (btn) {
         btn.style.transform = 'scale(1.4)';
         setTimeout(() => btn.style.transform = '', 300);
     }
 
     if (!_iLiked) {
-        // ⭐ إعجاب
         try {
             await db.ref('users/' + targetUser.uid + '/likes/' + currentUser.uid).set({
                 time: Date.now(),
@@ -815,7 +833,6 @@ async function _toggleLike(btn) {
             _updateHeartUI();
         }
     } else {
-        // ⭐ إلغاء الإعجاب
         try {
             await db.ref('users/' + targetUser.uid + '/likes/' + currentUser.uid).remove();
             _iLiked = false;
@@ -833,11 +850,10 @@ async function _toggleLike(btn) {
 function initVisitor() {
     if (viewMode !== 'visitor') return;
 
-    // ⭐ زر الإعجاب — نستخدم toggleLike
     const h = document.getElementById('btn-heart');
     if (h) {
         h.onclick = () => _toggleLike(h);
-        _checkIfILiked(); // ⭐ يفحص الحالة عند الفتح
+        _checkIfILiked();
     }
 
     const m = document.getElementById('btn-mail');
@@ -1065,4 +1081,4 @@ function openAppModal(title, text, type, options, currentVal, onSave) {
     document.getElementById('modal-cancel').onclick = () => m.classList.remove('active');
 }
 
-console.log('✅ profile-core.js v2.5 loaded — heart toggle (like/unlike)');
+console.log('✅ profile-core.js v2.6 loaded — loadFriends fixed');
