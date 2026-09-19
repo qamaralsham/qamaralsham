@@ -1,5 +1,5 @@
 // ==============================================
-// chat.js v3.3 — private notifications cleanup
+// chat.js v3.4 — إصلاح إشعارات الرسائل الخاصة
 // ==============================================
 
 const ChatState = {
@@ -758,26 +758,74 @@ function toggleNotifications(){
     if(o){loadNotifications();ChatState.unreadCount=0;updateNotifBadge();markAllNotificationsRead()}
 }
 
-/* ⭐⭐⭐ startNotificationsListener — فلترة */
+/* ⭐⭐⭐ startNotificationsListener — v3.4
+   - لا صوت/توست للإشعارات القديمة (قبل فتح الصفحة)
+   - عداد 🔔 يعرض العدد الحقيقي للإشعارات غير المقروءة
+   - الرسائل الخاصة (private) لا تُحسب في عداد 🔔 (تُدار من pm-enhanced)
+   - لا صوت/توست للإشعارات الصادرة مني
+*/
 function startNotificationsListener(){
-    const user=getCurrentUser();if(!user||!user.uid)return;
-    if(ChatState.notificationsListener)ChatState.notificationsListener.off();
-    const ref=db.ref('user_notifications/'+user.uid).limitToLast(20);
-    ChatState.notificationsListener=ref;
-    ref.on('child_added',s=>{
-        const n=s.val();if(!n)return;
-        const age=Date.now()-(n.time||0);
-        if(n.fromUid===user.uid)return;
-        if(age>15000)return;
-        if(n.read)return;
+    const user = getCurrentUser();
+    if (!user || !user.uid) return;
+    if (ChatState.notificationsListener) ChatState.notificationsListener.off();
 
-        if(n.type==='mention'){playBirdSound();showToast('fa-bell','🔔 '+n.fromName+' أشار إليك')}
-        else if(n.type==='private')playPrivateMsgSound();
-        else if(n.type==='friend_request')showToast('fa-user-plus','➕ طلب صداقة من '+n.fromName);
-        else if(n.type==='like')showToast('fa-heart','❤️ '+n.fromName+' أعجب بك');
-        else if(n.type==='poke')showToast('fa-hand-peace','👋 '+n.fromName+' نكزك');
+    // 1. لحظة بدء الاستماع — أي إشعار أقدم من هذا لا يُعرض كـ toast/صوت
+    const listenStart = Date.now();
 
-        ChatState.unreadCount++;updateNotifBadge();
+    // 2. اقرأ الإشعارات القديمة غير المقروءة → ضعها في عداد 🔔
+    db.ref('user_notifications/' + user.uid).limitToLast(50).once('value').then(function (s) {
+        var unread = 0;
+        s.forEach(function (c) {
+            var n = c.val();
+            if (!n) return;
+            if (n.read) return;
+            if (n.fromUid === user.uid) return;
+            if (n.type === 'private') return; // الرسائل الخاصة تُدار في badge آخر
+            unread++;
+        });
+        ChatState.unreadCount = unread;
+        updateNotifBadge();
+    }).catch(function () {});
+
+    // 3. الاستماع فقط للإشعارات الجديدة (بعد listenStart)
+    const ref = db.ref('user_notifications/' + user.uid).limitToLast(20);
+    ChatState.notificationsListener = ref;
+
+    ref.on('child_added', function (s) {
+        var n = s.val();
+        if (!n) return;
+
+        // تجاهل الإشعارات القديمة (قبل فتح الصفحة)
+        if ((n.time || 0) < listenStart) return;
+
+        // تجاهل الإشعارات الصادرة مني
+        if (n.fromUid === user.uid) return;
+
+        // تجاهل المقروء
+        if (n.read) return;
+
+        // ⭐ الآن الإشعار جديد وحقيقي ووارد
+        if (n.type === 'mention') {
+            playBirdSound();
+            showToast('fa-bell', '🔔 ' + n.fromName + ' أشار إليك');
+            ChatState.unreadCount++;
+            updateNotifBadge();
+        } else if (n.type === 'private') {
+            // الرسائل الخاصة: صوت فقط، لا عداد في 🔔 (يُدار في pm-badge)
+            playPrivateMsgSound();
+        } else if (n.type === 'friend_request') {
+            showToast('fa-user-plus', '➕ طلب صداقة من ' + n.fromName);
+            ChatState.unreadCount++;
+            updateNotifBadge();
+        } else if (n.type === 'like') {
+            showToast('fa-heart', '❤️ ' + n.fromName + ' أعجب بك');
+            ChatState.unreadCount++;
+            updateNotifBadge();
+        } else if (n.type === 'poke') {
+            showToast('fa-hand-peace', '👋 ' + n.fromName + ' نكزك');
+            ChatState.unreadCount++;
+            updateNotifBadge();
+        }
     });
 }
 
@@ -1225,4 +1273,4 @@ window.applyRoomBackground=applyRoomBackground;
 window.buildRoomsList=buildRoomsList;
 window.clearPrivateNotifsFrom = _clearPrivateNotifsFrom;
 
-console.log('✅ chat.js v3.3 loaded — private notifications filtered');
+console.log('✅ chat.js v3.4 loaded — private notifications filtered by listenStart');
