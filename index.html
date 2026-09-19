@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="google-site-verification" content="googledef67db6e90c3077">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>شات قمر الشام 👑</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌙%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -319,6 +319,21 @@ body.pm-open .floating-toolbar {
 
 /* Reply Preview */
 .reply-preview { padding: 6px 12px !important; }
+
+/* ⭐ منع الزوم التلقائي على iOS عند التركيز على input */
+html, body {
+    -webkit-text-size-adjust: 100% !important;
+    -moz-text-size-adjust: 100% !important;
+    text-size-adjust: 100% !important;
+}
+input, textarea, select {
+    font-size: 16px !important;
+}
+@media (min-width: 481px) {
+    input, textarea, select {
+        font-size: 13px !important;
+    }
+}
 </style>
 
 </head>
@@ -497,7 +512,7 @@ body.pm-open .floating-toolbar {
 
 <div id="profile-frame-container" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.95);display:none;">
 <div style="position:relative;width:100%;height:100%;">
-<iframe id="profile-iframe" src="profile.html?v=17" style="width:100%;height:100%;border:none;display:block;"></iframe>
+<iframe id="profile-iframe" src="about:blank" style="width:100%;height:100%;border:none;display:block;"></iframe>
 </div>
 </div>
 
@@ -538,7 +553,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }, 500);
 
-    // ⭐ تعديل: من 800ms إلى 3000ms
     setInterval(syncPMSlot, 3000);
     setTimeout(syncPMSlot, 2000);
 });
