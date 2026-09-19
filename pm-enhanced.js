@@ -1,12 +1,12 @@
 // ==============================================
-// قمر الشام — خاص محسّن (v5)
-// القائمة في نص الشاشة
+// قمر الشام — خاص محسّن (v6)
+// القائمة في نص الشاشة + إشعارات للطرف الآخر
 // ==============================================
 
 (function () {
     'use strict';
-    if (window.__pmEnhancedV5) return;
-    window.__pmEnhancedV5 = true;
+    if (window.__pmEnhancedV6) return;
+    window.__pmEnhancedV6 = true;
 
     var IMGBB_KEY = '80fd32c4ef79b5f25fbcf0893547de4f';
     var PM = { replyingTo: null, lastSendAt: 0, openMenu: null };
@@ -98,7 +98,6 @@
 }
 .pc-reaction.mine { background: rgba(255,215,0,0.5); border-color: #ffd700; }
 
-/* زر ⋮ — زاوية الرسالة */
 .pc-msg-menu-btn {
     position: absolute !important;
     top: 4px !important;
@@ -120,7 +119,6 @@
 .pc-msg.sent .pc-msg-menu-btn { left: 2px !important; right: auto !important; }
 .pc-msg.received .pc-msg-menu-btn { right: 2px !important; left: auto !important; }
 
-/* ⭐⭐⭐ القائمة — وسط الشاشة أفقياً */
 .pc-msg-menu {
     position: fixed !important;
     background: rgba(15,15,25,0.98) !important;
@@ -151,7 +149,6 @@
 .pc-msg-menu-item:active { background: rgba(255,215,0,0.25) !important; color: #ffd700 !important; }
 .pc-msg-menu-item.danger { color: #ff7777 !important; }
 
-/* شريط الإيموجي — وسط الشاشة */
 .pc-emoji-bar {
     position: fixed !important;
     background: rgba(15,15,25,0.98) !important;
@@ -389,18 +386,15 @@
         if (p) p.classList.remove('show');
     };
 
-    /* ⭐⭐⭐ القائمة في وسط الشاشة */
     function positionPopover(popover) {
         var vw = window.innerWidth;
         var vh = window.innerHeight;
         var popW = popover.offsetWidth || 160;
         var popH = popover.offsetHeight || 180;
 
-        // أفقياً: نص الشاشة
         var left = (vw - popW) / 2;
         if (left < 8) left = 8;
 
-        // عمودياً: نص الشاشة
         var top = (vh - popH) / 2;
         if (top < 8) top = 8;
 
@@ -460,7 +454,6 @@
             menu.appendChild(dl);
         }
 
-        // نضيف للـ body أولاً
         menu.style.visibility = 'hidden';
         document.body.appendChild(menu);
 
@@ -584,6 +577,20 @@
     window.pmPickVideo = function () { var i = document.getElementById('pm-file-video'); if (i) i.click(); };
     window.pmPickAudio = function () { var i = document.getElementById('pm-file-audio'); if (i) i.click(); };
 
+    /* ⭐⭐⭐ دالة مساعدة: إرسال إشعار خاص للطرف الآخر */
+    function _notifyPrivateRecipient(recipientUid, senderUser, previewText) {
+        if (!recipientUid || !senderUser || !senderUser.uid) return;
+        db.ref('user_notifications/' + recipientUid).push({
+            fromUid: senderUser.uid,
+            fromName: senderUser.name || 'مستخدم',
+            fromAvatar: senderUser.avatar || '',
+            type: 'private',
+            preview: previewText || '',
+            time: Date.now(),
+            read: false
+        }).catch(function (e) { console.warn('notif push failed:', e); });
+    }
+
     window.pmHandleFile = async function (file, type) {
         if (!file) return;
         var maxMb = type === 'video' ? 20 : 5;
@@ -630,6 +637,10 @@
             ]);
             db.ref('user_private_chats/' + o + '/' + user.uid + '/unread').transaction(function (c) { return (c || 0) + 1; });
             ChatState.seenPrivateMessages.add(msgKey);
+
+            // ⭐⭐⭐ إرسال إشعار للطرف الآخر
+            _notifyPrivateRecipient(o, user, previewText);
+
             pmCancelReply();
             pmCloseToolbar();
         } catch (e) {}
@@ -662,6 +673,10 @@
             ]);
             db.ref('user_private_chats/' + o + '/' + user.uid + '/unread').transaction(function (c) { return (c || 0) + 1; });
             ChatState.seenPrivateMessages.add(msgKey);
+
+            // ⭐⭐⭐ إرسال إشعار للطرف الآخر — هذا كان مفقوداً في v5
+            _notifyPrivateRecipient(o, user, previewText);
+
             i.value = '';
             i.focus();
             pmCancelReply();
@@ -700,5 +715,5 @@
         installPMObserver();
     }
 
-    console.log('✅ pm-enhanced.js v5 loaded — القائمة في نص الشاشة');
+    console.log('✅ pm-enhanced.js v6 loaded — notifications restored');
 })();
