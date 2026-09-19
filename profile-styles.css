@@ -1,5 +1,10 @@
 /* ==============================================
-   profile-styles.css v2 — كامل
+   profile-styles.css v3 — نظيف
+   التعديلات:
+     - لا إطار ذهبي على الأفاتار
+     - أزرار بدون خلفية سوداء
+     - الرتبة والبايو لا يقفزان (min-height)
+     - كل الكتابة بدون خلفية
    ============================================== */
 
 :root {
@@ -18,6 +23,10 @@ body {
     color: #fff;
     overflow: hidden;
     font-size: 14px;
+    /* منع الزوم على مستوى الصفحة */
+    touch-action: pan-y;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
 }
 
 .profile {
@@ -66,17 +75,21 @@ body {
 }
 
 .top-btns button {
-    background: rgba(0,0,0,0.4);
-    border: 1px solid var(--glow);
-    border-radius: 50%;
+    background: transparent !important;
+    border: none !important;
     width: 34px; height: 34px;
     color: #fff;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.95);
+    -webkit-tap-highlight-color: transparent;
+    padding: 0;
 }
+
+.top-btns button:active { transform: scale(0.9); }
 
 .owner-top { display:flex; gap:6px; }
 
@@ -98,19 +111,20 @@ body {
 .cover-edit {
     position: absolute;
     top: 50px; left: 12px;
-    display: flex; gap: 6px;
+    display: flex; gap: 10px;
     z-index: 100;
 }
 
 .cover-edit button {
-    background: rgba(0,0,0,0.5);
-    border: 1px solid rgba(255,255,255,0.4);
+    background: transparent !important;
+    border: none !important;
     color: #fff;
-    padding: 5px 10px;
-    font-size: 11px;
-    border-radius: 10px;
+    padding: 4px;
+    font-size: 16px;
     cursor: pointer;
     font-family: 'Cairo', sans-serif;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.95);
+    -webkit-tap-highlight-color: transparent;
 }
 
 .cover-edit .del-cov { color:#ff6b6b; }
@@ -123,7 +137,6 @@ body {
     z-index: 10;
 }
 
-/* ⭐ صندوق الأفاتار — يستخدم متغير الإطار */
 .avatar-box {
     position: relative;
     width: 100px;
@@ -131,13 +144,14 @@ body {
     margin: 0 auto;
 }
 
+/* ⭐ الأفاتار — بدون إطار ذهبي */
 .avatar {
     width: 100%; height: 100%;
     border-radius: 50%;
     overflow: hidden;
     background: #111;
     box-shadow: 0 10px 35px rgba(0,0,0,0.8);
-    border: 3px solid var(--gold);
+    border: none !important;
     position: relative;
     aspect-ratio: 1/1;
 }
@@ -149,7 +163,7 @@ body {
     display: block;
 }
 
-/* ⭐⭐⭐ الإطار — يستخدم متغير --frame-inset */
+/* الإطار — يبقى يعمل إن اختاره المستخدم */
 .qf {
     position: absolute;
     inset: var(--frame-inset, -8%);
@@ -167,66 +181,38 @@ body {
     display: block;
 }
 
-/* أنيميشنات الإطارات */
-.qf.royal-glow {
-    animation: qfRoyalGlow 2.5s ease-in-out infinite;
-}
-@keyframes qfRoyalGlow {
-    0%, 100% {
-        filter: drop-shadow(0 0 8px #ffd700) drop-shadow(0 0 16px rgba(255,215,0,0.5));
-        transform: scale(1);
-    }
-    50% {
-        filter: drop-shadow(0 0 18px #ffd700) drop-shadow(0 0 36px rgba(255,215,0,0.9));
-        transform: scale(1.02);
-    }
-}
-
-.qf.wing-flutter {
-    animation: qfWingFlutter 3s ease-in-out infinite;
-    filter: drop-shadow(0 0 6px rgba(255,215,0,0.6));
-}
-@keyframes qfWingFlutter {
-    0%, 100% { transform: scale(1) rotate(0deg); }
-    50%      { transform: scale(1.05) rotate(1.5deg); }
-}
-
-.qf.flame-flicker {
-    animation: qfFlameFlicker 0.5s steps(2) infinite;
-}
-@keyframes qfFlameFlicker {
-    0% {
-        filter: brightness(1) drop-shadow(0 0 10px #ff4400);
-        transform: scale(1);
-    }
-    100% {
-        filter: brightness(1.25) drop-shadow(0 0 22px #ffaa00);
-        transform: scale(1.015);
-    }
-}
-
+/* إزالة كل أنيميشنات الإطارات القديمة */
+.qf.royal-glow,
+.qf.wing-flutter,
+.qf.flame-flicker,
 .qf.celestial-spin {
-    animation: qfCelestialSpin 12s linear infinite;
-    filter: drop-shadow(0 0 10px rgba(255,80,80,0.8));
-}
-@keyframes qfCelestialSpin {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
+    animation: none !important;
+    filter: none !important;
 }
 
+/* ⭐ أزرار الأفاتار — بدون خلفية / بدون حد */
 .avatar-edit {
     position: absolute;
     bottom: -22px; left: 50%;
     transform: translateX(-50%);
-    display: flex; gap: 16px;
+    display: flex; gap: 20px;
     z-index: 15;
-    background: rgba(0,0,0,0.6);
-    padding: 2px 10px;
-    border-radius: 12px;
-    border: 1px solid var(--glow);
+    background: transparent !important;
+    padding: 0 !important;
+    border: none !important;
 }
 
-.avatar-edit span { font-size:13px; cursor:pointer; padding:2px; }
+.avatar-edit span {
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.95);
+    color: #fff;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .15s ease;
+}
+
+.avatar-edit span:active { transform: scale(0.9); }
 .avatar-edit .del-av { color:#ff6b6b; }
 
 .header {
@@ -240,24 +226,31 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 4px;
 }
 
-.user-cont {
+/* ⭐ منع الاسم من إزاحة الرتبة والبايو */
+.header .user-cont {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
+    min-height: 26px;
+    line-height: 1.2;
 }
 
 .edit-pen {
-    font-size: 11px;
+    font-size: 13px;
     cursor: pointer;
     color: var(--gold);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+    padding: 4px;
+    -webkit-tap-highlight-color: transparent;
 }
 
+/* الرتبة */
 .role {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--gold);
     font-weight: bold;
     text-shadow: 0 2px 8px rgba(0,0,0,0.9);
@@ -265,6 +258,7 @@ body {
     align-items: center;
     gap: 6px;
     justify-content: center;
+    line-height: 1.3;
 }
 
 .status-dot {
@@ -278,32 +272,34 @@ body {
 .status-dot.online { background:#00ff00; box-shadow:0 0 8px #00ff00; }
 .status-dot.offline { background:#888; }
 
+/* ⭐ زر الموسيقى — بدون خلفية */
 .music-toggle-mini {
-    background: rgba(0,0,0,0.5);
-    border: 1px solid var(--gold);
+    background: transparent !important;
+    border: 1px solid rgba(255,215,0,0.5) !important;
     border-radius: 50%;
-    width: 24px; height: 24px;
+    width: 28px; height: 28px;
     color: var(--gold);
     cursor: pointer;
-    font-size: 11px;
+    font-size: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0;
     font-family: inherit;
     margin: 2px 0;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .music-toggle-mini.playing {
-    background: rgba(255,215,0,0.3);
-    animation: musicPulse 1s ease-in-out infinite;
+    animation: musicPulse 1.2s ease-in-out infinite;
 }
 
 @keyframes musicPulse {
     0%,100% { box-shadow: 0 0 6px var(--gold); }
-    50%     { box-shadow: 0 0 14px var(--gold); }
+    50%     { box-shadow: 0 0 16px var(--gold); }
 }
 
+/* ⭐ الاسم — بدون خلفية افتراضية */
 .username {
     font-size: 20px;
     font-weight: 900;
@@ -311,19 +307,25 @@ body {
     text-shadow: 0 2px 12px rgba(0,0,0,0.95);
     padding: 4px 16px;
     display: inline-block;
-    line-height: 1.3;
+    line-height: 1.2;
     position: relative;
     border-radius: 50px;
     transition: font-size 0.2s;
+    background: transparent;
 }
 
+/* البايو */
 .bio {
     font-size: 12px;
     color: #90caf9;
     text-shadow: 0 1px 8px rgba(0,0,0,0.9);
     font-weight: 600;
+    line-height: 1.3;
+    min-height: 16px;
+    display: block;
 }
 
+/* ⭐ أزرار الزيارة — بدون خلفية */
 .interact-btns {
     display: flex;
     justify-content: center;
@@ -336,8 +338,8 @@ body {
 }
 
 .interact-btns button {
-    background: rgba(0,0,0,0.4);
-    border: 1px solid rgba(255,255,255,0.25);
+    background: transparent !important;
+    border: 1px solid rgba(255,215,0,0.5) !important;
     border-radius: 50%;
     width: 42px; height: 42px;
     color: #fff;
@@ -347,6 +349,8 @@ body {
     justify-content: center;
     align-items: center;
     transition: transform 0.2s;
+    -webkit-tap-highlight-color: transparent;
+    padding: 0;
 }
 
 .interact-btns button:active { transform: scale(0.9); }
@@ -361,17 +365,19 @@ body {
     z-index: 5;
 }
 
+/* ⭐ شريط التبويبات — بدون خلفية */
 .tabs {
-    background: rgba(0,0,0,0.5);
+    background: transparent !important;
     display: flex;
     overflow-x: auto;
     white-space: nowrap;
-    border: 1px solid var(--glow);
+    border: none !important;
+    border-bottom: 1px solid rgba(212,175,55,0.2) !important;
     scrollbar-width: none;
-    border-radius: 12px;
+    border-radius: 0 !important;
     flex-shrink: 0;
-    padding: 3px;
-    gap: 4px;
+    padding: 4px 2px 6px;
+    gap: 2px;
 }
 
 .tabs::-webkit-scrollbar { display:none; }
@@ -379,24 +385,43 @@ body {
 .tab {
     padding: 8px 12px;
     color: #b0bec5;
-    font-size: 11px;
+    font-size: 12px;
     cursor: pointer;
     font-weight: bold;
     flex-shrink: 0;
-    border-radius: 8px;
-    transition: all 0.2s;
+    border-radius: 0;
+    transition: color 0.2s;
+    background: transparent;
+    border: none;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.tab.active, .tab:hover {
-    background: rgba(255,215,0,0.25);
+.tab:hover { color: #cfcfcf; }
+
+.tab.active {
+    background: transparent !important;
     color: var(--gold);
 }
 
+.tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 10px;
+    right: 10px;
+    height: 2px;
+    background: var(--gold);
+    border-radius: 2px;
+    box-shadow: 0 0 8px rgba(255,215,0,0.5);
+}
+
+/* صندوق النبذة — بدون خلفية */
 .poetry-box {
     margin-top: 8px;
     padding: 10px 14px;
-    background: rgba(0,0,0,0.55);
-    border: 1px dashed var(--glow);
+    background: transparent !important;
+    border: 1px dashed rgba(255,215,0,0.4) !important;
     border-radius: 12px;
     flex-shrink: 0;
 }
@@ -436,14 +461,15 @@ body {
 
 .scroll-box::-webkit-scrollbar { display:none; }
 
+/* ⭐ info-card — بدون خلفية */
 .info-card {
-    background: rgba(10,5,20,0.65);
-    border-radius: 16px;
-    padding: 14px;
-    border: 1px solid var(--glow);
+    background: transparent !important;
+    border-radius: 0;
+    padding: 8px 4px;
+    border: none !important;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
 }
 
 .tab-c { display:none; }
@@ -453,7 +479,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
     padding: 9px 0;
     gap: 8px;
 }
@@ -482,7 +508,6 @@ body {
     min-width: 0;
 }
 
-/* ⭐ Sliders */
 input[type="range"] {
     -webkit-appearance: none;
     height: 4px;
@@ -514,7 +539,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .share-btn {
-    background: rgba(255,215,0,0.15);
+    background: transparent;
     border: 1px solid var(--gold);
     color: #ffd700;
     padding: 6px 14px;
@@ -528,15 +553,13 @@ input[type="range"]::-moz-range-thumb {
     gap: 6px;
 }
 
-.share-btn:hover { background: rgba(255,215,0,0.3); }
-
 .user-code {
     color: #ffd700;
     font-weight: 900;
     font-family: 'Courier New', monospace;
     font-size: 16px;
     letter-spacing: 2px;
-    background: rgba(255,215,0,0.1);
+    background: transparent;
     padding: 6px 14px;
     border-radius: 8px;
     border: 1px dashed rgba(255,215,0,0.4);
@@ -558,7 +581,7 @@ input[type="range"]::-moz-range-thumb {
     justify-content: space-between;
     align-items: center;
     padding: 10px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 
 .priv-lb {
@@ -568,8 +591,8 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .priv-sel {
-    background: rgba(255,255,255,0.08);
-    border: 1px solid var(--glow);
+    background: transparent;
+    border: 1px solid rgba(255,215,0,0.4);
     border-radius: 8px;
     color: #fff;
     font-size: 12px;
@@ -592,7 +615,7 @@ body.visitor-mode .priv-sec { display:none!important; }
 .search-input {
     flex: 1;
     padding: 10px 14px;
-    background: rgba(255,255,255,0.08);
+    background: transparent;
     border: 1px solid var(--gold);
     border-radius: 10px;
     color: #fff;
@@ -624,7 +647,7 @@ body.visitor-mode .priv-sec { display:none!important; }
     align-items: center;
     gap: 12px;
     padding: 12px;
-    background: rgba(255,255,255,0.04);
+    background: transparent;
     border: 1px solid rgba(255,215,0,0.2);
     border-radius: 12px;
     margin-bottom: 8px;
@@ -633,7 +656,7 @@ body.visitor-mode .priv-sec { display:none!important; }
 }
 
 .search-result:hover {
-    background: rgba(255,215,0,0.1);
+    background: rgba(255,215,0,0.08);
     border-color: var(--gold);
 }
 
@@ -674,7 +697,7 @@ body.visitor-mode .priv-sec { display:none!important; }
     display: flex;
     gap: 12px;
     padding: 12px;
-    background: rgba(255,255,255,0.04);
+    background: transparent;
     border: 1px solid rgba(255,215,0,0.2);
     border-radius: 14px;
     margin-bottom: 10px;
@@ -718,7 +741,7 @@ body.visitor-mode .priv-sec { display:none!important; }
 }
 
 .stat-pill {
-    background: rgba(255,215,0,0.12);
+    background: transparent;
     border: 1px solid rgba(255,215,0,0.25);
     border-radius: 20px;
     padding: 3px 10px;
@@ -728,8 +751,8 @@ body.visitor-mode .priv-sec { display:none!important; }
     gap: 4px;
 }
 
-.stat-pill.gift { background:rgba(255,105,180,0.12); border-color:rgba(255,105,180,0.3); color:#ff69b4; }
-.stat-pill.point { background:rgba(100,181,246,0.12); border-color:rgba(100,181,246,0.3); color:#64b5f6; }
+.stat-pill.gift { border-color:rgba(255,105,180,0.3); color:#ff69b4; }
+.stat-pill.point { border-color:rgba(100,181,246,0.3); color:#64b5f6; }
 
 .friend-priv-msg {
     text-align: center;
@@ -755,6 +778,7 @@ body.visitor-mode .priv-sec { display:none!important; }
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    padding: 15px;
 }
 
 .modal.active { display:flex; }
@@ -890,7 +914,7 @@ body.visitor-mode .priv-sec { display:none!important; }
     gap: 10px;
     padding: 10px;
     border-radius: 12px;
-    background: rgba(255,255,255,0.04);
+    background: transparent;
     border: 1px solid rgba(255,215,0,0.15);
     margin-bottom: 8px;
 }
@@ -943,8 +967,7 @@ body.visitor-mode .priv-sec { display:none!important; }
     box-shadow: 0 0 10px currentColor;
 }
 
-/* ═══ NAME FRAMES (nf-*) ═══ */
-
+/* ═══ NAME FRAMES (nf-*) — كما هي ═══ */
 .nf {
     position: relative;
     z-index: 1;
@@ -1030,7 +1053,6 @@ body.visitor-mode .priv-sec { display:none!important; }
 .picker-prev.nf { color:#fff!important; }
 .picker-prev.nf-rainbowtext,.picker-prev.nf-starstext,.picker-prev.nf-watertext,.picker-prev.nf-firetext,.picker-prev.nf-icetext,.picker-prev.nf-goldtext,.picker-prev.nf-fogtext,.picker-prev.nf-smoketext { color:transparent!important; }
 
-/* Spiral frames */
 @keyframes nfSpiralCW { 0% { background-position: 0% 0%; } 100% { background-position: 100% 100%; } }
 @keyframes nfSpiralCCW { 0% { background-position: 100% 100%; } 100% { background-position: 0% 0%; } }
 @keyframes nfSpiralPulse { 0%,100% { background-size: 200% 200%; } 50% { background-size: 280% 280%; } }
@@ -1059,9 +1081,21 @@ body.visitor-mode .priv-sec { display:none!important; }
 .nf-spiral-emerald { background-image:repeating-radial-gradient(circle at 50% 50%,#002200 0px,#002200 3px,#006600 3px,#006600 6px,#00a651 6px,#00a651 9px,#00d97e 9px,#00d97e 12px,#88ffcc 12px,#88ffcc 15px,#e0fff0 15px,#e0fff0 18px,#88ffcc 18px,#88ffcc 21px,#00a651 21px,#00a651 24px,#002200 24px)!important; animation:nfSpiralCCW 3s linear infinite!important; }
 .nf-spiral-ruby { background-image:repeating-radial-gradient(circle at 50% 50%,#4a0000 0px,#4a0000 3px,#8b0000 3px,#8b0000 6px,#dc143c 6px,#dc143c 9px,#ff4466 9px,#ff4466 12px,#ffa0b0 12px,#ffa0b0 15px,#fff 15px,#fff 18px,#ffa0b0 18px,#ffa0b0 21px,#dc143c 21px,#dc143c 24px,#4a0000 24px)!important; animation:nfSpiralCW 2.5s linear infinite!important; }
 
-/* ⭐ Responsive */
 @media (max-width: 480px) {
     .modal-c { padding: 14px; }
     .interact-btns { gap: 10px; }
     .interact-btns button { width: 38px; height: 38px; font-size: 16px; }
+}
+
+/* ⭐ منع الزوم في البروفايل */
+html, body {
+    touch-action: pan-y !important;
+    overscroll-behavior: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+input, textarea, [contenteditable] {
+    touch-action: auto;
+    -webkit-user-select: text;
+    user-select: text;
 }
