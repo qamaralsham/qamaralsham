@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://www.gstatic.com">
 <link rel="preconnect" href="https://qamaralsham-default-rtdb.firebaseio.com">
-<link rel="preconnect" href="https://api.github.com">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="dns-prefetch" href="https://ui-avatars.com">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
@@ -511,10 +511,10 @@ input, textarea, select {
 </div>
 
 <!-- ═══ الموجة الحرجة (sync) — تعمل فوراً ═══ -->
-<script src="config.js?v=29"></script>
-<script src="ranks.js?v=29"></script>
-<script src="utils.js?v=29"></script>
-<script src="frames-engine.js?v=29"></script>
+<script src="config.js?v=32"></script>
+<script src="ranks.js?v=32"></script>
+<script src="utils.js?v=32"></script>
+<script src="frames-engine.js?v=32"></script>
 <script>window.FRAMES = window.FRAMES || []; window.FRAMES_DATA = window.FRAMES_DATA || {}; window.CSS_FRAMES_DATA = window.CSS_FRAMES_DATA || {};</script>
 
 <script>
@@ -584,19 +584,19 @@ window.syncPMSlot = syncPMSlot;
 </script>
 
 <!-- ═══ الأساسي (sync) ═══ -->
-<script src="auth.js?v=29"></script>
-<script src="chat.js?v=29"></script>
+<script src="auth.js?v=32"></script>
+<script src="chat.js?v=32"></script>
 
 <!-- ═══ الثانوي (defer) — يُنفَّذ قبل DOMContentLoaded ═══ -->
-<script defer src="pm-enhanced.js?v=29"></script>
-<script defer src="media-picker.js?v=29"></script>
-<script defer src="bots.js?v=29"></script>
-<script defer src="guardian-hide.js?v=29"></script>
-<script defer src="king-room.js?v=29"></script>
-<script defer src="room-alerts.js?v=29"></script>
-<script defer src="dice.js?v=29"></script>
-<script defer src="chat-fixes.js?v=29"></script>
-<script defer src="invisible-mode.js?v=29"></script>
+<script defer src="pm-enhanced.js?v=32"></script>
+<script defer src="media-picker.js?v=32"></script>
+<script defer src="bots.js?v=32"></script>
+<script defer src="guardian-hide.js?v=32"></script>
+<script defer src="king-room.js?v=32"></script>
+<script defer src="room-alerts.js?v=32"></script>
+<script defer src="dice.js?v=32"></script>
+<script defer src="chat-fixes.js?v=32"></script>
+<script defer src="invisible-mode.js?v=32"></script>
 
 <script>
 let selectedGender = 'male';
@@ -692,6 +692,17 @@ window.addEventListener('DOMContentLoaded', () => {
     const user = getCurrentUser();
     if (user) setTimeout(async () => { if (typeof initChat === 'function') await initChat(); }, 150);
 });
+</script>
+
+<!-- ⭐⭐⭐ Service Worker -->
+<script>
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('sw.js')
+            .then(function(reg) { console.log('✅ SW registered:', reg.scope); })
+            .catch(function(err) { console.warn('SW failed:', err); });
+    });
+}
 </script>
 
 </body>
