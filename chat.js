@@ -1,5 +1,5 @@
 // ==============================================
-// chat.js v3.5 — صوت موحّد + فلتر دقيق
+// chat.js v3.6 — تصفير عداد المحادثة عند فتحها
 // ==============================================
 
 const ChatState = {
@@ -726,6 +726,10 @@ function openPrivateChatWith(uid,name,av){
     const min=document.getElementById('minimized-chat-avatar');if(min)min.classList.remove('show');
     ChatState.minimizedChat=null;
     ChatState.seenPrivateMessages.clear();
+
+    // ⭐⭐⭐ v3.6: صفّر عدّاد هذه المحادثة فوراً في Firebase
+    db.ref('user_private_chats/' + user.uid + '/' + uid + '/unread').set(0).catch(function(){});
+
     loadPrivateMessages();
     _clearPrivateNotifsFrom(uid);
 }
@@ -815,7 +819,7 @@ function toggleNotifications(){
     if(o){loadNotifications();ChatState.unreadCount=0;updateNotifBadge();markAllNotificationsRead()}
 }
 
-/* ⭐⭐⭐ startNotificationsListener — v3.5
+/* ⭐⭐⭐ startNotificationsListener — v3.6
    - فلتر بمفتاح الرسالة (Firebase key) — دقيق 100% مهما كانت الساعة
    - لا صوت/توست للإشعارات القديمة (قبل فتح الصفحة)
    - عداد 🔔 يعرض العدد الحقيقي للإشعارات غير المقروءة
@@ -825,16 +829,14 @@ function startNotificationsListener(){
     if (!user || !user.uid) return;
     if (ChatState.notificationsListener) ChatState.notificationsListener.off();
 
-    // متغيّر يحفظ آخر مفتاح معروف
     let lastKnownKey = '';
 
-    // 1. اقرأ الإشعارات الموجودة → ضعها في عداد 🔔، واحفظ آخر مفتاح
     db.ref('user_notifications/' + user.uid).limitToLast(50).once('value').then(function (s) {
         var unread = 0;
         s.forEach(function (c) {
             var n = c.val();
             if (!n) return;
-            lastKnownKey = c.key; // آخر مفتاح سيُحفظ
+            lastKnownKey = c.key;
             if (n.read) return;
             if (n.fromUid === user.uid) return;
             if (n.type === 'private') return;
@@ -843,7 +845,6 @@ function startNotificationsListener(){
         ChatState.unreadCount = unread;
         updateNotifBadge();
 
-        // 2. الآن اربط الـ listener
         const ref = db.ref('user_notifications/' + user.uid).limitToLast(20);
         ChatState.notificationsListener = ref;
 
@@ -851,18 +852,12 @@ function startNotificationsListener(){
             var n = s.val();
             if (!n) return;
 
-            // ⭐ فلتر دقيق: Firebase keys تتزايد — أي مفتاح ≤ lastKnownKey = قديم
             if (s.key <= lastKnownKey) return;
-
-            // تجاهل الصادر مني
             if (n.fromUid === user.uid) return;
-            // تجاهل المقروء
             if (n.read) return;
 
-            // حدّث المفتاح الأخير
             lastKnownKey = s.key;
 
-            // ⭐ الآن الإشعار جديد وحقيقي → اعرضه
             if (n.type === 'mention') {
                 playBirdSound();
                 showToast('fa-bell', '🔔 ' + n.fromName + ' أشار إليك');
@@ -895,12 +890,10 @@ function loadNotifications(){
         const arr=[];
         s.forEach(c=>{
             var n = Object.assign({id:c.key}, c.val());
-            // ⭐ تجاهل الرسائل الخاصة المقروءة أو المرسلة مني
             if (n.type === 'private') {
                 if (n.read) return;
                 if (n.fromUid === user.uid) return;
             }
-            // ⭐ تجاهل أي إشعار مقروء (باستثناء friend_request للعمليات)
             if (n.read && n.type !== 'friend_request') return;
             arr.push(n);
         });
@@ -1331,4 +1324,4 @@ window.applyRoomBackground=applyRoomBackground;
 window.buildRoomsList=buildRoomsList;
 window.clearPrivateNotifsFrom = _clearPrivateNotifsFrom;
 
-console.log('✅ chat.js v3.5 loaded — unified audio + key-based filter');
+console.log('✅ chat.js v3.6 loaded — unread reset on open');
