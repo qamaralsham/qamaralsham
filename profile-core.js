@@ -1,7 +1,5 @@
 // ==============================================
-// profile-core.js v2.6 — إصلاح loadFriends
-//   - استخراج uid من مفتاح الكائن
-//   - لا مزيد من filter(f => f.uid)
+// profile-core.js v2.7 — friends grid 80x80
 // ==============================================
 
 let currentUser = null, targetUser = null, viewMode = 'owner';
@@ -197,7 +195,7 @@ function _userHash(u) {
     } catch(e) { return ''; }
 }
 
-/* ⭐⭐⭐ loadFriends — مُصلَح */
+/* ⭐⭐⭐ loadFriends — شبكة مربعات 80×80 (صورة + اسم فقط) */
 async function loadFriends() {
     const container = document.getElementById('friends-container');
     if (!container) return;
@@ -215,17 +213,14 @@ async function loadFriends() {
         const snap = await db.ref('users/' + targetUser.uid + '/friends').once('value');
         const friends = snap.val() || {};
 
-        // ⭐ استخراج uid من المفتاح — لا من داخل الكائن
         var list = [];
         Object.keys(friends).forEach(function(uid) {
             var f = friends[uid] || {};
-            // نقبل: status accepted أو صديق قديم (بلا status)
             if (f.status && f.status !== 'accepted') return;
             list.push({
                 uid: uid,
                 name: f.name || 'مجهول',
                 avatar: f.avatar || '',
-                rank: f.rank || 'User',
                 time: f.time || 0
             });
         });
@@ -236,23 +231,49 @@ async function loadFriends() {
         }
 
         container.innerHTML = '';
+
+        var grid = document.createElement('div');
+        grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:10px;padding:10px 4px;';
+
         list.sort(function(a, b) { return (b.time || 0) - (a.time || 0); });
 
-        var slice = list.slice(0, 50);
-        var pointsArr = await Promise.all(slice.map(function(f) {
-            return db.ref('bot_data/quiz/scores/' + f.uid).once('value')
-                .then(function(s) { return s.val() || 0; })
-                .catch(function() { return 0; });
-        }));
-
-        slice.forEach(function(f, i) {
-            var giftsCount = 0;
-            renderFriendCard(container, f, pointsArr[i], giftsCount);
+        list.slice(0, 200).forEach(function(f) {
+            grid.appendChild(_buildFriendTile(f));
         });
+
+        container.appendChild(grid);
     } catch(e) {
         console.warn('Friends error:', e);
         container.innerHTML = '<div class="empty">تعذر تحميل الأصدقاء</div>';
     }
+}
+
+/* ⭐⭐⭐ مربع صديق — 80×80 */
+function _buildFriendTile(f) {
+    var tile = document.createElement('div');
+    tile.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;';
+
+    var img = document.createElement('img');
+    img.src = f.avatar || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(f.name || 'User') + '&background=555&color=fff');
+    img.alt = f.name || '';
+    img.loading = 'lazy';
+    img.style.cssText = 'width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid rgba(212,175,55,0.5);background:#111;';
+    img.onerror = function () { this.src = 'https://ui-avatars.com/api/?name=U&background=555&color=fff'; };
+
+    var name = document.createElement('div');
+    name.textContent = f.name || '—';
+    name.style.cssText = 'font-size:11px;color:#fff;text-align:center;font-weight:700;font-family:Cairo,sans-serif;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,0.9);';
+
+    tile.appendChild(img);
+    tile.appendChild(name);
+
+    tile.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (!f.uid) return;
+        location.href = location.origin + location.pathname + '?uid=' + encodeURIComponent(f.uid);
+    });
+
+    return tile;
 }
 
 async function loadPoints() {
@@ -277,27 +298,8 @@ async function loadPoints() {
 }
 
 function renderFriendCard(container, f, points, giftsCount) {
-    const card = document.createElement('div');
-    card.className = 'friend-card';
-    const img = document.createElement('img');
-    img.className = 'friend-avatar';
-    img.src = f.avatar || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(f.name||'User') + '&background=555&color=fff');
-    const info = document.createElement('div');
-    info.className = 'friend-info';
-    const nm = document.createElement('div');
-    nm.className = 'friend-name';
-    nm.textContent = f.name || 'مجهول';
-    const rk = document.createElement('div');
-    rk.className = 'friend-rank';
-    rk.textContent = rankBadge(f.rank) + ' ' + (f.rank || 'User');
-    const stats = document.createElement('div');
-    stats.className = 'friend-stats';
-    const level = Math.floor(points/100) + 1;
-    stats.innerHTML = '<span class="stat-pill">⭐ مستوى ' + level + '</span><span class="stat-pill point">🎯 ' + points + ' نقطة</span><span class="stat-pill gift">🎁 ' + giftsCount + ' هدية</span>';
-    info.appendChild(nm); info.appendChild(rk); info.appendChild(stats);
-    card.appendChild(img); card.appendChild(info);
-    card.onclick = () => { if (!f.uid) return; location.href = location.origin + location.pathname + '?uid=' + f.uid; };
-    container.appendChild(card);
+    // لم يُعد يُستخدم — يبقى للتوافق
+    container.appendChild(_buildFriendTile(f));
 }
 
 function renderList(cid, data, sortField, isBlocked) {
@@ -1081,4 +1083,4 @@ function openAppModal(title, text, type, options, currentVal, onSave) {
     document.getElementById('modal-cancel').onclick = () => m.classList.remove('active');
 }
 
-console.log('✅ profile-core.js v2.6 loaded — loadFriends fixed');
+console.log('✅ profile-core.js v2.7 loaded — friends grid 80x80');
