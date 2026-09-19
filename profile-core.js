@@ -1,5 +1,5 @@
 // ==============================================
-// profile-core.js v2.1 — كامل + قفل الوميض
+// profile-core.js v2.2 — anti-flash + fast load
 // ==============================================
 
 let currentUser = null, targetUser = null, viewMode = 'owner';
@@ -8,6 +8,8 @@ let nameColor = null, nameGradient = null, nameFrame = null, nameShape = null, n
 let nameSize = 20;
 let frameInset = -8;
 let _localLockUntil = 0;
+let _lastUserHash = '';
+let _renderCount = 0;
 
 const IMGBB = '80fd32c4ef79b5f25fbcf0893547de4f';
 const FRAMES = [];
@@ -129,8 +131,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     document.body.classList.add(viewMode + '-mode');
     applyMode();
-    loadProfile();
     loadSaved();
+    loadProfile();
     initTabs();
     initPriv();
     initMain();
@@ -141,11 +143,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (viewMode === 'visitor' && urlUid && typeof db !== 'undefined' && db) {
         db.ref('users/' + urlUid).on('value', s => {
             const f = s.val();
-            if (f) {
-                targetUser = f;
-                localStorage.setItem('profile_target_data_' + urlUid, JSON.stringify(f));
-                if (Date.now() > _localLockUntil) loadProfile();
-            }
+            if (!f) return;
+            const h = _userHash(f);
+            if (h === _lastUserHash) return;
+            _lastUserHash = h;
+            targetUser = f;
+            localStorage.setItem('profile_target_data_' + urlUid, JSON.stringify(f));
+            if (Date.now() > _localLockUntil) loadProfile();
         });
         db.ref('user_presence/' + urlUid).on('value', s => {
             const p = s.val() || {};
@@ -160,21 +164,37 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (viewMode === 'owner' && currentUser && currentUser.uid && typeof db !== 'undefined' && db) {
         db.ref('users/' + currentUser.uid).on('value', s => {
             const f = s.val();
-            if (f) {
-                targetUser = f;
-                currentUser = Object.assign({}, currentUser, f);
-                if (Date.now() > _localLockUntil) loadProfile();
-            }
+            if (!f) return;
+            const h = _userHash(f);
+            if (h === _lastUserHash) return;
+            _lastUserHash = h;
+            targetUser = f;
+            currentUser = Object.assign({}, currentUser, f);
+            if (Date.now() > _localLockUntil) loadProfile();
         });
-        db.ref('users/' + currentUser.uid + '/visitors').limitToLast(50).on('value', s => renderList('visitors-container', s.val(), 'time'));
-        db.ref('users/' + currentUser.uid + '/likes').limitToLast(50).on('value', s => renderList('likes-container', s.val(), 'time'));
-        db.ref('users/' + currentUser.uid + '/blocked').on('value', s => renderList('blocked-container', s.val(), null, true));
+        setTimeout(() => {
+            db.ref('users/' + currentUser.uid + '/visitors').limitToLast(50).on('value', s => renderList('visitors-container', s.val(), 'time'));
+            db.ref('users/' + currentUser.uid + '/likes').limitToLast(50).on('value', s => renderList('likes-container', s.val(), 'time'));
+            db.ref('users/' + currentUser.uid + '/blocked').on('value', s => renderList('blocked-container', s.val(), null, true));
+        }, 500);
     }
 
-    loadFriends();
-    loadPoints();
+    setTimeout(loadFriends, 800);
+    setTimeout(loadPoints, 800);
     console.log('Profile loaded | Mode:', viewMode);
 });
+
+/* ⭐ hash لتجنّب إعادة الرسم */
+function _userHash(u) {
+    if (!u) return '';
+    try {
+        return JSON.stringify({
+            n: u.name, b: u.bio, a: u.avatar, c: u.cover, r: u.rank,
+            nc: u.nameColor, ng: u.nameGradient, ngl: u.nameGlow,
+            af: u.avatarFrame, nbg: u.nameBgGradient, bg: u.profileBgValue
+        });
+    } catch(e) { return ''; }
+}
 
 async function loadFriends() {
     const container = document.getElementById('friends-container');
@@ -196,16 +216,16 @@ async function loadFriends() {
         if (list.length === 0) { container.innerHTML = '<div class="empty">لا يوجد أصدقاء بعد</div>'; return; }
         container.innerHTML = '';
         list.sort((a,b) => (b.time||0) - (a.time||0));
-        for (const f of list.slice(0, 50)) {
-            if (!f.uid) continue;
-            let points = 0;
-            try {
-                const ps = await db.ref('bot_data/quiz/scores/' + f.uid).once('value');
-                points = ps.val() || 0;
-            } catch(e) {}
+        const slice = list.slice(0, 50).filter(f => f.uid);
+        // ⭐ طلب متوازي بدل متسلسل
+        const pointsArr = await Promise.all(slice.map(f =>
+            db.ref('bot_data/quiz/scores/' + f.uid).once('value')
+                .then(s => s.val() || 0).catch(() => 0)
+        ));
+        slice.forEach((f, i) => {
             const giftsCount = Object.keys(f.gifts||{}).length;
-            renderFriendCard(container, f, points, giftsCount);
-        }
+            renderFriendCard(container, f, pointsArr[i], giftsCount);
+        });
     } catch(e) {
         console.warn('Friends error:', e);
         container.innerHTML = '<div class="empty">تعذر تحميل الأصدقاء</div>';
@@ -326,45 +346,64 @@ function canView(field) {
     return val === 'public';
 }
 
+/* ⭐⭐⭐ loadProfile — مع منع إعادة تحميل الصور */
 function loadProfile() {
     if (!targetUser) return;
+    _renderCount++;
     const _displayName = (viewMode === 'owner' && currentUser && currentUser.name) ? currentUser.name : (targetUser.name || 'مستخدم');
     const u = document.getElementById('profile-username');
     if (u) {
         u.dataset.name = _displayName;
-        // إن كان الاسم داخل بنية معقدة (nf-*) لا نستبدل النص
-        if (!u.querySelector('span[data-name-inner]') && !u.classList.contains('name-has-effects')) {
-            // فقط إن لم يكن هناك تأثيرات
-            if (u.children.length === 0) {
-                u.innerText = _displayName;
-            } else {
-                u.dataset.name = _displayName;
-            }
-        } else {
-            u.dataset.name = _displayName;
+        if (!u.classList.contains('name-has-effects') && !u.classList.contains('name-bg-active') && !u.classList.contains('text-gradient')) {
+            if (u.textContent !== _displayName) u.innerText = _displayName;
         }
     }
-    const b = document.getElementById('profile-bio'); if (b) b.innerText = targetUser.bio || ('@' + (targetUser.name || 'user'));
-    const r = document.getElementById('role-text'); if (r) r.innerText = rankBadge(targetUser.rank) + ' ' + (targetUser.rank || 'User');
-    if (targetUser.avatar) { const a = document.getElementById('profile-avatar-img'); if (a) a.src = targetUser.avatar; }
-    if (targetUser.cover) { const c = document.getElementById('profile-cover-img'); if (c) c.src = targetUser.cover; }
+    const b = document.getElementById('profile-bio');
+    if (b) {
+        const bio = targetUser.bio || ('@' + (targetUser.name || 'user'));
+        if (b.textContent !== bio) b.innerText = bio;
+    }
+    const r = document.getElementById('role-text');
+    if (r) {
+        const rk = rankBadge(targetUser.rank) + ' ' + (targetUser.rank || 'User');
+        if (r.textContent !== rk) r.innerText = rk;
+    }
+    // ⭐ لا نعيد تحميل الصورة إن كانت نفسها
+    if (targetUser.avatar) {
+        const a = document.getElementById('profile-avatar-img');
+        if (a && a.getAttribute('src') !== targetUser.avatar) a.src = targetUser.avatar;
+    }
+    if (targetUser.cover) {
+        const c = document.getElementById('profile-cover-img');
+        if (c && c.getAttribute('src') !== targetUser.cover) c.src = targetUser.cover;
+    }
     if (targetUser.profileBgValue) {
         const layer = document.getElementById('profile-bg-layer');
         if (layer) {
-            layer.innerHTML = '';
-            layer.style.backgroundImage = '';
-            layer.style.background = '';
-            if (targetUser.profileBgType === 'color') layer.style.background = targetUser.profileBgValue;
-            else if (targetUser.profileBgType === 'image') layer.style.backgroundImage = 'url(' + targetUser.profileBgValue + ')';
+            const newType = targetUser.profileBgType || 'color';
+            const newVal = targetUser.profileBgValue;
+            const curBg = layer.dataset.curBg;
+            if (curBg !== newType + '|' + newVal) {
+                layer.dataset.curBg = newType + '|' + newVal;
+                layer.innerHTML = '';
+                layer.style.backgroundImage = '';
+                layer.style.background = '';
+                if (newType === 'color') layer.style.background = newVal;
+                else if (newType === 'image') layer.style.backgroundImage = 'url(' + newVal + ')';
+            }
         }
     }
     const un = document.getElementById('profile-username-id');
     if (un) {
         const uu = targetUser.username || '@' + (targetUser.name || 'user').replace(/\s+/g, '_');
-        un.innerText = uu.startsWith('@') ? uu : '@' + uu;
+        const txt = uu.startsWith('@') ? uu : '@' + uu;
+        if (un.innerText !== txt) un.innerText = txt;
     }
     const codeEl = document.getElementById('info-code-value');
-    if (codeEl) codeEl.innerText = targetUser.code || '—';
+    if (codeEl) {
+        const cv = targetUser.code || '—';
+        if (codeEl.innerText !== cv) codeEl.innerText = cv;
+    }
 
     if (targetUser.nameColor && typeof applyNameColor === 'function') { nameColor = targetUser.nameColor; applyNameColor(); }
     if (targetUser.nameGradient && typeof applyNameGradient === 'function') { nameGradient = targetUser.nameGradient; applyNameGradient(); }
@@ -417,7 +456,7 @@ function loadProfile() {
         const mb = document.getElementById('music-btn-mini');
         if (mb) mb.style.display = 'flex';
         const p = document.getElementById('music-player');
-        if (p) p.src = musicURL;
+        if (p && p.getAttribute('src') !== musicURL) p.src = musicURL;
     } else {
         const mbb = document.getElementById('music-btn-mini');
         if (mbb) mbb.style.display = 'none';
@@ -526,7 +565,6 @@ async function uploadLoad(file, maxMB) {
     return u;
 }
 
-/* ⭐⭐⭐ قفل الوميض */
 function saveToChat() {
     if (!currentUser) return;
     _localLockUntil = Date.now() + 2500;
@@ -923,4 +961,4 @@ function openAppModal(title, text, type, options, currentVal, onSave) {
     document.getElementById('modal-cancel').onclick = () => m.classList.remove('active');
 }
 
-console.log('✅ profile-core.js v2.1 loaded — anti-flash lock');
+console.log('✅ profile-core.js v2.2 loaded — no flash + fast load');
