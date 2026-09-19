@@ -1,5 +1,5 @@
 // ==============================================
-// chat.js v3.2 — private msg notifications fixed
+// chat.js v3.3 — private notifications cleanup
 // ==============================================
 
 const ChatState = {
@@ -698,15 +698,19 @@ function _clearPrivateNotifsFrom(fromUid) {
     if (!user || !user.uid || !fromUid || !db) return;
     db.ref('user_notifications/' + user.uid).once('value').then(function(s) {
         var data = s.val() || {};
-        var toRemove = {};
+        var promises = [];
         Object.keys(data).forEach(function(k) {
             var n = data[k] || {};
             if (n.type === 'private' && n.fromUid === fromUid) {
-                toRemove[k] = null;
+                promises.push(
+                    db.ref('user_notifications/' + user.uid + '/' + k).remove().catch(function(){})
+                );
             }
         });
-        if (Object.keys(toRemove).length > 0) {
-            db.ref('user_notifications/' + user.uid).update(toRemove).catch(function(){});
+        if (promises.length > 0) {
+            Promise.all(promises).then(function() {
+                console.log('🧹 حُذف', promises.length, 'إشعار خاص من', fromUid);
+            });
         }
     }).catch(function(){});
 }
@@ -763,7 +767,6 @@ function startNotificationsListener(){
     ref.on('child_added',s=>{
         const n=s.val();if(!n)return;
         const age=Date.now()-(n.time||0);
-        // ⭐ تجاهل: رسائلي الخاصة + القديمة
         if(n.fromUid===user.uid)return;
         if(age>15000)return;
         if(n.read)return;
@@ -778,12 +781,31 @@ function startNotificationsListener(){
     });
 }
 
+/* ⭐⭐⭐ loadNotifications — فلترة قوية */
 function loadNotifications(){
     const user=getCurrentUser();if(!user||!user.uid)return;
     const list=document.getElementById('notif-list');if(!list)return;list.innerHTML='';
     db.ref('user_notifications/'+user.uid).limitToLast(50).once('value',s=>{
-        const arr=[];s.forEach(c=>arr.push(Object.assign({id:c.key},c.val())));arr.reverse();
-        if(arr.length===0){const e=document.createElement('div');e.style.cssText='text-align:center;color:var(--text-dim);font-size:12px;padding:20px;';e.textContent='لا إشعارات';list.appendChild(e);return}
+        const arr=[];
+        s.forEach(c=>{
+            var n = Object.assign({id:c.key}, c.val());
+            // ⭐ تجاهل الرسائل الخاصة المقروءة أو المرسلة مني
+            if (n.type === 'private') {
+                if (n.read) return;
+                if (n.fromUid === user.uid) return;
+            }
+            // ⭐ تجاهل أي إشعار مقروء (باستثناء friend_request للعمليات)
+            if (n.read && n.type !== 'friend_request') return;
+            arr.push(n);
+        });
+        arr.reverse();
+        if(arr.length===0){
+            const e=document.createElement('div');
+            e.style.cssText='text-align:center;color:var(--text-dim);font-size:12px;padding:20px;';
+            e.textContent='لا إشعارات';
+            list.appendChild(e);
+            return;
+        }
         arr.forEach(n=>{
             var el = buildNotificationElement(n);
             el.dataset.notifId = n.id || '';
@@ -791,6 +813,7 @@ function loadNotifications(){
         });
     });
 }
+
 function buildNotificationElement(n){
     var i = document.createElement('div');
     i.className = 'notif-item';
@@ -1202,4 +1225,4 @@ window.applyRoomBackground=applyRoomBackground;
 window.buildRoomsList=buildRoomsList;
 window.clearPrivateNotifsFrom = _clearPrivateNotifsFrom;
 
-console.log('✅ chat.js v3.2 loaded — private notifications fixed');
+console.log('✅ chat.js v3.3 loaded — private notifications filtered');
