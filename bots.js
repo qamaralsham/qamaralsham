@@ -1,10 +1,10 @@
 // ==============================================
-// bots.js v26 — 5 بوتات + إصلاح السفير
+// bots.js v27 — 5 بوتات + إصلاحات السفير
 // ==============================================
-// ✅ v26 (إصلاح):
-//   1. baseline على user_presence قبل الترحيب (لا flood)
-//   2. child_added/changed/removed بدل value
-//   3. الترحيب فقط للجدد بعد بدء التشغيل
+// ✅ v27 (إصلاح):
+//   1. baseline على user_presence قبل الترحيب
+//   2. child_added/changed بدل value
+//   3. onRoomChanged → ترحيب بالشخص المنضم
 // ==============================================
 
 const BotsState = {
@@ -413,10 +413,8 @@ function setAutoReplyCooldown(uid, key) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* ⭐⭐⭐ السفير — إصلاح v26                       */
+/* السفير — الترحيب                               */
 /* ══════════════════════════════════════════════ */
-
-/* ⭐ الترحيب بمستخدم واحد */
 async function tryWelcomeUser(uid, roomId) {
     try {
         var userSnap = await db.ref('users/' + uid).once('value');
@@ -451,7 +449,6 @@ async function tryWelcomeUser(uid, roomId) {
         var userName = userData.name || 'زائر';
         var avatar = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(userName) + '&background=111&color=ffd700&bold=true&size=64';
 
-        // إرسال رسالة الترحيب في الشات
         var msgRef = db.ref('room_messages/' + roomId).push();
         await msgRef.set({
             senderUid: 'bot_ambassador',
@@ -482,7 +479,6 @@ async function tryWelcomeUser(uid, roomId) {
     }
 }
 
-/* ⭐ فحص تغيير حالة مستخدم */
 function handlePresenceChild(uid, p) {
     if (!p) return;
     var me = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
@@ -490,42 +486,33 @@ function handlePresenceChild(uid, p) {
 
     var prev = BotsState.lastUserRooms[uid];
 
-    // تحديث cache
     BotsState.lastUserRooms[uid] = { state: p.state, room: p.room, lastChanged: p.lastChanged };
 
-    // تجاهل نفسي
     if (uid === me.uid) return;
-
-    // فقط online
     if (p.state !== 'online') return;
 
-    // نفس غرفتي فقط
     var myRoom = (typeof ChatState !== 'undefined' && ChatState.currentRoom) || 'general';
     if (p.room !== myRoom) return;
 
-    // ليس قديماً
     if (Date.now() - (p.lastChanged || 0) > 60000) return;
 
-    // دخول جديد؟
     var isNewJoin = !prev || prev.state !== 'online' || prev.room !== p.room;
     if (isNewJoin) {
         tryWelcomeUser(uid, myRoom);
     }
 }
 
-/* ⭐ مستمع السفير — إصلاح v26 */
 async function setupAmbassadorListener() {
     if (typeof db === 'undefined' || !db) { setTimeout(setupAmbassadorListener, 1500); return; }
     var me = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
     if (!me) { setTimeout(setupAmbassadorListener, 1500); return; }
 
-    // إلغاء المستمع القديم
     if (BotsState.presenceListener) {
         try { BotsState.presenceListener.off(); } catch(e) {}
         BotsState.presenceListener = null;
     }
 
-    // ⭐⭐⭐ الخطوة 1: baseline (ملء cache بدون ترحيب)
+    // baseline
     try {
         var snap = await db.ref('user_presence').once('value');
         var presences = snap.val() || {};
@@ -537,7 +524,6 @@ async function setupAmbassadorListener() {
         console.warn('Ambassador baseline error:', e);
     }
 
-    // ⭐⭐⭐ الخطوة 2: الاستماع للتغييرات الفعلية
     BotsState.presenceListener = db.ref('user_presence');
 
     BotsState.presenceListener.on('child_added', function(s) {
@@ -553,10 +539,9 @@ async function setupAmbassadorListener() {
     });
 
     BotsState.ambassadorReady = true;
-    console.log('🚪 Ambassador listener ready (v26)');
+    console.log('🚪 Ambassador listener ready (v27)');
 }
 
-/* ⭐ معالجة رسالة الترحيب */
 function handleWelcomeMessage(msg) {
     var me = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
     if (!me) return;
@@ -567,10 +552,8 @@ function handleWelcomeMessage(msg) {
     var msgAge = Date.now() - (typeof msg.time === 'number' ? msg.time : Date.now());
     if (msgAge > 60000) return;
 
-    // صوت للجميع في الروم
     playWelcomeSound();
 
-    // Modal للعضو المنضم فقط
     if (msg.welcomeFor === me.uid) {
         showWelcomeModal(msg);
     }
@@ -605,7 +588,7 @@ function initBots() {
     var user = getCurrentUser();
     if (!user) { console.warn('🤖 initBots: no user'); return; }
     BotsState.initialized = true;
-    console.log('🤖 bots.js v26 initialized');
+    console.log('🤖 bots.js v27 initialized');
 
     db.ref('bot_memory/badWords').on('value', s => {
         var arr = toArray(s.val());
@@ -1027,7 +1010,6 @@ async function processIncomingMessage(msg) {
     try {
         if (!msg) return;
 
-        // ⭐ رسائل الترحيب (قبل فحص isBot)
         if (msg.isWelcome && msg.welcomeFor) {
             handleWelcomeMessage(msg);
             return;
@@ -1061,15 +1043,12 @@ async function processIncomingMessage(msg) {
             console.warn('⚠️ dedup lock failed:', e.message);
         }
 
-        // 1. الطرد
         var kick = containsKickWord(text);
         if (kick) { await handleKickWord(msg, kick); return; }
 
-        // 2. السجن
         var bad = containsBadWord(text);
         if (bad) { await handleBadWord(msg, bad); return; }
 
-        // 3. حكواتي (مع نداء)
         if (hasTrigger(text)) {
             var q = stripTriggers(text);
             if (!q) return;
@@ -1089,7 +1068,6 @@ async function processIncomingMessage(msg) {
             return;
         }
 
-        // 4. ردود تلقائية
         var autoResult = findAutoReply(text);
         if (autoResult) {
             if (!isAutoReplyCoolingDown(msg.senderUid, autoResult.key)) {
@@ -1099,7 +1077,6 @@ async function processIncomingMessage(msg) {
             }
         }
 
-        // 5. المسابقة
         try {
             var qSnap = await db.ref('bot_locks/quiz_current').once('value');
             var qz = qSnap.val();
@@ -1147,13 +1124,23 @@ async function processIncomingMessage(msg) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* onRoomChanged                                  */
+/* onRoomChanged — v27: ترحيب بالشخص المنضم      */
 /* ══════════════════════════════════════════════ */
 function onRoomChanged(roomId) {
     if (typeof db === 'undefined' || !db) return;
     setupHiddenMessagesListener();
-    // نُبقي baseline السفير (لا نُفرغ) — فقط نتجاهل القديم
-    // لا نحتاج إعادة setupAmbassadorListener (المستمع على user_presence كامل)
+
+    var me = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
+    if (me && me.uid && roomId) {
+        BotsState.lastUserRooms[me.uid] = {
+            state: 'online',
+            room: roomId,
+            lastChanged: Date.now()
+        };
+        setTimeout(function() {
+            tryWelcomeUser(me.uid, roomId);
+        }, 800);
+    }
 }
 
 /* ══════════════════════════════════════════════ */
@@ -1490,4 +1477,4 @@ window.closeBotManager = closeBotManager;
 
 window.BotsState = BotsState;
 
-console.log('🤖 bots.js v26 loaded — ambassador fixed (baseline + child events)');
+console.log('🤖 bots.js v27 loaded — ambassador welcomes on room switch');
