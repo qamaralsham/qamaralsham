@@ -572,28 +572,21 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(syncPMSlot, 3000);
     setTimeout(syncPMSlot, 2000);
 
-    // ⭐ v3: تحديث ظهور زر الإبلاغات وزر ⚙️ حسب الرتبة
     setInterval(_updateHeaderButtons, 2000);
     setTimeout(_updateHeaderButtons, 1000);
-
-    // ⭐ v3: عند الدخول الأول، دخل مباشرة للغرفة الأخيرة (لا نافذة اختيار)
-    // ملاحظة: شاشة اختيار الغرف ستُضاف لاحقاً كملف منفصل (room-picker.js)
 });
 
-/* ⭐ v3: تحديث أزرار الهيدر حسب الرتبة */
 function _updateHeaderButtons() {
     var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
     if (!user) return;
     var lvl = user.rankLevel || (typeof getRankLevel === 'function' ? getRankLevel(user.rank) : 0);
-    
-    // زر ⚙️ الغرفة (Grand Owner+)
+
     var roomBtn = document.getElementById('room-settings-btn');
     if (roomBtn) {
         if (lvl >= 80) roomBtn.classList.add('visible');
         else roomBtn.classList.remove('visible');
     }
-    
-    // زر 🚨 الإبلاغات (Master Owner+)
+
     var repBtn = document.getElementById('reports-btn');
     if (repBtn) {
         if (lvl >= 90) repBtn.classList.add('visible');
@@ -601,7 +594,6 @@ function _updateHeaderButtons() {
     }
 }
 
-/* ⭐ v3: فتح إعدادات الغرفة (Grand Owner+) */
 function openRoomSettings() {
     var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
     if (!user) return;
@@ -617,11 +609,8 @@ function openRoomSettings() {
     }
 }
 
-/* ⭐ v3: فتح لوحة الإبلاغات */
 function openReportsPanel() {
-    // نفتح غرفة الملك على تبويب الإبلاغات
     if (typeof KingRoom !== 'undefined' && KingRoom.open) {
-        // نحتاج نوجهه لتبويب الإبلاغات
         if (typeof window.__krSetTab === 'function') window.__krSetTab('reports');
         KingRoom.open();
     } else if (typeof showToast === 'function') {
@@ -678,6 +667,7 @@ window._updateHeaderButtons = _updateHeaderButtons;
 <script defer src="dice.js?v=33"></script>
 <script defer src="chat-fixes.js?v=33"></script>
 <script defer src="invisible-mode.js?v=33"></script>
+<script defer src="room-picker.js?v=33"></script>
 <script defer src="stories.js?v=33"></script>
 
 <script>
