@@ -1,5 +1,14 @@
 // ==============================================
-// profile-core.js v6.0 — Final (متوافق مع تصميم 4 تبويبات)
+// profile-core.js v5.0 — كل الإصلاحات
+// ==============================================
+// ✅ v5.0:
+//   1. ربط initCover + initAvatar عبر initAppearance
+//   2. زر تبديل الوضع (مالك/زائر) في الهيدر
+//   3. زر الطي (وضع الزائر)
+//   4. صور الأصدقاء من Firebase
+//   5. حجم الاسم ثابت 23px
+//   6. تبويبات ديناميكية حسب الوضع
+//   7. عرض اللحظات/الأصدقاء/الأوامر
 // ==============================================
 
 let currentUser = null, targetUser = null, viewMode = 'owner';
@@ -162,6 +171,20 @@ function _isAdmin() {
     return lvl >= 65;
 }
 
+function _isOwnerLevel() {
+    if (!currentUser) return false;
+    var lvl = currentUser.rankLevel || getRankLevel(currentUser.rank);
+    return lvl >= 75;
+}
+
+function _canActOn(target) {
+    if (!currentUser || !target) return false;
+    if (currentUser.uid === target.uid) return false;
+    var meLvl = currentUser.rankLevel || getRankLevel(currentUser.rank);
+    var tgLvl = target.rankLevel || getRankLevel(target.rank);
+    return meLvl > tgLvl;
+}
+
 /* ══════════════════════════════════════════════ */
 /* التبويبات الديناميكية                          */
 /* ══════════════════════════════════════════════ */
@@ -228,8 +251,9 @@ async function renderMomentsTab() {
         newAdd.className = 'moment-tile add';
         newAdd.innerHTML = '<div class="moment-tile-icon">＋</div><div class="moment-tile-name">أضف لحظة</div>';
         newAdd.onclick = function () {
-            if (typeof window.openStoryPublish === 'function') window.openStoryPublish();
-            else toast('📸 قريباً');
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({ action: 'openStoryPublish' }, '*');
+            }
         };
         grid.appendChild(newAdd);
     }
@@ -264,7 +288,9 @@ async function renderMomentsTab() {
             }
 
             tile.onclick = function() {
-                toast('📸 عرض اللحظة');
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({ action: 'openStory', uid: targetUser.uid, storyId: st._id }, '*');
+                }
             };
             grid.appendChild(tile);
         });
@@ -639,7 +665,7 @@ function _doMute() {
             roomId = window.parent.ChatState.currentRoom;
         }
     } catch(e) {}
-    var roomName = (typeof QAMAR !== 'undefined' && QAMAR.ROOMS && QAMAR.ROOMS[roomId]) ? QAMAR.ROOMS[roomId].name : roomId;
+    var roomName = (QAMAR && QAMAR.ROOMS && QAMAR.ROOMS[roomId]) ? QAMAR.ROOMS[roomId].name : roomId;
 
     openAppModal('🔇 منع كتابة', 'منع ' + (targetUser.name || '') + ' من الكتابة في ' + roomName + '؟', '', async function() {
         try {
@@ -665,7 +691,7 @@ function _doKick() {
             roomId = window.parent.ChatState.currentRoom;
         }
     } catch(e) {}
-    var roomName = (typeof QAMAR !== 'undefined' && QAMAR.ROOMS && QAMAR.ROOMS[roomId]) ? QAMAR.ROOMS[roomId].name : roomId;
+    var roomName = (QAMAR && QAMAR.ROOMS && QAMAR.ROOMS[roomId]) ? QAMAR.ROOMS[roomId].name : roomId;
 
     openAppModal('🚪 طرد من الغرفة', 'طرد ' + (targetUser.name || '') + ' من ' + roomName + '؟', '', async function() {
         try {
@@ -841,21 +867,6 @@ function setupMusicToggle() {
 }
 
 /* ══════════════════════════════════════════════ */
-/* زر الطي (وضع الزائر)                          */
-/* ══════════════════════════════════════════════ */
-function setupCollapseToggle() {
-    var btn = document.getElementById('btn-collapse-info');
-    if (!btn) return;
-    if (btn.__setup) return;
-    btn.__setup = true;
-    btn.onclick = function () {
-        var isCollapsed = document.body.classList.toggle('visitor-collapsed');
-        btn.textContent = isCollapsed ? '👁️' : '👁️‍🗨️';
-        btn.title = isCollapsed ? 'إظهار المعلومات' : 'طي المعلومات';
-    };
-}
-
-/* ══════════════════════════════════════════════ */
 /* التهيئة الرئيسية                               */
 /* ══════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', async function() {
@@ -898,14 +909,15 @@ document.addEventListener('DOMContentLoaded', async function() {
     initMain();
     loadPoetry();
 
-    // بناء التبويبات
+    // بناء التبويبات حسب الوضع
     renderTabsForMode();
 
     // زر الموسيقى
     setupMusicToggle();
 
-    // زر الطي
-    setupCollapseToggle();
+    // ⭐ الإصلاحات الجديدة:
+    if (typeof setupModeToggle === 'function') setupModeToggle();
+    if (typeof setupCollapseToggle === 'function') setupCollapseToggle();
 
     if (typeof renderFrames === 'function') renderFrames();
 
@@ -918,7 +930,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         renderFriendsTab();
     }, 500);
 
-    // الاستماع للتغييرات
+    // استمع للتغييرات
     if (viewMode === 'visitor' && urlUid && typeof db !== 'undefined' && db) {
         db.ref('users/' + urlUid).on('value', s => {
             const f = s.val();
@@ -961,7 +973,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     setTimeout(_revealProfile, 180);
 
-    console.log('✅ profile-core.js v6.0 loaded | Mode:', viewMode);
+    console.log('✅ profile-core.js v5.0 loaded | Mode:', viewMode);
 });
 
 function _userHash(u) {
@@ -1046,6 +1058,7 @@ function loadProfile() {
         if (c && c.getAttribute('src') !== targetUser.cover) c.src = targetUser.cover;
     }
 
+    // خلفية البروفايل
     const layer = document.getElementById('profile-bg-layer');
     if (layer) {
         let bgT = targetUser.profileBgType;
@@ -1094,6 +1107,7 @@ function loadProfile() {
         if (codeEl.innerText !== cv) codeEl.innerText = cv;
     }
 
+    // الموسيقى
     if (targetUser.musicURL) {
         musicURL = targetUser.musicURL;
         const mb = document.getElementById('music-btn-mini');
@@ -1105,8 +1119,15 @@ function loadProfile() {
         if (mbb) mbb.style.display = 'none';
     }
 
+    // الحقول
     const er = document.getElementById('info-email-value');
-    if (er) er.innerText = (viewMode === 'owner' && targetUser.email) ? targetUser.email : '—';
+    if (er) {
+        if (viewMode === 'owner' && targetUser.email) {
+            er.innerText = targetUser.email;
+        } else {
+            er.innerText = '—';
+        }
+    }
     const ageVal = document.getElementById('info-age-value');
     if (ageVal) ageVal.innerText = (canView('age') && targetUser.age) ? (targetUser.age + ' سنة') : '—';
     const genVal = document.getElementById('info-gender-value');
@@ -1160,6 +1181,7 @@ function initMain() {
         });
     };
 
+    // Privacy selects
     document.querySelectorAll('.priv-sel').forEach(function (s) {
         const f = s.getAttribute('data-field');
         if (!f) return;
@@ -1176,23 +1198,6 @@ function initMain() {
 
     initVisitor();
     if (typeof initAppearance === 'function') initAppearance();
-
-    // زر مغادرة الغرفة
-    var lrb = document.getElementById('btn-leave-room');
-    if (lrb) lrb.onclick = function () {
-        if (!confirm('مغادرة الغرفة؟')) return;
-        try { if (window.parent && window.parent !== window) window.parent.postMessage({ action: 'leaveRoom' }, '*'); } catch(e) {}
-        try { if (window.parent && window.parent !== window) window.parent.postMessage({ action: 'closeProfile' }, '*'); } catch(e) {}
-    };
-
-    // زر حذف الحساب
-    var dab = document.getElementById('btn-delete-account');
-    if (dab) dab.onclick = function () {
-        if (!confirm('⚠️ حذف الحساب نهائياً؟')) return;
-        var email = prompt('اكتب إيميلك للتأكيد:');
-        if (!email) return;
-        if (typeof logout === 'function') logout().then(function() { location.reload(); });
-    };
 }
 
 /* ══════════════════════════════════════════════ */
@@ -1248,10 +1253,15 @@ function initVisitor() {
         cmd.style.display = _isAdmin() ? 'flex' : 'none';
         cmd.onclick = function() {
             switchTab('admin');
+            var tabs = document.getElementById('tabsBar');
+            if (tabs) tabs.scrollIntoView({ behavior: 'smooth', block: 'start' });
         };
     }
 }
 
+/* ══════════════════════════════════════════════ */
+/* getCleanName                                   */
+/* ══════════════════════════════════════════════ */
 function getCleanName() {
     const el = document.getElementById('profile-username');
     return el ? (el.dataset.name || el.innerText) : '';
@@ -1348,6 +1358,7 @@ function loadSaved() {
             if (typeof applyBg === 'function') applyBg();
         }
 
+        // توهج البروفايل
         const pg = localStorage.getItem('profile_glow');
         if (pg && typeof applyGlow === 'function') applyGlow(pg);
     } catch(e) { console.warn(e); }
@@ -1473,4 +1484,4 @@ window.renderFriendsTab = renderFriendsTab;
 window.applyDefaultAvatarFrameToProfile = applyDefaultAvatarFrameToProfile;
 window.toast = toast;
 
-console.log('✅ profile-core.js v6.0 loaded — 4 tabs system');
+console.log('✅ profile-core.js v5.0 loaded — all fixes integrated');
