@@ -1,11 +1,11 @@
 // ==============================================
-// room-picker.js v5 — تشخيص مدمج
+// room-picker.js v6 — استخدام QAMAR/db مباشرة
 // ==============================================
 
 (function () {
     'use strict';
-    if (window.__roomPickerV5) return;
-    window.__roomPickerV5 = true;
+    if (window.__roomPickerV6) return;
+    window.__roomPickerV6 = true;
 
     var STORAGE_KEY = 'qamar_room_picker_done';
     var LAST_ROOM_KEY = 'qamar_last_room';
@@ -91,7 +91,7 @@
 }
 
 #rp-debug {
-    background: rgba(0,0,0,0.5) !important;
+    background: rgba(0,0,0,0.6) !important;
     border: 1px solid rgba(255,68,68,0.5) !important;
     border-radius: 10px !important;
     padding: 12px !important;
@@ -125,10 +125,11 @@
     var _origInitChat = null;
     var _pickerActive = false;
 
+    /* ⭐ الوصول للمتغيرات العامة */
     function getMe() {
         try {
-            if (typeof window.getCurrentUser === 'function') {
-                var u = window.getCurrentUser();
+            if (typeof getCurrentUser === 'function') {
+                var u = getCurrentUser();
                 if (u) return u;
             }
         } catch(e) {}
@@ -144,70 +145,78 @@
         });
     }
 
+    /* ⭐ الحصول على QAMAR/db من المتغيرات العامة أو window */
+    function getQamar() {
+        try {
+            if (typeof QAMAR !== 'undefined' && QAMAR) return QAMAR;
+        } catch(e) {}
+        return window.QAMAR || null;
+    }
+    function getDb() {
+        try {
+            if (typeof db !== 'undefined' && db) return db;
+        } catch(e) {}
+        return window.db || null;
+    }
+
     function buildList() {
         var listEl = document.getElementById('rp-list');
         if (!listEl) return;
 
         var debug = [];
-        debug.push('getCurrentUser: ' + (typeof window.getCurrentUser));
-        debug.push('QAMAR: ' + (typeof window.QAMAR));
-        debug.push('db: ' + (typeof window.db));
+        var Q = getQamar();
+        var D = getDb();
+
+        debug.push('getCurrentUser: ' + (typeof getCurrentUser));
+        debug.push('QAMAR (direct): ' + (typeof QAMAR));
+        debug.push('window.QAMAR: ' + (typeof window.QAMAR));
+        debug.push('db (direct): ' + (typeof db));
+        debug.push('window.db: ' + (typeof window.db));
 
         var me = getMe();
         debug.push('me: ' + (me ? (me.name + ' / ' + me.uid) : 'NULL'));
 
-        if (typeof window.QAMAR !== 'undefined' && window.QAMAR) {
-            debug.push('QAMAR.ROOMS keys: ' + Object.keys(window.QAMAR.ROOMS || {}).join(','));
-            debug.push('getVisibleRooms: ' + (typeof window.QAMAR.getVisibleRooms));
-        }
-
         // فشل 1: لا يوجد مستخدم
         if (!me) {
-            listEl.innerHTML = 
-                '<div id="rp-debug">' +
-                    '<strong>⚠️ لم يتم العثور على المستخدم</strong><br>' +
-                    debug.join('<br>') +
-                '</div>' +
+            listEl.innerHTML =
+                '<div id="rp-debug"><strong>⚠️ لم يتم العثور على المستخدم</strong><br>' +
+                debug.join('<br>') + '</div>' +
                 '<div style="text-align:center"><button id="rp-retry" onclick="location.reload()">🔄 إعادة التحميل</button></div>';
             return;
         }
 
         // فشل 2: QAMAR غير معرّف
-        if (typeof window.QAMAR === 'undefined' || !window.QAMAR) {
+        if (!Q) {
             listEl.innerHTML =
-                '<div id="rp-debug">' +
-                    '<strong>⚠️ QAMAR غير معرّف — config.js لم يحمّل</strong><br>' +
-                    debug.join('<br>') +
-                '</div>' +
+                '<div id="rp-debug"><strong>⚠️ QAMAR غير معرّف — config.js لم يحمّل</strong><br>' +
+                debug.join('<br>') + '</div>' +
                 '<div style="text-align:center"><button id="rp-retry" onclick="location.reload()">🔄 إعادة التحميل</button></div>';
             return;
         }
+
+        if (Q.ROOMS) debug.push('QAMAR.ROOMS keys: ' + Object.keys(Q.ROOMS).join(','));
 
         // فشل 3: QAMAR.ROOMS فارغة
-        if (!window.QAMAR.ROOMS || Object.keys(window.QAMAR.ROOMS).length === 0) {
+        if (!Q.ROOMS || Object.keys(Q.ROOMS).length === 0) {
             listEl.innerHTML =
-                '<div id="rp-debug">' +
-                    '<strong>⚠️ QAMAR.ROOMS فارغة</strong><br>' +
-                    debug.join('<br>') +
-                '</div>' +
+                '<div id="rp-debug"><strong>⚠️ QAMAR.ROOMS فارغة</strong><br>' +
+                debug.join('<br>') + '</div>' +
                 '<div style="text-align:center"><button id="rp-retry" onclick="location.reload()">🔄 إعادة التحميل</button></div>';
             return;
         }
 
-        // محاولة الحصول على الرومات
+        // الحصول على الرومات
         var visible;
         try {
-            if (typeof window.QAMAR.getVisibleRooms === 'function') {
-                visible = window.QAMAR.getVisibleRooms(me);
+            if (typeof Q.getVisibleRooms === 'function') {
+                visible = Q.getVisibleRooms(me);
             } else {
-                visible = window.QAMAR.ROOMS;
+                visible = Q.ROOMS;
             }
         } catch(e) {
             listEl.innerHTML =
-                '<div id="rp-debug">' +
-                    '<strong>⚠️ خطأ في getVisibleRooms:</strong><br>' + e.message + '<br>' +
-                    debug.join('<br>') +
-                '</div>' +
+                '<div id="rp-debug"><strong>⚠️ خطأ في getVisibleRooms:</strong><br>' + e.message + '<br>' +
+                debug.join('<br>') + '</div>' +
                 '<div style="text-align:center"><button id="rp-retry" onclick="location.reload()">🔄 إعادة التحميل</button></div>';
             return;
         }
@@ -218,18 +227,15 @@
 
         debug.push('visible rooms: ' + roomIds.length + ' [' + roomIds.join(',') + ']');
 
-        // فشل 4: لا توجد رومات
         if (roomIds.length === 0) {
             listEl.innerHTML =
-                '<div id="rp-debug">' +
-                    '<strong>⚠️ لا توجد غرف متاحة</strong><br>' +
-                    debug.join('<br>') +
-                '</div>' +
+                '<div id="rp-debug"><strong>⚠️ لا توجد غرف متاحة</strong><br>' +
+                debug.join('<br>') + '</div>' +
                 '<div style="text-align:center"><button id="rp-retry" onclick="location.reload()">🔄 إعادة التحميل</button></div>';
             return;
         }
 
-        // النجاح! نعرض الرومات
+        // نجاح
         listEl.innerHTML = '';
 
         roomIds.forEach(function(rid) {
@@ -264,9 +270,10 @@
     }
 
     function loadPresenceCounts(roomIds) {
-        if (typeof window.db === 'undefined' || !window.db) return;
+        var D = getDb();
+        if (!D) return;
         try {
-            window.db.ref('user_presence').once('value').then(function(snap) {
+            D.ref('user_presence').once('value').then(function(snap) {
                 var data = snap.val() || {};
                 var now = Date.now();
                 var counts = {};
@@ -295,8 +302,9 @@
     function pickRoom(roomId) {
         var me = getMe();
         if (!me) return;
-        if (typeof window.QAMAR === 'undefined' || !window.QAMAR.isRoomVisible || !window.QAMAR.isRoomVisible(roomId, me)) {
-            if (typeof window.showToast === 'function') window.showToast('fa-lock', '🔒 غير متاحة');
+        var Q = getQamar();
+        if (!Q || typeof Q.isRoomVisible !== 'function' || !Q.isRoomVisible(roomId, me)) {
+            if (typeof showToast === 'function') showToast('fa-lock', '🔒 غير متاحة');
             return;
         }
 
@@ -305,8 +313,8 @@
             localStorage.setItem(LAST_ROOM_KEY, roomId);
         } catch(e) {}
 
-        if (typeof window.cleanupAllListeners === 'function') {
-            try { window.cleanupAllListeners(); } catch(e) {}
+        if (typeof cleanupAllListeners === 'function') {
+            try { cleanupAllListeners(); } catch(e) {}
         }
 
         var cs = window.ChatState;
@@ -333,8 +341,8 @@
         setTimeout(function() {
             if (_origInitChat) {
                 try { _origInitChat.call(window); } catch(err) { console.error(err); }
-            } else if (typeof window.initChat === 'function') {
-                try { window.initChat(); } catch(err) {}
+            } else if (typeof initChat === 'function') {
+                try { initChat(); } catch(err) {}
             }
             setTimeout(function() {
                 var cc2 = document.getElementById('chat-container');
@@ -374,8 +382,8 @@
         if (logoutBtn) {
             logoutBtn.onclick = function() {
                 if (!confirm('تسجيل خروج؟')) return;
-                if (typeof window.handleLogout === 'function') window.handleLogout();
-                else if (typeof window.logout === 'function') window.logout().then(function() { location.reload(); });
+                if (typeof handleLogout === 'function') handleLogout();
+                else if (typeof logout === 'function') logout().then(function() { location.reload(); });
             };
         }
 
@@ -395,9 +403,9 @@
     }
 
     function patchInitChatNow() {
-        if (typeof window.initChat !== 'function') {
+        if (typeof initChat !== 'function') {
             var wait = setInterval(function() {
-                if (typeof window.initChat === 'function') {
+                if (typeof initChat === 'function') {
                     clearInterval(wait);
                     patchInitChatNow();
                 }
@@ -408,7 +416,7 @@
         if (window.__roomPickerPatched) return;
         window.__roomPickerPatched = true;
 
-        _origInitChat = window.initChat;
+        _origInitChat = window.initChat || initChat;
         window.initChat = function() {
             var done = false;
             try { done = localStorage.getItem(STORAGE_KEY) === '1'; } catch(e) {}
@@ -419,13 +427,13 @@
 
     window.showRoomPicker = function() {
         try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
-        if (typeof window.cleanupAllListeners === 'function') {
-            try { window.cleanupAllListeners(); } catch(e) {}
+        if (typeof cleanupAllListeners === 'function') {
+            try { cleanupAllListeners(); } catch(e) {}
         }
         if (window.ChatState) window.ChatState.isInitialized = false;
         showPicker();
     };
 
     patchInitChatNow();
-    console.log('🚪 room-picker.js v5 loaded');
+    console.log('🚪 room-picker.js v6 loaded — direct QAMAR/db access');
 })();
