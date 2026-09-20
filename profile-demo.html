@@ -4,14 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 
-<!-- ⭐ PWA Meta Tags -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="قمر الشام">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="application-name" content="قمر الشام">
 <meta name="theme-color" content="#050508">
-<link rel="manifest" href="manifest.json">
 
 <title>🌙 معاينة بروفايل قمر الشام v3</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -32,7 +30,7 @@
     --text-dim: #9ca3af;
 }
 
-/* ⭐ body: بدون padding علوي — البروفايل من فوق */
+/* ⭐ body: 6% من الأعلى + 2.5% من الجوانب */
 html, body {
     background: 
         radial-gradient(ellipse at top, rgba(212, 175, 55, 0.08) 0%, transparent 55%),
@@ -44,8 +42,8 @@ html, body {
     height: 100dvh;
     direction: rtl;
     overflow: hidden;
-    padding: 0 2.5% 0 2.5%;
-    padding-top: env(safe-area-inset-top, 0);
+    padding: 6% 2.5% 0 2.5%;
+    padding-top: max(6%, env(safe-area-inset-top, 0));
 }
 
 .starfield {
@@ -119,18 +117,18 @@ html, body {
 }
 
 /* ═══════════════════════════════════════════ */
-/* الغلاف — أقصر الآن */
+/* الغلاف — 320px */
 /* ═══════════════════════════════════════════ */
 .hero-cover {
     position: relative;
-    min-height: 380px;   /* ⭐ 480 → 380 */
+    min-height: 320px;
     overflow: hidden;
     background: 
         radial-gradient(ellipse at 20% 20%, rgba(212, 175, 55, 0.25) 0%, transparent 55%),
         radial-gradient(ellipse at 80% 40%, rgba(74, 20, 140, 0.6) 0%, transparent 55%),
         radial-gradient(ellipse at 50% 90%, rgba(26, 14, 46, 0.9) 0%, transparent 70%),
         linear-gradient(180deg, #0a0518 0%, #1a0e2e 40%, #0a0518 100%);
-    padding: 16px 20px 30px;  /* ⭐ 24/40 → 16/30 */
+    padding: 14px 18px 24px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -158,21 +156,21 @@ html, body {
     100% { background-position: 200px 200px, -180px 180px, 220px -220px, -160px -160px, 240px 240px; }
 }
 
-/* القمر — أقرب للأعلى */
+/* القمر — 78px */
 .cover-moon {
     position: absolute;
-    top: 20px;
+    top: 14px;
     left: 50%;
     transform: translateX(-50%);
-    width: 90px;
-    height: 90px;
+    width: 78px;
+    height: 78px;
     border-radius: 50%;
     background: 
         radial-gradient(circle at 38% 35%, #fffef0 0%, #fff8dc 15%, #ffec8b 35%, #ffd700 55%, #d4af37 80%, #b8860b 100%);
     box-shadow: 
-        0 0 45px rgba(255, 215, 0, 0.8),
-        0 0 90px rgba(255, 215, 0, 0.4),
-        0 0 150px rgba(255, 215, 0, 0.15);
+        0 0 40px rgba(255, 215, 0, 0.8),
+        0 0 80px rgba(255, 215, 0, 0.4),
+        0 0 130px rgba(255, 215, 0, 0.15);
     z-index: 1;
     animation: moonFloat 6s ease-in-out infinite;
 }
@@ -198,14 +196,14 @@ html, body {
 }
 @keyframes moonFloat {
     0%, 100% { transform: translateX(-50%) translateY(0) scale(1); }
-    50% { transform: translateX(-50%) translateY(-6px) scale(1.03); }
+    50% { transform: translateX(-50%) translateY(-5px) scale(1.03); }
 }
 
-/* ═══ الأزرار — يسار: كاميرا + عين ═══ */
+/* الأزرار — يسار */
 .cover-actions-left {
     position: absolute;
-    top: 14px;
-    left: 14px;
+    top: 12px;
+    left: 12px;
     z-index: 10;
     display: flex;
     gap: 8px;
@@ -216,14 +214,14 @@ html, body {
     background: rgba(0, 0, 0, 0.6);
     border: 1px solid var(--border-gold);
     color: var(--gold);
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 13px;
     transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
     backdrop-filter: blur(10px);
     flex-shrink: 0;
@@ -237,11 +235,9 @@ html, body {
 }
 .cover-btn:active { transform: scale(0.95); }
 
-/* الكاميرا outermost (أقصى اليسار) */
 .cover-btn.camera-outer { order: 1; }
 .cover-btn.eye-inner { order: 2; }
 
-/* الإبلاغ (visitor) — نفس مكان الكاميرا */
 .cover-btn.cover-report {
     border-color: rgba(255, 68, 68, 0.6);
     color: #ff7777;
@@ -253,7 +249,6 @@ html, body {
     box-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
 }
 
-/* زر العين (preview) */
 .cover-btn.eye-btn.preview-mode {
     background: linear-gradient(135deg, rgba(255, 68, 68, 0.7), rgba(200, 30, 30, 0.5));
     border-color: #ff7777;
@@ -268,7 +263,7 @@ html, body {
 
 .eye-label {
     position: absolute;
-    top: 42px;
+    top: 40px;
     left: 50%;
     transform: translateX(-50%);
     background: rgba(0, 0, 0, 0.9);
@@ -287,23 +282,23 @@ html, body {
 }
 .cover-btn.eye-btn:hover .eye-label { opacity: 1; }
 
-/* ═══ زر الإغلاق — يمين ═══ */
+/* زر الإغلاق — يمين */
 .cover-close {
     position: absolute;
-    top: 14px;
-    right: 14px;
+    top: 12px;
+    right: 12px;
     z-index: 10;
     background: rgba(0, 0, 0, 0.6);
     border: 1px solid var(--border-gold);
     color: var(--gold);
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 13px;
     transition: all 0.25s;
     backdrop-filter: blur(10px);
     font-weight: 900;
@@ -313,16 +308,15 @@ html, body {
     border-color: #ff7777;
     color: #ff7777;
     transform: scale(1.1);
-    box-shadow: 0 0 20px rgba(255, 68, 68, 0.4);
 }
 .cover-close:active { transform: scale(0.95); }
 
-/* ═══ الأفاتار — أصغر */
+/* الأفاتار — 96px */
 .avatar-wrap {
     position: relative;
     z-index: 10;
-    margin-top: 95px;   /* ⭐ 120 → 95 */
-    margin-bottom: 12px;
+    margin-top: 72px;
+    margin-bottom: 10px;
     animation: avatarIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s backwards;
 }
 @keyframes avatarIn {
@@ -331,16 +325,16 @@ html, body {
 }
 .avatar-frame {
     position: relative;
-    width: 110px;
-    height: 110px;
+    width: 96px;
+    height: 96px;
     border-radius: 50%;
-    padding: 5px;
+    padding: 4px;
     background: conic-gradient(from 0deg, #ffd700, #ffec8b, #fffef0, #ffd700, #d4af37, #b8860b, #ffd700);
     animation: frameRotate 5s linear infinite;
     box-shadow: 
-        0 0 36px rgba(255, 215, 0, 0.6),
-        0 0 72px rgba(255, 215, 0, 0.3),
-        0 15px 45px rgba(0, 0, 0, 0.7);
+        0 0 30px rgba(255, 215, 0, 0.6),
+        0 0 60px rgba(255, 215, 0, 0.3),
+        0 12px 40px rgba(0, 0, 0, 0.7);
 }
 @keyframes frameRotate {
     to { transform: rotate(360deg); }
@@ -353,22 +347,22 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 44px;
+    font-size: 38px;
     color: var(--gold-light);
     font-weight: 900;
     animation: frameRotate 5s linear infinite reverse;
     font-family: 'Cairo', sans-serif;
-    border: 4px solid #050508;
-    text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    border: 3.5px solid #050508;
+    text-shadow: 0 0 18px rgba(255, 215, 0, 0.5);
 }
 .avatar-status {
     position: absolute;
-    bottom: 4px;
-    right: 8px;
-    width: 18px;
-    height: 18px;
+    bottom: 3px;
+    right: 6px;
+    width: 16px;
+    height: 16px;
     background: #00e676;
-    border: 3.5px solid #050508;
+    border: 3px solid #050508;
     border-radius: 50%;
     box-shadow: 0 0 15px #00e676;
     z-index: 3;
@@ -379,7 +373,7 @@ html, body {
     50% { box-shadow: 0 0 25px #00e676, 0 0 40px rgba(0, 230, 118, 0.5); }
 }
 
-/* ═══ الهوية ═══ */
+/* الهوية */
 .identity {
     position: relative;
     z-index: 2;
@@ -392,18 +386,18 @@ html, body {
     to { opacity: 1; transform: translateY(0); }
 }
 .rank-crown {
-    font-size: 30px;
+    font-size: 26px;
     line-height: 1;
-    margin-bottom: 4px;
-    filter: drop-shadow(0 0 18px rgba(255, 215, 0, 0.8));
+    margin-bottom: 3px;
+    filter: drop-shadow(0 0 16px rgba(255, 215, 0, 0.8));
     animation: crownBounce 3s ease-in-out infinite;
 }
 @keyframes crownBounce {
     0%, 100% { transform: translateY(0) rotate(0deg); }
-    50% { transform: translateY(-5px) rotate(-3deg); }
+    50% { transform: translateY(-4px) rotate(-3deg); }
 }
 .username {
-    font-size: 26px;
+    font-size: 23px;
     font-weight: 900;
     background: linear-gradient(90deg, #d4af37, #ffec8b, #fffef0, #ffd700, #d4af37);
     background-size: 300% 100%;
@@ -413,7 +407,7 @@ html, body {
     color: transparent;
     animation: nameShimmer 3s linear infinite;
     letter-spacing: 0.5px;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     padding: 0 10px;
     word-break: break-word;
 }
@@ -423,17 +417,17 @@ html, body {
 .rank-badge {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 5px 18px;
+    gap: 6px;
+    padding: 4px 16px;
     background: linear-gradient(135deg, rgba(212, 175, 55, 0.3), rgba(212, 175, 55, 0.1));
     border: 1px solid var(--border-gold);
     border-radius: 999px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 900;
     color: var(--gold-light);
     letter-spacing: 1.5px;
     text-transform: uppercase;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
     box-shadow: 0 4px 20px rgba(212, 175, 55, 0.25);
     animation: rankShine 2.5s ease-in-out infinite;
 }
@@ -443,46 +437,46 @@ html, body {
 }
 .bio {
     font-family: 'Amiri', serif;
-    font-size: 15px;
+    font-size: 13.5px;
     font-style: italic;
     color: #f0e5d5;
-    line-height: 1.7;
-    margin: 6px auto 10px;
-    max-width: 320px;
+    line-height: 1.6;
+    margin: 4px auto 8px;
+    max-width: 300px;
     position: relative;
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
-    padding: 0 20px;
+    padding: 0 18px;
 }
 .bio::before {
     content: '❝';
-    font-size: 18px;
+    font-size: 16px;
     color: var(--gold);
     opacity: 0.7;
     position: absolute;
     right: 0;
-    top: -6px;
+    top: -4px;
 }
 .bio::after {
     content: '❞';
-    font-size: 18px;
+    font-size: 16px;
     color: var(--gold);
     opacity: 0.7;
     position: absolute;
     left: 0;
-    bottom: -10px;
+    bottom: -8px;
 }
 .mood-pill {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 14px;
+    gap: 6px;
+    padding: 5px 13px;
     background: rgba(132, 204, 22, 0.15);
     border: 1px solid rgba(132, 204, 22, 0.4);
     border-radius: 999px;
-    font-size: 11.5px;
+    font-size: 11px;
     font-weight: 700;
     color: #a3e635;
-    margin-top: 4px;
+    margin-top: 3px;
     backdrop-filter: blur(8px);
 }
 
@@ -491,21 +485,19 @@ html, body {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 60px;
+    height: 45px;
     background: linear-gradient(180deg, transparent 0%, rgba(5, 5, 8, 0.6) 60%, rgba(5, 5, 8, 0.95) 100%);
     pointer-events: none;
     z-index: 3;
 }
 
-/* ═══════════════════════════════════════════ */
 /* الإحصائيات */
-/* ═══════════════════════════════════════════ */
 .stats {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-    padding: 0 14px;
-    margin: -25px 0 12px;
+    gap: 7px;
+    padding: 0 12px;
+    margin: -22px 0 10px;
     position: relative;
     z-index: 5;
     animation: fadeInUp 0.6s ease-out 0.5s backwards;
@@ -513,8 +505,8 @@ html, body {
 .stat {
     background: linear-gradient(135deg, rgba(20, 15, 35, 0.9), rgba(10, 8, 20, 0.95));
     border: 1px solid var(--border-gold);
-    border-radius: 12px;
-    padding: 10px 6px;
+    border-radius: 11px;
+    padding: 9px 5px;
     text-align: center;
     transition: all 0.2s;
     cursor: pointer;
@@ -526,29 +518,29 @@ html, body {
     transform: translateY(-3px);
     box-shadow: 0 12px 30px rgba(212, 175, 55, 0.25);
 }
-.stat-icon { font-size: 16px; margin-bottom: 4px; display: block; }
-.stat-value { font-size: 14px; font-weight: 900; color: #fff; display: block; }
-.stat-label { font-size: 9px; color: var(--text-dim); margin-top: 2px; display: block; font-weight: 700; }
+.stat-icon { font-size: 15px; margin-bottom: 3px; display: block; }
+.stat-value { font-size: 13px; font-weight: 900; color: #fff; display: block; }
+.stat-label { font-size: 8.5px; color: var(--text-dim); margin-top: 2px; display: block; font-weight: 700; }
 
-/* ═══ أزرار سريعة ═══ */
+/* الأزرار السريعة */
 .quick-actions {
     display: flex;
     justify-content: center;
-    gap: 10px;
-    padding: 0 14px;
-    margin-bottom: 12px;
+    gap: 9px;
+    padding: 0 12px;
+    margin-bottom: 10px;
     animation: fadeInUp 0.6s ease-out 0.6s backwards;
 }
 .quick-btn {
     flex: 1;
     max-width: 130px;
-    padding: 10px 8px;
+    padding: 9px 6px;
     background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05));
     border: 1px solid var(--border-gold);
-    border-radius: 12px;
+    border-radius: 11px;
     color: #fff;
     font-family: inherit;
-    font-size: 11.5px;
+    font-size: 11px;
     font-weight: 900;
     cursor: pointer;
     display: flex;
@@ -562,10 +554,9 @@ html, body {
     background: linear-gradient(135deg, rgba(212, 175, 55, 0.3), rgba(212, 175, 55, 0.15));
     border-color: var(--gold-light);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.25);
 }
 .quick-btn:active { transform: scale(0.96); }
-.quick-btn i { font-size: 16px; color: var(--gold-light); }
+.quick-btn i { font-size: 15px; color: var(--gold-light); }
 .quick-btn.primary {
     background: linear-gradient(135deg, #d4af37, #b8860b);
     border-color: var(--gold-light);
@@ -573,11 +564,11 @@ html, body {
 .quick-btn.primary i,
 .quick-btn.primary span { color: #050508; }
 
-/* ═══ التبويبات ═══ */
+/* التبويبات */
 .tabs {
     display: flex;
     gap: 4px;
-    padding: 8px 12px;
+    padding: 7px 10px;
     background: rgba(5, 5, 12, 0.95);
     border-top: 1px solid rgba(212, 175, 55, 0.2);
     border-bottom: 1px solid rgba(212, 175, 55, 0.2);
@@ -589,15 +580,15 @@ html, body {
 }
 .tab {
     flex: 1;
-    padding: 9px 4px;
+    padding: 8px 4px;
     background: transparent;
     border: none;
     color: var(--text-dim);
     font-family: inherit;
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 900;
     cursor: pointer;
-    border-radius: 10px;
+    border-radius: 9px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -605,7 +596,7 @@ html, body {
     transition: all 0.2s;
     position: relative;
 }
-.tab i { font-size: 14.5px; }
+.tab i { font-size: 14px; }
 .tab.active {
     color: var(--gold-light);
     background: rgba(212, 175, 55, 0.12);
@@ -622,9 +613,7 @@ html, body {
     box-shadow: 0 0 8px var(--gold-light);
 }
 
-/* ═══════════════════════════════════════════ */
-/* منطقة المحتوى */
-/* ═══════════════════════════════════════════ */
+/* المحتوى */
 .content-area {
     position: relative;
     min-height: 60vh;
@@ -632,7 +621,7 @@ html, body {
         radial-gradient(ellipse at 30% 0%, rgba(74, 20, 140, 0.25) 0%, transparent 60%),
         radial-gradient(ellipse at 70% 100%, rgba(212, 175, 55, 0.08) 0%, transparent 60%),
         linear-gradient(180deg, #050508 0%, #0a0518 50%, #050508 100%);
-    padding-top: 12px;
+    padding-top: 10px;
     overflow: hidden;
 }
 .content-area::before {
@@ -657,7 +646,7 @@ html, body {
 }
 
 .section {
-    padding: 0 14px 14px;
+    padding: 0 12px 12px;
     position: relative;
     z-index: 1;
 }
@@ -665,27 +654,27 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 10px;
-    padding-bottom: 8px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
     border-bottom: 1px solid rgba(212, 175, 55, 0.15);
 }
 .section-title h3 {
-    font-size: 13px;
+    font-size: 12.5px;
     font-weight: 900;
     color: #fff;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 7px;
 }
-.section-title h3 i { color: var(--gold); font-size: 13px; }
+.section-title h3 i { color: var(--gold); font-size: 12.5px; }
 .section-title .more {
-    font-size: 11px;
+    font-size: 10.5px;
     color: var(--gold);
     font-weight: 700;
     cursor: pointer;
 }
 
-/* ═══ الإنجازات ═══ */
+/* الإنجازات */
 .achievements-row {
     display: flex;
     gap: 8px;
@@ -697,17 +686,17 @@ html, body {
 .achievements-row::-webkit-scrollbar { display: none; }
 .achievement {
     flex-shrink: 0;
-    width: 68px;
-    height: 79px;
+    width: 64px;
+    height: 74px;
     background: linear-gradient(135deg, rgba(20, 15, 35, 0.85), rgba(10, 8, 20, 0.9));
     border: 1px solid var(--border-gold);
-    border-radius: 12px;
+    border-radius: 11px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 4px;
-    padding: 8px 4px;
+    padding: 7px 3px;
     transition: all 0.2s;
     cursor: pointer;
     text-align: center;
@@ -718,19 +707,19 @@ html, body {
     transform: scale(1.05);
     border-color: var(--gold);
 }
-.achievement-icon { font-size: 25px; }
-.achievement-name { font-size: 8.5px; color: #ccc; font-weight: 700; line-height: 1.2; }
+.achievement-icon { font-size: 23px; }
+.achievement-name { font-size: 8px; color: #ccc; font-weight: 700; line-height: 1.2; }
 
-/* ═══ نشاط ═══ */
+/* النشاط */
 .activity-item {
     display: flex;
     align-items: center;
-    gap: 11px;
-    padding: 11px;
+    gap: 10px;
+    padding: 10px;
     background: linear-gradient(135deg, rgba(20, 15, 35, 0.7), rgba(10, 8, 20, 0.8));
     border: 1px solid rgba(212, 175, 55, 0.15);
-    border-radius: 12px;
-    margin-bottom: 8px;
+    border-radius: 11px;
+    margin-bottom: 7px;
     cursor: pointer;
     backdrop-filter: blur(8px);
 }
@@ -740,25 +729,25 @@ html, body {
     transform: translateX(-3px);
 }
 .activity-icon {
-    width: 38px;
-    height: 38px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(212, 175, 55, 0.08));
     border: 1px solid var(--border-gold);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 15px;
     flex-shrink: 0;
 }
 .activity-info { flex: 1; min-width: 0; }
-.activity-text { font-size: 12.5px; font-weight: 700; color: #fff; margin-bottom: 2px; }
-.activity-time { font-size: 10px; color: var(--text-dim); }
+.activity-text { font-size: 12px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+.activity-time { font-size: 9.5px; color: var(--text-dim); }
 
-/* ═══ اللحظات ═══ */
+/* اللحظات */
 .moments-row {
     display: flex;
-    gap: 10px;
+    gap: 9px;
     overflow-x: auto;
     scrollbar-width: none;
     padding-bottom: 4px;
@@ -767,16 +756,16 @@ html, body {
 .moments-row::-webkit-scrollbar { display: none; }
 .moment {
     flex-shrink: 0;
-    width: 72px;
+    width: 68px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
     cursor: pointer;
 }
 .moment-ring {
-    width: 65px;
-    height: 65px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     padding: 3px;
     background: conic-gradient(from 0deg, #ffd700, #ff006e, #8a2be2, #ffd700);
@@ -794,32 +783,32 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 25px;
+    font-size: 23px;
     border: 3px solid #050508;
     animation: ringRotate 8s linear infinite reverse;
 }
 .moment-ring.seen .moment-img,
 .moment-ring.add .moment-img { animation: none; }
 .moment-name {
-    font-size: 9.5px;
+    font-size: 9px;
     color: #fff;
     font-weight: 700;
     text-align: center;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 68px;
+    max-width: 64px;
 }
 
-/* ═══ الأصدقاء ═══ */
+/* الأصدقاء */
 .friends-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(66px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(62px, 1fr));
+    gap: 9px;
 }
 .friend-card {
     aspect-ratio: 1;
-    border-radius: 13px;
+    border-radius: 12px;
     background: linear-gradient(135deg, #4a148c, #1a0e2e);
     border: 1px solid var(--border-gold);
     display: flex;
@@ -835,21 +824,21 @@ html, body {
     border-color: var(--gold);
 }
 .friend-avatar {
-    width: 38px;
-    height: 38px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background: linear-gradient(135deg, #d4af37, #b8860b);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14.5px;
+    font-size: 13.5px;
     font-weight: 900;
     color: #050508;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
     border: 2px solid rgba(212, 175, 55, 0.5);
 }
 .friend-name {
-    font-size: 8.5px;
+    font-size: 8px;
     color: #fff;
     font-weight: 700;
     text-align: center;
@@ -860,10 +849,10 @@ html, body {
     max-width: 100%;
 }
 
-/* ═══ آخر الزوار ═══ */
+/* آخر الزوار */
 .visitors-row {
     display: flex;
-    gap: 10px;
+    gap: 9px;
     overflow-x: auto;
     scrollbar-width: none;
     padding-bottom: 4px;
@@ -874,8 +863,8 @@ html, body {
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    gap: 7px;
-    padding: 7px 13px 7px 7px;
+    gap: 6px;
+    padding: 6px 12px 6px 6px;
     background: linear-gradient(135deg, rgba(20, 15, 35, 0.85), rgba(10, 8, 20, 0.9));
     border: 1px solid var(--border-gold);
     border-radius: 999px;
@@ -886,25 +875,25 @@ html, body {
     border-color: var(--gold);
 }
 .visitor-avatar {
-    width: 27px;
-    height: 27px;
+    width: 25px;
+    height: 25px;
     border-radius: 50%;
     background: linear-gradient(135deg, #d4af37, #b8860b);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 900;
     color: #050508;
 }
-.visitor-name { font-size: 11px; color: #fff; font-weight: 700; }
+.visitor-name { font-size: 10.5px; color: #fff; font-weight: 700; }
 
-/* ═══ Bottom Nav ═══ */
+/* Bottom Nav */
 .bottom-nav {
     position: sticky;
     bottom: 0;
     width: 100%;
-    height: 56px;
+    height: 54px;
     background: rgba(5, 5, 8, 0.98);
     border-top: 1px solid var(--border-gold);
     display: flex;
@@ -926,29 +915,27 @@ html, body {
     gap: 2px;
     color: var(--text-dim);
     cursor: pointer;
-    font-size: 9px;
+    font-size: 8.5px;
     font-weight: 700;
     border: none;
     background: none;
     font-family: inherit;
 }
-.nav-item i { font-size: 14.5px; }
+.nav-item i { font-size: 14px; }
 .nav-item.active { color: var(--gold-light); }
 
-/* Mode Switching */
 body.mode-owner .visitor-only { display: none !important; }
 body.mode-visitor .owner-only { display: none !important; }
 
-/* Responsive */
 @media (max-width: 400px) {
-    .hero-cover { min-height: 360px; }
-    .cover-moon { width: 80px; height: 80px; top: 18px; }
-    .avatar-wrap { margin-top: 85px; }
-    .avatar-frame { width: 100px; height: 100px; }
-    .avatar-inner { font-size: 40px; }
-    .username { font-size: 23px; }
-    .bio { font-size: 13.5px; }
-    .cover-btn, .cover-close { width: 34px; height: 34px; font-size: 13px; }
+    .hero-cover { min-height: 300px; }
+    .cover-moon { width: 72px; height: 72px; top: 12px; }
+    .avatar-wrap { margin-top: 66px; }
+    .avatar-frame { width: 88px; height: 88px; }
+    .avatar-inner { font-size: 34px; }
+    .username { font-size: 21px; }
+    .bio { font-size: 12.5px; }
+    .cover-btn, .cover-close { width: 32px; height: 32px; font-size: 12px; }
 }
 </style>
 </head>
@@ -961,32 +948,27 @@ body.mode-visitor .owner-only { display: none !important; }
     <div class="hero-cover">
         <div class="cover-moon"></div>
 
-        <!-- ⭐ يسار: الكاميرا (external) + العين (internal) -->
         <div class="cover-actions-left">
-            <!-- الكاميرا — الخارجية (لأول في DOM = أقصى اليسار في RTL) -->
             <div class="cover-btn camera-outer owner-only" title="تعديل الغلاف">
                 <i class="fas fa-camera"></i>
             </div>
 
-            <!-- الإبلاغ (visitor) -->
             <div class="cover-btn cover-report visitor-only" title="إبلاغ">
                 <i class="fas fa-flag"></i>
             </div>
 
-            <!-- العين — الداخلية -->
             <div class="cover-btn eye-btn eye-inner" id="eyeToggle" title="معاينة كزائر">
                 <i class="fas fa-eye" id="eyeIcon"></i>
                 <span class="eye-label" id="eyeLabel">معاينة كزائر</span>
             </div>
         </div>
 
-        <!-- ⭐ يمين: زر الإغلاق -->
         <button class="cover-close" id="closeBtn" title="إغلاق" type="button">
             <i class="fas fa-times"></i>
         </button>
 
         <div class="avatar-wrap">
-            <div class="avatar-frame" id="avatarFrame">
+            <div class="avatar-frame">
                 <div class="avatar-inner">أ</div>
                 <div class="avatar-status"></div>
             </div>
@@ -1104,7 +1086,6 @@ body.mode-visitor .owner-only { display: none !important; }
 </div>
 
 <script>
-/* النجوم */
 (function generateStars() {
     var sf = document.getElementById('starfield');
     for (var i = 0; i < 40; i++) {
@@ -1118,7 +1099,6 @@ body.mode-visitor .owner-only { display: none !important; }
     }
 })();
 
-/* زر العين */
 (function setupEyeToggle() {
     var eyeBtn = document.getElementById('eyeToggle');
     var eyeIcon = document.getElementById('eyeIcon');
@@ -1142,16 +1122,12 @@ body.mode-visitor .owner-only { display: none !important; }
     });
 })();
 
-/* زر الإغلاق */
 document.getElementById('closeBtn').addEventListener('click', function() {
     if (window.parent && window.parent !== window) {
         window.parent.postMessage({ action: 'closeProfile' }, '*');
-    } else {
-        if (typeof showToast === 'function') showToast('fa-times', 'إغلاق البروفايل');
     }
 });
 
-/* التبويبات */
 document.querySelectorAll('.tab').forEach(function(tab) {
     tab.addEventListener('click', function() {
         document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
