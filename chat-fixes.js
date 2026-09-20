@@ -1,102 +1,48 @@
 // ==============================================
-// chat-fixes.js v6 — applyRoomBackground override
+// chat-fixes.js v7 — keyboard + room bg + glass class
+// ==============================================
+// ✅ v7:
+//   1. حذف زر تبديل الزجاج (انتقل إلى king-room)
+//   2. الزجاج مُعرّف في qamar-glass.css (link)
+//   3. الإبقاء على كل الوظائف الحيوية
 // ==============================================
 
 (function () {
     'use strict';
-    if (window.__chatFixesV6) return;
-    window.__chatFixesV6 = true;
+    if (window.__chatFixesV7) return;
+    window.__chatFixesV7 = true;
 
     var STYLE_KEY = 'qamar_sidebar_style';
     var currentStyle = localStorage.getItem(STYLE_KEY) || 'classic';
 
-    /* ═══ CSS ═══ */
+    /* ═══ CSS الأساسي (بدون الزجاج — الزجاج في qamar-glass.css) ═══ */
     (function injectCSS() {
         var old = document.getElementById('chat-fixes-css');
         if (old) old.remove();
         var s = document.createElement('style');
         s.id = 'chat-fixes-css';
         s.textContent = [
+            /* ═══ Keyboard — إخفاء الشرائط عند فتح الكيبورد ═══ */
             'body.keyboard-open .bottom-nav,',
             'body.keyboard-open .floating-toolbar { display: none !important; }',
-            '#ra-send-btn { animation: none !important; box-shadow: 0 0 8px rgba(255, 215, 0, 0.35) !important; }',
 
-            'body.sidebar-glass .sidebar-content { padding: 10px !important; gap: 0 !important; display: flex !important; flex-direction: column !important; }',
-            'body.sidebar-glass .sidebar-content .sidebar-item {',
-            '    width: 100% !important; height: 65px !important; min-height: 65px !important;',
-            '    margin: 0 !important; padding: 0 16px !important; border-radius: 0 !important;',
-            '    display: flex !important; align-items: center !important; gap: 14px !important;',
-            '    position: relative !important; box-sizing: border-box !important;',
-            '    background: linear-gradient(135deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 50%, rgba(0,0,0,0.18) 100%) !important;',
-            '    backdrop-filter: blur(14px) saturate(150%) !important;',
-            '    -webkit-backdrop-filter: blur(14px) saturate(150%) !important;',
-            '    border: 1px solid rgba(255,215,0,0.20) !important;',
-            '    border-top: none !important; border-bottom: 1px solid rgba(255,215,0,0.10) !important;',
-            '    box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.35), 0 2px 6px rgba(0,0,0,0.35) !important;',
-            '    font-size: 14px !important; font-weight: 800 !important; color: #fff !important;',
-            '    cursor: pointer !important; overflow: hidden !important;',
-            '}',
-            'body.sidebar-glass .sidebar-content .sidebar-item:first-child { border-top: 1px solid rgba(255,215,0,0.20) !important; border-radius: 16px 16px 0 0 !important; }',
-            'body.sidebar-glass .sidebar-content .sidebar-item:last-child { border-bottom: 1px solid rgba(255,215,0,0.20) !important; border-radius: 0 0 16px 16px !important; }',
-            'body.sidebar-glass .sidebar-content .sidebar-item:only-child { border-radius: 16px !important; border-top: 1px solid rgba(255,215,0,0.20) !important; border-bottom: 1px solid rgba(255,215,0,0.20) !important; }',
-            'body.sidebar-glass .sidebar-content .sidebar-item > span:first-child {',
-            '    font-size: 22px !important; flex-shrink: 0 !important;',
-            '    display: inline-flex !important; align-items: center !important; justify-content: center !important;',
-            '    width: 38px !important; height: 38px !important;',
-            '    border-radius: 10px !important;',
-            '    background: rgba(255,215,0,0.06) !important; border: 1px solid rgba(255,215,0,0.12) !important;',
-            '    overflow: hidden !important;',
-            '}',
-            'body.sidebar-glass .sidebar-content .sidebar-item > span:last-child { flex: 1 !important; font-weight: 800 !important; font-size: 14px !important; color: #fff !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }',
-            'body.sidebar-glass .sidebar-content .sidebar-item.active {',
-            '    background: linear-gradient(135deg, rgba(255,215,0,0.28) 0%, rgba(255,215,0,0.12) 50%, rgba(0,0,0,0.15) 100%) !important;',
-            '    box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -1px 0 rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.4), 0 0 20px rgba(255,215,0,0.35) !important;',
-            '    color: #ffd700 !important; font-weight: 900 !important;',
-            '}',
-            'body.sidebar-glass .sidebar-content .sidebar-item.active > span:first-child { background: rgba(255,215,0,0.2) !important; border-color: rgba(255,215,0,0.5) !important; }',
+            /* ═══ زر الإبلاغات — إلغاء نبض الملف الأصلي (نستخدم نبض CSS من styles.css) ═══ */
+            '#ra-send-btn { animation: none !important; box-shadow: 0 0 8px rgba(255, 215, 0, 0.35) !important; }'
 
-            '#sidebar-style-toggle {',
-            '    width: 100%; padding: 12px; margin-top: 12px;',
-            '    background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,215,0,0.05));',
-            '    border: 1px solid rgba(255,215,0,0.4); border-radius: 10px;',
-            '    color: #ffd700; font-family: inherit; font-size: 13px; font-weight: 900;',
-            '    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;',
-            '}',
-            '#sidebar-style-toggle:active { transform: scale(0.97); }'
+            /* ملاحظة: كل CSS الزجاج (body.sidebar-glass) الآن في qamar-glass.css */
         ].join('\n');
         document.head.appendChild(s);
     })();
 
-    /* ═══ Style toggle ═══ */
+    /* ═══ Style: قراءة فقط من localStorage (التبديل يتم من غرفة الملك) ═══ */
     function applyStyle(style) {
         document.body.classList.toggle('sidebar-glass', style === 'glass');
         document.body.classList.toggle('sidebar-classic', style === 'classic');
         localStorage.setItem(STYLE_KEY, style);
         currentStyle = style;
-        var btn = document.getElementById('sidebar-style-toggle');
-        if (btn) {
-            btn.querySelector('.st-label').textContent = style === 'glass' ? 'التبديل إلى: كلاسيكي' : 'التبديل إلى: زجاجي';
-            btn.querySelector('.st-icon').textContent = style === 'glass' ? '◻️' : '💎';
-        }
-    }
-    function toggleStyle() {
-        applyStyle(currentStyle === 'glass' ? 'classic' : 'glass');
-        if (typeof showToast === 'function') showToast('fa-check', currentStyle === 'glass' ? '💎 الشكل الزجاجي' : '◻️ الشكل الكلاسيكي');
-    }
-    function addStyleToggleButton() {
-        var sc = document.querySelector('#settings-sidebar .sidebar-content');
-        if (!sc) return false;
-        if (document.getElementById('sidebar-style-toggle')) return true;
-        var btn = document.createElement('button');
-        btn.id = 'sidebar-style-toggle';
-        btn.type = 'button';
-        btn.innerHTML = '<span class="st-icon">' + (currentStyle === 'glass' ? '◻️' : '💎') + '</span><span class="st-label">' + (currentStyle === 'glass' ? 'التبديل إلى: كلاسيكي' : 'التبديل إلى: زجاجي') + '</span>';
-        btn.onclick = toggleStyle;
-        sc.appendChild(btn);
-        return true;
     }
 
-    /* ═══ Keyboard ═══ */
+    /* ═══ Keyboard handlers ═══ */
     function checkActiveInputs() {
         var a = document.activeElement;
         var m = document.getElementById('message-input');
@@ -124,7 +70,7 @@
         }
     }
 
-    /* ═══ Mics ═══ */
+    /* ═══ Mics — إعادة الرسم إن فشل ═══ */
     function ensureMicsRendered() {
         var attempts = 0;
         var t = setInterval(function () {
@@ -139,6 +85,7 @@
 
     /* ═══════════════════════════════════════════ */
     /* ⭐⭐ OVERRIDE: applyRoomBackground           */
+    /* (يبقى — مهم لتحميل خلفيات الغرف)            */
     /* ═══════════════════════════════════════════ */
     function applyRoomBgNew(roomId) {
         var container = document.getElementById('messages');
@@ -227,6 +174,13 @@
 
         if (settings.name) nameSpan.textContent = settings.name;
 
+        // ⭐ لون اسم الغرفة
+        if (settings.nameColor) {
+            nameSpan.style.color = settings.nameColor;
+        } else {
+            nameSpan.style.color = '';
+        }
+
         if (typeof QAMAR !== 'undefined' && QAMAR.ROOMS && QAMAR.ROOMS[roomId]) {
             if (settings.name) QAMAR.ROOMS[roomId].name = settings.name;
             if (settings.icon) QAMAR.ROOMS[roomId].icon = settings.icon;
@@ -235,10 +189,13 @@
             if (settings.bgImage) QAMAR.ROOMS[roomId].bgImage = settings.bgImage;
             if (settings.bgType) QAMAR.ROOMS[roomId].bgType = settings.bgType;
             if (settings.bgValue) QAMAR.ROOMS[roomId].bgValue = settings.bgValue;
+            if (settings.nameColor) QAMAR.ROOMS[roomId].nameColor = settings.nameColor;
+            if (settings.fontColor) QAMAR.ROOMS[roomId].fontColor = settings.fontColor;
+            if (settings.fontSize) QAMAR.ROOMS[roomId].fontSize = settings.fontSize;
         }
     }
 
-    /* ═══ watchRoomSettings — يحدّث السيدبار + الخلفية الحالية ═══ */
+    /* ═══ watchRoomSettings — يحدّث السيدبار + الخلفية الحالية + الخط ═══ */
     function watchRoomSettings() {
         if (typeof db === 'undefined' || !db) { setTimeout(watchRoomSettings, 1500); return; }
         db.ref('room_settings').on('value', function (s) {
@@ -249,11 +206,16 @@
             // ⭐ طبّق الخلفية على الغرفة الحالية
             if (typeof ChatState !== 'undefined' && ChatState.currentRoom) {
                 applyRoomBgNew(ChatState.currentRoom);
+                // ⭐ طبّق الخط
+                var currentSettings = settings[ChatState.currentRoom] || {};
+                if (typeof applyRoomFont === 'function') {
+                    applyRoomFont(currentSettings);
+                }
             }
         });
     }
 
-    /* ═══ متابعة تغيير الغرفة — تطبيق الخلفية ═══ */
+    /* ═══ متابعة تغيير الغرفة — تطبيق الخلفية + الخط ═══ */
     function watchRoomChange() {
         if (typeof ChatState === 'undefined') { setTimeout(watchRoomChange, 800); return; }
         var lastRoom = null;
@@ -267,6 +229,7 @@
 
     /* ═══ Init ═══ */
     function init() {
+        // نقرأ النمط الحالي ونطبّقه على body (التبديل من غرفة الملك)
         applyStyle(currentStyle);
 
         var t = setInterval(function () {
@@ -276,25 +239,21 @@
                 ensureMicsRendered();
                 watchRoomSettings();
                 watchRoomChange();
-                addStyleToggleButton();
                 // تطبيق فوري للخلفية الحالية
                 if (typeof ChatState !== 'undefined' && ChatState.currentRoom) {
                     setTimeout(function () { applyRoomBgNew(ChatState.currentRoom); }, 400);
                 }
-                console.log('✅ chat-fixes.js v6: ready');
+                console.log('✅ chat-fixes.js v7: ready');
             }
         }, 400);
-
-        var attempts = 0;
-        var bt = setInterval(function () {
-            attempts++;
-            if (addStyleToggleButton() || attempts >= 20) clearInterval(bt);
-        }, 1000);
     }
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else { init(); }
 
-    console.log('✅ chat-fixes.js v6 loaded');
+    // ⭐ تصدير applyStyle (يستطيع king-room استدعاءه إن احتاج)
+    window.applySidebarStyle = applyStyle;
+
+    console.log('✅ chat-fixes.js v7 loaded — glass moved to qamar-glass.css');
 })();
