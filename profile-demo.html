@@ -2,8 +2,18 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>🌙 معاينة بروفايل قمر الشام v2.3</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+
+<!-- ⭐ PWA Meta Tags -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="قمر الشام">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="قمر الشام">
+<meta name="theme-color" content="#050508">
+<link rel="manifest" href="manifest.json">
+
+<title>🌙 معاينة بروفايل قمر الشام v3</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -22,10 +32,7 @@
     --text-dim: #9ca3af;
 }
 
-/* ═══════════════════════════════════════════ */
-/* body: خلفية الشات + padding للبروفايل       */
-/* ⭐ تعديل: زيادة padding-top لتصغير الارتفاع */
-/* ═══════════════════════════════════════════ */
+/* ⭐ body: بدون padding علوي — البروفايل من فوق */
 html, body {
     background: 
         radial-gradient(ellipse at top, rgba(212, 175, 55, 0.08) 0%, transparent 55%),
@@ -34,10 +41,11 @@ html, body {
     color: var(--text);
     font-family: 'Cairo', sans-serif;
     height: 100vh;
+    height: 100dvh;
     direction: rtl;
     overflow: hidden;
-    /* ⭐ 5% من الأعلى (كان 2.5%) — 2.5% من الجوانب */
-    padding: 5% 2.5% 0 2.5%;
+    padding: 0 2.5% 0 2.5%;
+    padding-top: env(safe-area-inset-top, 0);
 }
 
 .starfield {
@@ -64,7 +72,7 @@ html, body {
 }
 
 /* ═══════════════════════════════════════════ */
-/* البروفايل — مع توهج 4px */
+/* البروفايل */
 /* ═══════════════════════════════════════════ */
 .container {
     position: relative;
@@ -111,18 +119,18 @@ html, body {
 }
 
 /* ═══════════════════════════════════════════ */
-/* الغلاف */
+/* الغلاف — أقصر الآن */
 /* ═══════════════════════════════════════════ */
 .hero-cover {
     position: relative;
-    min-height: 480px; /* ⭐ تصغير بسيط (كان 520) */
+    min-height: 380px;   /* ⭐ 480 → 380 */
     overflow: hidden;
     background: 
         radial-gradient(ellipse at 20% 20%, rgba(212, 175, 55, 0.25) 0%, transparent 55%),
         radial-gradient(ellipse at 80% 40%, rgba(74, 20, 140, 0.6) 0%, transparent 55%),
         radial-gradient(ellipse at 50% 90%, rgba(26, 14, 46, 0.9) 0%, transparent 70%),
         linear-gradient(180deg, #0a0518 0%, #1a0e2e 40%, #0a0518 100%);
-    padding: 24px 20px 40px;
+    padding: 16px 20px 30px;  /* ⭐ 24/40 → 16/30 */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -150,14 +158,14 @@ html, body {
     100% { background-position: 200px 200px, -180px 180px, 220px -220px, -160px -160px, 240px 240px; }
 }
 
-/* ⭐ القمر — صغر 10% (110 → 99) */
+/* القمر — أقرب للأعلى */
 .cover-moon {
     position: absolute;
-    top: 55px;
+    top: 20px;
     left: 50%;
     transform: translateX(-50%);
-    width: 99px;
-    height: 99px;
+    width: 90px;
+    height: 90px;
     border-radius: 50%;
     background: 
         radial-gradient(circle at 38% 35%, #fffef0 0%, #fff8dc 15%, #ffec8b 35%, #ffd700 55%, #d4af37 80%, #b8860b 100%);
@@ -193,11 +201,11 @@ html, body {
     50% { transform: translateX(-50%) translateY(-6px) scale(1.03); }
 }
 
-/* ═══ ⭐ الأزرار مجتمعة (كاميرا + عين) — يمين ═══ */
-.cover-actions {
+/* ═══ الأزرار — يسار: كاميرا + عين ═══ */
+.cover-actions-left {
     position: absolute;
-    top: 16px;
-    right: 16px;
+    top: 14px;
+    left: 14px;
     z-index: 10;
     display: flex;
     gap: 8px;
@@ -208,18 +216,18 @@ html, body {
     background: rgba(0, 0, 0, 0.6);
     border: 1px solid var(--border-gold);
     color: var(--gold);
-    width: 36px;   /* ⭐ 40 → 36 (10% أصغر) */
+    width: 36px;
     height: 36px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 14px;  /* ⭐ 16 → 14 */
+    font-size: 14px;
     transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
     backdrop-filter: blur(10px);
-    position: relative;
     flex-shrink: 0;
+    position: relative;
 }
 .cover-btn:hover {
     background: rgba(212, 175, 55, 0.25);
@@ -229,10 +237,15 @@ html, body {
 }
 .cover-btn:active { transform: scale(0.95); }
 
-/* زر الإبلاغ (visitor) — نفس الستايل */
+/* الكاميرا outermost (أقصى اليسار) */
+.cover-btn.camera-outer { order: 1; }
+.cover-btn.eye-inner { order: 2; }
+
+/* الإبلاغ (visitor) — نفس مكان الكاميرا */
 .cover-btn.cover-report {
     border-color: rgba(255, 68, 68, 0.6);
     color: #ff7777;
+    order: 1;
 }
 .cover-btn.cover-report:hover {
     background: rgba(255, 68, 68, 0.25);
@@ -274,12 +287,42 @@ html, body {
 }
 .cover-btn.eye-btn:hover .eye-label { opacity: 1; }
 
-/* ═══ الأفاتار — صغر 10% (130 → 117) ═══ */
+/* ═══ زر الإغلاق — يمين ═══ */
+.cover-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid var(--border-gold);
+    color: var(--gold);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.25s;
+    backdrop-filter: blur(10px);
+    font-weight: 900;
+}
+.cover-close:hover {
+    background: rgba(255, 68, 68, 0.25);
+    border-color: #ff7777;
+    color: #ff7777;
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(255, 68, 68, 0.4);
+}
+.cover-close:active { transform: scale(0.95); }
+
+/* ═══ الأفاتار — أصغر */
 .avatar-wrap {
     position: relative;
     z-index: 10;
-    margin-top: 120px;
-    margin-bottom: 14px;
+    margin-top: 95px;   /* ⭐ 120 → 95 */
+    margin-bottom: 12px;
     animation: avatarIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s backwards;
 }
 @keyframes avatarIn {
@@ -288,11 +331,11 @@ html, body {
 }
 .avatar-frame {
     position: relative;
-    width: 117px;
-    height: 117px;
+    width: 110px;
+    height: 110px;
     border-radius: 50%;
     padding: 5px;
-    background: conic-gradient(from 0deg, #d4af37, #ffec8b, #fffef0, #ffd700, #d4af37, #b8860b, #d4af37);
+    background: conic-gradient(from 0deg, #ffd700, #ffec8b, #fffef0, #ffd700, #d4af37, #b8860b, #ffd700);
     animation: frameRotate 5s linear infinite;
     box-shadow: 
         0 0 36px rgba(255, 215, 0, 0.6),
@@ -310,7 +353,7 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 47px;
+    font-size: 44px;
     color: var(--gold-light);
     font-weight: 900;
     animation: frameRotate 5s linear infinite reverse;
@@ -320,8 +363,8 @@ html, body {
 }
 .avatar-status {
     position: absolute;
-    bottom: 6px;
-    right: 10px;
+    bottom: 4px;
+    right: 8px;
     width: 18px;
     height: 18px;
     background: #00e676;
@@ -349,9 +392,9 @@ html, body {
     to { opacity: 1; transform: translateY(0); }
 }
 .rank-crown {
-    font-size: 32px; /* ⭐ 36 → 32 */
+    font-size: 30px;
     line-height: 1;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
     filter: drop-shadow(0 0 18px rgba(255, 215, 0, 0.8));
     animation: crownBounce 3s ease-in-out infinite;
 }
@@ -360,7 +403,7 @@ html, body {
     50% { transform: translateY(-5px) rotate(-3deg); }
 }
 .username {
-    font-size: 27px; /* ⭐ 30 → 27 */
+    font-size: 26px;
     font-weight: 900;
     background: linear-gradient(90deg, #d4af37, #ffec8b, #fffef0, #ffd700, #d4af37);
     background-size: 300% 100%;
@@ -370,7 +413,7 @@ html, body {
     color: transparent;
     animation: nameShimmer 3s linear infinite;
     letter-spacing: 0.5px;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     padding: 0 10px;
     word-break: break-word;
 }
@@ -381,16 +424,16 @@ html, body {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 18px;
+    padding: 5px 18px;
     background: linear-gradient(135deg, rgba(212, 175, 55, 0.3), rgba(212, 175, 55, 0.1));
     border: 1px solid var(--border-gold);
     border-radius: 999px;
-    font-size: 12px; /* ⭐ 13 → 12 */
+    font-size: 12px;
     font-weight: 900;
     color: var(--gold-light);
     letter-spacing: 1.5px;
     text-transform: uppercase;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     box-shadow: 0 4px 20px rgba(212, 175, 55, 0.25);
     animation: rankShine 2.5s ease-in-out infinite;
 }
@@ -400,19 +443,19 @@ html, body {
 }
 .bio {
     font-family: 'Amiri', serif;
-    font-size: 15.5px; /* ⭐ 17 → 15.5 */
+    font-size: 15px;
     font-style: italic;
     color: #f0e5d5;
-    line-height: 1.8;
-    margin: 8px auto 14px;
-    max-width: 340px;
+    line-height: 1.7;
+    margin: 6px auto 10px;
+    max-width: 320px;
     position: relative;
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
     padding: 0 20px;
 }
 .bio::before {
     content: '❝';
-    font-size: 20px;
+    font-size: 18px;
     color: var(--gold);
     opacity: 0.7;
     position: absolute;
@@ -421,7 +464,7 @@ html, body {
 }
 .bio::after {
     content: '❞';
-    font-size: 20px;
+    font-size: 18px;
     color: var(--gold);
     opacity: 0.7;
     position: absolute;
@@ -432,16 +475,15 @@ html, body {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 7px 16px;
+    padding: 6px 14px;
     background: rgba(132, 204, 22, 0.15);
     border: 1px solid rgba(132, 204, 22, 0.4);
     border-radius: 999px;
-    font-size: 12px; /* ⭐ 13 → 12 */
+    font-size: 11.5px;
     font-weight: 700;
     color: #a3e635;
-    margin-top: 6px;
+    margin-top: 4px;
     backdrop-filter: blur(8px);
-    box-shadow: 0 4px 15px rgba(132, 204, 22, 0.15);
 }
 
 .hero-cover-fade {
@@ -449,7 +491,7 @@ html, body {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 70px;
+    height: 60px;
     background: linear-gradient(180deg, transparent 0%, rgba(5, 5, 8, 0.6) 60%, rgba(5, 5, 8, 0.95) 100%);
     pointer-events: none;
     z-index: 3;
@@ -463,7 +505,7 @@ html, body {
     grid-template-columns: repeat(4, 1fr);
     gap: 8px;
     padding: 0 14px;
-    margin: -28px 0 14px;
+    margin: -25px 0 12px;
     position: relative;
     z-index: 5;
     animation: fadeInUp 0.6s ease-out 0.5s backwards;
@@ -484,8 +526,8 @@ html, body {
     transform: translateY(-3px);
     box-shadow: 0 12px 30px rgba(212, 175, 55, 0.25);
 }
-.stat-icon { font-size: 16px; margin-bottom: 4px; display: block; } /* ⭐ 18 → 16 */
-.stat-value { font-size: 14px; font-weight: 900; color: #fff; display: block; } /* ⭐ 15 → 14 */
+.stat-icon { font-size: 16px; margin-bottom: 4px; display: block; }
+.stat-value { font-size: 14px; font-weight: 900; color: #fff; display: block; }
 .stat-label { font-size: 9px; color: var(--text-dim); margin-top: 2px; display: block; font-weight: 700; }
 
 /* ═══ أزرار سريعة ═══ */
@@ -494,25 +536,25 @@ html, body {
     justify-content: center;
     gap: 10px;
     padding: 0 14px;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
     animation: fadeInUp 0.6s ease-out 0.6s backwards;
 }
 .quick-btn {
     flex: 1;
     max-width: 130px;
-    padding: 11px 8px;
+    padding: 10px 8px;
     background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05));
     border: 1px solid var(--border-gold);
     border-radius: 12px;
     color: #fff;
     font-family: inherit;
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 900;
     cursor: pointer;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
+    gap: 3px;
     transition: all 0.2s;
     backdrop-filter: blur(8px);
 }
@@ -523,7 +565,7 @@ html, body {
     box-shadow: 0 6px 20px rgba(212, 175, 55, 0.25);
 }
 .quick-btn:active { transform: scale(0.96); }
-.quick-btn i { font-size: 16px; color: var(--gold-light); } /* ⭐ 18 → 16 */
+.quick-btn i { font-size: 16px; color: var(--gold-light); }
 .quick-btn.primary {
     background: linear-gradient(135deg, #d4af37, #b8860b);
     border-color: var(--gold-light);
@@ -531,9 +573,7 @@ html, body {
 .quick-btn.primary i,
 .quick-btn.primary span { color: #050508; }
 
-/* ═══════════════════════════════════════════ */
-/* التبويبات (4) */
-/* ═══════════════════════════════════════════ */
+/* ═══ التبويبات ═══ */
 .tabs {
     display: flex;
     gap: 4px;
@@ -565,7 +605,7 @@ html, body {
     transition: all 0.2s;
     position: relative;
 }
-.tab i { font-size: 14.5px; } /* ⭐ 16 → 14.5 */
+.tab i { font-size: 14.5px; }
 .tab.active {
     color: var(--gold-light);
     background: rgba(212, 175, 55, 0.12);
@@ -581,7 +621,6 @@ html, body {
     border-radius: 2px;
     box-shadow: 0 0 8px var(--gold-light);
 }
-.tab:hover:not(.active) { color: #ccc; }
 
 /* ═══════════════════════════════════════════ */
 /* منطقة المحتوى */
@@ -593,7 +632,7 @@ html, body {
         radial-gradient(ellipse at 30% 0%, rgba(74, 20, 140, 0.25) 0%, transparent 60%),
         radial-gradient(ellipse at 70% 100%, rgba(212, 175, 55, 0.08) 0%, transparent 60%),
         linear-gradient(180deg, #050508 0%, #0a0518 50%, #050508 100%);
-    padding-top: 14px;
+    padding-top: 12px;
     overflow: hidden;
 }
 .content-area::before {
@@ -605,24 +644,22 @@ html, body {
         radial-gradient(circle at 45% 35%, rgba(255, 255, 255, 0.3) 0.8px, transparent 1.3px),
         radial-gradient(circle at 78% 22%, rgba(255, 215, 0, 0.35) 0.9px, transparent 1.5px),
         radial-gradient(circle at 88% 65%, rgba(255, 255, 255, 0.25) 0.8px, transparent 1.3px),
-        radial-gradient(circle at 25% 78%, rgba(255, 215, 0, 0.3) 0.9px, transparent 1.4px),
-        radial-gradient(circle at 62% 88%, rgba(255, 255, 255, 0.2) 0.7px, transparent 1.2px);
-    background-size: 240px 240px, 200px 200px, 260px 260px, 220px 220px, 250px 250px, 180px 180px;
+        radial-gradient(circle at 25% 78%, rgba(255, 215, 0, 0.3) 0.9px, transparent 1.4px);
+    background-size: 240px 240px, 200px 200px, 260px 260px, 220px 220px, 250px 250px;
     opacity: 0.7;
     pointer-events: none;
     z-index: 0;
     animation: contentBgShift 40s linear infinite;
 }
 @keyframes contentBgShift {
-    0% { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0; }
-    100% { background-position: 240px 240px, -200px 200px, 260px -260px, -220px -220px, 250px 250px, -180px -180px; }
+    0% { background-position: 0 0, 0 0, 0 0, 0 0, 0 0; }
+    100% { background-position: 240px 240px, -200px 200px, 260px -260px, -220px -220px, 250px 250px; }
 }
 
 .section {
     padding: 0 14px 14px;
     position: relative;
     z-index: 1;
-    animation: fadeInUp 0.5s ease-out;
 }
 .section-title {
     display: flex;
@@ -633,20 +670,19 @@ html, body {
     border-bottom: 1px solid rgba(212, 175, 55, 0.15);
 }
 .section-title h3 {
-    font-size: 13px; /* ⭐ 14 → 13 */
+    font-size: 13px;
     font-weight: 900;
     color: #fff;
     display: flex;
     align-items: center;
     gap: 8px;
 }
-.section-title h3 i { color: var(--gold); font-size: 13px; } /* ⭐ 14 → 13 */
+.section-title h3 i { color: var(--gold); font-size: 13px; }
 .section-title .more {
     font-size: 11px;
     color: var(--gold);
     font-weight: 700;
     cursor: pointer;
-    text-decoration: none;
 }
 
 /* ═══ الإنجازات ═══ */
@@ -661,8 +697,8 @@ html, body {
 .achievements-row::-webkit-scrollbar { display: none; }
 .achievement {
     flex-shrink: 0;
-    width: 68px;  /* ⭐ 76 → 68 */
-    height: 79px; /* ⭐ 88 → 79 */
+    width: 68px;
+    height: 79px;
     background: linear-gradient(135deg, rgba(20, 15, 35, 0.85), rgba(10, 8, 20, 0.9));
     border: 1px solid var(--border-gold);
     border-radius: 12px;
@@ -681,12 +717,11 @@ html, body {
     background: rgba(212, 175, 55, 0.15);
     transform: scale(1.05);
     border-color: var(--gold);
-    box-shadow: 0 8px 20px rgba(212, 175, 55, 0.2);
 }
-.achievement-icon { font-size: 25px; } /* ⭐ 28 → 25 */
-.achievement-name { font-size: 8.5px; color: #ccc; font-weight: 700; line-height: 1.2; } /* ⭐ 9 → 8.5 */
+.achievement-icon { font-size: 25px; }
+.achievement-name { font-size: 8.5px; color: #ccc; font-weight: 700; line-height: 1.2; }
 
-/* ═══ نشاط حديث ═══ */
+/* ═══ نشاط ═══ */
 .activity-item {
     display: flex;
     align-items: center;
@@ -696,7 +731,6 @@ html, body {
     border: 1px solid rgba(212, 175, 55, 0.15);
     border-radius: 12px;
     margin-bottom: 8px;
-    transition: all 0.2s;
     cursor: pointer;
     backdrop-filter: blur(8px);
 }
@@ -706,7 +740,7 @@ html, body {
     transform: translateX(-3px);
 }
 .activity-icon {
-    width: 38px;  /* ⭐ 42 → 38 */
+    width: 38px;
     height: 38px;
     border-radius: 50%;
     background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(212, 175, 55, 0.08));
@@ -714,11 +748,11 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px; /* ⭐ 18 → 16 */
+    font-size: 16px;
     flex-shrink: 0;
 }
 .activity-info { flex: 1; min-width: 0; }
-.activity-text { font-size: 12.5px; font-weight: 700; color: #fff; margin-bottom: 2px; } /* ⭐ 13 → 12.5 */
+.activity-text { font-size: 12.5px; font-weight: 700; color: #fff; margin-bottom: 2px; }
 .activity-time { font-size: 10px; color: var(--text-dim); }
 
 /* ═══ اللحظات ═══ */
@@ -739,11 +773,9 @@ html, body {
     align-items: center;
     gap: 6px;
     cursor: pointer;
-    transition: transform 0.2s;
 }
-.moment:hover { transform: scale(1.05); }
 .moment-ring {
-    width: 65px;  /* ⭐ 72 → 65 */
+    width: 65px;
     height: 65px;
     border-radius: 50%;
     padding: 3px;
@@ -762,7 +794,7 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 25px; /* ⭐ 28 → 25 */
+    font-size: 25px;
     border: 3px solid #050508;
     animation: ringRotate 8s linear infinite reverse;
 }
@@ -795,24 +827,22 @@ html, body {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s;
     position: relative;
     overflow: hidden;
 }
 .friend-card:hover {
     transform: translateY(-3px);
     border-color: var(--gold);
-    box-shadow: 0 8px 20px rgba(212, 175, 55, 0.25);
 }
 .friend-avatar {
-    width: 38px;  /* ⭐ 42 → 38 */
+    width: 38px;
     height: 38px;
     border-radius: 50%;
     background: linear-gradient(135deg, #d4af37, #b8860b);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14.5px; /* ⭐ 16 → 14.5 */
+    font-size: 14.5px;
     font-weight: 900;
     color: #050508;
     margin-bottom: 4px;
@@ -850,16 +880,13 @@ html, body {
     border: 1px solid var(--border-gold);
     border-radius: 999px;
     cursor: pointer;
-    transition: all 0.2s;
-    backdrop-filter: blur(8px);
 }
 .visitor-chip:hover {
     background: rgba(212, 175, 55, 0.15);
     border-color: var(--gold);
-    transform: translateY(-2px);
 }
 .visitor-avatar {
-    width: 27px;  /* ⭐ 30 → 27 */
+    width: 27px;
     height: 27px;
     border-radius: 50%;
     background: linear-gradient(135deg, #d4af37, #b8860b);
@@ -869,16 +896,15 @@ html, body {
     font-size: 12px;
     font-weight: 900;
     color: #050508;
-    flex-shrink: 0;
 }
-.visitor-name { font-size: 11px; color: #fff; font-weight: 700; white-space: nowrap; }
+.visitor-name { font-size: 11px; color: #fff; font-weight: 700; }
 
 /* ═══ Bottom Nav ═══ */
 .bottom-nav {
     position: sticky;
     bottom: 0;
     width: 100%;
-    height: 58px;
+    height: 56px;
     background: rgba(5, 5, 8, 0.98);
     border-top: 1px solid var(--border-gold);
     display: flex;
@@ -888,6 +914,7 @@ html, body {
     z-index: 30;
     margin-top: auto;
     border-radius: 0 0 24px 24px;
+    padding-bottom: env(safe-area-inset-bottom, 0);
 }
 .nav-item {
     flex: 1;
@@ -904,31 +931,24 @@ html, body {
     border: none;
     background: none;
     font-family: inherit;
-    transition: all 0.2s;
 }
-.nav-item i { font-size: 14.5px; } /* ⭐ 16 → 14.5 */
+.nav-item i { font-size: 14.5px; }
 .nav-item.active { color: var(--gold-light); }
 
-/* ═══════════════════════════════════════════ */
 /* Mode Switching */
-/* ═══════════════════════════════════════════ */
 body.mode-owner .visitor-only { display: none !important; }
 body.mode-visitor .owner-only { display: none !important; }
 
-/* ═══════════════════════════════════════════ */
 /* Responsive */
-/* ═══════════════════════════════════════════ */
 @media (max-width: 400px) {
-    .hero-cover { min-height: 450px; }
-    .cover-moon { width: 90px; height: 90px; top: 45px; }
-    .avatar-wrap { margin-top: 105px; }
-    .avatar-frame { width: 108px; height: 108px; }
-    .avatar-inner { font-size: 43px; }
-    .username { font-size: 24px; }
-    .bio { font-size: 14px; }
-    .stats { gap: 6px; padding: 0 10px; }
-    .quick-btn { font-size: 11px; padding: 10px 6px; }
-    .cover-btn { width: 34px; height: 34px; font-size: 13px; }
+    .hero-cover { min-height: 360px; }
+    .cover-moon { width: 80px; height: 80px; top: 18px; }
+    .avatar-wrap { margin-top: 85px; }
+    .avatar-frame { width: 100px; height: 100px; }
+    .avatar-inner { font-size: 40px; }
+    .username { font-size: 23px; }
+    .bio { font-size: 13.5px; }
+    .cover-btn, .cover-close { width: 34px; height: 34px; font-size: 13px; }
 }
 </style>
 </head>
@@ -938,38 +958,40 @@ body.mode-visitor .owner-only { display: none !important; }
 
 <div class="container">
 
-    <!-- ═══ 🌙 الغلاف الكبير ═══ -->
     <div class="hero-cover">
         <div class="cover-moon"></div>
 
-        <!-- ⭐ الأزرار مجتمعة في الطرف الأيمن -->
-        <div class="cover-actions">
-            <!-- الكاميرا (owner) — outermost (أقصى اليمين) -->
-            <div class="cover-btn cover-camera owner-only" title="تعديل الغلاف">
+        <!-- ⭐ يسار: الكاميرا (external) + العين (internal) -->
+        <div class="cover-actions-left">
+            <!-- الكاميرا — الخارجية (لأول في DOM = أقصى اليسار في RTL) -->
+            <div class="cover-btn camera-outer owner-only" title="تعديل الغلاف">
                 <i class="fas fa-camera"></i>
             </div>
 
-            <!-- الإبلاغ (visitor) — نفس مكان الكاميرا -->
+            <!-- الإبلاغ (visitor) -->
             <div class="cover-btn cover-report visitor-only" title="إبلاغ">
                 <i class="fas fa-flag"></i>
             </div>
 
-            <!-- العين (المعاينة) — جوار الكاميرا -->
-            <div class="cover-btn eye-btn" id="eyeToggle" title="معاينة كزائر">
+            <!-- العين — الداخلية -->
+            <div class="cover-btn eye-btn eye-inner" id="eyeToggle" title="معاينة كزائر">
                 <i class="fas fa-eye" id="eyeIcon"></i>
                 <span class="eye-label" id="eyeLabel">معاينة كزائر</span>
             </div>
         </div>
 
-        <!-- الأفاتار -->
+        <!-- ⭐ يمين: زر الإغلاق -->
+        <button class="cover-close" id="closeBtn" title="إغلاق" type="button">
+            <i class="fas fa-times"></i>
+        </button>
+
         <div class="avatar-wrap">
-            <div class="avatar-frame">
+            <div class="avatar-frame" id="avatarFrame">
                 <div class="avatar-inner">أ</div>
                 <div class="avatar-status"></div>
             </div>
         </div>
 
-        <!-- الهوية -->
         <div class="identity">
             <div class="rank-crown">👑</div>
             <div class="username">أحمد الملك</div>
@@ -988,90 +1010,35 @@ body.mode-visitor .owner-only { display: none !important; }
         <div class="hero-cover-fade"></div>
     </div>
 
-    <!-- ═══ الإحصائيات ═══ -->
     <div class="stats">
-        <div class="stat">
-            <span class="stat-icon">❤️</span>
-            <span class="stat-value">1.2K</span>
-            <span class="stat-label">إعجاب</span>
-        </div>
-        <div class="stat">
-            <span class="stat-icon">👥</span>
-            <span class="stat-value">340</span>
-            <span class="stat-label">صديق</span>
-        </div>
-        <div class="stat">
-            <span class="stat-icon">🏆</span>
-            <span class="stat-value">12</span>
-            <span class="stat-label">إنجاز</span>
-        </div>
-        <div class="stat">
-            <span class="stat-icon">🎁</span>
-            <span class="stat-value">89</span>
-            <span class="stat-label">هدية</span>
-        </div>
+        <div class="stat"><span class="stat-icon">❤️</span><span class="stat-value">1.2K</span><span class="stat-label">إعجاب</span></div>
+        <div class="stat"><span class="stat-icon">👥</span><span class="stat-value">340</span><span class="stat-label">صديق</span></div>
+        <div class="stat"><span class="stat-icon">🏆</span><span class="stat-value">12</span><span class="stat-label">إنجاز</span></div>
+        <div class="stat"><span class="stat-icon">🎁</span><span class="stat-value">89</span><span class="stat-label">هدية</span></div>
     </div>
 
-    <!-- الأزرار السريعة — Owner -->
     <div class="quick-actions owner-only">
-        <button class="quick-btn primary">
-            <i class="fas fa-user-edit"></i>
-            <span>تعديل</span>
-        </button>
-        <button class="quick-btn">
-            <i class="fas fa-share-alt"></i>
-            <span>مشاركة</span>
-        </button>
-        <button class="quick-btn">
-            <i class="fas fa-cog"></i>
-            <span>إعدادات</span>
-        </button>
+        <button class="quick-btn primary"><i class="fas fa-user-edit"></i><span>تعديل</span></button>
+        <button class="quick-btn"><i class="fas fa-share-alt"></i><span>مشاركة</span></button>
+        <button class="quick-btn"><i class="fas fa-cog"></i><span>إعدادات</span></button>
     </div>
 
-    <!-- الأزرار السريعة — Visitor -->
     <div class="quick-actions visitor-only">
-        <button class="quick-btn primary">
-            <i class="fas fa-comment"></i>
-            <span>رسالة</span>
-        </button>
-        <button class="quick-btn">
-            <i class="fas fa-heart"></i>
-            <span>إعجاب</span>
-        </button>
-        <button class="quick-btn">
-            <i class="fas fa-hand-peace"></i>
-            <span>نكزة</span>
-        </button>
+        <button class="quick-btn primary"><i class="fas fa-comment"></i><span>رسالة</span></button>
+        <button class="quick-btn"><i class="fas fa-heart"></i><span>إعجاب</span></button>
+        <button class="quick-btn"><i class="fas fa-hand-peace"></i><span>نكزة</span></button>
     </div>
 
-    <!-- التبويبات -->
     <div class="tabs">
-        <button class="tab active">
-            <i class="fas fa-home"></i>
-            <span>الرئيسية</span>
-        </button>
-        <button class="tab">
-            <i class="fas fa-camera"></i>
-            <span>لحظات</span>
-        </button>
-        <button class="tab">
-            <i class="fas fa-users"></i>
-            <span>أصدقاء</span>
-        </button>
-        <button class="tab">
-            <i class="fas fa-crosshairs"></i>
-            <span>أوامر</span>
-        </button>
+        <button class="tab active"><i class="fas fa-home"></i><span>الرئيسية</span></button>
+        <button class="tab"><i class="fas fa-camera"></i><span>لحظات</span></button>
+        <button class="tab"><i class="fas fa-users"></i><span>أصدقاء</span></button>
+        <button class="tab"><i class="fas fa-crosshairs"></i><span>أوامر</span></button>
     </div>
 
-    <!-- المحتوى -->
     <div class="content-area">
-
         <div class="section owner-only">
-            <div class="section-title">
-                <h3><i class="fas fa-eye"></i> آخر الزوار</h3>
-                <a class="more">الكل ←</a>
-            </div>
+            <div class="section-title"><h3><i class="fas fa-eye"></i> آخر الزوار</h3><a class="more">الكل ←</a></div>
             <div class="visitors-row">
                 <div class="visitor-chip"><div class="visitor-avatar">س</div><span class="visitor-name">سارة</span></div>
                 <div class="visitor-chip"><div class="visitor-avatar">ع</div><span class="visitor-name">علي</span></div>
@@ -1081,10 +1048,7 @@ body.mode-visitor .owner-only { display: none !important; }
         </div>
 
         <div class="section">
-            <div class="section-title">
-                <h3><i class="fas fa-medal"></i> الإنجازات</h3>
-                <a class="more">الكل ←</a>
-            </div>
+            <div class="section-title"><h3><i class="fas fa-medal"></i> الإنجازات</h3><a class="more">الكل ←</a></div>
             <div class="achievements-row">
                 <div class="achievement"><span class="achievement-icon">🏆</span><span class="achievement-name">100 نقطة</span></div>
                 <div class="achievement"><span class="achievement-icon">👑</span><span class="achievement-name">ملك شهر</span></div>
@@ -1095,15 +1059,9 @@ body.mode-visitor .owner-only { display: none !important; }
         </div>
 
         <div class="section">
-            <div class="section-title">
-                <h3><i class="fas fa-circle-notch"></i> اللحظات</h3>
-                <a class="more">الكل ←</a>
-            </div>
+            <div class="section-title"><h3><i class="fas fa-circle-notch"></i> اللحظات</h3><a class="more">الكل ←</a></div>
             <div class="moments-row">
-                <div class="moment owner-only">
-                    <div class="moment-ring add"><div class="moment-img">＋</div></div>
-                    <span class="moment-name">أضف لحظة</span>
-                </div>
+                <div class="moment owner-only"><div class="moment-ring add"><div class="moment-img">＋</div></div><span class="moment-name">أضف لحظة</span></div>
                 <div class="moment"><div class="moment-ring"><div class="moment-img">🌟</div></div><span class="moment-name">سارة</span></div>
                 <div class="moment"><div class="moment-ring"><div class="moment-img">🎨</div></div><span class="moment-name">علي</span></div>
                 <div class="moment"><div class="moment-ring seen"><div class="moment-img">📷</div></div><span class="moment-name">خالد</span></div>
@@ -1113,45 +1071,18 @@ body.mode-visitor .owner-only { display: none !important; }
 
         <div class="section owner-only">
             <div class="section-title"><h3><i class="fas fa-history"></i> نشاطك الحديث</h3></div>
-            <div class="activity-item">
-                <div class="activity-icon">🏆</div>
-                <div class="activity-info">
-                    <div class="activity-text">إنجاز جديد: 50 إجابة صحيحة</div>
-                    <div class="activity-time">قبل ساعتين</div>
-                </div>
-            </div>
-            <div class="activity-item">
-                <div class="activity-icon">💬</div>
-                <div class="activity-info">
-                    <div class="activity-text">تحدثت في الروم العام</div>
-                    <div class="activity-time">قبل 5 دقائق</div>
-                </div>
-            </div>
+            <div class="activity-item"><div class="activity-icon">🏆</div><div class="activity-info"><div class="activity-text">إنجاز جديد: 50 إجابة صحيحة</div><div class="activity-time">قبل ساعتين</div></div></div>
+            <div class="activity-item"><div class="activity-icon">💬</div><div class="activity-info"><div class="activity-text">تحدثت في الروم العام</div><div class="activity-time">قبل 5 دقائق</div></div></div>
         </div>
 
         <div class="section visitor-only">
             <div class="section-title"><h3><i class="fas fa-fire"></i> نشاطه الأخير</h3></div>
-            <div class="activity-item">
-                <div class="activity-icon">🏆</div>
-                <div class="activity-info">
-                    <div class="activity-text">حصل على إنجاز جديد</div>
-                    <div class="activity-time">قبل ساعتين</div>
-                </div>
-            </div>
-            <div class="activity-item">
-                <div class="activity-icon">💬</div>
-                <div class="activity-info">
-                    <div class="activity-text">شارك في المسابقات</div>
-                    <div class="activity-time">قبل 30 دقيقة</div>
-                </div>
-            </div>
+            <div class="activity-item"><div class="activity-icon">🏆</div><div class="activity-info"><div class="activity-text">حصل على إنجاز جديد</div><div class="activity-time">قبل ساعتين</div></div></div>
+            <div class="activity-item"><div class="activity-icon">💬</div><div class="activity-info"><div class="activity-text">شارك في المسابقات</div><div class="activity-time">قبل 30 دقيقة</div></div></div>
         </div>
 
         <div class="section">
-            <div class="section-title">
-                <h3><i class="fas fa-user-friends"></i> أصدقاء مقربون</h3>
-                <a class="more">الكل ←</a>
-            </div>
+            <div class="section-title"><h3><i class="fas fa-user-friends"></i> أصدقاء مقربون</h3><a class="more">الكل ←</a></div>
             <div class="friends-grid">
                 <div class="friend-card"><div class="friend-avatar">س</div><span class="friend-name">سارة</span></div>
                 <div class="friend-card"><div class="friend-avatar">ع</div><span class="friend-name">علي</span></div>
@@ -1161,10 +1092,8 @@ body.mode-visitor .owner-only { display: none !important; }
                 <div class="friend-card"><div class="friend-avatar">ل</div><span class="friend-name">ليلى</span></div>
             </div>
         </div>
-
     </div>
 
-    <!-- Bottom Nav -->
     <div class="bottom-nav">
         <button class="nav-item active"><i class="fas fa-user"></i><span>بروفايلي</span></button>
         <button class="nav-item"><i class="fas fa-users"></i><span>المتواجدين</span></button>
@@ -1175,6 +1104,7 @@ body.mode-visitor .owner-only { display: none !important; }
 </div>
 
 <script>
+/* النجوم */
 (function generateStars() {
     var sf = document.getElementById('starfield');
     for (var i = 0; i < 40; i++) {
@@ -1188,6 +1118,7 @@ body.mode-visitor .owner-only { display: none !important; }
     }
 })();
 
+/* زر العين */
 (function setupEyeToggle() {
     var eyeBtn = document.getElementById('eyeToggle');
     var eyeIcon = document.getElementById('eyeIcon');
@@ -1211,6 +1142,16 @@ body.mode-visitor .owner-only { display: none !important; }
     });
 })();
 
+/* زر الإغلاق */
+document.getElementById('closeBtn').addEventListener('click', function() {
+    if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ action: 'closeProfile' }, '*');
+    } else {
+        if (typeof showToast === 'function') showToast('fa-times', 'إغلاق البروفايل');
+    }
+});
+
+/* التبويبات */
 document.querySelectorAll('.tab').forEach(function(tab) {
     tab.addEventListener('click', function() {
         document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
@@ -1222,13 +1163,6 @@ document.querySelectorAll('.nav-item').forEach(function(item) {
     item.addEventListener('click', function() {
         document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
         item.classList.add('active');
-    });
-});
-
-document.querySelectorAll('.stat').forEach(function(stat) {
-    stat.addEventListener('click', function() {
-        stat.style.transform = 'scale(0.95)';
-        setTimeout(function() { stat.style.transform = ''; }, 150);
     });
 });
 </script>
