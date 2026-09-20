@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>🌙 معاينة بروفايل قمر الشام v2.2</title>
+<title>🌙 معاينة بروفايل قمر الشام v2.3</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -17,16 +17,14 @@
     --gold-light: #ffd700;
     --gold-dark: #b8860b;
     --purple: #4a148c;
-    --bg: #050508;
-    --bg-card: #0a0a15;
     --border-gold: rgba(212, 175, 55, 0.3);
     --text: #ffffff;
     --text-dim: #9ca3af;
-    --danger: #ef4444;
 }
 
 /* ═══════════════════════════════════════════ */
 /* body: خلفية الشات + padding للبروفايل       */
+/* ⭐ تعديل: زيادة padding-top لتصغير الارتفاع */
 /* ═══════════════════════════════════════════ */
 html, body {
     background: 
@@ -38,13 +36,10 @@ html, body {
     height: 100vh;
     direction: rtl;
     overflow: hidden;
-    /* ⭐ البروفايل يحتل 95% — 2.5% من كل جهة */
-    padding: 2.5% 2.5% 0 2.5%;
+    /* ⭐ 5% من الأعلى (كان 2.5%) — 2.5% من الجوانب */
+    padding: 5% 2.5% 0 2.5%;
 }
 
-/* ═══════════════════════════════════════════ */
-/* الخلفية النجمية (وراء البروفايل) */
-/* ═══════════════════════════════════════════ */
 .starfield {
     position: fixed;
     inset: 0;
@@ -69,7 +64,7 @@ html, body {
 }
 
 /* ═══════════════════════════════════════════ */
-/* 🌟 البروفايل — مع توهج 4px وإطار متدرج     */
+/* البروفايل — مع توهج 4px */
 /* ═══════════════════════════════════════════ */
 .container {
     position: relative;
@@ -79,14 +74,12 @@ html, body {
     height: 100%;
     margin: 0 auto;
 
-    /* ⭐ Border 4px + تدرج ذهبي */
     border: 4px solid transparent;
     background: 
         linear-gradient(180deg, #050508 0%, #0a0518 50%, #050508 100%) padding-box,
         linear-gradient(135deg, #d4af37 0%, #ffd700 25%, #ffec8b 50%, #ffd700 75%, #d4af37 100%) border-box;
     border-radius: 28px 28px 0 0;
 
-    /* ⭐ التوهج */
     box-shadow: 
         0 0 20px rgba(255, 215, 0, 0.5),
         0 0 40px rgba(255, 215, 0, 0.3),
@@ -118,11 +111,11 @@ html, body {
 }
 
 /* ═══════════════════════════════════════════ */
-/* 🌙 الغلاف الكبير */
+/* الغلاف */
 /* ═══════════════════════════════════════════ */
 .hero-cover {
     position: relative;
-    min-height: 520px;
+    min-height: 480px; /* ⭐ تصغير بسيط (كان 520) */
     overflow: hidden;
     background: 
         radial-gradient(ellipse at 20% 20%, rgba(212, 175, 55, 0.25) 0%, transparent 55%),
@@ -134,7 +127,6 @@ html, body {
     flex-direction: column;
     align-items: center;
     justify-content: flex-end;
-    /* قص الزوايا العلوية */
     border-radius: 24px 24px 0 0;
 }
 
@@ -147,32 +139,32 @@ html, body {
         radial-gradient(circle at 45% 60%, rgba(255, 255, 255, 0.5) 1px, transparent 1.8px),
         radial-gradient(circle at 70% 30%, rgba(255, 215, 0, 0.6) 1.2px, transparent 2px),
         radial-gradient(circle at 85% 75%, rgba(255, 255, 255, 0.4) 1px, transparent 1.8px),
-        radial-gradient(circle at 30% 85%, rgba(255, 215, 0, 0.5) 1px, transparent 2px),
-        radial-gradient(circle at 55% 15%, rgba(255, 255, 255, 0.35) 0.8px, transparent 1.5px);
-    background-size: 200px 200px, 180px 180px, 220px 220px, 160px 160px, 240px 240px, 190px 190px;
+        radial-gradient(circle at 30% 85%, rgba(255, 215, 0, 0.5) 1px, transparent 2px);
+    background-size: 200px 200px, 180px 180px, 220px 220px, 160px 160px, 240px 240px;
     animation: coverShift 30s linear infinite;
     pointer-events: none;
     z-index: 0;
 }
 @keyframes coverShift {
-    0% { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0; }
-    100% { background-position: 200px 200px, -180px 180px, 220px -220px, -160px -160px, 240px 240px, -190px 190px; }
+    0% { background-position: 0 0, 0 0, 0 0, 0 0, 0 0; }
+    100% { background-position: 200px 200px, -180px 180px, 220px -220px, -160px -160px, 240px 240px; }
 }
 
+/* ⭐ القمر — صغر 10% (110 → 99) */
 .cover-moon {
     position: absolute;
-    top: 60px;
+    top: 55px;
     left: 50%;
     transform: translateX(-50%);
-    width: 110px;
-    height: 110px;
+    width: 99px;
+    height: 99px;
     border-radius: 50%;
     background: 
         radial-gradient(circle at 38% 35%, #fffef0 0%, #fff8dc 15%, #ffec8b 35%, #ffd700 55%, #d4af37 80%, #b8860b 100%);
     box-shadow: 
-        0 0 50px rgba(255, 215, 0, 0.8),
-        0 0 100px rgba(255, 215, 0, 0.4),
-        0 0 160px rgba(255, 215, 0, 0.15);
+        0 0 45px rgba(255, 215, 0, 0.8),
+        0 0 90px rgba(255, 215, 0, 0.4),
+        0 0 150px rgba(255, 215, 0, 0.15);
     z-index: 1;
     animation: moonFloat 6s ease-in-out infinite;
 }
@@ -201,36 +193,55 @@ html, body {
     50% { transform: translateX(-50%) translateY(-6px) scale(1.03); }
 }
 
-/* ═══ أزرار الغلاف ═══ */
-/* ⭐ العين على الطرف الأيسر (المعاينة) */
-.cover-eye {
+/* ═══ ⭐ الأزرار مجتمعة (كاميرا + عين) — يمين ═══ */
+.cover-actions {
     position: absolute;
     top: 16px;
-    left: 16px;
+    right: 16px;
     z-index: 10;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.cover-btn {
     background: rgba(0, 0, 0, 0.6);
     border: 1px solid var(--border-gold);
     color: var(--gold);
-    width: 40px;
-    height: 40px;
+    width: 36px;   /* ⭐ 40 → 36 (10% أصغر) */
+    height: 36px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 14px;  /* ⭐ 16 → 14 */
     transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
     backdrop-filter: blur(10px);
+    position: relative;
+    flex-shrink: 0;
 }
-.cover-eye:hover {
+.cover-btn:hover {
     background: rgba(212, 175, 55, 0.25);
     border-color: var(--gold-light);
     transform: scale(1.1);
     box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
 }
-.cover-eye:active { transform: scale(0.95); }
+.cover-btn:active { transform: scale(0.95); }
 
-.cover-eye.preview-mode {
+/* زر الإبلاغ (visitor) — نفس الستايل */
+.cover-btn.cover-report {
+    border-color: rgba(255, 68, 68, 0.6);
+    color: #ff7777;
+}
+.cover-btn.cover-report:hover {
+    background: rgba(255, 68, 68, 0.25);
+    border-color: #ff7777;
+    box-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
+}
+
+/* زر العين (preview) */
+.cover-btn.eye-btn.preview-mode {
     background: linear-gradient(135deg, rgba(255, 68, 68, 0.7), rgba(200, 30, 30, 0.5));
     border-color: #ff7777;
     color: #fff;
@@ -241,9 +252,10 @@ html, body {
     0%, 100% { box-shadow: 0 0 25px rgba(255, 68, 68, 0.6); }
     50% { box-shadow: 0 0 40px rgba(255, 68, 68, 0.9); }
 }
+
 .eye-label {
     position: absolute;
-    top: 46px;
+    top: 42px;
     left: 50%;
     transform: translateX(-50%);
     background: rgba(0, 0, 0, 0.9);
@@ -251,71 +263,22 @@ html, body {
     color: var(--gold-light);
     padding: 4px 10px;
     border-radius: 6px;
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 900;
     white-space: nowrap;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.2s;
     font-family: 'Cairo', sans-serif;
+    z-index: 11;
 }
-.cover-eye:hover .eye-label { opacity: 1; }
+.cover-btn.eye-btn:hover .eye-label { opacity: 1; }
 
-/* ⭐ الكاميرا على الطرف الأيمن */
-.cover-camera {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    z-index: 10;
-    background: rgba(0, 0, 0, 0.6);
-    border: 1px solid var(--border-gold);
-    color: var(--gold);
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 16px;
-    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-    backdrop-filter: blur(10px);
-}
-.cover-camera:hover {
-    background: rgba(212, 175, 55, 0.25);
-    border-color: var(--gold-light);
-    transform: scale(1.1);
-    box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
-}
-.cover-camera:active { transform: scale(0.95); }
-
-/* زر الإبلاغ (visitor) — نفس مكان الكاميرا */
-.cover-report {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    z-index: 10;
-    background: rgba(0, 0, 0, 0.6);
-    border: 1px solid rgba(255, 68, 68, 0.6);
-    color: #ff7777;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 16px;
-    transition: all 0.25s;
-    backdrop-filter: blur(10px);
-}
-.cover-report:hover { background: rgba(255, 68, 68, 0.25); transform: scale(1.1); }
-
-/* ═══ الأفاتار ═══ */
+/* ═══ الأفاتار — صغر 10% (130 → 117) ═══ */
 .avatar-wrap {
     position: relative;
     z-index: 10;
-    margin-top: 130px;
+    margin-top: 120px;
     margin-bottom: 14px;
     animation: avatarIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s backwards;
 }
@@ -325,16 +288,16 @@ html, body {
 }
 .avatar-frame {
     position: relative;
-    width: 130px;
-    height: 130px;
+    width: 117px;
+    height: 117px;
     border-radius: 50%;
     padding: 5px;
     background: conic-gradient(from 0deg, #d4af37, #ffec8b, #fffef0, #ffd700, #d4af37, #b8860b, #d4af37);
     animation: frameRotate 5s linear infinite;
     box-shadow: 
-        0 0 40px rgba(255, 215, 0, 0.6),
-        0 0 80px rgba(255, 215, 0, 0.3),
-        0 15px 50px rgba(0, 0, 0, 0.7);
+        0 0 36px rgba(255, 215, 0, 0.6),
+        0 0 72px rgba(255, 215, 0, 0.3),
+        0 15px 45px rgba(0, 0, 0, 0.7);
 }
 @keyframes frameRotate {
     to { transform: rotate(360deg); }
@@ -347,7 +310,7 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 52px;
+    font-size: 47px;
     color: var(--gold-light);
     font-weight: 900;
     animation: frameRotate 5s linear infinite reverse;
@@ -357,12 +320,12 @@ html, body {
 }
 .avatar-status {
     position: absolute;
-    bottom: 8px;
-    right: 12px;
-    width: 20px;
-    height: 20px;
+    bottom: 6px;
+    right: 10px;
+    width: 18px;
+    height: 18px;
     background: #00e676;
-    border: 4px solid #050508;
+    border: 3.5px solid #050508;
     border-radius: 50%;
     box-shadow: 0 0 15px #00e676;
     z-index: 3;
@@ -386,10 +349,10 @@ html, body {
     to { opacity: 1; transform: translateY(0); }
 }
 .rank-crown {
-    font-size: 36px;
+    font-size: 32px; /* ⭐ 36 → 32 */
     line-height: 1;
     margin-bottom: 6px;
-    filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8));
+    filter: drop-shadow(0 0 18px rgba(255, 215, 0, 0.8));
     animation: crownBounce 3s ease-in-out infinite;
 }
 @keyframes crownBounce {
@@ -397,7 +360,7 @@ html, body {
     50% { transform: translateY(-5px) rotate(-3deg); }
 }
 .username {
-    font-size: 30px;
+    font-size: 27px; /* ⭐ 30 → 27 */
     font-weight: 900;
     background: linear-gradient(90deg, #d4af37, #ffec8b, #fffef0, #ffd700, #d4af37);
     background-size: 300% 100%;
@@ -418,16 +381,16 @@ html, body {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 20px;
+    padding: 6px 18px;
     background: linear-gradient(135deg, rgba(212, 175, 55, 0.3), rgba(212, 175, 55, 0.1));
     border: 1px solid var(--border-gold);
     border-radius: 999px;
-    font-size: 13px;
+    font-size: 12px; /* ⭐ 13 → 12 */
     font-weight: 900;
     color: var(--gold-light);
     letter-spacing: 1.5px;
     text-transform: uppercase;
-    margin-bottom: 18px;
+    margin-bottom: 16px;
     box-shadow: 0 4px 20px rgba(212, 175, 55, 0.25);
     animation: rankShine 2.5s ease-in-out infinite;
 }
@@ -437,7 +400,7 @@ html, body {
 }
 .bio {
     font-family: 'Amiri', serif;
-    font-size: 17px;
+    font-size: 15.5px; /* ⭐ 17 → 15.5 */
     font-style: italic;
     color: #f0e5d5;
     line-height: 1.8;
@@ -449,7 +412,7 @@ html, body {
 }
 .bio::before {
     content: '❝';
-    font-size: 22px;
+    font-size: 20px;
     color: var(--gold);
     opacity: 0.7;
     position: absolute;
@@ -458,7 +421,7 @@ html, body {
 }
 .bio::after {
     content: '❞';
-    font-size: 22px;
+    font-size: 20px;
     color: var(--gold);
     opacity: 0.7;
     position: absolute;
@@ -469,11 +432,11 @@ html, body {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 18px;
+    padding: 7px 16px;
     background: rgba(132, 204, 22, 0.15);
     border: 1px solid rgba(132, 204, 22, 0.4);
     border-radius: 999px;
-    font-size: 13px;
+    font-size: 12px; /* ⭐ 13 → 12 */
     font-weight: 700;
     color: #a3e635;
     margin-top: 6px;
@@ -486,7 +449,7 @@ html, body {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 80px;
+    height: 70px;
     background: linear-gradient(180deg, transparent 0%, rgba(5, 5, 8, 0.6) 60%, rgba(5, 5, 8, 0.95) 100%);
     pointer-events: none;
     z-index: 3;
@@ -499,8 +462,8 @@ html, body {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 8px;
-    padding: 0 16px;
-    margin: -30px 0 14px;
+    padding: 0 14px;
+    margin: -28px 0 14px;
     position: relative;
     z-index: 5;
     animation: fadeInUp 0.6s ease-out 0.5s backwards;
@@ -508,8 +471,8 @@ html, body {
 .stat {
     background: linear-gradient(135deg, rgba(20, 15, 35, 0.9), rgba(10, 8, 20, 0.95));
     border: 1px solid var(--border-gold);
-    border-radius: 14px;
-    padding: 12px 6px;
+    border-radius: 12px;
+    padding: 10px 6px;
     text-align: center;
     transition: all 0.2s;
     cursor: pointer;
@@ -521,8 +484,8 @@ html, body {
     transform: translateY(-3px);
     box-shadow: 0 12px 30px rgba(212, 175, 55, 0.25);
 }
-.stat-icon { font-size: 18px; margin-bottom: 4px; display: block; }
-.stat-value { font-size: 15px; font-weight: 900; color: #fff; display: block; }
+.stat-icon { font-size: 16px; margin-bottom: 4px; display: block; } /* ⭐ 18 → 16 */
+.stat-value { font-size: 14px; font-weight: 900; color: #fff; display: block; } /* ⭐ 15 → 14 */
 .stat-label { font-size: 9px; color: var(--text-dim); margin-top: 2px; display: block; font-weight: 700; }
 
 /* ═══ أزرار سريعة ═══ */
@@ -530,14 +493,14 @@ html, body {
     display: flex;
     justify-content: center;
     gap: 10px;
-    padding: 0 16px;
-    margin-bottom: 16px;
+    padding: 0 14px;
+    margin-bottom: 14px;
     animation: fadeInUp 0.6s ease-out 0.6s backwards;
 }
 .quick-btn {
     flex: 1;
     max-width: 130px;
-    padding: 12px 8px;
+    padding: 11px 8px;
     background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05));
     border: 1px solid var(--border-gold);
     border-radius: 12px;
@@ -560,7 +523,7 @@ html, body {
     box-shadow: 0 6px 20px rgba(212, 175, 55, 0.25);
 }
 .quick-btn:active { transform: scale(0.96); }
-.quick-btn i { font-size: 18px; color: var(--gold-light); }
+.quick-btn i { font-size: 16px; color: var(--gold-light); } /* ⭐ 18 → 16 */
 .quick-btn.primary {
     background: linear-gradient(135deg, #d4af37, #b8860b);
     border-color: var(--gold-light);
@@ -586,7 +549,7 @@ html, body {
 }
 .tab {
     flex: 1;
-    padding: 10px 4px;
+    padding: 9px 4px;
     background: transparent;
     border: none;
     color: var(--text-dim);
@@ -602,7 +565,7 @@ html, body {
     transition: all 0.2s;
     position: relative;
 }
-.tab i { font-size: 16px; }
+.tab i { font-size: 14.5px; } /* ⭐ 16 → 14.5 */
 .tab.active {
     color: var(--gold-light);
     background: rgba(212, 175, 55, 0.12);
@@ -630,7 +593,7 @@ html, body {
         radial-gradient(ellipse at 30% 0%, rgba(74, 20, 140, 0.25) 0%, transparent 60%),
         radial-gradient(ellipse at 70% 100%, rgba(212, 175, 55, 0.08) 0%, transparent 60%),
         linear-gradient(180deg, #050508 0%, #0a0518 50%, #050508 100%);
-    padding-top: 16px;
+    padding-top: 14px;
     overflow: hidden;
 }
 .content-area::before {
@@ -656,7 +619,7 @@ html, body {
 }
 
 .section {
-    padding: 0 16px 16px;
+    padding: 0 14px 14px;
     position: relative;
     z-index: 1;
     animation: fadeInUp 0.5s ease-out;
@@ -670,14 +633,14 @@ html, body {
     border-bottom: 1px solid rgba(212, 175, 55, 0.15);
 }
 .section-title h3 {
-    font-size: 14px;
+    font-size: 13px; /* ⭐ 14 → 13 */
     font-weight: 900;
     color: #fff;
     display: flex;
     align-items: center;
     gap: 8px;
 }
-.section-title h3 i { color: var(--gold); font-size: 14px; }
+.section-title h3 i { color: var(--gold); font-size: 13px; } /* ⭐ 14 → 13 */
 .section-title .more {
     font-size: 11px;
     color: var(--gold);
@@ -698,11 +661,11 @@ html, body {
 .achievements-row::-webkit-scrollbar { display: none; }
 .achievement {
     flex-shrink: 0;
-    width: 76px;
-    height: 88px;
+    width: 68px;  /* ⭐ 76 → 68 */
+    height: 79px; /* ⭐ 88 → 79 */
     background: linear-gradient(135deg, rgba(20, 15, 35, 0.85), rgba(10, 8, 20, 0.9));
     border: 1px solid var(--border-gold);
-    border-radius: 14px;
+    border-radius: 12px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -720,15 +683,15 @@ html, body {
     border-color: var(--gold);
     box-shadow: 0 8px 20px rgba(212, 175, 55, 0.2);
 }
-.achievement-icon { font-size: 28px; }
-.achievement-name { font-size: 9px; color: #ccc; font-weight: 700; line-height: 1.2; }
+.achievement-icon { font-size: 25px; } /* ⭐ 28 → 25 */
+.achievement-name { font-size: 8.5px; color: #ccc; font-weight: 700; line-height: 1.2; } /* ⭐ 9 → 8.5 */
 
 /* ═══ نشاط حديث ═══ */
 .activity-item {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px;
+    gap: 11px;
+    padding: 11px;
     background: linear-gradient(135deg, rgba(20, 15, 35, 0.7), rgba(10, 8, 20, 0.8));
     border: 1px solid rgba(212, 175, 55, 0.15);
     border-radius: 12px;
@@ -743,19 +706,19 @@ html, body {
     transform: translateX(-3px);
 }
 .activity-icon {
-    width: 42px;
-    height: 42px;
+    width: 38px;  /* ⭐ 42 → 38 */
+    height: 38px;
     border-radius: 50%;
     background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(212, 175, 55, 0.08));
     border: 1px solid var(--border-gold);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: 16px; /* ⭐ 18 → 16 */
     flex-shrink: 0;
 }
 .activity-info { flex: 1; min-width: 0; }
-.activity-text { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+.activity-text { font-size: 12.5px; font-weight: 700; color: #fff; margin-bottom: 2px; } /* ⭐ 13 → 12.5 */
 .activity-time { font-size: 10px; color: var(--text-dim); }
 
 /* ═══ اللحظات ═══ */
@@ -770,7 +733,7 @@ html, body {
 .moments-row::-webkit-scrollbar { display: none; }
 .moment {
     flex-shrink: 0;
-    width: 80px;
+    width: 72px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -780,8 +743,8 @@ html, body {
 }
 .moment:hover { transform: scale(1.05); }
 .moment-ring {
-    width: 72px;
-    height: 72px;
+    width: 65px;  /* ⭐ 72 → 65 */
+    height: 65px;
     border-radius: 50%;
     padding: 3px;
     background: conic-gradient(from 0deg, #ffd700, #ff006e, #8a2be2, #ffd700);
@@ -799,32 +762,32 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 28px;
+    font-size: 25px; /* ⭐ 28 → 25 */
     border: 3px solid #050508;
     animation: ringRotate 8s linear infinite reverse;
 }
 .moment-ring.seen .moment-img,
 .moment-ring.add .moment-img { animation: none; }
 .moment-name {
-    font-size: 10px;
+    font-size: 9.5px;
     color: #fff;
     font-weight: 700;
     text-align: center;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 76px;
+    max-width: 68px;
 }
 
 /* ═══ الأصدقاء ═══ */
 .friends-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(66px, 1fr));
     gap: 10px;
 }
 .friend-card {
     aspect-ratio: 1;
-    border-radius: 14px;
+    border-radius: 13px;
     background: linear-gradient(135deg, #4a148c, #1a0e2e);
     border: 1px solid var(--border-gold);
     display: flex;
@@ -842,21 +805,21 @@ html, body {
     box-shadow: 0 8px 20px rgba(212, 175, 55, 0.25);
 }
 .friend-avatar {
-    width: 42px;
-    height: 42px;
+    width: 38px;  /* ⭐ 42 → 38 */
+    height: 38px;
     border-radius: 50%;
     background: linear-gradient(135deg, #d4af37, #b8860b);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 14.5px; /* ⭐ 16 → 14.5 */
     font-weight: 900;
     color: #050508;
     margin-bottom: 4px;
     border: 2px solid rgba(212, 175, 55, 0.5);
 }
 .friend-name {
-    font-size: 9px;
+    font-size: 8.5px;
     color: #fff;
     font-weight: 700;
     text-align: center;
@@ -881,8 +844,8 @@ html, body {
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 14px 8px 8px;
+    gap: 7px;
+    padding: 7px 13px 7px 7px;
     background: linear-gradient(135deg, rgba(20, 15, 35, 0.85), rgba(10, 8, 20, 0.9));
     border: 1px solid var(--border-gold);
     border-radius: 999px;
@@ -896,28 +859,26 @@ html, body {
     transform: translateY(-2px);
 }
 .visitor-avatar {
-    width: 30px;
-    height: 30px;
+    width: 27px;  /* ⭐ 30 → 27 */
+    height: 27px;
     border-radius: 50%;
     background: linear-gradient(135deg, #d4af37, #b8860b);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 900;
     color: #050508;
     flex-shrink: 0;
 }
 .visitor-name { font-size: 11px; color: #fff; font-weight: 700; white-space: nowrap; }
 
-/* ═══════════════════════════════════════════ */
-/* Bottom Nav — داخل البروفايل (sticky) */
-/* ═══════════════════════════════════════════ */
+/* ═══ Bottom Nav ═══ */
 .bottom-nav {
     position: sticky;
     bottom: 0;
     width: 100%;
-    height: 60px;
+    height: 58px;
     background: rgba(5, 5, 8, 0.98);
     border-top: 1px solid var(--border-gold);
     display: flex;
@@ -945,7 +906,7 @@ html, body {
     font-family: inherit;
     transition: all 0.2s;
 }
-.nav-item i { font-size: 16px; }
+.nav-item i { font-size: 14.5px; } /* ⭐ 16 → 14.5 */
 .nav-item.active { color: var(--gold-light); }
 
 /* ═══════════════════════════════════════════ */
@@ -958,18 +919,16 @@ body.mode-visitor .owner-only { display: none !important; }
 /* Responsive */
 /* ═══════════════════════════════════════════ */
 @media (max-width: 400px) {
-    .hero-cover { min-height: 480px; }
-    .cover-moon { width: 95px; height: 95px; top: 45px; }
-    .avatar-wrap { margin-top: 115px; }
-    .avatar-frame { width: 118px; height: 118px; }
-    .avatar-inner { font-size: 46px; }
-    .username { font-size: 26px; }
-    .bio { font-size: 15px; }
-    .stats { gap: 6px; padding: 0 12px; }
-    .stat-value { font-size: 13px; }
-    .stat-icon { font-size: 16px; }
+    .hero-cover { min-height: 450px; }
+    .cover-moon { width: 90px; height: 90px; top: 45px; }
+    .avatar-wrap { margin-top: 105px; }
+    .avatar-frame { width: 108px; height: 108px; }
+    .avatar-inner { font-size: 43px; }
+    .username { font-size: 24px; }
+    .bio { font-size: 14px; }
+    .stats { gap: 6px; padding: 0 10px; }
     .quick-btn { font-size: 11px; padding: 10px 6px; }
-    .cover-eye, .cover-camera, .cover-report { width: 36px; height: 36px; font-size: 14px; }
+    .cover-btn { width: 34px; height: 34px; font-size: 13px; }
 }
 </style>
 </head>
@@ -983,20 +942,23 @@ body.mode-visitor .owner-only { display: none !important; }
     <div class="hero-cover">
         <div class="cover-moon"></div>
 
-        <!-- ⭐ زر العين (يسار) — المعاينة -->
-        <div class="cover-eye" id="eyeToggle" title="معاينة كزائر">
-            <i class="fas fa-eye" id="eyeIcon"></i>
-            <span class="eye-label" id="eyeLabel">معاينة كزائر</span>
-        </div>
+        <!-- ⭐ الأزرار مجتمعة في الطرف الأيمن -->
+        <div class="cover-actions">
+            <!-- الكاميرا (owner) — outermost (أقصى اليمين) -->
+            <div class="cover-btn cover-camera owner-only" title="تعديل الغلاف">
+                <i class="fas fa-camera"></i>
+            </div>
 
-        <!-- ⭐ زر الكاميرا (يمين) — owner فقط -->
-        <div class="cover-camera owner-only" title="تعديل الغلاف">
-            <i class="fas fa-camera"></i>
-        </div>
+            <!-- الإبلاغ (visitor) — نفس مكان الكاميرا -->
+            <div class="cover-btn cover-report visitor-only" title="إبلاغ">
+                <i class="fas fa-flag"></i>
+            </div>
 
-        <!-- ⭐ زر الإبلاغ (يمين) — visitor فقط -->
-        <div class="cover-report visitor-only" title="إبلاغ">
-            <i class="fas fa-flag"></i>
+            <!-- العين (المعاينة) — جوار الكاميرا -->
+            <div class="cover-btn eye-btn" id="eyeToggle" title="معاينة كزائر">
+                <i class="fas fa-eye" id="eyeIcon"></i>
+                <span class="eye-label" id="eyeLabel">معاينة كزائر</span>
+            </div>
         </div>
 
         <!-- الأفاتار -->
@@ -1050,7 +1012,7 @@ body.mode-visitor .owner-only { display: none !important; }
         </div>
     </div>
 
-    <!-- ═══ الأزرار السريعة — Owner ═══ -->
+    <!-- الأزرار السريعة — Owner -->
     <div class="quick-actions owner-only">
         <button class="quick-btn primary">
             <i class="fas fa-user-edit"></i>
@@ -1066,7 +1028,7 @@ body.mode-visitor .owner-only { display: none !important; }
         </button>
     </div>
 
-    <!-- ═══ الأزرار السريعة — Visitor ═══ -->
+    <!-- الأزرار السريعة — Visitor -->
     <div class="quick-actions visitor-only">
         <button class="quick-btn primary">
             <i class="fas fa-comment"></i>
@@ -1082,7 +1044,7 @@ body.mode-visitor .owner-only { display: none !important; }
         </button>
     </div>
 
-    <!-- ═══ التبويبات ═══ -->
+    <!-- التبويبات -->
     <div class="tabs">
         <button class="tab active">
             <i class="fas fa-home"></i>
@@ -1102,7 +1064,7 @@ body.mode-visitor .owner-only { display: none !important; }
         </button>
     </div>
 
-    <!-- ═══ المحتوى ═══ -->
+    <!-- المحتوى -->
     <div class="content-area">
 
         <div class="section owner-only">
@@ -1202,30 +1164,17 @@ body.mode-visitor .owner-only { display: none !important; }
 
     </div>
 
-    <!-- ═══ Bottom Nav (داخل البروفايل) ═══ -->
+    <!-- Bottom Nav -->
     <div class="bottom-nav">
-        <button class="nav-item active">
-            <i class="fas fa-user"></i>
-            <span>بروفايلي</span>
-        </button>
-        <button class="nav-item">
-            <i class="fas fa-users"></i>
-            <span>المتواجدين</span>
-        </button>
-        <button class="nav-item">
-            <i class="fas fa-comments"></i>
-            <span>الرسائل</span>
-        </button>
-        <button class="nav-item">
-            <i class="fas fa-store"></i>
-            <span>المتجر</span>
-        </button>
+        <button class="nav-item active"><i class="fas fa-user"></i><span>بروفايلي</span></button>
+        <button class="nav-item"><i class="fas fa-users"></i><span>المتواجدين</span></button>
+        <button class="nav-item"><i class="fas fa-comments"></i><span>الرسائل</span></button>
+        <button class="nav-item"><i class="fas fa-store"></i><span>المتجر</span></button>
     </div>
 
 </div>
 
 <script>
-/* ═══ النجوم ═══ */
 (function generateStars() {
     var sf = document.getElementById('starfield');
     for (var i = 0; i < 40; i++) {
@@ -1239,7 +1188,6 @@ body.mode-visitor .owner-only { display: none !important; }
     }
 })();
 
-/* ═══ 🎛️ زر العين ═══ */
 (function setupEyeToggle() {
     var eyeBtn = document.getElementById('eyeToggle');
     var eyeIcon = document.getElementById('eyeIcon');
@@ -1263,7 +1211,6 @@ body.mode-visitor .owner-only { display: none !important; }
     });
 })();
 
-/* ═══ التبويبات ═══ */
 document.querySelectorAll('.tab').forEach(function(tab) {
     tab.addEventListener('click', function() {
         document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
@@ -1271,7 +1218,6 @@ document.querySelectorAll('.tab').forEach(function(tab) {
     });
 });
 
-/* ═══ Bottom Nav ═══ */
 document.querySelectorAll('.nav-item').forEach(function(item) {
     item.addEventListener('click', function() {
         document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
@@ -1279,7 +1225,6 @@ document.querySelectorAll('.nav-item').forEach(function(item) {
     });
 });
 
-/* ═══ اهتزاز ═══ */
 document.querySelectorAll('.stat').forEach(function(stat) {
     stat.addEventListener('click', function() {
         stat.style.transform = 'scale(0.95)';
