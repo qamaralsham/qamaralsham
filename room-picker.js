@@ -1,16 +1,16 @@
 // ==============================================
-// room-picker.js v2 — شاشة اختيار الغرف
+// room-picker.js v3 — شاشة اختيار الغرف
 // ==============================================
-// ✅ v2 (إصلاح):
-//   • Patch فوري لـ initChat (بدون انتظار)
-//   • Reset isInitialized عند الاختيار
-//   • ضمان ظهور chat-container
+// ✅ v3 (إصلاح حاسم):
+//   • استخدام window.ChatState بدل ChatState المباشر
+//   • cleanupAllListeners قبل إعادة التهيئة
+//   • ضمان استدعاء initChat الأصلي
 // ==============================================
 
 (function () {
     'use strict';
-    if (window.__roomPickerV2) return;
-    window.__roomPickerV2 = true;
+    if (window.__roomPickerV3) return;
+    window.__roomPickerV3 = true;
 
     var STORAGE_KEY = 'qamar_room_picker_done';
     var LAST_ROOM_KEY = 'qamar_last_room';
@@ -199,7 +199,12 @@
     var _pickerActive = false;
 
     function getMe() {
-        return (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
+        return (typeof window.getCurrentUser === 'function') ? window.getCurrentUser() : null;
+    }
+
+    /* ⭐ الحصول على ChatState بأمان */
+    function getChatState() {
+        return window.ChatState || null;
     }
 
     function escapeHtml(s) {
@@ -216,13 +221,13 @@
         if (!listEl) return;
         var me = getMe();
         if (!me) return;
-        if (typeof QAMAR === 'undefined' || !QAMAR.ROOMS) return;
+        if (typeof window.QAMAR === 'undefined' || !window.QAMAR.ROOMS) return;
 
         listEl.innerHTML = '<div style="text-align:center;color:#888;padding:20px;font-size:12px;">⏳ جاري تحميل الغرف...</div>';
 
-        var visible = (typeof QAMAR.getVisibleRooms === 'function')
-            ? QAMAR.getVisibleRooms(me)
-            : QAMAR.ROOMS;
+        var visible = (typeof window.QAMAR.getVisibleRooms === 'function')
+            ? window.QAMAR.getVisibleRooms(me)
+            : window.QAMAR.ROOMS;
 
         var roomIds = Object.keys(visible).filter(function(rid) {
             return rid !== 'bot_training' && rid !== 'jail';
@@ -270,8 +275,8 @@
     }
 
     function loadPresenceCounts(roomIds) {
-        if (typeof db === 'undefined' || !db) return;
-        db.ref('user_presence').once('value').then(function(snap) {
+        if (typeof window.db === 'undefined' || !window.db) return;
+        window.db.ref('user_presence').once('value').then(function(snap) {
             var data = snap.val() || {};
             var now = Date.now();
             var counts = {};
@@ -300,14 +305,19 @@
         }).catch(function() {});
     }
 
-    /* ⭐ اختيار غرفة */
+    /* ⭐⭐⭐ اختيار غرفة — v3 */
     function pickRoom(roomId) {
         var me = getMe();
-        if (!me) return;
-        if (typeof QAMAR === 'undefined' || !QAMAR.isRoomVisible(roomId, me)) {
-            if (typeof showToast === 'function') showToast('fa-lock', '🔒 غير متاحة');
+        if (!me) {
+            console.warn('🚪 pickRoom: no user');
             return;
         }
+        if (typeof window.QAMAR === 'undefined' || !window.QAMAR.isRoomVisible(roomId, me)) {
+            if (typeof window.showToast === 'function') window.showToast('fa-lock', '🔒 غير متاحة');
+            return;
+        }
+
+        console.log('🚪 pickRoom:', roomId);
 
         // حفظ
         try {
@@ -315,41 +325,71 @@
             localStorage.setItem(LAST_ROOM_KEY, roomId);
         } catch(e) {}
 
-        // ⭐ إعادة تعيين ChatState لضمان تشغيل initChat
-        if (typeof ChatState !== 'undefined') {
-            ChatState.isInitialized = false;
-            ChatState.currentRoom = roomId;
+        // ⭐⭐⭐ إغلاق كل المستمعين القديمة
+        if (typeof window.cleanupAllListeners === 'function') {
+            try { window.cleanupAllListeners(); } catch(e) { console.warn('cleanup err:', e); }
         }
 
-        // إغلاق الشاشة
+        // ⭐⭐⭐ إعادة ضبط ChatState — باستخدام window.ChatState!
+        var cs = getChatState();
+        if (cs) {
+            cs.isInitialized = false;
+            cs.currentRoom = roomId;
+            cs.messagesListener = null;
+            cs.presenceInterval = null;
+            cs.privateChatsListener = null;
+            cs.notificationsListener = null;
+            cs.privateMessagesListener = null;
+            if (cs.seenMessages && cs.seenMessages.clear) cs.seenMessages.clear();
+            console.log('🚪 ChatState reset | isInitialized = false');
+        } else {
+            console.warn('🚪 window.ChatState NOT FOUND — cannot reset!');
+        }
+
+        // إخفاء الشاشة
         hidePicker();
 
-        // ⭐ إخفاء شاشة الدخول + عرض الشات
+        // إخفاء شاشة الدخول
         var ls = document.getElementById('login-screen');
         if (ls) ls.style.display = 'none';
+
+        // إخفاء الشات (لإعادة التهيئة النظيفة)
         var cc = document.getElementById('chat-container');
-        if (cc) cc.style.display = 'flex';
+        if (cc) cc.style.display = 'none';
+
+        // مسح الرسائل
+        var messagesEl = document.getElementById('messages');
+        if (messagesEl) messagesEl.innerHTML = '';
 
         // ⭐ استدعاء initChat الأصلي
-        if (_origInitChat) {
-            try {
-                _origInitChat.call(window);
-            } catch(err) {
-                console.error('initChat call failed:', err);
-            }
-        } else {
-            // fallback: استدعاء النسخة الحالية
-            if (typeof window.initChat === 'function') {
-                window.initChat();
-            }
-        }
-
-        // ⭐ ضمان ظهور الشات
         setTimeout(function() {
-            var cc2 = document.getElementById('chat-container');
-            if (cc2 && cc2.style.display === 'none') {
-                cc2.style.display = 'flex';
+            if (_origInitChat) {
+                console.log('🚪 calling _origInitChat...');
+                try {
+                    _origInitChat.call(window);
+                    console.log('🚪 _origInitChat done');
+                } catch(err) {
+                    console.error('🚪 _origInitChat failed:', err);
+                }
+            } else if (typeof window.initChat === 'function') {
+                console.log('🚪 calling window.initChat (fallback)...');
+                try {
+                    window.initChat();
+                } catch(err) {
+                    console.error('🚪 window.initChat failed:', err);
+                }
+            } else {
+                console.error('🚪 NO initChat available!');
             }
+
+            // ضمان ظهور chat-container
+            setTimeout(function() {
+                var cc2 = document.getElementById('chat-container');
+                if (cc2 && cc2.style.display === 'none') {
+                    console.log('🚪 forcing chat-container display');
+                    cc2.style.display = 'flex';
+                }
+            }, 150);
         }, 100);
     }
 
@@ -359,7 +399,10 @@
         _pickerActive = true;
 
         var me = getMe();
-        if (!me) return;
+        if (!me) {
+            console.warn('🚪 showPicker: no user');
+            return;
+        }
 
         var screen = document.getElementById('room-picker-screen');
         if (!screen) {
@@ -385,10 +428,10 @@
         if (logoutBtn) {
             logoutBtn.onclick = function() {
                 if (!confirm('تسجيل خروج؟')) return;
-                if (typeof handleLogout === 'function') {
-                    handleLogout();
-                } else if (typeof logout === 'function') {
-                    logout().then(function() { location.reload(); });
+                if (typeof window.handleLogout === 'function') {
+                    window.handleLogout();
+                } else if (typeof window.logout === 'function') {
+                    window.logout().then(function() { location.reload(); });
                 }
             };
         }
@@ -412,17 +455,15 @@
         console.log('🚪 Room picker: hidden');
     }
 
-    /* ⭐⭐⭐ Patch فوري لـ initChat (بدون انتظار) */
+    /* ⭐⭐⭐ Patch فوري لـ initChat */
     function patchInitChatNow() {
         if (typeof window.initChat !== 'function') {
-            // انتظر قليلاً (لأن chat.js قد لا يكون منتهياً)
             var wait = setInterval(function() {
                 if (typeof window.initChat === 'function') {
                     clearInterval(wait);
                     patchInitChatNow();
                 }
             }, 20);
-            // توقف بعد 5 ثواني
             setTimeout(function() { clearInterval(wait); }, 5000);
             return;
         }
@@ -441,20 +482,33 @@
             return _origInitChat.apply(this, arguments);
         };
 
-        console.log('🚪 Room picker: initChat patched (immediate)');
+        console.log('🚪 Room picker: initChat patched (v3)');
     }
 
     /* ⭐ إعادة العرض */
     window.showRoomPicker = function() {
+        console.log('🚪 showRoomPicker() called');
         try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
-        if (typeof ChatState !== 'undefined') {
-            ChatState.isInitialized = false;
+        
+        // ⭐ إغلاق كل المستمعين
+        if (typeof window.cleanupAllListeners === 'function') {
+            try { window.cleanupAllListeners(); } catch(e) {}
         }
+        
+        // ⭐ إعادة ضبط ChatState
+        var cs = getChatState();
+        if (cs) {
+            cs.isInitialized = false;
+            console.log('🚪 showRoomPicker: ChatState.isInitialized = false');
+        } else {
+            console.warn('🚪 showRoomPicker: window.ChatState NOT FOUND');
+        }
+        
         showPicker();
     };
 
-    /* ⭐ Patch فوري عند تحميل room-picker.js */
+    /* ⭐ Patch فوري */
     patchInitChatNow();
 
-    console.log('🚪 room-picker.js v2 loaded');
+    console.log('🚪 room-picker.js v3 loaded');
 })();
