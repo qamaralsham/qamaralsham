@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>🌙 معاينة بروفايل قمر الشام</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<style>
+/* ═══════════════════════════════════════════ */
+/* الأساس                                       */
+/* ═══════════════════════════════════════════ */
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+:root {
+    --gold: #d4af37;
+    --gold-light: #ffd700;
+    --gold-dark: #b8860b;
+    --purple: #4a148c;
+    --bg: #050508;
+    --bg-card: #0a0a15;
+    --bg-glass: rgba(255, 255, 255, 0.04);
+    --border-gold: rgba(212, 175, 55, 0.3);
+    --text: #ffffff;
+    --text-dim: #9ca3af;
+    --success: #84cc16;
+    --danger: #ef4444;
+    --warning: #ff9800;
+}
+
+html, body {
+    background: radial-gradient(ellipse at top, rgba(212, 175, 55, 0.08) 0%, transparent 55%),
+                radial-gradient(ellipse at bottom, rgba(100, 50, 150, 0.12) 0%, transparent 55%),
+                linear-gradient(to bottom, #050508, #0a0a15);
+    color: var(--text);
+    font-family: 'Cairo', sans-serif;
+    min-height: 100vh;
+    direction: rtl;
+    overflow-x: hidden;
+}
+
+/* ═══════════════════════════════════════════ */
+/* الخلفية النجمية                              */
+/* ═══════════════════════════════════════════ */
+.starfield {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+}
+.star {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: rgba(255, 215, 0, 0.8);
+    border-radius: 50%;
+    box-shadow: 0 0 6px rgba(255, 215, 0, 0.8);
+    animation: starFall linear infinite;
+}
+@keyframes starFall {
+    0% { transform: translateY(-100px); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(100vh); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════ */
+/* الحاوية                                      */
+/* ═══════════════════════════════════════════ */
+.demo-notice {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(74, 20, 140, 0.15));
+    border-bottom: 1px solid var(--border-gold);
+    padding: 10px 16px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gold);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+}
+.demo-notice span { color: #fff; }
+
+.container {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    background: rgba(5, 5, 8, 0.4);
+    backdrop-filter: blur(4px);
+    position: relative;
+    z-index: 1;
+    padding-bottom: 80px;
+    animation: fadeInUp 0.6s ease-out;
+}
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════ */
+/* الغلاف                                        */
+/* ═══════════════════════════════════════════ */
+.cover {
+    height: 220px;
+    position: relative;
+    overflow: hidden;
+    background: 
+        linear-gradient(180deg, transparent 0%, rgba(5, 5, 8, 0.7) 100%),
+        radial-gradient(ellipse at 20% 30%, rgba(212, 175, 55, 0.35) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 70%, rgba(74, 20, 140, 0.6) 0%, transparent 50%),
+        linear-gradient(135deg, #1a0e2e, #0a0518);
+}
+.cover::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+        radial-gradient(circle at 15% 20%, rgba(255, 215, 0, 0.6) 1px, transparent 1.5px),
+        radial-gradient(circle at 45% 60%, rgba(255, 255, 255, 0.4) 1px, transparent 1.5px),
+        radial-gradient(circle at 70% 30%, rgba(255, 215, 0, 0.5) 1px, transparent 1.5px),
+        radial-gradient(circle at 85% 75%, rgba(255, 255, 255, 0.35) 1px, transparent 1.5px),
+        radial-gradient(circle at 30% 85%, rgba(255, 215, 0, 0.4) 1px, transparent 1.5px);
+    background-size: 200px 200px, 180px 180px, 220px 220px, 160px 160px, 240px 240px;
+    animation: coverShift 20s linear infinite;
+}
+@keyframes coverShift {
+    0% { background-position: 0 0, 0 0, 0 0, 0 0, 0 0; }
+    100% { background-position: 200px 200px, -180px 180px, 220px -220px, -160px -160px, 240px 240px; }
+}
+.cover-moon {
+    position: absolute;
+    top: 30px;
+    left: 40px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #fff8dc, #ffd700 40%, #d4af37 70%, transparent 100%);
+    box-shadow: 0 0 40px rgba(255, 215, 0, 0.6), 0 0 80px rgba(255, 215, 0, 0.3);
+    animation: moonFloat 6s ease-in-out infinite;
+}
+@keyframes moonFloat {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-5px) scale(1.05); }
+}
+.cover-edit {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 5;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border-gold);
+    color: var(--gold);
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+    backdrop-filter: blur(8px);
+}
+.cover-edit:hover { background: rgba(212, 175, 55, 0.2); transform: scale(1.08); }
+
+/* ═══════════════════════════════════════════ */
+/* الأفاتار                                      */
+/* ═══════════════════════════════════════════ */
+.avatar-wrap {
+    position: absolute;
+    bottom: -55px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    animation: avatarIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s backwards;
+}
+@keyframes avatarIn {
+    0% { opacity: 0; transform: translateX(-50%) scale(0.4) translateY(30px); }
+    100% { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
+}
+.avatar-frame {
+    position: relative;
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    padding: 4px;
+    background: conic-gradient(from 0deg, #d4af37, #ffec8b, #b8860b, #ffd700, #d4af37);
+    animation: frameRotate 4s linear infinite;
+    box-shadow: 
+        0 0 30px rgba(255, 215, 0, 0.5),
+        0 0 60px rgba(255, 215, 0, 0.2),
+        0 10px 40px rgba(0, 0, 0, 0.6);
+}
+@keyframes frameRotate {
+    to { transform: rotate(360deg); }
+}
+.avatar-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4a148c, #1a0e2e, #0a0518);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 42px;
+    color: var(--gold-light);
+    font-weight: 900;
+    position: relative;
+    animation: frameRotate 4s linear infinite reverse;
+    font-family: 'Cairo', sans-serif;
+    border: 3px solid #050508;
+}
+.avatar-status {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    width: 16px;
+    height: 16px;
+    background: #00e676;
+    border: 3px solid #050508;
+    border-radius: 50%;
+    box-shadow: 0 0 12px #00e676;
+    z-index: 3;
+    animation: statusPulse 2s ease-in-out infinite;
+}
+@keyframes statusPulse {
+    0%, 100% { box-shadow: 0 0 12px #00e676; }
+    50% { box-shadow: 0 0 20px #00e676, 0 0 30px rgba(0, 230, 118, 0.5); }
+}
+
+/* ═══════════════════════════════════════════ */
+/* الهوية (الاسم + الرتبة + البايو)             */
+/* ═══════════════════════════════════════════ */
+.identity {
+    padding: 70px 20px 16px;
+    text-align: center;
+    animation: fadeInUp 0.6s ease-out 0.3s backwards;
+}
+.rank-crown {
+    font-size: 32px;
+    line-height: 1;
+    margin-bottom: 4px;
+    filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.7));
+    animation: crownBounce 3s ease-in-out infinite;
+}
+@keyframes crownBounce {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-4px) rotate(-3deg); }
+}
+.username {
+    font-size: 26px;
+    font-weight: 900;
+    background: linear-gradient(90deg, #d4af37, #ffec8b, #d4af37, #ffec8b, #d4af37);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: nameShimmer 3s linear infinite;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+    text-shadow: 0 0 30px rgba(212, 175, 55, 0.4);
+}
+@keyframes nameShimmer {
+    to { background-position: 300% 0; }
+}
+.rank-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 16px;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(212, 175, 55, 0.08));
+    border: 1px solid var(--border-gold);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+    color: var(--gold-light);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.15);
+    animation: rankShine 2.5s ease-in-out infinite;
+}
+@keyframes rankShine {
+    0%, 100% { box-shadow: 0 4px 15px rgba(212, 175, 55, 0.15); }
+    50% { box-shadow: 0 4px 25px rgba(212, 175, 55, 0.4); }
+}
+.rank-badge i { font-size: 11px; }
+.bio {
+    font-family: 'Amiri', serif;
+    font-size: 15px;
+    font-style: italic;
+    color: #e0d5c8;
+    line-height: 1.7;
+    margin: 8px auto 12px;
+    max-width: 320px;
+    position: relative;
+}
+.bio::before, .bio::after {
+    content: '❝';
+    font-size: 18px;
+    color: var(--gold);
+    opacity: 0.6;
+    position: absolute;
+}
+.bio::before { right: -16px; top: -4px; }
+.bio::after { content: '❞'; left: -16px; bottom: -8px; }
+.mood-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: rgba(132, 204, 22, 0.12);
+    border: 1px solid rgba(132, 204, 22, 0.3);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #a3e635;
+    margin-top: 4px;
+}
+
+/* ═══════════════════════════════════════════ */
+/* الإحصائيات                                    */
+/* ═══════════════════════════════════════════ */
+.stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 0 16px;
+    margin-bottom: 14px;
+    animation: fadeInUp 0.6s ease-out 0.4s backwards;
+}
+.stat {
+    background: var(--bg-glass);
+    border: 1px solid var(--border-gold);
+    border-radius: 14px;
+    padding: 12px 6px;
+    text-align: center;
+    transition: all 0.2s;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+}
+.stat:hover {
+    background: rgba(212, 175, 55, 0.1);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(212, 175, 55, 0.2);
+}
+.stat-icon {
+    font-size: 18px;
+    margin-bottom: 4px;
+    display: block;
+}
+.stat-value {
+    font-size: 15px;
+    font-weight: 900;
+    color: #fff;
+    display: block;
+}
+.stat-label {
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-top: 2px;
+    display: block;
+    font-weight: 700;
+}
+
+/* ═══════════════════════════════════════════ */
+/* أزرار سريعة                                   */
+/* ═══════════════════════════════════════════ */
+.quick-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    padding: 0 16px;
+    margin-bottom: 18px;
+    animation: fadeInUp 0.6s ease-out 0.5s backwards;
+}
+.quick-btn {
+    flex: 1;
+    max-width: 130px;
+    padding: 12px 8px;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.05));
+    border: 1px solid var(--border-gold);
+    border-radius: 12px;
+    color: #fff;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s;
+    backdrop-filter: blur(8px);
+}
+.quick-btn:hover {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.3), rgba(212, 175, 55, 0.15));
+    border-color: var(--gold-light);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.25);
+}
+.quick-btn:active { transform: scale(0.96); }
+.quick-btn i { font-size: 18px; color: var(--gold-light); }
+.quick-btn.primary {
+    background: linear-gradient(135deg, #d4af37, #b8860b);
+    border-color: var(--gold-light);
+}
+.quick-btn.primary i,
+.quick-btn.primary span { color: #050508; }
+
+/* ═══════════════════════════════════════════ */
+/* التبويبات                                     */
+/* ═══════════════════════════════════════════ */
+.tabs {
+    display: flex;
+    gap: 4px;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border-top: 1px solid rgba(212, 175, 55, 0.15);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+    position: sticky;
+    top: 40px;
+    z-index: 20;
+    backdrop-filter: blur(15px);
+    margin-bottom: 16px;
+    animation: fadeInUp 0.6s ease-out 0.6s backwards;
+}
+.tab {
+    flex: 1;
+    padding: 10px 4px;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 900;
+    cursor: pointer;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    transition: all 0.2s;
+    position: relative;
+}
+.tab i { font-size: 16px; }
+.tab.active {
+    color: var(--gold-light);
+    background: rgba(212, 175, 55, 0.12);
+}
+.tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 25%;
+    right: 25%;
+    height: 2px;
+    background: var(--gold-light);
+    border-radius: 2px;
+    box-shadow: 0 0 8px var(--gold-light);
+}
+.tab:hover:not(.active) { color: #ccc; }
+
+/* ═══════════════════════════════════════════ */
+/* الأقسام (Sections)                            */
+/* ═══════════════════════════════════════════ */
+.section {
+    padding: 0 16px 16px;
+    animation: fadeInUp 0.5s ease-out;
+}
+.section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+}
+.section-title h3 {
+    font-size: 14px;
+    font-weight: 900;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.section-title h3 i {
+    color: var(--gold);
+    font-size: 14px;
+}
+.section-title .more {
+    font-size: 11px;
+    color: var(--gold);
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+}
+.section-title .more:hover { text-decoration: underline; }
+
+/* ═══════════════════════════════════════════ */
+/* صف الإنجازات                                  */
+/* ═══════════════════════════════════════════ */
+.achievements-row {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    margin: 0 -4px;
+}
+.achievements-row::-webkit-scrollbar { display: none; }
+.achievement {
+    flex-shrink: 0;
+    width: 72px;
+    height: 84px;
+    background: var(--bg-glass);
+    border: 1px solid var(--border-gold);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 4px;
+    transition: all 0.2s;
+    cursor: pointer;
+    text-align: center;
+}
+.achievement:hover {
+    background: rgba(212, 175, 55, 0.15);
+    transform: scale(1.05);
+    border-color: var(--gold);
+}
+.achievement-icon { font-size: 26px; }
+.achievement-name { font-size: 9px; color: #ccc; font-weight: 700; line-height: 1.2; }
+
+/* ═══════════════════════════════════════════ */
+/* نشاط حديث                                     */
+/* ═══════════════════════════════════════════ */
+.activity-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--bg-glass);
+    border: 1px solid rgba(212, 175, 55, 0.12);
+    border-radius: 12px;
+    margin-bottom: 8px;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+.activity-item:hover {
+    background: rgba(212, 175, 55, 0.08);
+    border-color: var(--border-gold);
+}
+.activity-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.05));
+    border: 1px solid var(--border-gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+.activity-info { flex: 1; min-width: 0; }
+.activity-text { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+.activity-time { font-size: 10px; color: var(--text-dim); }
+
+/* ═══════════════════════════════════════════ */
+/* اللحظات (Stories)                             */
+/* ═══════════════════════════════════════════ */
+.moments-row {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    margin: 0 -4px;
+}
+.moments-row::-webkit-scrollbar { display: none; }
+.moment {
+    flex-shrink: 0;
+    width: 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.moment:hover { transform: scale(1.05); }
+.moment-ring {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    padding: 3px;
+    background: conic-gradient(from 0deg, #ffd700, #ff006e, #8a2be2, #ffd700);
+    animation: ringRotate 8s linear infinite;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+}
+.moment-ring.seen {
+    background: conic-gradient(from 0deg, #444, #666, #444);
+    animation: none;
+}
+.moment-ring.add {
+    background: linear-gradient(135deg, #4a148c, #d4af37);
+    animation: none;
+}
+@keyframes ringRotate {
+    to { transform: rotate(360deg); }
+}
+.moment-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4a148c, #1a0e2e);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    border: 3px solid #050508;
+    animation: ringRotate 8s linear infinite reverse;
+}
+.moment-ring.seen .moment-img,
+.moment-ring.add .moment-img {
+    animation: none;
+}
+.moment-name {
+    font-size: 10px;
+    color: #fff;
+    font-weight: 700;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 76px;
+}
+
+/* ═══════════════════════════════════════════ */
+/* الأصدقاء                                      */
+/* ═══════════════════════════════════════════ */
+.friends-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    gap: 10px;
+}
+.friend-card {
+    aspect-ratio: 1;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #4a148c, #1a0e2e);
+    border: 1px solid var(--border-gold);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+.friend-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--gold);
+    box-shadow: 0 8px 20px rgba(212, 175, 55, 0.25);
+}
+.friend-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #d4af37, #b8860b);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 900;
+    color: #050508;
+    margin-bottom: 4px;
+    border: 2px solid rgba(212, 175, 55, 0.5);
+}
+.friend-name {
+    font-size: 9px;
+    color: #fff;
+    font-weight: 700;
+    text-align: center;
+    padding: 0 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+/* ═══════════════════════════════════════════ */
+/* Bottom Nav للتنقل                             */
+/* ═══════════════════════════════════════════ */
+.bottom-nav-demo {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
+    height: 60px;
+    background: rgba(5, 5, 8, 0.95);
+    border-top: 1px solid var(--border-gold);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    backdrop-filter: blur(20px);
+    z-index: 50;
+}
+.nav-item-demo {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 9px;
+    font-weight: 700;
+    border: none;
+    background: none;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+.nav-item-demo i { font-size: 16px; }
+.nav-item-demo.active { color: var(--gold-light); }
+.nav-item-demo:hover { color: var(--gold); }
+
+/* ═══════════════════════════════════════════ */
+/* Responsive                                    */
+/* ═══════════════════════════════════════════ */
+@media (max-width: 400px) {
+    .username { font-size: 22px; }
+    .stats { grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 0 12px; }
+    .stat-value { font-size: 13px; }
+    .stat-icon { font-size: 16px; }
+    .quick-btn { font-size: 11px; padding: 10px 6px; }
+}
+</style>
+</head>
+<body>
+
+<div class="starfield" id="starfield"></div>
+
+<div class="demo-notice">
+    🎨 <span>معاينة تصميم</span> — بروفايل قمر الشام الجديد
+</div>
+
+<div class="container">
+
+    <!-- ═══ الغلاف ═══ -->
+    <div class="cover">
+        <div class="cover-moon"></div>
+        <div class="cover-edit" title="تعديل الغلاف">
+            <i class="fas fa-camera"></i>
+        </div>
+
+        <!-- الأفاتار -->
+        <div class="avatar-wrap">
+            <div class="avatar-frame">
+                <div class="avatar-inner">أ</div>
+                <div class="avatar-status"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ الهوية ═══ -->
+    <div class="identity">
+        <div class="rank-crown">👑</div>
+        <div class="username">أحمد الملك</div>
+        <div class="rank-badge">
+            <i class="fas fa-crown"></i>
+            <span>KING</span>
+            <i class="fas fa-crown"></i>
+        </div>
+        <div class="bio">أحب الحياة بكل ألوانها، وأعيش كل لحظة كأنها الأخيرة</div>
+        <div class="mood-pill">
+            <span>😊</span>
+            <span>سعيد اليوم</span>
+        </div>
+    </div>
+
+    <!-- ═══ الإحصائيات ═══ -->
+    <div class="stats">
+        <div class="stat">
+            <span class="stat-icon">❤️</span>
+            <span class="stat-value">1.2K</span>
+            <span class="stat-label">إعجاب</span>
+        </div>
+        <div class="stat">
+            <span class="stat-icon">👥</span>
+            <span class="stat-value">340</span>
+            <span class="stat-label">صديق</span>
+        </div>
+        <div class="stat">
+            <span class="stat-icon">🏆</span>
+            <span class="stat-value">12</span>
+            <span class="stat-label">إنجاز</span>
+        </div>
+        <div class="stat">
+            <span class="stat-icon">🎁</span>
+            <span class="stat-value">89</span>
+            <span class="stat-label">هدية</span>
+        </div>
+    </div>
+
+    <!-- ═══ أزرار سريعة ═══ -->
+    <div class="quick-actions">
+        <button class="quick-btn primary">
+            <i class="fas fa-comment"></i>
+            <span>رسالة</span>
+        </button>
+        <button class="quick-btn">
+            <i class="fas fa-heart"></i>
+            <span>إعجاب</span>
+        </button>
+        <button class="quick-btn">
+            <i class="fas fa-hand-peace"></i>
+            <span>نكزة</span>
+        </button>
+    </div>
+
+    <!-- ═══ التبويبات ═══ -->
+    <div class="tabs">
+        <button class="tab active">
+            <i class="fas fa-home"></i>
+            <span>الرئيسية</span>
+        </button>
+        <button class="tab">
+            <i class="fas fa-camera"></i>
+            <span>لحظات</span>
+        </button>
+        <button class="tab">
+            <i class="fas fa-users"></i>
+            <span>أصدقاء</span>
+        </button>
+        <button class="tab">
+            <i class="fas fa-search"></i>
+            <span>بحث</span>
+        </button>
+        <button class="tab">
+            <i class="fas fa-crosshairs"></i>
+            <span>أوامر</span>
+        </button>
+    </div>
+
+    <!-- ═══ الإنجازات ═══ -->
+    <div class="section">
+        <div class="section-title">
+            <h3><i class="fas fa-medal"></i> الإنجازات</h3>
+            <a class="more">الكل ←</a>
+        </div>
+        <div class="achievements-row">
+            <div class="achievement">
+                <span class="achievement-icon">🏆</span>
+                <span class="achievement-name">100 نقطة</span>
+            </div>
+            <div class="achievement">
+                <span class="achievement-icon">👑</span>
+                <span class="achievement-name">ملك شهر</span>
+            </div>
+            <div class="achievement">
+                <span class="achievement-icon">🎯</span>
+                <span class="achievement-name">50 إجابة</span>
+            </div>
+            <div class="achievement">
+                <span class="achievement-icon">💬</span>
+                <span class="achievement-name">1000 رسالة</span>
+            </div>
+            <div class="achievement">
+                <span class="achievement-icon">❤️</span>
+                <span class="achievement-name">100 إعجاب</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ اللحظات ═══ -->
+    <div class="section">
+        <div class="section-title">
+            <h3><i class="fas fa-circle-notch"></i> اللحظات</h3>
+            <a class="more">الكل ←</a>
+        </div>
+        <div class="moments-row">
+            <div class="moment">
+                <div class="moment-ring add">
+                    <div class="moment-img">＋</div>
+                </div>
+                <span class="moment-name">أضف لحظة</span>
+            </div>
+            <div class="moment">
+                <div class="moment-ring">
+                    <div class="moment-img">🌟</div>
+                </div>
+                <span class="moment-name">سارة</span>
+            </div>
+            <div class="moment">
+                <div class="moment-ring">
+                    <div class="moment-img">🎨</div>
+                </div>
+                <span class="moment-name">علي</span>
+            </div>
+            <div class="moment">
+                <div class="moment-ring seen">
+                    <div class="moment-img">📷</div>
+                </div>
+                <span class="moment-name">خالد</span>
+            </div>
+            <div class="moment">
+                <div class="moment-ring">
+                    <div class="moment-img">✨</div>
+                </div>
+                <span class="moment-name">نور</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ نشاط حديث ═══ -->
+    <div class="section">
+        <div class="section-title">
+            <h3><i class="fas fa-history"></i> نشاط حديث</h3>
+        </div>
+        <div class="activity-item">
+            <div class="activity-icon">🏆</div>
+            <div class="activity-info">
+                <div class="activity-text">إنجاز جديد: 50 إجابة صحيحة</div>
+                <div class="activity-time">قبل ساعتين</div>
+            </div>
+        </div>
+        <div class="activity-item">
+            <div class="activity-icon">💬</div>
+            <div class="activity-info">
+                <div class="activity-text">تحدثت في الروم العام</div>
+                <div class="activity-time">قبل 5 دقائق</div>
+            </div>
+        </div>
+        <div class="activity-item">
+            <div class="activity-icon">❤️</div>
+            <div class="activity-info">
+                <div class="activity-text">أحببت 3 بروفايلات</div>
+                <div class="activity-time">قبل 3 ساعات</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ الأصدقاء ═══ -->
+    <div class="section">
+        <div class="section-title">
+            <h3><i class="fas fa-user-friends"></i> أصدقاء مقربون</h3>
+            <a class="more">الكل ←</a>
+        </div>
+        <div class="friends-grid">
+            <div class="friend-card">
+                <div class="friend-avatar">س</div>
+                <span class="friend-name">سارة</span>
+            </div>
+            <div class="friend-card">
+                <div class="friend-avatar">ع</div>
+                <span class="friend-name">علي</span>
+            </div>
+            <div class="friend-card">
+                <div class="friend-avatar">ن</div>
+                <span class="friend-name">نور</span>
+            </div>
+            <div class="friend-card">
+                <div class="friend-avatar">خ</div>
+                <span class="friend-name">خالد</span>
+            </div>
+            <div class="friend-card">
+                <div class="friend-avatar">م</div>
+                <span class="friend-name">منى</span>
+            </div>
+            <div class="friend-card">
+                <div class="friend-avatar">ل</div>
+                <span class="friend-name">ليلى</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ═══ Bottom Nav ═══ -->
+<div class="bottom-nav-demo">
+    <button class="nav-item-demo active">
+        <i class="fas fa-user"></i>
+        <span>بروفايلي</span>
+    </button>
+    <button class="nav-item-demo">
+        <i class="fas fa-users"></i>
+        <span>المتواجدين</span>
+    </button>
+    <button class="nav-item-demo">
+        <i class="fas fa-comments"></i>
+        <span>الرسائل</span>
+    </button>
+    <button class="nav-item-demo">
+        <i class="fas fa-store"></i>
+        <span>المتجر</span>
+    </button>
+</div>
+
+<script>
+/* ═══ توليد النجوم ═══ */
+(function generateStars() {
+    var sf = document.getElementById('starfield');
+    for (var i = 0; i < 40; i++) {
+        var star = document.createElement('div');
+        star.className = 'star';
+        star.style.left = Math.random() * 100 + '%';
+        star.style.animationDuration = (Math.random() * 4 + 3) + 's';
+        star.style.animationDelay = (Math.random() * 6) + 's';
+        star.style.opacity = Math.random() * 0.5 + 0.3;
+        sf.appendChild(star);
+    }
+})();
+
+/* ═══ تفاعل التبويبات ═══ */
+document.querySelectorAll('.tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+        document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+        tab.classList.add('active');
+    });
+});
+
+/* ═══ تفاعل Bottom Nav ═══ */
+document.querySelectorAll('.nav-item-demo').forEach(function(item) {
+    item.addEventListener('click', function() {
+        document.querySelectorAll('.nav-item-demo').forEach(function(n) { n.classList.remove('active'); });
+        item.classList.add('active');
+    });
+});
+
+/* ═══ تأثير اهتزاز عند الضغط على الإحصائيات ═══ */
+document.querySelectorAll('.stat').forEach(function(stat) {
+    stat.addEventListener('click', function() {
+        stat.style.transform = 'scale(0.95)';
+        setTimeout(function() { stat.style.transform = ''; }, 150);
+    });
+});
+</script>
+
+</body>
+</html>
