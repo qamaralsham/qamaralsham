@@ -3,16 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>🌙 معاينة بروفايل قمر الشام</title>
+<title>🌙 معاينة بروفايل قمر الشام v2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
 <style>
-/* ═══════════════════════════════════════════ */
-/* الأساس                                       */
-/* ═══════════════════════════════════════════ */
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
 :root {
@@ -28,13 +25,10 @@
     --text-dim: #9ca3af;
     --success: #84cc16;
     --danger: #ef4444;
-    --warning: #ff9800;
 }
 
 html, body {
-    background: radial-gradient(ellipse at top, rgba(212, 175, 55, 0.08) 0%, transparent 55%),
-                radial-gradient(ellipse at bottom, rgba(100, 50, 150, 0.12) 0%, transparent 55%),
-                linear-gradient(to bottom, #050508, #0a0a15);
+    background: #030108;
     color: var(--text);
     font-family: 'Cairo', sans-serif;
     min-height: 100vh;
@@ -43,7 +37,7 @@ html, body {
 }
 
 /* ═══════════════════════════════════════════ */
-/* الخلفية النجمية                              */
+/* الخلفية العامة (نجوم خفيفة خلف كل شيء)     */
 /* ═══════════════════════════════════════════ */
 .starfield {
     position: fixed;
@@ -56,9 +50,9 @@ html, body {
     position: absolute;
     width: 2px;
     height: 2px;
-    background: rgba(255, 215, 0, 0.8);
+    background: rgba(255, 215, 0, 0.6);
     border-radius: 50%;
-    box-shadow: 0 0 6px rgba(255, 215, 0, 0.8);
+    box-shadow: 0 0 6px rgba(255, 215, 0, 0.6);
     animation: starFall linear infinite;
 }
 @keyframes starFall {
@@ -69,7 +63,7 @@ html, body {
 }
 
 /* ═══════════════════════════════════════════ */
-/* الحاوية                                      */
+/* الحاوية                                       */
 /* ═══════════════════════════════════════════ */
 .demo-notice {
     background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(74, 20, 140, 0.15));
@@ -90,8 +84,6 @@ html, body {
     max-width: 480px;
     margin: 0 auto;
     min-height: 100vh;
-    background: rgba(5, 5, 8, 0.4);
-    backdrop-filter: blur(4px);
     position: relative;
     z-index: 1;
     padding-bottom: 80px;
@@ -103,60 +95,122 @@ html, body {
 }
 
 /* ═══════════════════════════════════════════ */
-/* الغلاف                                        */
+/* 🌙 الغلاف الكبير (Hero) — يحتوي كل شيء       */
 /* ═══════════════════════════════════════════ */
-.cover {
-    height: 220px;
+.hero-cover {
     position: relative;
+    min-height: 520px;
     overflow: hidden;
     background: 
-        linear-gradient(180deg, transparent 0%, rgba(5, 5, 8, 0.7) 100%),
-        radial-gradient(ellipse at 20% 30%, rgba(212, 175, 55, 0.35) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 70%, rgba(74, 20, 140, 0.6) 0%, transparent 50%),
-        linear-gradient(135deg, #1a0e2e, #0a0518);
+        radial-gradient(ellipse at 20% 20%, rgba(212, 175, 55, 0.25) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 40%, rgba(74, 20, 140, 0.6) 0%, transparent 55%),
+        radial-gradient(ellipse at 50% 90%, rgba(26, 14, 46, 0.9) 0%, transparent 70%),
+        linear-gradient(180deg, #0a0518 0%, #1a0e2e 40%, #0a0518 100%);
+    padding: 24px 20px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
 }
-.cover::before {
+
+/* نجوم الغلاف (طبقة داخلية) */
+.hero-cover::before {
     content: '';
     position: absolute;
     inset: 0;
     background-image: 
-        radial-gradient(circle at 15% 20%, rgba(255, 215, 0, 0.6) 1px, transparent 1.5px),
-        radial-gradient(circle at 45% 60%, rgba(255, 255, 255, 0.4) 1px, transparent 1.5px),
-        radial-gradient(circle at 70% 30%, rgba(255, 215, 0, 0.5) 1px, transparent 1.5px),
-        radial-gradient(circle at 85% 75%, rgba(255, 255, 255, 0.35) 1px, transparent 1.5px),
-        radial-gradient(circle at 30% 85%, rgba(255, 215, 0, 0.4) 1px, transparent 1.5px);
-    background-size: 200px 200px, 180px 180px, 220px 220px, 160px 160px, 240px 240px;
-    animation: coverShift 20s linear infinite;
+        radial-gradient(circle at 15% 20%, rgba(255, 215, 0, 0.7) 1.2px, transparent 2px),
+        radial-gradient(circle at 45% 60%, rgba(255, 255, 255, 0.5) 1px, transparent 1.8px),
+        radial-gradient(circle at 70% 30%, rgba(255, 215, 0, 0.6) 1.2px, transparent 2px),
+        radial-gradient(circle at 85% 75%, rgba(255, 255, 255, 0.4) 1px, transparent 1.8px),
+        radial-gradient(circle at 30% 85%, rgba(255, 215, 0, 0.5) 1px, transparent 2px),
+        radial-gradient(circle at 55% 15%, rgba(255, 255, 255, 0.35) 0.8px, transparent 1.5px),
+        radial-gradient(circle at 90% 45%, rgba(255, 215, 0, 0.4) 1px, transparent 1.8px),
+        radial-gradient(circle at 10% 65%, rgba(255, 255, 255, 0.3) 0.8px, transparent 1.5px);
+    background-size: 200px 200px, 180px 180px, 220px 220px, 160px 160px, 240px 240px, 190px 190px, 210px 210px, 170px 170px;
+    animation: coverShift 30s linear infinite;
+    pointer-events: none;
+    z-index: 0;
 }
 @keyframes coverShift {
-    0% { background-position: 0 0, 0 0, 0 0, 0 0, 0 0; }
-    100% { background-position: 200px 200px, -180px 180px, 220px -220px, -160px -160px, 240px 240px; }
+    0% { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0; }
+    100% { background-position: 200px 200px, -180px 180px, 220px -220px, -160px -160px, 240px 240px, -190px 190px, 210px -210px, -170px -170px; }
 }
+
+/* زخارف إضافية (سحاب خفيف) */
+.hero-cover::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: 
+        radial-gradient(ellipse 300px 100px at 30% 55%, rgba(100, 60, 150, 0.25) 0%, transparent 70%),
+        radial-gradient(ellipse 250px 80px at 70% 75%, rgba(74, 20, 140, 0.3) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+    animation: cloudFloat 15s ease-in-out infinite;
+}
+@keyframes cloudFloat {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(15px); }
+}
+
+/* القمر */
 .cover-moon {
     position: absolute;
-    top: 30px;
-    left: 40px;
-    width: 60px;
-    height: 60px;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 110px;
+    height: 110px;
     border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, #fff8dc, #ffd700 40%, #d4af37 70%, transparent 100%);
-    box-shadow: 0 0 40px rgba(255, 215, 0, 0.6), 0 0 80px rgba(255, 215, 0, 0.3);
+    background: 
+        radial-gradient(circle at 38% 35%, #fffef0 0%, #fff8dc 15%, #ffec8b 35%, #ffd700 55%, #d4af37 80%, #b8860b 100%);
+    box-shadow: 
+        0 0 50px rgba(255, 215, 0, 0.8),
+        0 0 100px rgba(255, 215, 0, 0.4),
+        0 0 160px rgba(255, 215, 0, 0.15);
+    z-index: 1;
     animation: moonFloat 6s ease-in-out infinite;
 }
-@keyframes moonFloat {
-    0%, 100% { transform: translateY(0) scale(1); }
-    50% { transform: translateY(-5px) scale(1.05); }
+.cover-moon::before {
+    content: '';
+    position: absolute;
+    top: 18%;
+    left: 22%;
+    width: 22%;
+    height: 22%;
+    border-radius: 50%;
+    background: rgba(212, 175, 55, 0.35);
+    box-shadow: 
+        inset 2px 2px 4px rgba(0, 0, 0, 0.15),
+        45% 60% 0 -8px rgba(212, 175, 55, 0.2);
 }
+.cover-moon::after {
+    content: '';
+    position: absolute;
+    bottom: 22%;
+    right: 18%;
+    width: 14%;
+    height: 14%;
+    border-radius: 50%;
+    background: rgba(212, 175, 55, 0.28);
+}
+@keyframes moonFloat {
+    0%, 100% { transform: translateX(-50%) translateY(0) scale(1); }
+    50% { transform: translateX(-50%) translateY(-6px) scale(1.03); }
+}
+
+/* زر تعديل الغلاف */
 .cover-edit {
     position: absolute;
-    top: 12px;
-    left: 12px;
+    top: 16px;
+    left: 16px;
     z-index: 5;
     background: rgba(0, 0, 0, 0.5);
     border: 1px solid var(--border-gold);
     color: var(--gold);
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -169,32 +223,31 @@ html, body {
 .cover-edit:hover { background: rgba(212, 175, 55, 0.2); transform: scale(1.08); }
 
 /* ═══════════════════════════════════════════ */
-/* الأفاتار                                      */
+/* الأفاتار (الآن مكتمل داخل الغلاف)           */
 /* ═══════════════════════════════════════════ */
 .avatar-wrap {
-    position: absolute;
-    bottom: -55px;
-    left: 50%;
-    transform: translateX(-50%);
+    position: relative;
     z-index: 10;
-    animation: avatarIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s backwards;
+    margin-top: 130px;
+    margin-bottom: 14px;
+    animation: avatarIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s backwards;
 }
 @keyframes avatarIn {
-    0% { opacity: 0; transform: translateX(-50%) scale(0.4) translateY(30px); }
-    100% { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
+    0% { opacity: 0; transform: scale(0.4) translateY(30px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 .avatar-frame {
     position: relative;
-    width: 110px;
-    height: 110px;
+    width: 130px;
+    height: 130px;
     border-radius: 50%;
-    padding: 4px;
-    background: conic-gradient(from 0deg, #d4af37, #ffec8b, #b8860b, #ffd700, #d4af37);
-    animation: frameRotate 4s linear infinite;
+    padding: 5px;
+    background: conic-gradient(from 0deg, #d4af37, #ffec8b, #fffef0, #ffd700, #d4af37, #b8860b, #d4af37);
+    animation: frameRotate 5s linear infinite;
     box-shadow: 
-        0 0 30px rgba(255, 215, 0, 0.5),
-        0 0 60px rgba(255, 215, 0, 0.2),
-        0 10px 40px rgba(0, 0, 0, 0.6);
+        0 0 40px rgba(255, 215, 0, 0.6),
+        0 0 80px rgba(255, 215, 0, 0.3),
+        0 15px 50px rgba(0, 0, 0, 0.7);
 }
 @keyframes frameRotate {
     to { transform: rotate(360deg); }
@@ -207,55 +260,58 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 42px;
+    font-size: 52px;
     color: var(--gold-light);
     font-weight: 900;
     position: relative;
-    animation: frameRotate 4s linear infinite reverse;
+    animation: frameRotate 5s linear infinite reverse;
     font-family: 'Cairo', sans-serif;
-    border: 3px solid #050508;
+    border: 4px solid #050508;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
 }
 .avatar-status {
     position: absolute;
     bottom: 8px;
-    right: 8px;
-    width: 16px;
-    height: 16px;
+    right: 12px;
+    width: 20px;
+    height: 20px;
     background: #00e676;
-    border: 3px solid #050508;
+    border: 4px solid #050508;
     border-radius: 50%;
-    box-shadow: 0 0 12px #00e676;
+    box-shadow: 0 0 15px #00e676;
     z-index: 3;
     animation: statusPulse 2s ease-in-out infinite;
 }
 @keyframes statusPulse {
-    0%, 100% { box-shadow: 0 0 12px #00e676; }
-    50% { box-shadow: 0 0 20px #00e676, 0 0 30px rgba(0, 230, 118, 0.5); }
+    0%, 100% { box-shadow: 0 0 15px #00e676; }
+    50% { box-shadow: 0 0 25px #00e676, 0 0 40px rgba(0, 230, 118, 0.5); }
 }
 
 /* ═══════════════════════════════════════════ */
-/* الهوية (الاسم + الرتبة + البايو)             */
+/* الهوية (داخل الغلاف)                          */
 /* ═══════════════════════════════════════════ */
 .identity {
-    padding: 70px 20px 16px;
+    position: relative;
+    z-index: 2;
     text-align: center;
-    animation: fadeInUp 0.6s ease-out 0.3s backwards;
+    padding: 0 10px;
+    animation: fadeInUp 0.6s ease-out 0.4s backwards;
 }
 .rank-crown {
-    font-size: 32px;
+    font-size: 36px;
     line-height: 1;
-    margin-bottom: 4px;
-    filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.7));
+    margin-bottom: 6px;
+    filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8));
     animation: crownBounce 3s ease-in-out infinite;
 }
 @keyframes crownBounce {
     0%, 100% { transform: translateY(0) rotate(0deg); }
-    50% { transform: translateY(-4px) rotate(-3deg); }
+    50% { transform: translateY(-5px) rotate(-3deg); }
 }
 .username {
-    font-size: 26px;
+    font-size: 30px;
     font-weight: 900;
-    background: linear-gradient(90deg, #d4af37, #ffec8b, #d4af37, #ffec8b, #d4af37);
+    background: linear-gradient(90deg, #d4af37, #ffec8b, #fffef0, #ffd700, #d4af37);
     background-size: 300% 100%;
     -webkit-background-clip: text;
     background-clip: text;
@@ -263,8 +319,11 @@ html, body {
     color: transparent;
     animation: nameShimmer 3s linear infinite;
     letter-spacing: 0.5px;
-    margin-bottom: 6px;
-    text-shadow: 0 0 30px rgba(212, 175, 55, 0.4);
+    margin-bottom: 10px;
+    text-shadow: 0 0 40px rgba(212, 175, 55, 0.5);
+    font-family: 'Cairo', sans-serif;
+    padding: 0 10px;
+    word-break: break-word;
 }
 @keyframes nameShimmer {
     to { background-position: 300% 0; }
@@ -272,83 +331,111 @@ html, body {
 .rank-badge {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 5px 16px;
-    background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(212, 175, 55, 0.08));
+    gap: 8px;
+    padding: 6px 20px;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.3), rgba(212, 175, 55, 0.1));
     border: 1px solid var(--border-gold);
     border-radius: 999px;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 900;
     color: var(--gold-light);
-    letter-spacing: 1px;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
-    margin-bottom: 12px;
-    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.15);
+    margin-bottom: 18px;
+    box-shadow: 0 4px 20px rgba(212, 175, 55, 0.25);
     animation: rankShine 2.5s ease-in-out infinite;
 }
 @keyframes rankShine {
-    0%, 100% { box-shadow: 0 4px 15px rgba(212, 175, 55, 0.15); }
-    50% { box-shadow: 0 4px 25px rgba(212, 175, 55, 0.4); }
+    0%, 100% { box-shadow: 0 4px 20px rgba(212, 175, 55, 0.25); }
+    50% { box-shadow: 0 4px 30px rgba(212, 175, 55, 0.5); }
 }
-.rank-badge i { font-size: 11px; }
+.rank-badge i { font-size: 12px; }
 .bio {
     font-family: 'Amiri', serif;
-    font-size: 15px;
+    font-size: 17px;
     font-style: italic;
-    color: #e0d5c8;
-    line-height: 1.7;
-    margin: 8px auto 12px;
-    max-width: 320px;
+    color: #f0e5d5;
+    line-height: 1.8;
+    margin: 8px auto 14px;
+    max-width: 340px;
     position: relative;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+    padding: 0 20px;
 }
-.bio::before, .bio::after {
+.bio::before {
     content: '❝';
-    font-size: 18px;
+    font-size: 22px;
     color: var(--gold);
-    opacity: 0.6;
+    opacity: 0.7;
     position: absolute;
+    right: 0;
+    top: -6px;
 }
-.bio::before { right: -16px; top: -4px; }
-.bio::after { content: '❞'; left: -16px; bottom: -8px; }
+.bio::after {
+    content: '❞';
+    font-size: 22px;
+    color: var(--gold);
+    opacity: 0.7;
+    position: absolute;
+    left: 0;
+    bottom: -10px;
+}
 .mood-pill {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
-    background: rgba(132, 204, 22, 0.12);
-    border: 1px solid rgba(132, 204, 22, 0.3);
+    gap: 8px;
+    padding: 8px 18px;
+    background: rgba(132, 204, 22, 0.15);
+    border: 1px solid rgba(132, 204, 22, 0.4);
     border-radius: 999px;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 700;
     color: #a3e635;
-    margin-top: 4px;
+    margin-top: 6px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 15px rgba(132, 204, 22, 0.15);
+}
+
+/* الفاصل السفلي للغلاف (تدرّج) */
+.hero-cover-fade {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: linear-gradient(180deg, transparent 0%, rgba(5, 5, 8, 0.6) 60%, rgba(5, 5, 8, 0.95) 100%);
+    pointer-events: none;
+    z-index: 3;
 }
 
 /* ═══════════════════════════════════════════ */
-/* الإحصائيات                                    */
+/* الإحصائيات + الأزرار (فوق الخلفية العامة)   */
 /* ═══════════════════════════════════════════ */
 .stats {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 8px;
     padding: 0 16px;
-    margin-bottom: 14px;
-    animation: fadeInUp 0.6s ease-out 0.4s backwards;
+    margin: -30px 0 14px;
+    position: relative;
+    z-index: 5;
+    animation: fadeInUp 0.6s ease-out 0.5s backwards;
 }
 .stat {
-    background: var(--bg-glass);
+    background: linear-gradient(135deg, rgba(20, 15, 35, 0.9), rgba(10, 8, 20, 0.95));
     border: 1px solid var(--border-gold);
     border-radius: 14px;
     padding: 12px 6px;
     text-align: center;
     transition: all 0.2s;
     cursor: pointer;
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
 }
 .stat:hover {
-    background: rgba(212, 175, 55, 0.1);
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.05));
     transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(212, 175, 55, 0.2);
+    box-shadow: 0 12px 30px rgba(212, 175, 55, 0.25);
 }
 .stat-icon {
     font-size: 18px;
@@ -369,16 +456,14 @@ html, body {
     font-weight: 700;
 }
 
-/* ═══════════════════════════════════════════ */
-/* أزرار سريعة                                   */
-/* ═══════════════════════════════════════════ */
+/* ═══ أزرار سريعة ═══ */
 .quick-actions {
     display: flex;
     justify-content: center;
     gap: 10px;
     padding: 0 16px;
-    margin-bottom: 18px;
-    animation: fadeInUp 0.6s ease-out 0.5s backwards;
+    margin-bottom: 16px;
+    animation: fadeInUp 0.6s ease-out 0.6s backwards;
 }
 .quick-btn {
     flex: 1;
@@ -421,15 +506,14 @@ html, body {
     display: flex;
     gap: 4px;
     padding: 8px 12px;
-    background: rgba(0, 0, 0, 0.3);
-    border-top: 1px solid rgba(212, 175, 55, 0.15);
-    border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+    background: rgba(5, 5, 12, 0.85);
+    border-top: 1px solid rgba(212, 175, 55, 0.2);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.2);
     position: sticky;
     top: 40px;
     z-index: 20;
-    backdrop-filter: blur(15px);
-    margin-bottom: 16px;
-    animation: fadeInUp 0.6s ease-out 0.6s backwards;
+    backdrop-filter: blur(20px);
+    animation: fadeInUp 0.6s ease-out 0.7s backwards;
 }
 .tab {
     flex: 1;
@@ -468,10 +552,45 @@ html, body {
 .tab:hover:not(.active) { color: #ccc; }
 
 /* ═══════════════════════════════════════════ */
-/* الأقسام (Sections)                            */
+/* 🌌 منطقة المحتوى — بخلفية بروفايل خاصة       */
 /* ═══════════════════════════════════════════ */
+.content-area {
+    position: relative;
+    min-height: 60vh;
+    background: 
+        radial-gradient(ellipse at 30% 0%, rgba(74, 20, 140, 0.25) 0%, transparent 60%),
+        radial-gradient(ellipse at 70% 100%, rgba(212, 175, 55, 0.08) 0%, transparent 60%),
+        linear-gradient(180deg, #050508 0%, #0a0518 50%, #050508 100%);
+    padding-top: 16px;
+    overflow: hidden;
+}
+.content-area::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+        radial-gradient(circle at 12% 15%, rgba(255, 215, 0, 0.4) 1px, transparent 1.5px),
+        radial-gradient(circle at 45% 35%, rgba(255, 255, 255, 0.3) 0.8px, transparent 1.3px),
+        radial-gradient(circle at 78% 22%, rgba(255, 215, 0, 0.35) 0.9px, transparent 1.5px),
+        radial-gradient(circle at 88% 65%, rgba(255, 255, 255, 0.25) 0.8px, transparent 1.3px),
+        radial-gradient(circle at 25% 78%, rgba(255, 215, 0, 0.3) 0.9px, transparent 1.4px),
+        radial-gradient(circle at 62% 88%, rgba(255, 255, 255, 0.2) 0.7px, transparent 1.2px);
+    background-size: 240px 240px, 200px 200px, 260px 260px, 220px 220px, 250px 250px, 180px 180px;
+    opacity: 0.7;
+    pointer-events: none;
+    z-index: 0;
+    animation: contentBgShift 40s linear infinite;
+}
+@keyframes contentBgShift {
+    0% { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0; }
+    100% { background-position: 240px 240px, -200px 200px, 260px -260px, -220px -220px, 250px 250px, -180px -180px; }
+}
+
+/* أقسام المحتوى */
 .section {
     padding: 0 16px 16px;
+    position: relative;
+    z-index: 1;
     animation: fadeInUp 0.5s ease-out;
 }
 .section-title {
@@ -480,7 +599,7 @@ html, body {
     justify-content: space-between;
     margin-bottom: 10px;
     padding-bottom: 8px;
-    border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.15);
 }
 .section-title h3 {
     font-size: 14px;
@@ -503,9 +622,7 @@ html, body {
 }
 .section-title .more:hover { text-decoration: underline; }
 
-/* ═══════════════════════════════════════════ */
-/* صف الإنجازات                                  */
-/* ═══════════════════════════════════════════ */
+/* ═══ الإنجازات ═══ */
 .achievements-row {
     display: flex;
     gap: 8px;
@@ -517,9 +634,9 @@ html, body {
 .achievements-row::-webkit-scrollbar { display: none; }
 .achievement {
     flex-shrink: 0;
-    width: 72px;
-    height: 84px;
-    background: var(--bg-glass);
+    width: 76px;
+    height: 88px;
+    background: linear-gradient(135deg, rgba(20, 15, 35, 0.85), rgba(10, 8, 20, 0.9));
     border: 1px solid var(--border-gold);
     border-radius: 14px;
     display: flex;
@@ -531,39 +648,41 @@ html, body {
     transition: all 0.2s;
     cursor: pointer;
     text-align: center;
+    backdrop-filter: blur(8px);
 }
 .achievement:hover {
     background: rgba(212, 175, 55, 0.15);
     transform: scale(1.05);
     border-color: var(--gold);
+    box-shadow: 0 8px 20px rgba(212, 175, 55, 0.2);
 }
-.achievement-icon { font-size: 26px; }
+.achievement-icon { font-size: 28px; }
 .achievement-name { font-size: 9px; color: #ccc; font-weight: 700; line-height: 1.2; }
 
-/* ═══════════════════════════════════════════ */
-/* نشاط حديث                                     */
-/* ═══════════════════════════════════════════ */
+/* ═══ نشاط حديث ═══ */
 .activity-item {
     display: flex;
     align-items: center;
     gap: 12px;
     padding: 12px;
-    background: var(--bg-glass);
-    border: 1px solid rgba(212, 175, 55, 0.12);
+    background: linear-gradient(135deg, rgba(20, 15, 35, 0.7), rgba(10, 8, 20, 0.8));
+    border: 1px solid rgba(212, 175, 55, 0.15);
     border-radius: 12px;
     margin-bottom: 8px;
     transition: all 0.2s;
     cursor: pointer;
+    backdrop-filter: blur(8px);
 }
 .activity-item:hover {
-    background: rgba(212, 175, 55, 0.08);
+    background: rgba(212, 175, 55, 0.1);
     border-color: var(--border-gold);
+    transform: translateX(-3px);
 }
 .activity-icon {
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
     border-radius: 50%;
-    background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.05));
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(212, 175, 55, 0.08));
     border: 1px solid var(--border-gold);
     display: flex;
     align-items: center;
@@ -575,9 +694,7 @@ html, body {
 .activity-text { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 2px; }
 .activity-time { font-size: 10px; color: var(--text-dim); }
 
-/* ═══════════════════════════════════════════ */
-/* اللحظات (Stories)                             */
-/* ═══════════════════════════════════════════ */
+/* ═══ اللحظات ═══ */
 .moments-row {
     display: flex;
     gap: 10px;
@@ -645,9 +762,7 @@ html, body {
     max-width: 76px;
 }
 
-/* ═══════════════════════════════════════════ */
-/* الأصدقاء                                      */
-/* ═══════════════════════════════════════════ */
+/* ═══ الأصدقاء ═══ */
 .friends-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
@@ -673,8 +788,8 @@ html, body {
     box-shadow: 0 8px 20px rgba(212, 175, 55, 0.25);
 }
 .friend-avatar {
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
     border-radius: 50%;
     background: linear-gradient(135deg, #d4af37, #b8860b);
     display: flex;
@@ -699,7 +814,7 @@ html, body {
 }
 
 /* ═══════════════════════════════════════════ */
-/* Bottom Nav للتنقل                             */
+/* Bottom Nav                                    */
 /* ═══════════════════════════════════════════ */
 .bottom-nav-demo {
     position: fixed;
@@ -709,7 +824,7 @@ html, body {
     width: 100%;
     max-width: 480px;
     height: 60px;
-    background: rgba(5, 5, 8, 0.95);
+    background: rgba(5, 5, 8, 0.98);
     border-top: 1px solid var(--border-gold);
     display: flex;
     align-items: center;
@@ -742,7 +857,13 @@ html, body {
 /* Responsive                                    */
 /* ═══════════════════════════════════════════ */
 @media (max-width: 400px) {
-    .username { font-size: 22px; }
+    .hero-cover { min-height: 480px; }
+    .cover-moon { width: 95px; height: 95px; top: 45px; }
+    .avatar-wrap { margin-top: 115px; }
+    .avatar-frame { width: 118px; height: 118px; }
+    .avatar-inner { font-size: 46px; }
+    .username { font-size: 26px; }
+    .bio { font-size: 15px; }
     .stats { grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 0 12px; }
     .stat-value { font-size: 13px; }
     .stat-icon { font-size: 16px; }
@@ -755,44 +876,46 @@ html, body {
 <div class="starfield" id="starfield"></div>
 
 <div class="demo-notice">
-    🎨 <span>معاينة تصميم</span> — بروفايل قمر الشام الجديد
+    🎨 <span>معاينة تصميم v2</span> — الغلاف أطول + خلفية للمحتوى
 </div>
 
 <div class="container">
 
-    <!-- ═══ الغلاف ═══ -->
-    <div class="cover">
+    <!-- ═══ 🌙 الغلاف الكبير (Hero) ═══ -->
+    <div class="hero-cover">
         <div class="cover-moon"></div>
         <div class="cover-edit" title="تعديل الغلاف">
             <i class="fas fa-camera"></i>
         </div>
 
-        <!-- الأفاتار -->
+        <!-- الأفاتار (داخل الغلاف الآن) -->
         <div class="avatar-wrap">
             <div class="avatar-frame">
                 <div class="avatar-inner">أ</div>
                 <div class="avatar-status"></div>
             </div>
         </div>
+
+        <!-- الهوية -->
+        <div class="identity">
+            <div class="rank-crown">👑</div>
+            <div class="username">أحمد الملك</div>
+            <div class="rank-badge">
+                <i class="fas fa-crown"></i>
+                <span>KING</span>
+                <i class="fas fa-crown"></i>
+            </div>
+            <div class="bio">أحب الحياة بكل ألوانها، وأعيش كل لحظة كأنها الأخيرة</div>
+            <div class="mood-pill">
+                <span>😊</span>
+                <span>سعيد اليوم</span>
+            </div>
+        </div>
+
+        <div class="hero-cover-fade"></div>
     </div>
 
-    <!-- ═══ الهوية ═══ -->
-    <div class="identity">
-        <div class="rank-crown">👑</div>
-        <div class="username">أحمد الملك</div>
-        <div class="rank-badge">
-            <i class="fas fa-crown"></i>
-            <span>KING</span>
-            <i class="fas fa-crown"></i>
-        </div>
-        <div class="bio">أحب الحياة بكل ألوانها، وأعيش كل لحظة كأنها الأخيرة</div>
-        <div class="mood-pill">
-            <span>😊</span>
-            <span>سعيد اليوم</span>
-        </div>
-    </div>
-
-    <!-- ═══ الإحصائيات ═══ -->
+    <!-- ═══ الإحصائيات (فوق الخلفية العامة) ═══ -->
     <div class="stats">
         <div class="stat">
             <span class="stat-icon">❤️</span>
@@ -816,7 +939,7 @@ html, body {
         </div>
     </div>
 
-    <!-- ═══ أزرار سريعة ═══ -->
+    <!-- ═══ الأزرار السريعة ═══ -->
     <div class="quick-actions">
         <button class="quick-btn primary">
             <i class="fas fa-comment"></i>
@@ -856,136 +979,141 @@ html, body {
         </button>
     </div>
 
-    <!-- ═══ الإنجازات ═══ -->
-    <div class="section">
-        <div class="section-title">
-            <h3><i class="fas fa-medal"></i> الإنجازات</h3>
-            <a class="more">الكل ←</a>
-        </div>
-        <div class="achievements-row">
-            <div class="achievement">
-                <span class="achievement-icon">🏆</span>
-                <span class="achievement-name">100 نقطة</span>
-            </div>
-            <div class="achievement">
-                <span class="achievement-icon">👑</span>
-                <span class="achievement-name">ملك شهر</span>
-            </div>
-            <div class="achievement">
-                <span class="achievement-icon">🎯</span>
-                <span class="achievement-name">50 إجابة</span>
-            </div>
-            <div class="achievement">
-                <span class="achievement-icon">💬</span>
-                <span class="achievement-name">1000 رسالة</span>
-            </div>
-            <div class="achievement">
-                <span class="achievement-icon">❤️</span>
-                <span class="achievement-name">100 إعجاب</span>
-            </div>
-        </div>
-    </div>
+    <!-- ═══ 🌌 منطقة المحتوى بخلفيتها الخاصة ═══ -->
+    <div class="content-area">
 
-    <!-- ═══ اللحظات ═══ -->
-    <div class="section">
-        <div class="section-title">
-            <h3><i class="fas fa-circle-notch"></i> اللحظات</h3>
-            <a class="more">الكل ←</a>
-        </div>
-        <div class="moments-row">
-            <div class="moment">
-                <div class="moment-ring add">
-                    <div class="moment-img">＋</div>
-                </div>
-                <span class="moment-name">أضف لحظة</span>
+        <!-- الإنجازات -->
+        <div class="section">
+            <div class="section-title">
+                <h3><i class="fas fa-medal"></i> الإنجازات</h3>
+                <a class="more">الكل ←</a>
             </div>
-            <div class="moment">
-                <div class="moment-ring">
-                    <div class="moment-img">🌟</div>
+            <div class="achievements-row">
+                <div class="achievement">
+                    <span class="achievement-icon">🏆</span>
+                    <span class="achievement-name">100 نقطة</span>
                 </div>
-                <span class="moment-name">سارة</span>
-            </div>
-            <div class="moment">
-                <div class="moment-ring">
-                    <div class="moment-img">🎨</div>
+                <div class="achievement">
+                    <span class="achievement-icon">👑</span>
+                    <span class="achievement-name">ملك شهر</span>
                 </div>
-                <span class="moment-name">علي</span>
-            </div>
-            <div class="moment">
-                <div class="moment-ring seen">
-                    <div class="moment-img">📷</div>
+                <div class="achievement">
+                    <span class="achievement-icon">🎯</span>
+                    <span class="achievement-name">50 إجابة</span>
                 </div>
-                <span class="moment-name">خالد</span>
-            </div>
-            <div class="moment">
-                <div class="moment-ring">
-                    <div class="moment-img">✨</div>
+                <div class="achievement">
+                    <span class="achievement-icon">💬</span>
+                    <span class="achievement-name">1000 رسالة</span>
                 </div>
-                <span class="moment-name">نور</span>
+                <div class="achievement">
+                    <span class="achievement-icon">❤️</span>
+                    <span class="achievement-name">100 إعجاب</span>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- ═══ نشاط حديث ═══ -->
-    <div class="section">
-        <div class="section-title">
-            <h3><i class="fas fa-history"></i> نشاط حديث</h3>
-        </div>
-        <div class="activity-item">
-            <div class="activity-icon">🏆</div>
-            <div class="activity-info">
-                <div class="activity-text">إنجاز جديد: 50 إجابة صحيحة</div>
-                <div class="activity-time">قبل ساعتين</div>
+        <!-- اللحظات -->
+        <div class="section">
+            <div class="section-title">
+                <h3><i class="fas fa-circle-notch"></i> اللحظات</h3>
+                <a class="more">الكل ←</a>
+            </div>
+            <div class="moments-row">
+                <div class="moment">
+                    <div class="moment-ring add">
+                        <div class="moment-img">＋</div>
+                    </div>
+                    <span class="moment-name">أضف لحظة</span>
+                </div>
+                <div class="moment">
+                    <div class="moment-ring">
+                        <div class="moment-img">🌟</div>
+                    </div>
+                    <span class="moment-name">سارة</span>
+                </div>
+                <div class="moment">
+                    <div class="moment-ring">
+                        <div class="moment-img">🎨</div>
+                    </div>
+                    <span class="moment-name">علي</span>
+                </div>
+                <div class="moment">
+                    <div class="moment-ring seen">
+                        <div class="moment-img">📷</div>
+                    </div>
+                    <span class="moment-name">خالد</span>
+                </div>
+                <div class="moment">
+                    <div class="moment-ring">
+                        <div class="moment-img">✨</div>
+                    </div>
+                    <span class="moment-name">نور</span>
+                </div>
             </div>
         </div>
-        <div class="activity-item">
-            <div class="activity-icon">💬</div>
-            <div class="activity-info">
-                <div class="activity-text">تحدثت في الروم العام</div>
-                <div class="activity-time">قبل 5 دقائق</div>
-            </div>
-        </div>
-        <div class="activity-item">
-            <div class="activity-icon">❤️</div>
-            <div class="activity-info">
-                <div class="activity-text">أحببت 3 بروفايلات</div>
-                <div class="activity-time">قبل 3 ساعات</div>
-            </div>
-        </div>
-    </div>
 
-    <!-- ═══ الأصدقاء ═══ -->
-    <div class="section">
-        <div class="section-title">
-            <h3><i class="fas fa-user-friends"></i> أصدقاء مقربون</h3>
-            <a class="more">الكل ←</a>
-        </div>
-        <div class="friends-grid">
-            <div class="friend-card">
-                <div class="friend-avatar">س</div>
-                <span class="friend-name">سارة</span>
+        <!-- النشاط -->
+        <div class="section">
+            <div class="section-title">
+                <h3><i class="fas fa-history"></i> نشاط حديث</h3>
             </div>
-            <div class="friend-card">
-                <div class="friend-avatar">ع</div>
-                <span class="friend-name">علي</span>
+            <div class="activity-item">
+                <div class="activity-icon">🏆</div>
+                <div class="activity-info">
+                    <div class="activity-text">إنجاز جديد: 50 إجابة صحيحة</div>
+                    <div class="activity-time">قبل ساعتين</div>
+                </div>
             </div>
-            <div class="friend-card">
-                <div class="friend-avatar">ن</div>
-                <span class="friend-name">نور</span>
+            <div class="activity-item">
+                <div class="activity-icon">💬</div>
+                <div class="activity-info">
+                    <div class="activity-text">تحدثت في الروم العام</div>
+                    <div class="activity-time">قبل 5 دقائق</div>
+                </div>
             </div>
-            <div class="friend-card">
-                <div class="friend-avatar">خ</div>
-                <span class="friend-name">خالد</span>
-            </div>
-            <div class="friend-card">
-                <div class="friend-avatar">م</div>
-                <span class="friend-name">منى</span>
-            </div>
-            <div class="friend-card">
-                <div class="friend-avatar">ل</div>
-                <span class="friend-name">ليلى</span>
+            <div class="activity-item">
+                <div class="activity-icon">❤️</div>
+                <div class="activity-info">
+                    <div class="activity-text">أحببت 3 بروفايلات</div>
+                    <div class="activity-time">قبل 3 ساعات</div>
+                </div>
             </div>
         </div>
+
+        <!-- الأصدقاء -->
+        <div class="section">
+            <div class="section-title">
+                <h3><i class="fas fa-user-friends"></i> أصدقاء مقربون</h3>
+                <a class="more">الكل ←</a>
+            </div>
+            <div class="friends-grid">
+                <div class="friend-card">
+                    <div class="friend-avatar">س</div>
+                    <span class="friend-name">سارة</span>
+                </div>
+                <div class="friend-card">
+                    <div class="friend-avatar">ع</div>
+                    <span class="friend-name">علي</span>
+                </div>
+                <div class="friend-card">
+                    <div class="friend-avatar">ن</div>
+                    <span class="friend-name">نور</span>
+                </div>
+                <div class="friend-card">
+                    <div class="friend-avatar">خ</div>
+                    <span class="friend-name">خالد</span>
+                </div>
+                <div class="friend-card">
+                    <div class="friend-avatar">م</div>
+                    <span class="friend-name">منى</span>
+                </div>
+                <div class="friend-card">
+                    <div class="friend-avatar">ل</div>
+                    <span class="friend-name">ليلى</span>
+                </div>
+            </div>
+        </div>
+
     </div>
 
 </div>
@@ -1041,7 +1169,7 @@ document.querySelectorAll('.nav-item-demo').forEach(function(item) {
     });
 });
 
-/* ═══ تأثير اهتزاز عند الضغط على الإحصائيات ═══ */
+/* ═══ تأثير اهتزاز ═══ */
 document.querySelectorAll('.stat').forEach(function(stat) {
     stat.addEventListener('click', function() {
         stat.style.transform = 'scale(0.95)';
