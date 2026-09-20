@@ -1,14 +1,16 @@
 // ==============================================
-// profile-core.js v5.0 — كل الإصلاحات
+// profile-core.js v4.0 — NameEffects + Default Frame + Tabs جديدة
 // ==============================================
-// ✅ v5.0:
-//   1. ربط initCover + initAvatar عبر initAppearance
-//   2. زر تبديل الوضع (مالك/زائر) في الهيدر
-//   3. زر الطي (وضع الزائر)
-//   4. صور الأصدقاء من Firebase
-//   5. حجم الاسم ثابت 23px
-//   6. تبويبات ديناميكية حسب الوضع
-//   7. عرض اللحظات/الأصدقاء/الأوامر
+// ✅ v4.0:
+//   1. دمج NameEffects المركزي
+//   2. الإطار الافتراضي حسب الرتبة (ذهبي/وردي/فضي/رمادي)
+//   3. منطق التبويبات الجديد (يتبدل حسب الوضع)
+//   4. تبويب 📸 حالتي مربوط بـ Stories
+//   5. تبويب ⚔️ أوامر (Visitor Admin+)
+//   6. تبويب ⚙️ إعدادات (Owner only)
+//   7. زر الموسيقى للزوار
+//   8. زر الطي للزوار
+//   9. إزالة prompt() — استخدام openAppModal
 // ==============================================
 
 let currentUser = null, targetUser = null, viewMode = 'owner';
@@ -35,9 +37,6 @@ const GLOWS = [
     {id:'strong', name:'قوي'}
 ];
 
-/* ══════════════════════════════════════════════ */
-/* Helpers                                        */
-/* ══════════════════════════════════════════════ */
 function getUser() {
     try {
         return JSON.parse(localStorage.getItem('qamar_current_user') || localStorage.getItem('qamar_user') || 'null');
@@ -56,7 +55,7 @@ function getRankLevel(rank) {
 
 function toast(m) {
     const t = document.createElement('div');
-    t.style.cssText = 'position:fixed;top:20px;right:20px;background:rgba(15,15,20,0.95);border:1px solid #ffd700;border-radius:12px;padding:12px 20px;color:#fff;font-size:13px;font-weight:600;z-index:100000;font-family:Cairo,sans-serif;max-width:80vw';
+    t.style.cssText = 'position:fixed;top:20px;right:20px;background:rgba(15,15,20,0.95);border:1px solid #ffd700;border-radius:12px;padding:12px 20px;color:#fff;font-size:13px;font-weight:600;z-index:10000;font-family:Cairo,sans-serif;max-width:80vw';
     t.innerText = m;
     document.body.appendChild(t);
     setTimeout(() => t.remove(), 3000);
@@ -96,74 +95,63 @@ document.addEventListener('click', e => {
 });
 
 /* ══════════════════════════════════════════════ */
-/* Modal عام                                      */
+/* ⭐ v4: الموسيقى — من الرابط المخصص             */
 /* ══════════════════════════════════════════════ */
-function openAppModal(title, text, typeOrHtml, options, currentVal, onSave, isHtmlMode) {
-    const m = document.getElementById('app-modal');
-    if (!m) return;
-    document.getElementById('modal-title').innerText = title;
-    const textEl = document.getElementById('modal-text');
-    if (textEl) textEl.innerText = text || '';
-    const c = document.getElementById('modal-dyn');
-    c.innerHTML = '';
+function setupMusicToggle() {
+    var btn = document.getElementById('music-btn-mini');
+    var player = document.getElementById('music-player');
+    if (!btn || !player) return;
+    if (btn.__setup) return;
+    btn.__setup = true;
 
-    if (isHtmlMode === true && typeof typeOrHtml === 'string') {
-        c.innerHTML = typeOrHtml;
-    } else if (typeof typeOrHtml === 'string' && typeOrHtml.trim().startsWith('<')) {
-        c.innerHTML = typeOrHtml;
-    } else if (typeOrHtml === 'input') {
-        const i = document.createElement('input');
-        i.type = 'text';
-        i.id = 'modal-input-val';
-        i.value = currentVal || '';
-        c.appendChild(i);
-    } else if (typeOrHtml === 'select') {
-        const s = document.createElement('select');
-        s.id = 'modal-select-val';
-        (options || []).forEach(o => {
-            const op = document.createElement('option');
-            op.value = o; op.innerText = o;
-            if (o === currentVal) op.selected = true;
-            s.appendChild(op);
-        });
-        c.appendChild(s);
-    }
-
-    m.classList.add('active');
-
-    const okBtn = document.getElementById('modal-ok');
-    const cancelBtn = document.getElementById('modal-cancel');
-
-    okBtn.style.display = '';
-    cancelBtn.style.display = '';
-    okBtn.textContent = 'موافق';
-
-    okBtn.onclick = function() {
-        let v = '';
-        if (typeOrHtml === 'input') {
-            const i = document.getElementById('modal-input-val');
-            if (i) v = i.value;
-        } else if (typeOrHtml === 'select') {
-            const s = document.getElementById('modal-select-val');
-            if (s) v = s.value;
+    btn.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!musicURL) {
+            toast('⚠️ لا توجد موسيقى');
+            return;
         }
-        if (typeof onSave === 'function') onSave(v);
-        m.classList.remove('active');
+        if (musicPlaying) {
+            player.pause();
+            musicPlaying = false;
+            btn.innerHTML = '<i class="fas fa-play"></i>';
+            btn.classList.remove('playing');
+        } else {
+            player.play().then(function() {
+                musicPlaying = true;
+                btn.innerHTML = '<i class="fas fa-pause"></i>';
+                btn.classList.add('playing');
+            }).catch(function() {
+                toast('⚠️ تعذر تشغيل الموسيقى');
+            });
+        }
     };
-    cancelBtn.onclick = () => m.classList.remove('active');
-
-    if (isHtmlMode === true) {
-        okBtn.style.display = 'none';
-        cancelBtn.textContent = 'إغلاق';
-        cancelBtn.style.width = '100%';
-    } else {
-        cancelBtn.textContent = 'إلغاء';
-        cancelBtn.style.width = '';
-    }
 }
 
 /* ══════════════════════════════════════════════ */
-/* الصلاحيات                                       */
+/* ⭐ v4: زر الطي (وضع الزائر فقط)                 */
+/* ══════════════════════════════════════════════ */
+function setupCollapseToggle() {
+    var btn = document.getElementById('btn-collapse-info');
+    if (!btn) return;
+    if (btn.__setup) return;
+    btn.__setup = true;
+
+    btn.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        _isVisitorCollapsed = !_isVisitorCollapsed;
+        document.body.classList.toggle('visitor-collapsed', _isVisitorCollapsed);
+        var icon = btn.querySelector('i');
+        if (icon) {
+            icon.className = _isVisitorCollapsed ? 'fas fa-eye' : 'fas fa-eye-slash';
+        }
+        btn.title = _isVisitorCollapsed ? 'إظهار المعلومات' : 'طي المعلومات';
+    };
+}
+
+/* ══════════════════════════════════════════════ */
+/* ⭐ v4: منطق التبويبات الجديد                     */
 /* ══════════════════════════════════════════════ */
 function _isAdmin() {
     if (!currentUser) return false;
@@ -177,17 +165,6 @@ function _isOwnerLevel() {
     return lvl >= 75;
 }
 
-function _canActOn(target) {
-    if (!currentUser || !target) return false;
-    if (currentUser.uid === target.uid) return false;
-    var meLvl = currentUser.rankLevel || getRankLevel(currentUser.rank);
-    var tgLvl = target.rankLevel || getRankLevel(target.rank);
-    return meLvl > tgLvl;
-}
-
-/* ══════════════════════════════════════════════ */
-/* التبويبات الديناميكية                          */
-/* ══════════════════════════════════════════════ */
 function renderTabsForMode() {
     var tabsBar = document.getElementById('tabsBar');
     if (!tabsBar) return;
@@ -196,20 +173,29 @@ function renderTabsForMode() {
     var isAdminVisitor = isVisitor && _isAdmin();
 
     var html = '';
+
+    // 🏠 الرئيسية (دائماً)
     html += '<button class="tab active" data-tab="home"><i class="fas fa-home"></i><span>الرئيسية</span></button>';
+
+    // 📸 لحظات (دائماً)
     html += '<button class="tab" data-tab="moments"><i class="fas fa-camera"></i><span>لحظات</span></button>';
+
+    // 👥 أصدقاء (دائماً)
     html += '<button class="tab" data-tab="friends"><i class="fas fa-users"></i><span>أصدقاء</span></button>';
 
+    // ⚙️ إعدادات (Owner فقط)
     if (!isVisitor) {
         html += '<button class="tab" data-tab="settings"><i class="fas fa-cog"></i><span>إعدادات</span></button>';
     }
 
+    // ⚔️ أوامر (Visitor Admin+ فقط)
     if (isAdminVisitor) {
         html += '<button class="tab" data-tab="admin"><i class="fas fa-crosshairs"></i><span>أوامر</span></button>';
     }
 
     tabsBar.innerHTML = html;
 
+    // ربط الأحداث
     tabsBar.querySelectorAll('.tab').forEach(function(t) {
         t.onclick = function() {
             var tabName = t.getAttribute('data-tab');
@@ -229,147 +215,24 @@ function switchTab(tabName) {
         c.classList.toggle('active', c.getAttribute('data-content') === tabName);
     });
 
+    // ننفذ منطق عند التبويب
+    if (tabName === 'settings') renderSettingsTab();
+    if (tabName === 'admin') renderAdminTab();
     if (tabName === 'moments') renderMomentsTab();
     if (tabName === 'friends') renderFriendsTab();
-    if (tabName === 'admin') renderAdminTab();
 }
 
 window.switchTab = switchTab;
 
 /* ══════════════════════════════════════════════ */
-/* تبويب اللحظات                                  */
+/* ⭐ v4: عرض تبويب الإعدادات                      */
 /* ══════════════════════════════════════════════ */
-async function renderMomentsTab() {
-    var grid = document.querySelector('.tab-content[data-content="moments"] .moments-grid');
-    if (!grid) return;
-    if (!targetUser || !targetUser.uid) return;
-
-    var addBtn = grid.querySelector('.moment-tile.add');
-    grid.innerHTML = '';
-    if (viewMode === 'owner' && addBtn) {
-        var newAdd = document.createElement('div');
-        newAdd.className = 'moment-tile add';
-        newAdd.innerHTML = '<div class="moment-tile-icon">＋</div><div class="moment-tile-name">أضف لحظة</div>';
-        newAdd.onclick = function () {
-            if (window.parent && window.parent !== window) {
-                window.parent.postMessage({ action: 'openStoryPublish' }, '*');
-            }
-        };
-        grid.appendChild(newAdd);
-    }
-
-    try {
-        var snap = await db.ref('stories/' + targetUser.uid).once('value');
-        var data = snap.val() || {};
-        var now = Date.now();
-        var stories = Object.keys(data).map(function(k) { var s = data[k]; s._id = k; return s; })
-            .filter(function(s) { return (s.expiresAt || 0) > now; })
-            .sort(function(a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
-
-        if (!stories.length) {
-            var empty = document.createElement('div');
-            empty.style.cssText = 'grid-column:1/-1;text-align:center;color:#888;padding:20px;font-size:12px;';
-            empty.textContent = 'لا توجد لحظات';
-            grid.appendChild(empty);
-            return;
-        }
-
-        stories.forEach(function(st) {
-            var tile = document.createElement('div');
-            tile.className = 'moment-tile';
-
-            if (st.type === 'image' && st.imageUrl) {
-                tile.style.background = 'url("' + st.imageUrl + '") center/cover';
-                tile.innerHTML = st.text ? '<div style="position:absolute;bottom:4px;left:4px;right:4px;background:rgba(0,0,0,0.7);color:#fff;font-size:9px;padding:4px;border-radius:6px;text-align:center;font-weight:700;">' + st.text.substring(0, 30) + '</div>' : '';
-            } else {
-                var bg = st.bgColor || 'linear-gradient(135deg,#4a148c,#1a0e2e)';
-                tile.style.background = bg;
-                tile.innerHTML = '<div style="color:#fff;font-size:12px;font-weight:900;text-align:center;padding:8px;text-shadow:0 2px 6px rgba(0,0,0,0.9);">' + (st.text || '') + '</div>';
-            }
-
-            tile.onclick = function() {
-                if (window.parent && window.parent !== window) {
-                    window.parent.postMessage({ action: 'openStory', uid: targetUser.uid, storyId: st._id }, '*');
-                }
-            };
-            grid.appendChild(tile);
-        });
-    } catch(e) {
-        console.warn('renderMomentsTab error:', e);
-    }
+function renderSettingsTab() {
+    // يُبنى في HTML — لا حاجة لإعادة البناء
 }
 
 /* ══════════════════════════════════════════════ */
-/* تبويب الأصدقاء (مع الصور)                      */
-/* ══════════════════════════════════════════════ */
-async function renderFriendsTab() {
-    var grid = document.querySelector('.tab-content[data-content="friends"] .friends-grid');
-    if (!grid || !targetUser || !targetUser.uid) return;
-
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#888;padding:20px;font-size:12px;">⏳ جاري التحميل...</div>';
-
-    try {
-        var snap = await db.ref('users/' + targetUser.uid + '/friends').once('value');
-        var friends = snap.val() || {};
-        var list = [];
-        Object.keys(friends).forEach(function(uid) {
-            var f = friends[uid] || {};
-            if (f.status && f.status !== 'accepted') return;
-            list.push({
-                uid: uid,
-                name: f.name || 'مجهول',
-                avatar: f.avatar || ''
-            });
-        });
-
-        if (!list.length) {
-            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#888;padding:20px;font-size:12px;">لا يوجد أصدقاء</div>';
-            return;
-        }
-
-        grid.innerHTML = '';
-        list.forEach(function(f) {
-            var card = document.createElement('div');
-            card.className = 'friend-card';
-
-            var avatarDiv = document.createElement('div');
-            avatarDiv.className = 'friend-avatar';
-
-            if (f.avatar) {
-                var img = document.createElement('img');
-                img.src = f.avatar;
-                img.alt = f.name;
-                img.loading = 'lazy';
-                img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;';
-                img.onerror = function () {
-                    avatarDiv.textContent = (f.name || 'U').substring(0, 1);
-                };
-                avatarDiv.appendChild(img);
-            } else {
-                avatarDiv.textContent = (f.name || 'U').substring(0, 1);
-            }
-
-            var nameEl = document.createElement('span');
-            nameEl.className = 'friend-name';
-            nameEl.textContent = f.name;
-
-            card.appendChild(avatarDiv);
-            card.appendChild(nameEl);
-            card.onclick = function () {
-                if (window.parent && window.parent !== window) {
-                    window.parent.postMessage({ action: 'openUserProfile', uid: f.uid, name: f.name }, '*');
-                }
-            };
-            grid.appendChild(card);
-        });
-    } catch (e) {
-        console.warn('renderFriendsTab error:', e);
-        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#ff6666;padding:20px;font-size:12px;">⚠️ فشل التحميل</div>';
-    }
-}
-
-/* ══════════════════════════════════════════════ */
-/* تبويب الأوامر (Admin visitor only)             */
+/* ⭐ v4: عرض تبويب الأوامر (Visitor Admin+)      */
 /* ══════════════════════════════════════════════ */
 function renderAdminTab() {
     var container = document.querySelector('.tab-content[data-content="admin"] .section');
@@ -393,6 +256,7 @@ function renderAdminTab() {
 
     var h = '';
 
+    // 💬 التواصل
     h += '<div class="action-category">';
     h += '<div class="action-category-title">💬 التواصل</div>';
     h += '<button class="action-btn" data-action="message"><i class="fas fa-comment"></i> إرسال رسالة</button>';
@@ -400,14 +264,20 @@ function renderAdminTab() {
     h += '<button class="action-btn" data-action="gift"><i class="fas fa-gift"></i> إرسال هدية</button>';
     h += '</div>';
 
+    // 🎖️ الترقية والمكافآت
     if (canPoints || meLvl >= 90) {
         h += '<div class="action-category">';
         h += '<div class="action-category-title">🎖️ الترقية والمكافآت</div>';
-        if (canPoints) h += '<button class="action-btn" data-action="points"><i class="fas fa-star"></i> إهداء نقاط</button>';
-        if (meLvl >= 90) h += '<button class="action-btn" data-action="promote"><i class="fas fa-arrow-up"></i> ترقية الرتبة</button>';
+        if (canPoints) {
+            h += '<button class="action-btn" data-action="points"><i class="fas fa-star"></i> إهداء نقاط</button>';
+        }
+        if (meLvl >= 90) {
+            h += '<button class="action-btn" data-action="promote"><i class="fas fa-arrow-up"></i> ترقية الرتبة</button>';
+        }
         h += '</div>';
     }
 
+    // 🛡️ العقوبات
     if (canWarn || canMute || canKick || canJail) {
         h += '<div class="action-category">';
         h += '<div class="action-category-title">🛡️ العقوبات</div>';
@@ -418,6 +288,7 @@ function renderAdminTab() {
         h += '</div>';
     }
 
+    // ⛔ الحظر
     if (canBan) {
         h += '<div class="action-category">';
         h += '<div class="action-category-title">⛔ الحظر</div>';
@@ -428,6 +299,7 @@ function renderAdminTab() {
         h += '</div>';
     }
 
+    // 🔓 فك العقوبات (إذا كان هناك عقوبة سارية)
     var hasPunishment = (targetUser.isBanned && targetUser.bannedUntil > Date.now()) ||
                        (targetUser.isJailed && targetUser.jailUntil > Date.now()) ||
                        (targetUser.muteInRoom && targetUser.muteRoom);
@@ -447,6 +319,7 @@ function renderAdminTab() {
         h += '</div>';
     }
 
+    // ⚔️ متقدم (King only)
     if (currentUser.rank === 'King') {
         h += '<div class="action-category">';
         h += '<div class="action-category-title">⚔️ متقدم</div>';
@@ -457,6 +330,7 @@ function renderAdminTab() {
 
     container.innerHTML = h;
 
+    // ربط الأحداث
     container.querySelectorAll('[data-action]').forEach(function(btn) {
         btn.onclick = function() {
             _executeAdminAction(btn.getAttribute('data-action'));
@@ -465,14 +339,15 @@ function renderAdminTab() {
 }
 
 /* ══════════════════════════════════════════════ */
-/* تنفيذ أوامر الإدارة                            */
+/* ⭐ v4: تنفيذ الأوامر                            */
 /* ══════════════════════════════════════════════ */
 async function _executeAdminAction(action) {
     if (!currentUser || !targetUser) return;
 
     switch (action) {
         case 'message':
-            if (window.parent && window.parent !== window) {
+            // فتح الخاص
+            if (typeof window.parent !== 'undefined' && window.parent !== window) {
                 window.parent.postMessage({ action: 'openPrivateChat', uid: targetUser.uid, name: targetUser.name }, '*');
             }
             break;
@@ -539,6 +414,7 @@ async function _executeAdminAction(action) {
     }
 }
 
+/* ════════ تقرير ════════ */
 function _askReportReason() {
     var reasons = [
         { id: 'abuse', name: '🚫 محتوى مسيء' },
@@ -593,6 +469,7 @@ function _askReportReason() {
     }, 100);
 }
 
+/* ════════ النقاط ════════ */
 function _askPoints() {
     var h = '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:8px;">عدد النقاط (1-10000):</label>';
     h += '<input type="number" id="cmd-pts-input" min="1" max="10000" value="100" style="width:100%;padding:12px;background:rgba(255,255,255,0.08);border:1px solid #ffd700;border-radius:10px;color:#fff;font-family:inherit;font-size:14px;text-align:center;outline:none;box-sizing:border-box;">';
@@ -612,6 +489,7 @@ function _askPoints() {
     });
 }
 
+/* ════════ الترقية ════════ */
 function _askPromote() {
     var all = ['User', 'Premium', 'Admin', 'Super Admin', 'Owner', 'Grand Owner', 'Room Owner', 'Master Owner'];
     var opts = all.filter(function(r) {
@@ -644,6 +522,7 @@ function _askPromote() {
     });
 }
 
+/* ════════ التحذير ════════ */
 function _doWarn() {
     openAppModal('⚠️ تحذير', 'تحذير ' + (targetUser.name || '') + '؟', '', async function() {
         try {
@@ -658,14 +537,10 @@ function _doWarn() {
     });
 }
 
+/* ════════ منع الكتابة ════════ */
 function _doMute() {
-    var roomId = 'general';
-    try {
-        if (window.parent && window.parent.ChatState && window.parent.ChatState.currentRoom) {
-            roomId = window.parent.ChatState.currentRoom;
-        }
-    } catch(e) {}
-    var roomName = (QAMAR && QAMAR.ROOMS && QAMAR.ROOMS[roomId]) ? QAMAR.ROOMS[roomId].name : roomId;
+    var roomId = (typeof parent !== 'undefined' && parent.ChatState && parent.ChatState.currentRoom) || 'general';
+    var roomName = (typeof QAMAR !== 'undefined' && QAMAR.ROOMS && QAMAR.ROOMS[roomId]) ? QAMAR.ROOMS[roomId].name : roomId;
 
     openAppModal('🔇 منع كتابة', 'منع ' + (targetUser.name || '') + ' من الكتابة في ' + roomName + '؟', '', async function() {
         try {
@@ -684,14 +559,10 @@ function _doMute() {
     });
 }
 
+/* ════════ الطرد من الغرفة ════════ */
 function _doKick() {
-    var roomId = 'general';
-    try {
-        if (window.parent && window.parent.ChatState && window.parent.ChatState.currentRoom) {
-            roomId = window.parent.ChatState.currentRoom;
-        }
-    } catch(e) {}
-    var roomName = (QAMAR && QAMAR.ROOMS && QAMAR.ROOMS[roomId]) ? QAMAR.ROOMS[roomId].name : roomId;
+    var roomId = (typeof parent !== 'undefined' && parent.ChatState && parent.ChatState.currentRoom) || 'general';
+    var roomName = (typeof QAMAR !== 'undefined' && QAMAR.ROOMS && QAMAR.ROOMS[roomId]) ? QAMAR.ROOMS[roomId].name : roomId;
 
     openAppModal('🚪 طرد من الغرفة', 'طرد ' + (targetUser.name || '') + ' من ' + roomName + '؟', '', async function() {
         try {
@@ -708,6 +579,7 @@ function _doKick() {
     });
 }
 
+/* ════════ السجن ════════ */
 function _askJail() {
     var h = '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:8px;">المدة (1-120 دقيقة):</label>';
     h += '<input type="number" id="cmd-jail-min" min="1" max="120" value="5" style="width:100%;padding:12px;background:rgba(255,255,255,0.08);border:1px solid #ffd700;border-radius:10px;color:#fff;font-family:inherit;font-size:14px;text-align:center;outline:none;box-sizing:border-box;">';
@@ -731,6 +603,7 @@ function _askJail() {
     });
 }
 
+/* ════════ الحظر ════════ */
 function _askBan(isPermanent) {
     var h = '';
     if (isPermanent) {
@@ -751,6 +624,11 @@ function _askBan(isPermanent) {
                     banReason: 'حظر دائم',
                     permanentBan: true
                 });
+                db.ref('audit_log').push({
+                    type: 'perm_ban', byUid: currentUser.uid, byName: currentUser.name,
+                    targetUid: targetUser.uid, targetName: targetUser.name,
+                    at: firebase.database.ServerValue.TIMESTAMP
+                }).catch(function(){});
                 toast('🚫 تم الحظر الدائم');
             } else {
                 var mins = parseInt(document.getElementById('cmd-ban-dur').value);
@@ -759,18 +637,18 @@ function _askBan(isPermanent) {
                     bannedUntil: Date.now() + mins * 60000,
                     banReason: 'حظر مؤقت'
                 });
+                db.ref('audit_log').push({
+                    type: 'temp_ban', byUid: currentUser.uid, byName: currentUser.name,
+                    targetUid: targetUser.uid, targetName: targetUser.name, minutes: mins,
+                    at: firebase.database.ServerValue.TIMESTAMP
+                }).catch(function(){});
                 toast('⏸️ تم الحظر المؤقت');
             }
-            db.ref('audit_log').push({
-                type: isPermanent ? 'perm_ban' : 'temp_ban',
-                byUid: currentUser.uid, byName: currentUser.name,
-                targetUid: targetUser.uid, targetName: targetUser.name,
-                at: firebase.database.ServerValue.TIMESTAMP
-            }).catch(function(){});
         } catch(e) { toast('⚠️ فشل'); }
     });
 }
 
+/* ════════ فك الحظر ════════ */
 function _doUnban() {
     openAppModal('🔓 فك الحظر', 'فك الحظر عن ' + (targetUser.name || '') + '؟', '', async function() {
         try {
@@ -807,6 +685,7 @@ function _doUnmute() {
     });
 }
 
+/* ════════ حذف الحساب ════════ */
 function _askDeleteAccount() {
     openAppModal('🗑️ حذف الحساب', '⚠️ سيتم حذف حساب ' + (targetUser.name || '') + ' نهائياً. متابعة؟', '', async function() {
         try {
@@ -833,41 +712,121 @@ function _askDeleteAccount() {
 }
 
 /* ══════════════════════════════════════════════ */
-/* الموسيقى                                       */
+/* ⭐ v4: عرض تبويب اللحظات                        */
 /* ══════════════════════════════════════════════ */
-function setupMusicToggle() {
-    var btn = document.getElementById('music-btn-mini');
-    var player = document.getElementById('music-player');
-    if (!btn || !player) return;
-    if (btn.__setup) return;
-    btn.__setup = true;
+async function renderMomentsTab() {
+    var grid = document.querySelector('.tab-content[data-content="moments"] .moments-grid');
+    if (!grid) return;
 
-    btn.onclick = function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (!musicURL) {
-            toast('⚠️ لا توجد موسيقى');
+    if (!targetUser || !targetUser.uid) return;
+
+    // امسح القديم (مع إبقاء زر الإضافة)
+    var addBtn = grid.querySelector('.moment-tile.add');
+    grid.innerHTML = '';
+    if (viewMode === 'owner' && addBtn) grid.appendChild(addBtn);
+
+    try {
+        var snap = await db.ref('stories/' + targetUser.uid).once('value');
+        var data = snap.val() || {};
+        var now = Date.now();
+        var stories = Object.keys(data).map(function(k) { var s = data[k]; s._id = k; return s; })
+            .filter(function(s) { return (s.expiresAt || 0) > now; })
+            .sort(function(a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+
+        if (!stories.length) {
+            var empty = document.createElement('div');
+            empty.style.cssText = 'grid-column:1/-1;text-align:center;color:#888;padding:20px;font-size:12px;';
+            empty.textContent = 'لا توجد لحظات';
+            grid.appendChild(empty);
             return;
         }
-        if (musicPlaying) {
-            player.pause();
-            musicPlaying = false;
-            btn.innerHTML = '<i class="fas fa-play"></i>';
-            btn.classList.remove('playing');
-        } else {
-            player.play().then(function() {
-                musicPlaying = true;
-                btn.innerHTML = '<i class="fas fa-pause"></i>';
-                btn.classList.add('playing');
-            }).catch(function() {
-                toast('⚠️ تعذر تشغيل الموسيقى');
-            });
-        }
-    };
+
+        stories.forEach(function(st) {
+            var tile = document.createElement('div');
+            tile.className = 'moment-tile';
+            var icon = st.type === 'image' && st.imageUrl ? '🖼️' : '📝';
+            var preview = st.text ? st.text.substring(0, 20) : (st.type === 'image' ? 'صورة' : '');
+            tile.innerHTML =
+                '<div class="moment-tile-icon">' + icon + '</div>' +
+                '<div class="moment-tile-name">' + preview + '</div>';
+            tile.onclick = function() {
+                if (typeof window.parent !== 'undefined' && window.parent !== window) {
+                    window.parent.postMessage({ action: 'openStory', uid: targetUser.uid }, '*');
+                }
+            };
+            grid.appendChild(tile);
+        });
+    } catch(e) {
+        console.warn('renderMomentsTab error:', e);
+    }
 }
 
 /* ══════════════════════════════════════════════ */
-/* التهيئة الرئيسية                               */
+/* ⭐ v4: عرض تبويب الأصدقاء                        */
+/* ══════════════════════════════════════════════ */
+async function renderFriendsTab() {
+    var grid = document.querySelector('.tab-content[data-content="friends"] .friends-grid');
+    if (!grid || !targetUser || !targetUser.uid) return;
+
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#888;padding:20px;font-size:12px;">⏳ جاري التحميل...</div>';
+
+    try {
+        var snap = await db.ref('users/' + targetUser.uid + '/friends').once('value');
+        var friends = snap.val() || {};
+        var list = [];
+        Object.keys(friends).forEach(function(uid) {
+            var f = friends[uid] || {};
+            if (f.status && f.status !== 'accepted') return;
+            list.push({ uid: uid, name: f.name || 'مجهول', avatar: f.avatar || '' });
+        });
+
+        if (!list.length) {
+            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#888;padding:20px;font-size:12px;">لا يوجد أصدقاء</div>';
+            return;
+        }
+
+        grid.innerHTML = '';
+        list.forEach(function(f) {
+            var card = document.createElement('div');
+            card.className = 'friend-card';
+            var initial = (f.name || 'U').substring(0, 1);
+            card.innerHTML =
+                '<div class="friend-avatar">' + initial + '</div>' +
+                '<span class="friend-name">' + f.name + '</span>';
+            card.onclick = function() {
+                if (typeof window.parent !== 'undefined' && window.parent !== window) {
+                    window.parent.postMessage({ action: 'openUserProfile', uid: f.uid, name: f.name }, '*');
+                }
+            };
+            grid.appendChild(card);
+        });
+    } catch(e) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#ff6666;padding:20px;font-size:12px;">⚠️ فشل التحميل</div>';
+    }
+}
+
+/* ══════════════════════════════════════════════ */
+/* ⭐ v4: الإطار الافتراضي للأفاتار                 */
+/* ══════════════════════════════════════════════ */
+function applyDefaultAvatarFrameToProfile() {
+    var box = document.getElementById('avatar-box');
+    if (!box || !targetUser) return;
+
+    // إذا فيه إطار مخصص → اتركه للـ frames-engine
+    if (box.querySelector('.qf')) return;
+
+    // استخدم NameEffects إن متوفر
+    if (window.NameEffects && typeof window.NameEffects.applyDefaultAvatarFrame === 'function') {
+        window.NameEffects.applyDefaultAvatarFrame(
+            box,
+            targetUser.rank,
+            targetUser.rankLevel || getRankLevel(targetUser.rank)
+        );
+    }
+}
+
+/* ══════════════════════════════════════════════ */
+/* التهيئة                                      */
 /* ══════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', async function() {
     const params = new URLSearchParams(location.search);
@@ -909,28 +868,26 @@ document.addEventListener('DOMContentLoaded', async function() {
     initMain();
     loadPoetry();
 
-    // بناء التبويبات حسب الوضع
+    // v4: بناء التبويبات حسب الوضع
     renderTabsForMode();
 
-    // زر الموسيقى
+    // v4: زر الموسيقى
     setupMusicToggle();
 
-    // ⭐ الإصلاحات الجديدة:
-    if (typeof setupModeToggle === 'function') setupModeToggle();
-    if (typeof setupCollapseToggle === 'function') setupCollapseToggle();
+    // v4: زر الطي
+    setupCollapseToggle();
 
     if (typeof renderFrames === 'function') renderFrames();
 
-    // الإطار الافتراضي
+    // v4: الإطار الافتراضي
     setTimeout(applyDefaultAvatarFrameToProfile, 300);
 
-    // محتوى التبويبات
+    // v4: ملء محتوى التبويبات الأولية
     setTimeout(function() {
         renderMomentsTab();
         renderFriendsTab();
     }, 500);
 
-    // استمع للتغييرات
     if (viewMode === 'visitor' && urlUid && typeof db !== 'undefined' && db) {
         db.ref('users/' + urlUid).on('value', s => {
             const f = s.val();
@@ -941,10 +898,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             targetUser = f;
             localStorage.setItem('profile_target_data_' + urlUid, JSON.stringify(f));
             if (Date.now() > _localLockUntil) loadProfile();
+            // v4: إعادة بناء تبويب الأوامر عند تغيير البيانات
             if (document.querySelector('.tab-content[data-content="admin"]') &&
                 document.querySelector('.tab-content[data-content="admin"]').classList.contains('active')) {
                 renderAdminTab();
             }
+            // v4: تحديث الإطار الافتراضي
             setTimeout(applyDefaultAvatarFrameToProfile, 100);
         });
         db.ref('user_presence/' + urlUid).on('value', s => {
@@ -973,7 +932,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     setTimeout(_revealProfile, 180);
 
-    console.log('✅ profile-core.js v5.0 loaded | Mode:', viewMode);
+    console.log('✅ profile-core.js v4.0 loaded | Mode:', viewMode);
 });
 
 function _userHash(u) {
@@ -988,6 +947,9 @@ function _userHash(u) {
     } catch(e) { return ''; }
 }
 
+/* ══════════════════════════════════════════════ */
+/* applyMode                                     */
+/* ══════════════════════════════════════════════ */
 function applyMode() {
     const o = document.querySelectorAll('.owner-only');
     const v = document.querySelectorAll('.visitor-only');
@@ -1008,7 +970,7 @@ function canView(field) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* loadProfile                                    */
+/* loadProfile — v4                              */
 /* ══════════════════════════════════════════════ */
 function loadProfile() {
     if (!targetUser) return;
@@ -1019,6 +981,7 @@ function loadProfile() {
         u.dataset.name = _displayName;
         u.textContent = _displayName;
 
+        // v4: تطبيق التأثيرات عبر NameEffects
         setTimeout(function() {
             if (window.NameEffects && typeof window.NameEffects.apply === 'function') {
                 window.NameEffects.apply(u, {
@@ -1030,11 +993,15 @@ function loadProfile() {
                     nameFrame: targetUser.nameFrame,
                     senderColor: targetUser.color
                 });
+                // fallback
                 if (!u.classList.contains('name-color-active') &&
                     !u.classList.contains('name-gradient-active') &&
                     !u.className.includes('nf-')) {
                     u.style.color = targetUser.color || '#ffd700';
                 }
+            } else {
+                // fallback كامل
+                _applyNameEffectsFallback(u, targetUser);
             }
         }, 50);
     }
@@ -1058,7 +1025,6 @@ function loadProfile() {
         if (c && c.getAttribute('src') !== targetUser.cover) c.src = targetUser.cover;
     }
 
-    // خلفية البروفايل
     const layer = document.getElementById('profile-bg-layer');
     if (layer) {
         let bgT = targetUser.profileBgType;
@@ -1077,10 +1043,8 @@ function loadProfile() {
                 layer.style.background = bgV;
             } else if (bgT === 'image') {
                 layer.style.backgroundImage = 'url("' + bgV + '")';
-                layer.style.backgroundSize = 'contain';
-                layer.style.backgroundPosition = 'center center';
-                layer.style.backgroundRepeat = 'no-repeat';
-                layer.style.background = 'url("' + bgV + '") center center / contain no-repeat #050508';
+                layer.style.backgroundSize = 'cover';
+                layer.style.backgroundPosition = 'center';
             } else if (bgT === 'video') {
                 const v = document.createElement('video');
                 v.src = bgV;
@@ -1089,7 +1053,7 @@ function loadProfile() {
                 v.muted = true;
                 v.playsInline = true;
                 v.setAttribute('playsinline', '');
-                v.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#050508;';
+                v.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;';
                 layer.appendChild(v);
             }
         }
@@ -1107,7 +1071,7 @@ function loadProfile() {
         if (codeEl.innerText !== cv) codeEl.innerText = cv;
     }
 
-    // الموسيقى
+    // v4: الموسيقى
     if (targetUser.musicURL) {
         musicURL = targetUser.musicURL;
         const mb = document.getElementById('music-btn-mini');
@@ -1119,27 +1083,77 @@ function loadProfile() {
         if (mbb) mbb.style.display = 'none';
     }
 
-    // الحقول
-    const er = document.getElementById('info-email-value');
-    if (er) {
+    // باقي الحقول
+    const er = document.getElementById('info-email-row'), ev = document.getElementById('info-email-value');
+    if (er && ev) {
         if (viewMode === 'owner' && targetUser.email) {
-            er.innerText = targetUser.email;
+            ev.innerText = targetUser.email;
+            er.style.display = '';
         } else {
-            er.innerText = '—';
+            ev.innerText = '—';
+            er.style.display = 'none';
         }
     }
-    const ageVal = document.getElementById('info-age-value');
-    if (ageVal) ageVal.innerText = (canView('age') && targetUser.age) ? (targetUser.age + ' سنة') : '—';
-    const genVal = document.getElementById('info-gender-value');
-    if (genVal) genVal.innerText = (canView('gender') && targetUser.gender) ? (targetUser.gender === 'male' ? 'ذكر' : 'أنثى') : '—';
-    const joinVal = document.getElementById('info-join-value');
-    if (joinVal) joinVal.innerText = targetUser.createdAt ? formatDate(targetUser.createdAt) : '—';
-    const lsVal = document.getElementById('info-lastseen-value');
-    if (lsVal) lsVal.innerText = targetUser.lastSeen ? timeAgo(targetUser.lastSeen) : '—';
+    const ageRow = document.getElementById('info-age-row'), ageVal = document.getElementById('info-age-value');
+    if (ageRow && ageVal) { if (canView('age') && targetUser.age) { ageVal.innerText = targetUser.age + ' سنة'; ageRow.style.display = ''; } else ageRow.style.display = 'none'; }
+    const genRow = document.getElementById('info-gender-row'), genVal = document.getElementById('info-gender-value');
+    if (genRow && genVal) { if (canView('gender') && targetUser.gender) { genVal.innerText = targetUser.gender === 'male' ? 'ذكر' : 'أنثى'; genRow.style.display = ''; } else genRow.style.display = 'none'; }
+    const joinRow = document.getElementById('info-join-row'), joinVal = document.getElementById('info-join-value');
+    if (joinRow && joinVal) { if (targetUser.createdAt) { joinVal.innerText = formatDate(targetUser.createdAt); joinRow.style.display = ''; } else joinRow.style.display = 'none'; }
+    const lsRow = document.getElementById('info-lastseen-row'), lsVal = document.getElementById('info-lastseen-value');
+    if (lsRow && lsVal) { if (targetUser.lastSeen) { lsVal.innerText = timeAgo(targetUser.lastSeen); lsRow.style.display = ''; } else lsRow.style.display = 'none'; }
 }
 
 /* ══════════════════════════════════════════════ */
-/* initMain                                       */
+/* Fallback: تطبيق التأثيرات يدوياً (لو NameEffects ما تحمّل) */
+/* ══════════════════════════════════════════════ */
+function _applyNameEffectsFallback(el, data) {
+    if (!el) return;
+    // نظف
+    var kept = [];
+    el.className.split(/\s+/).forEach(function(c) {
+        if (!c) return;
+        if (c.indexOf('name-') === 0) return;
+        if (c.indexOf('nf-') === 0) return;
+        if (c === 'nf' || c === 'text-gradient') return;
+        kept.push(c);
+    });
+    el.className = kept.join(' ');
+    el.style.cssText = '';
+
+    // الإطار
+    if (data.nameFrame && /^nf-[a-z0-9-]+$/i.test(data.nameFrame)) {
+        el.classList.add('nf', data.nameFrame);
+    }
+
+    // الشكل
+    if (data.nameShape && ['capsule', 'pill', 'rounded', 'ellipse', 'square'].indexOf(data.nameShape) !== -1) {
+        el.classList.add('name-shape-' + data.nameShape);
+    }
+
+    // التدرج أو اللون
+    var safeC = data.nameColor && /^#[0-9a-f]{3,8}$/i.test(data.nameColor) ? data.nameColor : null;
+    var grad = Array.isArray(data.nameGradient) && data.nameGradient.length >= 2 ? data.nameGradient : null;
+
+    if (grad) {
+        el.classList.add('name-gradient-active');
+        el.style.setProperty('--name-gradient', 'linear-gradient(90deg, ' + grad[0] + ', ' + grad[1] + ', ' + grad[0] + ')');
+    } else if (safeC) {
+        el.classList.add('name-color-active');
+        el.style.setProperty('--name-color', safeC);
+    } else {
+        el.style.color = data.color || '#ffd700';
+    }
+
+    // التوهج
+    if (data.nameGlow && ['soft','medium','strong'].indexOf(data.nameGlow) !== -1) {
+        el.classList.add('name-glow-' + data.nameGlow);
+        el.style.setProperty('--name-glow-color', safeC || (grad && grad[0]) || '#ffd700');
+    }
+}
+
+/* ══════════════════════════════════════════════ */
+/* باقي الدوال القديمة                           */
 /* ══════════════════════════════════════════════ */
 function initMain() {
     const c = document.getElementById('btn-close');
@@ -1181,28 +1195,17 @@ function initMain() {
         });
     };
 
-    // Privacy selects
-    document.querySelectorAll('.priv-sel').forEach(function (s) {
-        const f = s.getAttribute('data-field');
-        if (!f) return;
-        s.value = localStorage.getItem('privacy_' + f) || 'public';
-        s.addEventListener('change', function() {
-            const ff = this.getAttribute('data-field');
-            localStorage.setItem('privacy_' + ff, this.value);
-            if (currentUser && currentUser.uid && db) {
-                db.ref('users/' + currentUser.uid + '/privacy/' + ff).set(this.value).catch(() => {});
-            }
-            toast('✅ تم');
-        });
-    });
+    const vb = document.getElementById('btn-visitor-view');
+    if (vb && viewMode === 'owner') vb.onclick = () => {
+        if (!currentUser || !currentUser.uid) return;
+        localStorage.setItem('profile_target_data_' + currentUser.uid, JSON.stringify(currentUser));
+        location.href = 'profile.html?uid=' + currentUser.uid;
+    };
 
-    initVisitor();
     if (typeof initAppearance === 'function') initAppearance();
+    initVisitor();
 }
 
-/* ══════════════════════════════════════════════ */
-/* initVisitor                                    */
-/* ══════════════════════════════════════════════ */
 function initVisitor() {
     if (viewMode !== 'visitor') return;
 
@@ -1217,7 +1220,7 @@ function initVisitor() {
         const p = (targetUser && targetUser.privacy && targetUser.privacy.messages) || 'public';
         if (p === 'private') { toast('🔒 خاصة'); return; }
         if (targetUser && targetUser.uid) {
-            if (window.parent && window.parent !== window) {
+            if (typeof window.parent !== 'undefined' && window.parent !== window) {
                 window.parent.postMessage({ action: 'openPrivateChat', uid: targetUser.uid, name: targetUser.name }, '*');
             }
         }
@@ -1259,17 +1262,11 @@ function initVisitor() {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* getCleanName                                   */
-/* ══════════════════════════════════════════════ */
 function getCleanName() {
     const el = document.getElementById('profile-username');
     return el ? (el.dataset.name || el.innerText) : '';
 }
 
-/* ══════════════════════════════════════════════ */
-/* الإعجابات                                      */
-/* ══════════════════════════════════════════════ */
 function _updateHeartUI() {
     const h = document.getElementById('btn-heart');
     if (!h) return;
@@ -1329,9 +1326,6 @@ async function _toggleLike(btn) {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* loadSaved                                      */
-/* ══════════════════════════════════════════════ */
 function loadSaved() {
     try {
         if (localStorage.getItem('profile_name')) {
@@ -1343,7 +1337,7 @@ function loadSaved() {
         if (localStorage.getItem('saved_cover')) { const el = document.getElementById('profile-cover-img'); if (el) el.src = localStorage.getItem('saved_cover'); }
 
         const sz = localStorage.getItem('name_size');
-        if (sz) nameSize = parseInt(sz);
+        if (sz) { nameSize = parseInt(sz); const el = document.getElementById('profile-username'); if (el) el.style.fontSize = nameSize + 'px'; }
 
         const fi = localStorage.getItem('frame_inset');
         if (fi) { frameInset = parseInt(fi); document.documentElement.style.setProperty('--frame-inset', frameInset + '%'); }
@@ -1357,16 +1351,9 @@ function loadSaved() {
             bgValue = localStorage.getItem('profile_bg_value');
             if (typeof applyBg === 'function') applyBg();
         }
-
-        // توهج البروفايل
-        const pg = localStorage.getItem('profile_glow');
-        if (pg && typeof applyGlow === 'function') applyGlow(pg);
     } catch(e) { console.warn(e); }
 }
 
-/* ══════════════════════════════════════════════ */
-/* loadPoetry                                     */
-/* ══════════════════════════════════════════════ */
 function loadPoetry() {
     const s = localStorage.getItem('poetry_text') || '';
     const i = document.getElementById('poetry-input');
@@ -1387,9 +1374,6 @@ function loadPoetry() {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* saveToChat                                     */
-/* ══════════════════════════════════════════════ */
 function saveToChat() {
     if (!currentUser) return;
     _localLockUntil = Date.now() + 10000;
@@ -1403,12 +1387,17 @@ function saveToChat() {
         bio: localStorage.getItem('profile_bio') || existing.bio || '',
         cover: localStorage.getItem('saved_cover') || existing.cover || '',
         avatar: localStorage.getItem('saved_avatar') || existing.avatar || '',
-        nameColor: currentUser.nameColor || null,
-        nameGradient: currentUser.nameGradient || null,
-        nameFrame: currentUser.nameFrame || null,
-        nameShape: currentUser.nameShape || null,
-        nameGlow: (currentUser.nameGlow && currentUser.nameGlow !== 'none') ? currentUser.nameGlow : null,
-        nameBgGradient: currentUser.nameBgGradient || null,
+        nameColor: nameColor || null,
+        nameGradient: nameGradient || null,
+        nameFrame: nameFrame || null,
+        nameShape: nameShape || null,
+        nameGlow: (nameGlow && nameGlow !== 'none') ? nameGlow : null,
+        nameBgGradient: (typeof NameBgState !== 'undefined' && NameBgState.enabled) ? {
+            enabled: true,
+            direction: NameBgState.direction,
+            colors: NameBgState.colors.slice(),
+            positions: NameBgState.positions.slice()
+        } : null,
         avatarFrame: (fv && fv !== 'none' && fv !== '') ? fv : null,
         poetry: localStorage.getItem('poetry_text') || existing.poetry || '',
         profileBgType: bgType,
@@ -1435,9 +1424,6 @@ function saveToChat() {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* sendNotif                                      */
-/* ══════════════════════════════════════════════ */
 async function sendNotif(targetUid, type, icon, title) {
     if (!targetUid) return;
     if (typeof db === 'undefined' || !db) return;
@@ -1457,31 +1443,74 @@ async function sendNotif(targetUid, type, icon, title) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* الإطار الافتراضي للأفاتار                      */
+/* openAppModal — محدّث                            */
 /* ══════════════════════════════════════════════ */
-function applyDefaultAvatarFrameToProfile() {
-    var box = document.getElementById('avatar-box');
-    if (!box || !targetUser) return;
+function openAppModal(title, text, typeOrHtml, options, currentVal, onSave, isHtmlMode) {
+    const m = document.getElementById('app-modal');
+    if (!m) return;
+    document.getElementById('modal-title').innerText = title;
+    const textEl = document.getElementById('modal-text');
+    if (textEl) textEl.innerText = text || '';
+    const c = document.getElementById('modal-dyn');
+    c.innerHTML = '';
 
-    if (box.querySelector('.qf')) return;
+    // إذا كان HTML
+    if (isHtmlMode === true && typeof typeOrHtml === 'string') {
+        c.innerHTML = typeOrHtml;
+    } else if (typeof typeOrHtml === 'string' && typeOrHtml.trim().startsWith('<')) {
+        c.innerHTML = typeOrHtml;
+    } else if (typeOrHtml === 'input') {
+        const i = document.createElement('input');
+        i.type = 'text';
+        i.id = 'modal-input-val';
+        i.value = currentVal || '';
+        c.appendChild(i);
+    } else if (typeOrHtml === 'select') {
+        const s = document.createElement('select');
+        s.id = 'modal-select-val';
+        (options || []).forEach(o => {
+            const op = document.createElement('option');
+            op.value = o; op.innerText = o;
+            if (o === currentVal) op.selected = true;
+            s.appendChild(op);
+        });
+        c.appendChild(s);
+    }
 
-    if (window.NameEffects && typeof window.NameEffects.applyDefaultAvatarFrame === 'function') {
-        window.NameEffects.applyDefaultAvatarFrame(
-            box,
-            targetUser.rank,
-            targetUser.rankLevel || getRankLevel(targetUser.rank)
-        );
+    m.classList.add('active');
+
+    const okBtn = document.getElementById('modal-ok');
+    const cancelBtn = document.getElementById('modal-cancel');
+
+    okBtn.style.display = '';
+    cancelBtn.style.display = '';
+    okBtn.textContent = 'موافق';
+
+    okBtn.onclick = function() {
+        let v = '';
+        if (typeOrHtml === 'input') {
+            const i = document.getElementById('modal-input-val');
+            if (i) v = i.value;
+        } else if (typeOrHtml === 'select') {
+            const s = document.getElementById('modal-select-val');
+            if (s) v = s.value;
+        }
+        if (typeof onSave === 'function') onSave(v);
+        m.classList.remove('active');
+    };
+    cancelBtn.onclick = () => m.classList.remove('active');
+
+    // وضع "HTML فقط"
+    if (isHtmlMode === true) {
+        okBtn.style.display = 'none';
+        cancelBtn.textContent = 'إلغاء';
+        cancelBtn.style.width = '100%';
+        cancelBtn.style.marginTop = '8px';
+    } else {
+        cancelBtn.textContent = 'إلغاء';
+        cancelBtn.style.width = '';
+        cancelBtn.style.marginTop = '';
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* Exports                                        */
-/* ══════════════════════════════════════════════ */
-window.renderTabsForMode = renderTabsForMode;
-window.renderAdminTab = renderAdminTab;
-window.renderMomentsTab = renderMomentsTab;
-window.renderFriendsTab = renderFriendsTab;
-window.applyDefaultAvatarFrameToProfile = applyDefaultAvatarFrameToProfile;
-window.toast = toast;
-
-console.log('✅ profile-core.js v5.0 loaded — all fixes integrated');
+console.log('✅ profile-core.js v4.0 loaded — NameEffects + Default Frame + New Tabs');
