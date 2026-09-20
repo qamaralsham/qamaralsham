@@ -107,6 +107,7 @@
             <div class="tab active owner-only" data-target="privacy-tab">الخصوصية</div>
             <div class="tab owner-only" data-target="appearance-tab">المظهر</div>
             <div class="tab owner-only" data-target="commands-tab">الأوامر</div>
+            <div class="tab owner-only" data-target="story-tab">📸 حالتي</div>
             <div class="tab" data-target="info-tab">المعلومات</div>
             <div class="tab" data-target="friends-tab">الأصدقاء</div>
             <div class="tab owner-only" data-target="search-tab">البحث</div>
@@ -165,8 +166,15 @@
             </div>
 
             <div id="commands-tab" class="tab-c">
-                <div class="info-card">
+                <div class="info-card" id="commands-tab-content">
                     <div class="row"><span class="row-lb">🎁 إرسال هدية</span><span class="row-vl"><span class="link" id="btn-gift">قريباً</span></span></div>
+                </div>
+            </div>
+
+            <!-- ⭐ v3: تبويب الحالة اليومية -->
+            <div id="story-tab" class="tab-c">
+                <div class="info-card" id="story-tab-content">
+                    <div style="text-align:center;color:#888;padding:20px;font-size:12px;">⏳ جاري التحميل...</div>
                 </div>
             </div>
 
@@ -261,12 +269,13 @@
 
 <audio id="music-player" loop></audio>
 
-<script src="config.js?v=32"></script>
-<script src="ranks.js?v=32"></script>
-<script src="utils.js?v=32"></script>
-<script src="frames-engine.js?v=32"></script>
-<script src="profile-core.js?v=32"></script>
-<script src="profile-appearance.js?v=32"></script>
+<script src="config.js?v=33"></script>
+<script src="ranks.js?v=33"></script>
+<script src="utils.js?v=33"></script>
+<script src="frames-engine.js?v=33"></script>
+<script src="stories.js?v=33"></script>
+<script src="profile-core.js?v=33"></script>
+<script src="profile-appearance.js?v=33"></script>
 
 <!-- ⭐⭐⭐ Service Worker -->
 <script>
