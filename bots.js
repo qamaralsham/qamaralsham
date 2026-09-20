@@ -1,17 +1,10 @@
 // ==============================================
-// bots.js v25 — 5 بوتات + رسائل نظام محسّنة
+// bots.js v26 — 5 بوتات + إصلاح السفير
 // ==============================================
-// ✅ v25 (الجديد):
-//   1. حذف (إخفاء) الرسالة المسيئة — الملك يراها
-//   2. كشف الأحرف المنفصلة (ك ل ب / ك.ل.ب)
-//   3. 3 سجنات → حظر دائم
-//   4. كلمة طرد → حظر دائم مباشرة
-//   5. ردود تلقائية للحكواتي (بدون نداء) + cooldown 10s
-//   6. مسابقات: 3 فائزين (🥇🥈🥉) + إيحاء عند T+60s + نقاط نصف
-//   7. مكتبة إسلامية خارجية (islamic-library.js)
-//   8. بوت السفير (ترحيب) — Modal + صوت + رسالة شات
-//   9. تبويبات جديدة: 🔔 ردود تلقائية / 🚫 المعاقبون
-//  10. أصوات: صافرة شرطة + نغمة ترحيب
+// ✅ v26 (إصلاح):
+//   1. baseline على user_presence قبل الترحيب (لا flood)
+//   2. child_added/changed/removed بدل value
+//   3. الترحيب فقط للجدد بعد بدء التشغيل
 // ==============================================
 
 const BotsState = {
@@ -23,36 +16,33 @@ const BotsState = {
     badWords: ['كلب','حمار','غبي','خرا','زبالة','قذر','تافه','حقير','وقح','خنزير','نصاب'],
     kickWords: [],
     immuneCache: {},
-    // ⭐ v25 الجديد:
-    autoReplyCooldown: {},        // { uid_key: timestamp }
-    lastUserRooms: {},            // { uid: roomId }
+    autoReplyCooldown: {},
+    lastUserRooms: {},
     presenceListener: null,
-    hiddenListener: null
+    hiddenListener: null,
+    ambassadorReady: false
 };
 
-const AUTO_TIMING = { islamic: 2 * 60 * 1000, quiz: 5 * 60 * 1000 };  // ⭐ إسلامي: كل دقيقتين
+const AUTO_TIMING = { islamic: 2 * 60 * 1000, quiz: 5 * 60 * 1000 };
 const AGE_LIMIT_MS = 5 * 60 * 1000;
 const QUIZ_WINDOW_MS = 5 * 60 * 1000;
-const QUIZ_HINT_AT_MS = 60 * 1000;    // ⭐ الإيحاء عند 60 ثانية
-const QUIZ_REVEAL_AT_MS = 120 * 1000; // ⭐ الإعلان عند 120 ثانية
-const QUIZ_MAX_WINNERS = 3;           // ⭐ 3 فائزين
-const QUIZ_POINTS = { 1: 10, 2: 5, 3: 2 };  // ⭐ نقاط كل مركز
-const QUIZ_POINTS_HALF = { 1: 5, 2: 2, 3: 1 };  // ⭐ بعد الإيحاء
+const QUIZ_HINT_AT_MS = 60 * 1000;
+const QUIZ_REVEAL_AT_MS = 120 * 1000;
+const QUIZ_MAX_WINNERS = 3;
+const QUIZ_POINTS = { 1: 10, 2: 5, 3: 2 };
+const QUIZ_POINTS_HALF = { 1: 5, 2: 2, 3: 1 };
 const HAKAWATI_TRIGGERS = ['حكواتي', 'بووت', 'البووت', 'بوت', 'البوت'];
-const AUTO_REPLY_COOLDOWN_MS = 10 * 1000;  // ⭐ 10 ثواني لكل مستخدم
-const WELCOME_COOLDOWN_MS = 5 * 60 * 1000; // ⭐ 5 دقائق
+const AUTO_REPLY_COOLDOWN_MS = 10 * 1000;
+const WELCOME_COOLDOWN_MS = 5 * 60 * 1000;
 const JAILS_BEFORE_KICK = 3;
 const KICK_BAN_BASE_MS = 60 * 60 * 1000;
-const PERMANENT_BAN_MS = 365 * 24 * 60 * 60 * 1000;  // ⭐ سنة (طرد دائم)
+const PERMANENT_BAN_MS = 365 * 24 * 60 * 60 * 1000;
 const MAX_PROCESSED_CACHE = 2000;
 const PRUNE_BATCH = 500;
-const IMMUNE_LEVEL = 90; // Master Owner+
+const IMMUNE_LEVEL = 90;
 
 const _processedMsgs = new Set();
 
-/* ══════════════════════════════════════════════ */
-/* البيانات الافتراضية (fallback)                  */
-/* ══════════════════════════════════════════════ */
 const DEFAULT_ISLAMIC = [
     '🌙 اللهم صلِّ وسلِّم على نبينا محمد ﷺ',
     '📿 سبحان الله وبحمده، سبحان الله العظيم',
@@ -99,9 +89,6 @@ const DEFAULT_HAKAWATI = {
     'شو اسمك': 'اسمي حكواتي الشام 📖'
 };
 
-/* ══════════════════════════════════════════════ */
-/* دوال مساعدة                                    */
-/* ══════════════════════════════════════════════ */
 function normalizeArabic(text) {
     if (!text) return '';
     return String(text).toLowerCase().trim()
@@ -158,7 +145,6 @@ function escapeHtml(s) {
     });
 }
 
-/* ⭐ استخراج مفتاح Firebase للرسالة */
 function extractMsgKey(msg) {
     if (!msg) return null;
     if (msg._fbKey) return msg._fbKey;
@@ -170,7 +156,7 @@ function extractMsgKey(msg) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* ⭐⭐⭐ دوال الأصوات                             */
+/* الأصوات                                        */
 /* ══════════════════════════════════════════════ */
 function _getAudioCtx() {
     if (typeof getAudioCtx === 'function') {
@@ -185,13 +171,11 @@ function _getAudioCtx() {
     return window._botAudioCtx;
 }
 
-/* 🚔 صافرة شرطة — للسجان */
 function playPoliceSiren() {
     try {
         var ctx = _getAudioCtx();
         if (!ctx) return;
         var now = ctx.currentTime;
-        // 4 مرات: نغمة تصعد وتهبط
         for (var i = 0; i < 4; i++) {
             var osc = ctx.createOscillator();
             var gain = ctx.createGain();
@@ -216,13 +200,14 @@ function playPoliceSiren() {
     } catch (e) { console.warn('siren error:', e); }
 }
 
-/* 🚪 نغمة ترحيب — للسفير */
 function playWelcomeSound() {
     try {
         var ctx = _getAudioCtx();
         if (!ctx) return;
+        if (ctx.state === 'suspended') {
+            ctx.resume().catch(function(){});
+        }
         var now = ctx.currentTime;
-        // 3 نوتات تصاعدية هادئة: C5 → E5 → G5
         var notes = [523.25, 659.25, 783.99];
         notes.forEach(function(freq, i) {
             var osc = ctx.createOscillator();
@@ -241,15 +226,15 @@ function playWelcomeSound() {
     } catch (e) { console.warn('welcome sound error:', e); }
 }
 
-/* ⭐⭐⭐ فحص حصانة المستخدم */
+/* ══════════════════════════════════════════════ */
+/* الحصانة                                        */
+/* ══════════════════════════════════════════════ */
 async function isImmuneUser(uid) {
     if (!uid) return false;
-
     var cached = BotsState.immuneCache[uid];
     if (cached && (Date.now() - cached.at) < 60000) {
         return cached.immune;
     }
-
     try {
         var s = await db.ref('users/' + uid).once('value');
         var u = s.val() || {};
@@ -267,7 +252,7 @@ async function isImmuneUser(uid) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* ⭐⭐⭐ إخفاء الرسالة المسيئة                    */
+/* إخفاء الرسالة المسيئة                          */
 /* ══════════════════════════════════════════════ */
 async function hideOffensiveMessage(msg, reason) {
     var fbKey = extractMsgKey(msg);
@@ -277,7 +262,6 @@ async function hideOffensiveMessage(msg, reason) {
     }
     var room = (typeof ChatState !== 'undefined' && ChatState.currentRoom) || 'general';
 
-    // إخفاء فوري من DOM
     try {
         var el = document.querySelector('[data-msg-id="' + fbKey + '"]');
         if (el) {
@@ -286,7 +270,6 @@ async function hideOffensiveMessage(msg, reason) {
         }
     } catch (e) {}
 
-    // تحديث Firebase
     try {
         await db.ref('room_messages/' + room + '/' + fbKey).update({
             hidden: true,
@@ -303,7 +286,7 @@ async function hideOffensiveMessage(msg, reason) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* ⭐⭐⭐ كشف الكلمات الممنوعة (مع الأحرف المنفصلة) */
+/* كشف الكلمات                                    */
 /* ══════════════════════════════════════════════ */
 function _buildSeparatedRegex(word) {
     var chars = String(word).split('');
@@ -320,11 +303,7 @@ function containsBadWord(text) {
         var raw = BotsState.badWords[i];
         var w = normalizeArabic(raw);
         if (!w) continue;
-
-        // 1. بحث مباشر (substring)
         if (normalized.indexOf(w) !== -1) return raw;
-
-        // 2. أحرف منفصلة (ك ل ب) — فقط لو الكلمة 3+ أحرف
         if (w.length >= 3) {
             try {
                 if (_buildSeparatedRegex(w).test(normalized)) return raw;
@@ -341,9 +320,7 @@ function containsKickWord(text) {
         var raw = BotsState.kickWords[i];
         var w = normalizeArabic(raw);
         if (!w) continue;
-
         if (normalized.indexOf(w) !== -1) return raw;
-
         if (w.length >= 3) {
             try {
                 if (_buildSeparatedRegex(w).test(normalized)) return raw;
@@ -354,7 +331,7 @@ function containsKickWord(text) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* ⭐⭐⭐ دوال الحكواتي                            */
+/* حكواتي                                         */
 /* ══════════════════════════════════════════════ */
 function hasTrigger(text) {
     if (!text) return false;
@@ -393,7 +370,6 @@ function findReply(question) {
     return best;
 }
 
-/* ⭐ رد تلقائي — أول كلمة مكتشفة في النص */
 function findAutoReply(text) {
     if (!text) return null;
     var autoDB = BotsState.memory.hakawati_auto || {};
@@ -402,25 +378,24 @@ function findAutoReply(text) {
     var normalized = normalizeArabic(text);
     if (!normalized) return null;
 
-    var best = null, bestIdx = Infinity, bestLen = 0;
+    var best = null, bestIdx = Infinity, bestLen = 0, bestKey = '';
     for (var i = 0; i < keys.length; i++) {
         var k = keys[i];
         var key = normalizeArabic(k);
         if (!key) continue;
         var idx = normalized.indexOf(key);
         if (idx === -1) continue;
-        // أول كلمة (أصغر idx)، ثم الأطول
         if (idx < bestIdx || (idx === bestIdx && key.length > bestLen)) {
             var v = autoDB[k];
             best = (typeof v === 'string') ? v : (v.text || '');
             bestIdx = idx;
             bestLen = key.length;
+            bestKey = k;
         }
     }
-    return best;
+    return best ? { reply: best, key: bestKey } : null;
 }
 
-/* ⭐ فحص cooldown الردود التلقائية */
 function isAutoReplyCoolingDown(uid, key) {
     var k = uid + '::' + key;
     var t = BotsState.autoReplyCooldown[k];
@@ -438,26 +413,36 @@ function setAutoReplyCooldown(uid, key) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* ⭐⭐⭐ دوال السفير (الترحيب)                    */
+/* ⭐⭐⭐ السفير — إصلاح v26                       */
 /* ══════════════════════════════════════════════ */
+
+/* ⭐ الترحيب بمستخدم واحد */
 async function tryWelcomeUser(uid, roomId) {
     try {
         var userSnap = await db.ref('users/' + uid).once('value');
         var userData = userSnap.val();
-        if (!userData) return;
-
-        // لا ترحيب للملك/الملكة المخفيين
-        if (userData.invisible === true && (userData.rank === 'King' || userData.rank === 'Queen')) {
+        if (!userData) {
+            console.log('🚪 Ambassador: user data missing for', uid);
             return;
         }
 
+        // لا ترحيب للملك/الملكة المخفيين
+        if (userData.invisible === true && (userData.rank === 'King' || userData.rank === 'Queen')) {
+            console.log('🚪 Ambassador: skip invisible royal', userData.name);
+            return;
+        }
+
+        // فحص cooldown
         var now = Date.now();
         var result = await db.ref('bot_locks/welcome/' + roomId + '/' + uid).transaction(function(c) {
             if (c && (now - (c.at || 0)) < WELCOME_COOLDOWN_MS) return;
             return { at: now, by: 'ambassador' };
         });
 
-        if (!result || result.committed !== true) return;
+        if (!result || result.committed !== true) {
+            console.log('🚪 Ambassador: cooldown for', userData.name);
+            return;
+        }
 
         var roomName = (typeof QAMAR !== 'undefined' && QAMAR.ROOMS && QAMAR.ROOMS[roomId])
             ? QAMAR.ROOMS[roomId].name
@@ -466,7 +451,9 @@ async function tryWelcomeUser(uid, roomId) {
         var userName = userData.name || 'زائر';
         var avatar = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(userName) + '&background=111&color=ffd700&bold=true&size=64';
 
-        db.ref('room_messages/' + roomId).push({
+        // إرسال رسالة الترحيب في الشات
+        var msgRef = db.ref('room_messages/' + roomId).push();
+        await msgRef.set({
             senderUid: 'bot_ambassador',
             senderName: 'السفير',
             senderCode: null,
@@ -487,13 +474,89 @@ async function tryWelcomeUser(uid, roomId) {
             time: firebase.database.ServerValue.TIMESTAMP,
             edited: false,
             deleted: false
-        }).catch(function(e) { console.warn('welcome push failed:', e); });
+        });
 
+        console.log('🚪 Ambassador: welcomed', userName, 'in', roomName);
     } catch (e) {
         console.warn('tryWelcomeUser error:', e);
     }
 }
 
+/* ⭐ فحص تغيير حالة مستخدم */
+function handlePresenceChild(uid, p) {
+    if (!p) return;
+    var me = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
+    if (!me) return;
+
+    var prev = BotsState.lastUserRooms[uid];
+
+    // تحديث cache
+    BotsState.lastUserRooms[uid] = { state: p.state, room: p.room, lastChanged: p.lastChanged };
+
+    // تجاهل نفسي
+    if (uid === me.uid) return;
+
+    // فقط online
+    if (p.state !== 'online') return;
+
+    // نفس غرفتي فقط
+    var myRoom = (typeof ChatState !== 'undefined' && ChatState.currentRoom) || 'general';
+    if (p.room !== myRoom) return;
+
+    // ليس قديماً
+    if (Date.now() - (p.lastChanged || 0) > 60000) return;
+
+    // دخول جديد؟
+    var isNewJoin = !prev || prev.state !== 'online' || prev.room !== p.room;
+    if (isNewJoin) {
+        tryWelcomeUser(uid, myRoom);
+    }
+}
+
+/* ⭐ مستمع السفير — إصلاح v26 */
+async function setupAmbassadorListener() {
+    if (typeof db === 'undefined' || !db) { setTimeout(setupAmbassadorListener, 1500); return; }
+    var me = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
+    if (!me) { setTimeout(setupAmbassadorListener, 1500); return; }
+
+    // إلغاء المستمع القديم
+    if (BotsState.presenceListener) {
+        try { BotsState.presenceListener.off(); } catch(e) {}
+        BotsState.presenceListener = null;
+    }
+
+    // ⭐⭐⭐ الخطوة 1: baseline (ملء cache بدون ترحيب)
+    try {
+        var snap = await db.ref('user_presence').once('value');
+        var presences = snap.val() || {};
+        Object.keys(presences).forEach(function(uid) {
+            BotsState.lastUserRooms[uid] = presences[uid];
+        });
+        console.log('🚪 Ambassador: baseline loaded (' + Object.keys(presences).length + ' users)');
+    } catch (e) {
+        console.warn('Ambassador baseline error:', e);
+    }
+
+    // ⭐⭐⭐ الخطوة 2: الاستماع للتغييرات الفعلية
+    BotsState.presenceListener = db.ref('user_presence');
+
+    BotsState.presenceListener.on('child_added', function(s) {
+        handlePresenceChild(s.key, s.val());
+    });
+
+    BotsState.presenceListener.on('child_changed', function(s) {
+        handlePresenceChild(s.key, s.val());
+    });
+
+    BotsState.presenceListener.on('child_removed', function(s) {
+        delete BotsState.lastUserRooms[s.key];
+    });
+
+    BotsState.ambassadorReady = true;
+    console.log('🚪 Ambassador listener ready (v26)');
+}
+
+/* ⭐ معالجة رسالة الترحيب */
 function handleWelcomeMessage(msg) {
     var me = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
     if (!me) return;
@@ -502,9 +565,9 @@ function handleWelcomeMessage(msg) {
     if (msg.roomId !== currentRoom) return;
 
     var msgAge = Date.now() - (typeof msg.time === 'number' ? msg.time : Date.now());
-    if (msgAge > 60000) return; // تجاهل الأقدم من دقيقة
+    if (msgAge > 60000) return;
 
-    // صوت للجميع
+    // صوت للجميع في الروم
     playWelcomeSound();
 
     // Modal للعضو المنضم فقط
@@ -533,47 +596,8 @@ function showWelcomeModal(msg) {
     setTimeout(close, 10000);
 }
 
-function setupAmbassadorListener() {
-    if (!db) return;
-    if (BotsState.presenceListener) {
-        try { BotsState.presenceListener.off(); } catch(e) {}
-        BotsState.presenceListener = null;
-    }
-
-    BotsState.presenceListener = db.ref('user_presence');
-    BotsState.presenceListener.on('value', handlePresenceChange);
-    console.log('🚪 Ambassador listener ready');
-}
-
-async function handlePresenceChange(snap) {
-    var presences = snap.val() || {};
-    var now = Date.now();
-    var me = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
-    if (!me) return;
-    var currentRoom = (typeof ChatState !== 'undefined' && ChatState.currentRoom) || 'general';
-
-    var uids = Object.keys(presences);
-    for (var i = 0; i < uids.length; i++) {
-        var uid = uids[i];
-        if (uid === me.uid) continue;
-        var p = presences[uid];
-        if (!p || p.state !== 'online') continue;
-        if (p.room !== currentRoom) continue;
-        if (now - (p.lastChanged || 0) > 60000) continue;
-
-        var prev = BotsState.lastUserRooms[uid];
-        var isNewJoin = !prev || prev.room !== currentRoom || prev.state !== 'online';
-
-        BotsState.lastUserRooms[uid] = { state: p.state, room: p.room, lastChanged: p.lastChanged };
-
-        if (isNewJoin) {
-            tryWelcomeUser(uid, currentRoom);
-        }
-    }
-}
-
 /* ══════════════════════════════════════════════ */
-/* ⭐⭐⭐ initBots                                 */
+/* initBots                                       */
 /* ══════════════════════════════════════════════ */
 function initBots() {
     if (BotsState.initialized) return;
@@ -581,53 +605,42 @@ function initBots() {
     var user = getCurrentUser();
     if (!user) { console.warn('🤖 initBots: no user'); return; }
     BotsState.initialized = true;
-    console.log('🤖 bots.js v25 initialized');
+    console.log('🤖 bots.js v26 initialized');
 
-    // badWords
     db.ref('bot_memory/badWords').on('value', s => {
         var arr = toArray(s.val());
         var words = arr.map(it => (typeof it === 'string') ? it : (it.text || '')).filter(Boolean);
         if (words.length > 0) BotsState.badWords = words;
     });
 
-    // kickWords
     db.ref('bot_memory/kickWords').on('value', s => {
         var arr = toArray(s.val());
         var words = arr.map(it => (typeof it === 'string') ? it : (it.text || '')).filter(Boolean);
         if (words.length > 0) BotsState.kickWords = words;
     });
 
-    // hakawati (مع نداء)
     db.ref('bot_memory/hakawati').on('value', s => { BotsState.memory.hakawati = s.val() || {}; });
 
-    // ⭐ hakawati_auto (ردود تلقائية — بدون نداء)
     db.ref('bot_memory/hakawati_auto').on('value', s => {
         BotsState.memory.hakawati_auto = s.val() || {};
         console.log('🔔 Auto-replies loaded:', Object.keys(BotsState.memory.hakawati_auto).length);
     });
 
-    // quiz
     db.ref('bot_memory/quiz').on('value', s => { BotsState.memory.quiz = toArray(s.val()); });
 
-    // islamic
     db.ref('bot_memory/islamic').on('value', s => {
         var arr = toArray(s.val());
         BotsState.memory.islamic = arr.map(it => (typeof it === 'string') ? it : (it.text || '')).filter(Boolean);
     });
 
-    // quiz_current
     db.ref('bot_locks/quiz_current').on('value', s => {
         var v = s.val();
         BotsState.currentQuiz = (!v || v.closed) ? null : v;
     }, err => console.warn('⚠️ quiz_current listener:', err.message));
 
-    // ⭐ مستمع الرسائل المخفية (تطبيق فوري على كل عملاء)
     setupHiddenMessagesListener();
-
-    // ⭐ مستمع السفير
     setupAmbassadorListener();
 
-    // autoTick (للمشرفين فقط)
     var rankLevel = (typeof QAMAR !== 'undefined' && QAMAR.getRankLevel) ? QAMAR.getRankLevel(user.rank) : 0;
     if (rankLevel >= 65) {
         BotsState.autoInterval = setInterval(autoTick, 30000);
@@ -640,14 +653,12 @@ function initBots() {
     setupKingPanel();
 }
 
-/* ⭐⭐⭐ مستمع الرسائل المخفية */
 function setupHiddenMessagesListener() {
     if (BotsState.hiddenListener) {
         try { BotsState.hiddenListener.off(); } catch(e) {}
         BotsState.hiddenListener = null;
     }
     var currentRoom = (typeof ChatState !== 'undefined' && ChatState.currentRoom) || 'general';
-
     var ref = db.ref('room_messages/' + currentRoom).limitToLast(50);
 
     var applyHidden = function(sKey, msg) {
@@ -699,19 +710,16 @@ async function tryPost(botId) {
     else if (botId === 'quiz') postQuiz();
 }
 
-/* ⭐⭐⭐ الإسلامي — يجمع المكتبة + ما يضيفه الملك */
 function postIslamic() {
     var firebaseItems = BotsState.memory.islamic.length > 0 ? BotsState.memory.islamic : [];
     var library = (typeof window !== 'undefined' && window.ISLAMIC_LIBRARY) ? window.ISLAMIC_LIBRARY : [];
     var fallback = DEFAULT_ISLAMIC;
 
-    // نجمع الكل
     var all = [];
     if (library.length > 0) all = all.concat(library);
     if (firebaseItems.length > 0) all = all.concat(firebaseItems);
     if (all.length === 0) all = fallback.slice();
 
-    // نمنع تكرار آخر نص
     var lastKey = 'qamar_last_islamic';
     var lastText = localStorage.getItem(lastKey) || '';
     var pick = '';
@@ -723,7 +731,6 @@ function postIslamic() {
     postBotMessage('islamic', pick, 'islamic');
 }
 
-/* ⭐⭐⭐ بناء الإيحاء: د--ش-- */
 function buildHint(answer) {
     if (!answer) return '؟؟؟';
     var str = String(answer);
@@ -740,7 +747,6 @@ function buildHint(answer) {
     return result;
 }
 
-/* ⭐⭐⭐ المسابقة الجديدة */
 function postQuiz() {
     var list = BotsState.memory.quiz.length > 0 ? BotsState.memory.quiz : DEFAULT_QUIZ;
     var q = list[Math.floor(Math.random() * list.length)];
@@ -762,7 +768,6 @@ function postQuiz() {
 
     postBotMessage('quiz', text, 'quiz');
 
-    // ⭐ مؤقّت 1: عند T+60s
     setTimeout(async function() {
         try {
             var s = await db.ref('bot_locks/quiz_current').once('value');
@@ -770,12 +775,10 @@ function postQuiz() {
             if (!c || c.startedAt !== startedAt || c.closed) return;
 
             if ((c.winnersCount || 0) === 0) {
-                // لا فائز — ننشر الإيحاء
                 var hint = buildHint(firstAnswer);
                 postBotMessage('quiz', '💡 ' + hint, 'quiz');
                 db.ref('bot_locks/quiz_current').update({ hintPosted: true }).catch(function(){});
 
-                // ⭐ مؤقّت 2: عند T+120s
                 setTimeout(async function() {
                     try {
                         var s2 = await db.ref('bot_locks/quiz_current').once('value');
@@ -790,7 +793,6 @@ function postQuiz() {
                     } catch (e) {}
                 }, QUIZ_REVEAL_AT_MS - QUIZ_HINT_AT_MS);
             } else {
-                // فيه فائز واحد على الأقل قبل T+60s → إعلان الحل فوراً
                 postBotMessage('quiz', '💡 الإجابة: ' + firstAnswer, 'quiz');
                 db.ref('bot_locks/quiz_current').update({ closed: true }).catch(function(){});
                 setTimeout(function() {
@@ -801,9 +803,6 @@ function postQuiz() {
     }, QUIZ_HINT_AT_MS);
 }
 
-/* ══════════════════════════════════════════════ */
-/* ⭐⭐⭐ postBotMessage                           */
-/* ══════════════════════════════════════════════ */
 function postBotMessage(key, text, roomId) {
     if (typeof db === 'undefined' || !db) return;
     var bot = QAMAR.BOTS[key.toUpperCase()];
@@ -833,9 +832,6 @@ function postBotMessage(key, text, roomId) {
     }).catch(e => console.warn('❌ Bot post failed:', e.message));
 }
 
-/* ══════════════════════════════════════════════ */
-/* ⭐⭐⭐ handleBotCommand                         */
-/* ══════════════════════════════════════════════ */
 function handleBotCommand(text) {
     var user = getCurrentUser();
     if (!user) return;
@@ -868,7 +864,7 @@ function handleBotCommand(text) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* ⭐⭐⭐ handleKickWord (كلمة طرد → حظر دائم)     */
+/* كلمة طرد → حظر دائم                            */
 /* ══════════════════════════════════════════════ */
 async function handleKickWord(msg, kickWord) {
     try {
@@ -878,15 +874,12 @@ async function handleKickWord(msg, kickWord) {
             return;
         }
 
-        // ⭐⭐⭐ إخفاء الرسالة المسيئة
         await hideOffensiveMessage(msg, 'kick_word:' + kickWord);
 
         var userSnap = await db.ref('users/' + msg.senderUid).once('value');
         var userData = userSnap.val() || {};
         var kickCount = userData.kickCount || 0;
         var now = Date.now();
-
-        // ⭐ طرد دائم
         var bannedUntil = now + PERMANENT_BAN_MS;
 
         await db.ref('users/' + msg.senderUid).update({
@@ -905,10 +898,8 @@ async function handleKickWord(msg, kickWord) {
             '⏰ الحظر: دائم\n' +
             '🔁 رقم المخالفة: ' + (kickCount + 1), room);
 
-        // إشعار صوتي للجميع
         playPoliceSiren();
 
-        // إذا أنا المُطرود
         var me = getCurrentUser();
         if (me && me.uid === msg.senderUid) {
             setTimeout(() => {
@@ -926,7 +917,7 @@ async function handleKickWord(msg, kickWord) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* ⭐⭐⭐ handleBadWord (بعد 3 سجنات → حظر دائم)   */
+/* كلمة سجن → تصاعدي → 3 → حظر دائم              */
 /* ══════════════════════════════════════════════ */
 async function handleBadWord(msg, badWord) {
     try {
@@ -936,7 +927,6 @@ async function handleBadWord(msg, badWord) {
             return;
         }
 
-        // ⭐⭐⭐ إخفاء الرسالة المسيئة
         await hideOffensiveMessage(msg, 'bad_word:' + badWord);
 
         await db.ref('users/' + msg.senderUid + '/warnings').transaction(c => (c || 0) + 1);
@@ -947,10 +937,8 @@ async function handleBadWord(msg, badWord) {
         var lastJailAt = userData.lastJailAt || 0;
         var now = Date.now();
 
-        // ⭐ 3 سجنات → حظر دائم
         if (jailCount >= JAILS_BEFORE_KICK) {
             console.log('🚫 3 jails → permanent ban for', msg.senderName);
-            // نستخدم آلية الطرد الدائم
             var userSnap2 = await db.ref('users/' + msg.senderUid).once('value');
             var userData2 = userSnap2.val() || {};
             var kc = userData2.kickCount || 0;
@@ -1017,7 +1005,6 @@ async function handleBadWord(msg, badWord) {
             '⚠️ التحذير رقم: ' + warnCount + '\n' +
             '⛓️ مدة السجن: ' + minutes + ' دقيقة\n' + warningLine, room);
 
-        // إشعار صوتي للجميع
         playPoliceSiren();
 
         setTimeout(async () => {
@@ -1034,13 +1021,13 @@ async function handleBadWord(msg, badWord) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* ⭐⭐⭐ processIncomingMessage                   */
+/* processIncomingMessage                        */
 /* ══════════════════════════════════════════════ */
 async function processIncomingMessage(msg) {
     try {
         if (!msg) return;
 
-        // ⭐⭐⭐ رسائل الترحيب (قبل فحص isBot)
+        // ⭐ رسائل الترحيب (قبل فحص isBot)
         if (msg.isWelcome && msg.welcomeFor) {
             handleWelcomeMessage(msg);
             return;
@@ -1064,7 +1051,6 @@ async function processIncomingMessage(msg) {
         _processedMsgs.add(safeKey);
         pruneProcessedMsgs();
 
-        // dedup lock
         try {
             var lockRes = await db.ref('bot_locks/msgs/' + safeKey).transaction(c => {
                 if (c) return;
@@ -1103,22 +1089,13 @@ async function processIncomingMessage(msg) {
             return;
         }
 
-        // 4. ⭐ ردود تلقائية (بدون نداء)
-        var autoKeys = Object.keys(BotsState.memory.hakawati_auto || {});
-        if (autoKeys.length > 0) {
-            var autoReply = findAutoReply(text);
-            if (autoReply) {
-                // ⭐ cooldown لكل مستخدم
-                var matchedKey = '';
-                for (var ai = 0; ai < autoKeys.length; ai++) {
-                    var kk = autoKeys[ai];
-                    if (normalizeArabic(text).indexOf(normalizeArabic(kk)) !== -1) { matchedKey = kk; break; }
-                }
-                if (!isAutoReplyCoolingDown(msg.senderUid, matchedKey)) {
-                    setAutoReplyCooldown(msg.senderUid, matchedKey);
-                    var aroom = (typeof ChatState !== 'undefined' && ChatState.currentRoom) || 'general';
-                    setTimeout(() => postBotMessage('hakawati', '📖 ' + autoReply, aroom), 700);
-                }
+        // 4. ردود تلقائية
+        var autoResult = findAutoReply(text);
+        if (autoResult) {
+            if (!isAutoReplyCoolingDown(msg.senderUid, autoResult.key)) {
+                setAutoReplyCooldown(msg.senderUid, autoResult.key);
+                var aroom = (typeof ChatState !== 'undefined' && ChatState.currentRoom) || 'general';
+                setTimeout(() => postBotMessage('hakawati', '📖 ' + autoResult.reply, aroom), 700);
             }
         }
 
@@ -1133,7 +1110,6 @@ async function processIncomingMessage(msg) {
             var match = answersArr.some(a => isAnswerMatch(text, a));
             if (!match) return;
 
-            // ⭐ حجز مركز فائز
             var winRes = await db.ref('bot_locks/quiz_current/winnersCount').transaction(function(c) {
                 var n = (c || 0);
                 if (n >= QUIZ_MAX_WINNERS) return;
@@ -1141,25 +1117,21 @@ async function processIncomingMessage(msg) {
             });
             if (!winRes || winRes.committed !== true) return;
 
-            var rank = winRes.snapshot.val(); // 1, 2, or 3
+            var rank = winRes.snapshot.val();
             var isAfterHint = (qz.hintPosted === true);
             var pointsTable = isAfterHint ? QUIZ_POINTS_HALF : QUIZ_POINTS;
             var points = pointsTable[rank] || 0;
 
-            // سجل الفائز
             db.ref('bot_locks/quiz_current/winners/' + msg.senderUid).set({
                 rank: rank, name: msg.senderName,
                 at: Date.now(), points: points
             }).catch(function(){});
 
-            // احسب النقاط
             await db.ref('bot_data/quiz/scores/' + msg.senderUid).transaction(c => (c || 0) + points).catch(() => {});
 
-            // إعلان الفائز
             var emoji = rank === 1 ? '🥇' : rank === 2 ? '🥈' : '🥉';
             postBotMessage('quiz', emoji + ' ' + msg.senderName + ' — +' + points + ' نقطة', 'quiz');
 
-            // ⭐ لو 3 فائزين — نغلق فوراً
             if (rank === 3) {
                 var firstAns = answersArr[0] || '';
                 setTimeout(function() {
@@ -1175,20 +1147,17 @@ async function processIncomingMessage(msg) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* ⭐⭐⭐ onRoomChanged                            */
+/* onRoomChanged                                  */
 /* ══════════════════════════════════════════════ */
 function onRoomChanged(roomId) {
-    // نعيد إعداد مستمعي الرسائل المخفية + السفير
     if (typeof db === 'undefined' || !db) return;
     setupHiddenMessagesListener();
-    BotsState.lastUserRooms = {};
-    if (BotsState.presenceListener) {
-        // يبقى مستمع presence شغال (يراقب كل الغرف)
-    }
+    // نُبقي baseline السفير (لا نُفرغ) — فقط نتجاهل القديم
+    // لا نحتاج إعادة setupAmbassadorListener (المستمع على user_presence كامل)
 }
 
 /* ══════════════════════════════════════════════ */
-/* ⭐⭐⭐ لوحة الملك                              */
+/* لوحة الملك                                     */
 /* ══════════════════════════════════════════════ */
 function setupKingPanel() {
     var user = getCurrentUser();
@@ -1503,9 +1472,6 @@ function addItem(tab) {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* stopBots                                       */
-/* ══════════════════════════════════════════════ */
 function stopBots() {
     if (BotsState.autoInterval) clearInterval(BotsState.autoInterval);
     if (BotsState.kingObs) { try { BotsState.kingObs.disconnect(); } catch (e) {} }
@@ -1514,9 +1480,6 @@ function stopBots() {
     BotsState.initialized = false;
 }
 
-/* ══════════════════════════════════════════════ */
-/* Exports                                        */
-/* ══════════════════════════════════════════════ */
 window.initBots = initBots;
 window.handleBotCommand = handleBotCommand;
 window.processIncomingMessage = processIncomingMessage;
@@ -1525,7 +1488,6 @@ window.stopBots = stopBots;
 window.openBotManager = openBotManager;
 window.closeBotManager = closeBotManager;
 
-// دوال مساعدة للنافذة (اختياري)
 window.BotsState = BotsState;
 
-console.log('🤖 bots.js v25 loaded — 5 bots | 1000+ islamic items | permanent ban');
+console.log('🤖 bots.js v26 loaded — ambassador fixed (baseline + child events)');
