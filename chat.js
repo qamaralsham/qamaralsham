@@ -1,5 +1,5 @@
 // ==============================================
-// chat.js v3.11 — بنية v3.10 + presence on room switch
+// chat.js v3.12 — بنية v3.11 + room-picker integration
 // ==============================================
 
 const ChatState = {
@@ -211,21 +211,45 @@ function startPunishmentWatcher() {
             if (!d) return;
             const now = Date.now();
 
+            // ⭐ v3.12: عندما ينتهي الحظر/السجن → لا نفعل شيء
             if (d.isBanned === true && d.bannedUntil && now >= d.bannedUntil) {
-                await db.ref('users/' + user.uid).update({ isBanned: false, bannedUntil: 0 });
+                await db.ref('users/' + user.uid).update({ isBanned: false, bannedUntil: 0, permanentBan: false });
                 return;
             }
             if (d.isJailed === true && d.jailUntil && now >= d.jailUntil) {
                 await db.ref('users/' + user.uid).update({ isJailed: false, jailUntil: 0, jailReleasedAt: now });
                 return;
             }
+
+            // ⭐ v3.12: إذا أنا محظور/مطرود → انتقل لشاشة الغرف
             if (d.isBanned === true && d.bannedUntil && now < d.bannedUntil) {
                 const remaining = Math.ceil((d.bannedUntil - now) / 60000);
                 cleanupAllListeners();
                 if (typeof showToast === 'function') showToast('fa-ban', '🚪 أنت محظور — ' + remaining + ' دقيقة');
-                try { if (typeof logout === 'function') logout(); } catch (e) {}
-                setTimeout(() => location.reload(), 2500);
+                try {
+                    if (typeof window.showRoomPicker === 'function') {
+                        window.showRoomPicker();
+                    }
+                } catch(e) {}
             }
+
+            // ⭐ v3.12: إذا كنت مطروداً من الروم الحالي → انتقل لشاشة الغرف
+            try {
+                var kickSnap = await db.ref('room_kicks/' + ChatState.currentRoom + '/' + user.uid).once('value');
+                if (kickSnap.exists()) {
+                    var kickData = kickSnap.val() || {};
+                    cleanupAllListeners();
+                    if (typeof showToast === 'function') {
+                        var rn = (QAMAR.ROOMS[ChatState.currentRoom] && QAMAR.ROOMS[ChatState.currentRoom].name) || ChatState.currentRoom;
+                        showToast('fa-door-closed', '🚪 أنت مطرود من ' + rn);
+                    }
+                    try {
+                        if (typeof window.showRoomPicker === 'function') {
+                            window.showRoomPicker();
+                        }
+                    } catch(e) {}
+                }
+            } catch(e) {}
         } catch (e) { console.warn('punishment check error:', e); }
     };
 
@@ -325,10 +349,27 @@ function changeBackground(bgId){
     if(bg&&c){QAMAR.BACKGROUNDS.forEach(b=>c.classList.remove(b.class));c.classList.add(bg.class);localStorage.setItem(QAMAR.STORAGE_KEYS.BACKGROUND,bgId)}
 }
 
-/* ⭐ v3.11: switchRoom يُحدّث presence فوراً */
 function switchRoom(roomId,roomTitle){
     const user=getCurrentUser();
     if(!QAMAR.isRoomVisible(roomId,user)){showToast('fa-lock','🔒 غير متاحة');return}
+
+    // ⭐ v3.12: فحص الطرد من الروم
+    if (user && user.uid && typeof db !== 'undefined' && db) {
+        db.ref('room_kicks/' + roomId + '/' + user.uid).once('value').then(function(kickSnap) {
+            if (kickSnap.exists()) {
+                if (typeof showToast === 'function') showToast('fa-door-closed', '🚪 أنت مطرود من هذه الغرفة');
+                return;
+            }
+            _doSwitchRoom(roomId, roomTitle, user);
+        }).catch(function() {
+            _doSwitchRoom(roomId, roomTitle, user);
+        });
+    } else {
+        _doSwitchRoom(roomId, roomTitle, user);
+    }
+}
+
+function _doSwitchRoom(roomId, roomTitle, user) {
     if(ChatState.messagesListener){ChatState.messagesListener.off();ChatState.messagesListener=null}
     ChatState.currentRoom=roomId;
     localStorage.setItem('qamar_last_room', roomId);
@@ -340,7 +381,7 @@ function switchRoom(roomId,roomTitle){
     updateMicsUI();startMessagesListener();
     if(typeof applyRoomBackground==='function'){applyRoomBackground(roomId);}
 
-    // ⭐ v3.11: تحديث presence فوراً (بدون انتظار heartbeat الـ 30s)
+    // ⭐ v3.12: تحديث presence فوراً
     if (user && user.uid && typeof db !== 'undefined' && db) {
         db.ref('user_presence/' + user.uid).set({
             state: 'online',
@@ -1391,14 +1432,19 @@ window.addEventListener('message',e=>{
         if(u.avatarFrame!==undefined)refreshAvatarsInMessages(u.avatarFrame);
         refreshNameStylesInMessages(u);
     }
-    // ⭐ v3.11: مغادرة الغرفة من البروفايل
+    // ⭐ v3.12: مغادرة الغرفة من البروفايل → شاشة الغرف
     if (e.data && e.data.action === 'leaveRoom') {
-        var roomsList = document.getElementById('rooms-sidebar');
-        if (roomsList) {
-            roomsList.classList.add('open');
-            closeAllPanels();
-            var ov = document.getElementById('overlay');
-            if (ov) ov.classList.add('show');
+        // ⭐ نستدعي showRoomPicker (من room-picker.js)
+        if (typeof window.showRoomPicker === 'function') {
+            try { window.showRoomPicker(); } catch(err) { console.warn('showRoomPicker failed:', err); }
+        } else {
+            // fallback: افتح السيدبار لو room-picker غير محمّل
+            var roomsList = document.getElementById('rooms-sidebar');
+            if (roomsList) {
+                roomsList.classList.add('open');
+                var ov = document.getElementById('overlay');
+                if (ov) ov.classList.add('show');
+            }
         }
     }
 });
@@ -1502,4 +1548,4 @@ window.applyRoomBackground=applyRoomBackground;
 window.buildRoomsList=buildRoomsList;
 window.clearPrivateNotifsFrom = _clearPrivateNotifsFrom;
 
-console.log('✅ chat.js v3.11 loaded — presence on room switch');
+console.log('✅ chat.js v3.12 loaded — room-picker integration');
