@@ -1,11 +1,20 @@
 // ==============================================
-// king-room.js v6 — تعيين الملكة بأسماء/code
+// king-room.js v7 — تبويبات جديدة + تعيين الملكة
+// ==============================================
+// ✅ v7:
+//   1. تبويب 🔔 ردود تلقائية (hakawati_auto)
+//   2. تبويب 🚫 المعاقبون (3 فلاتر + زر إعادة)
+//   3. تبويب 🚨 الإبلاغات (جديدة/أرشيف)
+//   4. محرر الغرف: nameColor + fontColor + fontSize
+//   5. زر تبديل الزجاج/الكلاسيكي
+//   6. زر إنشاء بروفايلات البوتات
+//   7. openWelcomeEditor — محرر رسالة الترحيب
 // ==============================================
 
 (function () {
     'use strict';
-    if (window.__kingRoomV6) return;
-    window.__kingRoomV6 = true;
+    if (window.__kingRoomV7) return;
+    window.__kingRoomV7 = true;
 
     var KR = {
         open: false,
@@ -63,13 +72,11 @@
         input = input.trim();
         if (!input) return null;
 
-        // 1. UID مباشرة (28 حرف تقريباً)
         if (/^[A-Za-z0-9]{20,}$/.test(input)) {
             var s1 = await db.ref('users/' + input).once('value');
             if (s1.exists()) return { uid: input, data: s1.val() };
         }
 
-        // 2. كود بصمة (XX·XXX)
         var codeMatch = input.match(/([A-Z0-9]{2,3})·([A-Z0-9]{3,4})/i);
         if (codeMatch) {
             var code = codeMatch[0].toUpperCase();
@@ -81,7 +88,6 @@
             }
         }
 
-        // 3. الإيميل
         if (input.indexOf('@') !== -1) {
             var allSnap = await db.ref('users').limitToLast(500).once('value');
             var all = allSnap.val() || {};
@@ -94,7 +100,6 @@
             if (found) return found;
         }
 
-        // 4. الاسم (user_names)
         var s3 = await db.ref('user_names/' + input).once('value');
         var uid3 = s3.val();
         if (uid3) {
@@ -102,7 +107,6 @@
             if (u3.exists()) return { uid: uid3, data: u3.val() };
         }
 
-        // 5. بحث جزئي في الأسماء
         var allSnap2 = await db.ref('users').limitToLast(500).once('value');
         var all2 = allSnap2.val() || {};
         var q = input.toLowerCase().replace(/\s+/g, '');
@@ -141,8 +145,11 @@
         ];
         if (canDo('canPromote') || canDo('canDemote')) list.push({ id: 'ranks', label: '🎖️ الرتب' });
         if (isKing()) list.push({ id: 'queens', label: '👸 الملكات' });
-        if ((canDo('canCreateRooms') || canDo('canEditRooms')) && lvl >= 90) list.push({ id: 'rooms', label: '🚪 الغرف' });
+        if (canDo('canWarn') || canDo('canJail') || canDo('canBan')) list.push({ id: 'punishments', label: '🚫 المعاقبون' });
+        if (lvl >= 90) list.push({ id: 'reports', label: '🚨 الإبلاغات' });
+        if ((canDo('canCreateRooms') || canDo('canEditRooms')) && lvl >= 80) list.push({ id: 'rooms', label: '🚪 الغرف' });
         list.push({ id: 'bots', label: '🤖 البوتات' });
+        if (isKing()) list.push({ id: 'welcome', label: '🚪 الترحيب' });
         if (lvl >= 90) list.push({ id: 'alerts', label: '📢 تنبيه' });
         if (isKing()) list.push({ id: 'settings', label: '⚙️ إعدادات' });
 
@@ -166,8 +173,11 @@
         if (KR.currentTab === 'users') return renderUsers(body);
         if (KR.currentTab === 'ranks') return renderRanks(body);
         if (KR.currentTab === 'queens') return renderQueens(body);
+        if (KR.currentTab === 'punishments') return renderPunishments(body);
+        if (KR.currentTab === 'reports') return renderReports(body);
         if (KR.currentTab === 'rooms') return renderRooms(body);
         if (KR.currentTab === 'bots') return renderBots(body);
+        if (KR.currentTab === 'welcome') return renderWelcomeTab(body);
         if (KR.currentTab === 'alerts') return renderAlerts(body);
         if (KR.currentTab === 'settings') return renderSettings(body);
     }
@@ -349,11 +359,9 @@
         if (canB) h += '<div class="kr-menu-item danger" data-a="ban">🚫 حظر</div>';
         if (canEdit) h += '<div class="kr-menu-item" data-a="editProfile">🖼️ تعديل البروفايل</div>';
 
-        /* ⭐ جديد: الملك يرقّي إلى ملكة من هنا */
         if (isKing() && user.uid !== me.uid && user.rank !== 'King' && user.rank !== 'Queen') {
             h += '<div class="kr-menu-item" style="border-top:1px solid rgba(255,215,0,0.15);margin-top:4px;padding-top:10px;" data-a="makeQueen">👸 اجعلها ملكة</div>';
         }
-        /* الملك يرقّي ملكة موجودة لأولى/ثانية */
         if (isKing() && user.rank === 'Queen' && user.uid !== me.uid) {
             h += '<div class="kr-menu-item" data-a="setQueenOrder1">👸 اجعلها الملكة الأولى</div>';
             h += '<div class="kr-menu-item" data-a="setQueenOrder2">👸 اجعلها الملكة الثانية</div>';
@@ -424,7 +432,6 @@
         var me = getMe();
         try {
             if (order === 1) {
-                // لو فيه ملكة أولى قديمة → أنزلها للثانية
                 var allS = await db.ref('users').limitToLast(500).once('value');
                 var allU = allS.val() || {};
                 var q1 = Object.keys(allU).find(function (k) {
@@ -660,7 +667,7 @@
         }).catch(function () { body.innerHTML = '<div class="kr-empty">❌</div>'; });
     }
 
-    /* ═══ Queens — محدّث ═══ */
+    /* ═══ Queens ═══ */
     async function renderQueens(body) {
         if (!isKing()) { body.innerHTML = '<div class="kr-empty">للملك فقط</div>'; return; }
         body.innerHTML = '<div class="kr-loading">⏳</div>';
@@ -683,7 +690,6 @@
         });
         h += '</div>';
 
-        /* ⭐ بحث + تعيين ملكة */
         h += '<div class="kr-card">';
         h += '<div class="kr-card-title">➕ تعيين ملكة</div>';
         h += '<input class="kr-input" id="kr-qsearch" placeholder="🔍 اسم / كود / إيميل / UID" style="margin-bottom:8px;">';
@@ -693,7 +699,6 @@
 
         body.innerHTML = h;
 
-        /* فتح إجراءات ملكة موجودة */
         body.querySelectorAll('[data-qopen]').forEach(function (b) {
             b.onclick = function () {
                 var qid = this.getAttribute('data-qopen');
@@ -702,7 +707,6 @@
             };
         });
 
-        /* البحث */
         var searchInput = document.getElementById('kr-qsearch');
         var searchBtn = document.getElementById('kr-qsearch-btn');
         var resultsBox = document.getElementById('kr-qresults');
@@ -725,7 +729,6 @@
                     });
                     return;
                 }
-                /* نتيجة واحدة */
                 resultsBox.innerHTML = '';
                 resultsBox.appendChild(buildSearchResultCard(result.uid, result.data));
             } catch (e) {
@@ -775,13 +778,250 @@
         });
     }
 
-    /* ═══ Rooms ═══ */
+    /* ═══════════════════════════════════════════ */
+    /* ⭐ v7: المعاقبون                              */
+    /* ═══════════════════════════════════════════ */
+    async function renderPunishments(body) {
+        body.innerHTML = '<div class="kr-loading">⏳</div>';
+        try {
+            var s = await db.ref('users').limitToLast(500).once('value');
+            var all = s.val() || {};
+            var now = Date.now();
+            var allUsers = Object.keys(all).map(function (uid) { var u = all[uid] || {}; u.uid = uid; return u; });
+
+            KR._punishmentFilter = KR._punishmentFilter || 'jailed';
+
+            var renderList = function() {
+                var filter = KR._punishmentFilter;
+                var filtered = allUsers.filter(function(u) {
+                    if (filter === 'jailed') return u.isJailed && u.jailUntil && now < u.jailUntil;
+                    if (filter === 'banned') return u.isBanned && u.bannedUntil && now < u.bannedUntil;
+                    if (filter === 'perm') return u.permanentBan === true && u.isBanned === true;
+                    return false;
+                });
+
+                var listEl = document.getElementById('kr-pun-list');
+                if (!listEl) return;
+                listEl.innerHTML = '';
+
+                if (!filtered.length) {
+                    listEl.innerHTML = '<div style="text-align:center;color:#888;padding:20px;font-size:12px;">لا يوجد معاقبون في هذه الفئة</div>';
+                    return;
+                }
+
+                filtered.forEach(function(u) {
+                    var row = document.createElement('div');
+                    row.className = 'kr-user';
+                    var timeInfo = '';
+                    if (filter === 'jailed') timeInfo = '⛓️ ينتهي بعد ' + Math.ceil((u.jailUntil - now) / 60000) + ' دقيقة';
+                    else if (filter === 'banned') timeInfo = '🚫 ينتهي بعد ' + Math.ceil((u.bannedUntil - now) / 3600000) + ' ساعة';
+                    else if (filter === 'perm') timeInfo = '🛑 حظر دائم — يحتاج إعادة';
+
+                    row.innerHTML =
+                        '<img class="kr-user-avatar" src="' + esc(u.avatar || 'https://ui-avatars.com/api/?name=U') + '">' +
+                        '<div class="kr-user-info">' +
+                            '<div class="kr-user-name">' + rankBadge(u.rank) + ' ' + esc(u.name || 'مجهول') + '</div>' +
+                            '<div class="kr-user-sub">' + timeInfo + '</div>' +
+                            (u.kickReason || u.jailReason || u.banReason ? '<div style="color:#ff9999;font-size:10px;margin-top:2px;">📝 ' + esc(u.kickReason || u.jailReason || u.banReason) + '</div>' : '') +
+                        '</div>' +
+                        '<button class="kr-btn kr-btn-green kr-btn-sm" data-restore="' + esc(u.uid) + '">↩️ إعادة</button>';
+                    listEl.appendChild(row);
+                });
+
+                listEl.querySelectorAll('[data-restore]').forEach(function(btn) {
+                    btn.onclick = async function() {
+                        var uid = this.getAttribute('data-restore');
+                        var u = filtered.find(function(x) { return x.uid === uid; });
+                        if (!u) return;
+                        if (!confirm('إعادة ' + u.name + '؟')) return;
+                        try {
+                            await db.ref('users/' + uid).update({
+                                isJailed: false,
+                                jailUntil: 0,
+                                isBanned: false,
+                                bannedUntil: 0,
+                                permanentBan: false,
+                                jailReleasedAt: Date.now()
+                            });
+                            // إزالة من قائمة الطرد من الروم إن وجد
+                            try {
+                                var kicks = await db.ref('room_kicks').once('value');
+                                var allKicks = kicks.val() || {};
+                                Object.keys(allKicks).forEach(function(rid) {
+                                    if (allKicks[rid] && allKicks[rid][uid]) {
+                                        db.ref('room_kicks/' + rid + '/' + uid).remove().catch(function(){});
+                                    }
+                                });
+                            } catch(e) {}
+                            toast('fa-check', '✅ تمت الإعادة');
+                            renderTab();
+                        } catch(e) {
+                            toast('fa-times', '⚠️ فشل: ' + e.message);
+                        }
+                    };
+                });
+            };
+
+            var h = '<div class="kr-filters" id="kr-pun-filters">';
+            h += '<button class="kr-chip' + (KR._punishmentFilter === 'jailed' ? ' active' : '') + '" data-pf="jailed">⛓️ المسجونون</button>';
+            h += '<button class="kr-chip' + (KR._punishmentFilter === 'banned' ? ' active' : '') + '" data-pf="banned">🚫 المحظورون</button>';
+            h += '<button class="kr-chip' + (KR._punishmentFilter === 'perm' ? ' active' : '') + '" data-pf="perm">🛑 المطرودون نهائياً</button>';
+            h += '</div>';
+            h += '<div id="kr-pun-list"></div>';
+            body.innerHTML = h;
+
+            body.querySelectorAll('[data-pf]').forEach(function(c) {
+                c.onclick = function() {
+                    KR._punishmentFilter = c.getAttribute('data-pf');
+                    body.querySelectorAll('[data-pf]').forEach(function(x) { x.classList.remove('active'); });
+                    c.classList.add('active');
+                    renderList();
+                };
+            });
+
+            renderList();
+        } catch(e) {
+            body.innerHTML = '<div class="kr-empty">❌ ' + esc(e.message) + '</div>';
+        }
+    }
+
+    /* ═══════════════════════════════════════════ */
+    /* ⭐ v7: الإبلاغات                              */
+    /* ═══════════════════════════════════════════ */
+    async function renderReports(body) {
+        body.innerHTML = '<div class="kr-loading">⏳</div>';
+        try {
+            KR._reportFilter = KR._reportFilter || 'new';
+
+            var renderList = async function() {
+                var filter = KR._reportFilter;
+                var path = filter === 'archive' ? 'reports_archive' : 'reports';
+                var snap = await db.ref(path).limitToLast(100).once('value');
+                var data = snap.val() || {};
+                var list = Object.keys(data).map(function(k) {
+                    var r = data[k]; r._id = k; return r;
+                }).sort(function(a, b) { return (b.time || 0) - (a.time || 0); });
+
+                var listEl = document.getElementById('kr-reports-list');
+                if (!listEl) return;
+                listEl.innerHTML = '';
+
+                if (!list.length) {
+                    listEl.innerHTML = '<div style="text-align:center;color:#888;padding:20px;font-size:12px;">لا توجد بلاغات</div>';
+                    return;
+                }
+
+                var REASONS = {
+                    abuse: { icon: '🚫', name: 'محتوى مسيء' },
+                    promo: { icon: '📢', name: 'ترويج / إعلان' },
+                    adult: { icon: '🔞', name: 'محتوى غير لائق' },
+                    harass: { icon: '💢', name: 'تحرش / إزعاج' },
+                    other: { icon: '❓', name: 'سبب آخر' },
+                    call_guardian: { icon: '🚔', name: 'استدعاء السجان' }
+                };
+
+                list.forEach(function(r) {
+                    var reason = REASONS[r.reason] || { icon: '❓', name: r.reason || '—' };
+                    var card = document.createElement('div');
+                    card.className = 'kr-card';
+                    card.style.cssText = 'padding:12px;margin-bottom:10px;';
+                    card.innerHTML =
+                        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+                            '<div style="color:#ffd700;font-weight:900;font-size:13px;">' + reason.icon + ' ' + reason.name + '</div>' +
+                            '<div style="color:#888;font-size:10px;">' + timeAgo(r.time) + '</div>' +
+                        '</div>' +
+                        '<div style="color:#fff;font-size:12px;margin-bottom:4px;"><b>المُبلِّغ:</b> ' + esc(r.reporterName || '—') + '</div>' +
+                        '<div style="color:#fff;font-size:12px;margin-bottom:4px;"><b>المُبلَّغ عنه:</b> ' + esc(r.targetName || '—') + '</div>' +
+                        (r.messageText ? '<div style="color:#ffcccc;font-size:11px;background:rgba(0,0,0,0.4);padding:6px;border-radius:6px;margin:6px 0;word-break:break-word;">' + esc(r.messageText) + '</div>' : '') +
+                        (r.roomId ? '<div style="color:#888;font-size:10px;margin-bottom:8px;">📌 ' + esc(r.roomId) + (r.isPrivate ? ' (خاص)' : '') + '</div>' : '');
+
+                    var actions = document.createElement('div');
+                    actions.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;';
+
+                    if (filter === 'new') {
+                        var doneBtn = document.createElement('button');
+                        doneBtn.className = 'kr-btn kr-btn-green kr-btn-sm';
+                        doneBtn.textContent = '✅ معالجة';
+                        doneBtn.onclick = async function() {
+                            if (!confirm('تمت المعالجة؟ سيُنقل للأرشيف.')) return;
+                            try {
+                                var me = getMe();
+                                var archiveData = Object.assign({}, r, {
+                                    processedAt: Date.now(),
+                                    processedBy: me ? me.uid : null,
+                                    processedByName: me ? me.name : 'مشرف'
+                                });
+                                delete archiveData._id;
+                                await db.ref('reports_archive/' + r._id).set(archiveData);
+                                await db.ref('reports/' + r._id).remove();
+                                toast('fa-check', '✅ تمت المعالجة');
+                                renderTab();
+                            } catch(e) {
+                                toast('fa-times', '⚠️ فشل: ' + e.message);
+                            }
+                        };
+
+                        var viewUserBtn = document.createElement('button');
+                        viewUserBtn.className = 'kr-btn kr-btn-outline kr-btn-sm';
+                        viewUserBtn.textContent = '👤 عرض المستخدم';
+                        viewUserBtn.onclick = function() {
+                            if (r.targetUid && typeof window.openUserProfile === 'function') {
+                                closeRoom();
+                                setTimeout(function() { window.openUserProfile(r.targetUid, r.targetName || ''); }, 200);
+                            }
+                        };
+
+                        var msgBtn = document.createElement('button');
+                        msgBtn.className = 'kr-btn kr-btn-outline kr-btn-sm';
+                        msgBtn.textContent = '📨 مراجعة رسائله';
+                        msgBtn.onclick = function() {
+                            if (r.targetUid && typeof ReviewUI !== 'undefined' && ReviewUI.open) {
+                                closeRoom();
+                                setTimeout(function() { ReviewUI.open(r.targetUid); }, 200);
+                            } else {
+                                toast('fa-info-circle', '📨 قريباً');
+                            }
+                        };
+
+                        actions.appendChild(doneBtn);
+                        actions.appendChild(viewUserBtn);
+                        actions.appendChild(msgBtn);
+                    }
+
+                    card.appendChild(actions);
+                    listEl.appendChild(card);
+                });
+            };
+
+            var h = '<div class="kr-filters" id="kr-report-filters">';
+            h += '<button class="kr-chip' + (KR._reportFilter === 'new' ? ' active' : '') + '" data-rf="new">🆕 جديدة</button>';
+            h += '<button class="kr-chip' + (KR._reportFilter === 'archive' ? ' active' : '') + '" data-rf="archive">📦 أرشيف</button>';
+            h += '</div>';
+            h += '<div id="kr-reports-list"></div>';
+            body.innerHTML = h;
+
+            body.querySelectorAll('[data-rf]').forEach(function(c) {
+                c.onclick = function() {
+                    KR._reportFilter = c.getAttribute('data-rf');
+                    body.querySelectorAll('[data-rf]').forEach(function(x) { x.classList.remove('active'); });
+                    c.classList.add('active');
+                    renderList();
+                };
+            });
+
+            renderList();
+        } catch(e) {
+            body.innerHTML = '<div class="kr-empty">❌ ' + esc(e.message) + '</div>';
+        }
+    }
+
+    /* ═══ Rooms — محدّث v7 (nameColor + fontColor + fontSize) ═══ */
     async function renderRooms(body) {
         body.innerHTML = '<div class="kr-loading">⏳</div>';
         var s = await db.ref('room_settings').once('value');
         KR.roomsSettings = s.val() || {};
         var h = '<div class="kr-card"><div class="kr-card-title">🚪 إدارة الغرف</div>';
-        h += '<div style="color:#888;font-size:11px;margin-bottom:12px;">تعديل الاسم والأيقونة والخلفية · حذف الرسائل</div>';
+        h += '<div style="color:#888;font-size:11px;margin-bottom:12px;">تعديل الاسم · الأيقونة · الخلفية · لون الخط</div>';
         Object.keys(QAMAR.ROOMS).forEach(function (rid) {
             var room = QAMAR.ROOMS[rid];
             if (room.invisible) return;
@@ -789,9 +1029,10 @@
             var n = c.name || room.name;
             var hasImg = c.iconImage ? '<img src="' + c.iconImage + '" style="width:32px;height:32px;border-radius:8px;object-fit:cover;">' : esc(c.icon || room.icon);
             var hc = (c.bgValue || c.bgImage) ? ' · 🎨' : '';
+            var fc = (c.fontColor || c.fontSize) ? ' · 🖍️' : '';
             h += '<div class="kr-user" style="margin-bottom:8px;">' +
                 '<div style="font-size:22px;width:34px;text-align:center;display:flex;align-items:center;justify-content:center;">' + hasImg + '</div>' +
-                '<div class="kr-user-info"><div class="kr-user-name">' + esc(n) + '</div><div class="kr-user-sub">' + esc(rid) + hc + '</div></div>' +
+                '<div class="kr-user-info"><div class="kr-user-name">' + esc(n) + '</div><div class="kr-user-sub">' + esc(rid) + hc + fc + '</div></div>' +
                 '<button class="kr-icon-btn more" data-r="' + esc(rid) + '" title="تعديل">✏️</button>' +
                 '<button class="kr-icon-btn ban" data-c="' + esc(rid) + '" title="حذف كل الرسائل" style="margin-right:4px;">🗑️</button>' +
                 '</div>';
@@ -822,19 +1063,42 @@
     }
 
     function editRoom(rid) {
-        if (myLevel() < 90) { toast('fa-lock', '🔒 Master+ فقط'); return; }
+        if (myLevel() < 80) { toast('fa-lock', '🔒 Grand Owner+ فقط'); return; }
         var room = QAMAR.ROOMS[rid];
         if (!room) return;
         var c = KR.roomsSettings[rid] || {};
         KR.tempIconImage = c.iconImage || null;
         KR.tempBgImage = c.bgImage || null;
         var currentIcon = c.icon || room.icon;
+        var currentNameColor = c.nameColor || '#ffd700';
+        var currentFontColor = c.fontColor || '#ffffff';
+        var currentFontSize = c.fontSize || 16;
 
         var h = '';
         h += '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:6px;">الاسم:</label>';
         h += '<input class="kr-input" id="kr-rn" value="' + esc(c.name || room.name) + '" style="margin-bottom:14px;" maxlength="30">';
+
+        h += '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:6px;">🎨 لون اسم الغرفة (في السيدبار):</label>';
+        h += '<div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;">';
+        h += '<input type="color" id="kr-name-color" value="' + currentNameColor + '" style="width:60px;height:40px;border:2px solid #ffd700;border-radius:8px;cursor:pointer;background:transparent;">';
+        h += '<span id="kr-name-color-val" style="color:#fff;font-size:12px;font-family:monospace;">' + currentNameColor + '</span>';
+        h += '</div>';
+
+        h += '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:6px;">🖍️ لون خط الشات:</label>';
+        h += '<div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;">';
+        h += '<input type="color" id="kr-font-color" value="' + currentFontColor + '" style="width:60px;height:40px;border:2px solid #ffd700;border-radius:8px;cursor:pointer;background:transparent;">';
+        h += '<span id="kr-font-color-val" style="color:#fff;font-size:12px;font-family:monospace;">' + currentFontColor + '</span>';
+        h += '</div>';
+
+        h += '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:6px;">📏 حجم خط الشات (12-28px):</label>';
+        h += '<div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;">';
+        h += '<input type="range" id="kr-font-size" min="12" max="28" value="' + currentFontSize + '" style="flex:1;">';
+        h += '<span id="kr-font-size-val" style="color:#ffd700;font-weight:900;font-size:13px;min-width:40px;text-align:center;">' + currentFontSize + 'px</span>';
+        h += '</div>';
+
         h += '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:6px;">الأيقونة (emoji):</label>';
         h += '<input class="kr-input" id="kr-ri" value="' + esc(currentIcon) + '" style="margin-bottom:8px;" maxlength="4">';
+
         h += '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:6px;">أو صورة الأيقونة:</label>';
         h += '<div style="display:flex;align-items:center;gap:8px;padding:10px;background:rgba(0,0,0,0.3);border-radius:10px;border:1px dashed rgba(255,215,0,0.3);margin-bottom:14px;">';
         h += '<div id="kr-img-box" style="width:52px;height:52px;border-radius:10px;background:rgba(255,215,0,0.1);display:flex;align-items:center;justify-content:center;font-size:26px;overflow:hidden;">' + (c.iconImage ? '<img src="' + c.iconImage + '" style="width:100%;height:100%;object-fit:cover;">' : '🖼️') + '</div>';
@@ -843,6 +1107,7 @@
         h += '<button type="button" class="kr-btn kr-btn-red kr-btn-sm" id="kr-img-clear">🗑️</button>';
         h += '</div>';
         h += '<input type="file" id="kr-img-file" accept="image/*" style="display:none;">';
+
         h += '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:6px;">نوع الخلفية:</label>';
         h += '<select id="kr-rbt" class="kr-select" style="margin-bottom:10px;">';
         h += '<option value="">افتراضي (بدون)</option>';
@@ -851,8 +1116,10 @@
         h += '<option value="custom"' + (c.bgType === 'custom' || c.bgImage ? ' selected' : '') + '>صورة من الجهاز</option>';
         h += '<option value="gradient"' + (c.bgType === 'gradient' ? ' selected' : '') + '>تدرج CSS</option>';
         h += '</select>';
+
         h += '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:6px;">قيمة الخلفية (URL/hex/gradient):</label>';
         h += '<input class="kr-input" id="kr-rbv" value="' + esc(c.bgValue || '') + '" placeholder="#hex أو URL أو linear-gradient(...)" style="margin-bottom:10px;">';
+
         h += '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:6px;">أو خلفية من الجهاز:</label>';
         h += '<div style="display:flex;align-items:center;gap:8px;padding:10px;background:rgba(0,0,0,0.3);border-radius:10px;border:1px dashed rgba(255,215,0,0.3);">';
         h += '<div id="kr-bg-box" style="width:52px;height:52px;border-radius:10px;background:rgba(255,215,0,0.1);display:flex;align-items:center;justify-content:center;font-size:26px;overflow:hidden;">' + (c.bgImage ? '<img src="' + c.bgImage + '" style="width:100%;height:100%;object-fit:cover;">' : '🎨') + '</div>';
@@ -869,11 +1136,33 @@
                 iconImage: KR.tempIconImage,
                 bgImage: KR.tempBgImage,
                 bgType: document.getElementById('kr-rbt').value,
-                bgValue: document.getElementById('kr-rbv').value.trim()
+                bgValue: document.getElementById('kr-rbv').value.trim(),
+                nameColor: document.getElementById('kr-name-color').value,
+                fontColor: document.getElementById('kr-font-color').value,
+                fontSize: parseInt(document.getElementById('kr-font-size').value)
             });
         }, 'حفظ', 'kr-btn-green');
 
         setTimeout(function () {
+            // لون اسم الغرفة
+            var nc = document.getElementById('kr-name-color');
+            var ncv = document.getElementById('kr-name-color-val');
+            if (nc && ncv) {
+                nc.oninput = function() { ncv.textContent = this.value; };
+            }
+            // لون خط الشات
+            var fc = document.getElementById('kr-font-color');
+            var fcv = document.getElementById('kr-font-color-val');
+            if (fc && fcv) {
+                fc.oninput = function() { fcv.textContent = this.value; };
+            }
+            // حجم خط الشات
+            var fs = document.getElementById('kr-font-size');
+            var fsv = document.getElementById('kr-font-size-val');
+            if (fs && fsv) {
+                fs.oninput = function() { fsv.textContent = this.value + 'px'; };
+            }
+            // الأيقونة
             var pickBtn = document.getElementById('kr-img-pick');
             var fileInput = document.getElementById('kr-img-file');
             var clearBtn = document.getElementById('kr-img-clear');
@@ -938,6 +1227,9 @@
             if (d.bgImage !== undefined) p.bgImage = d.bgImage;
             p.bgType = d.bgType || null;
             p.bgValue = d.bgValue || null;
+            p.nameColor = d.nameColor || null;
+            p.fontColor = d.fontColor || null;
+            p.fontSize = d.fontSize || null;
             await db.ref('room_settings/' + rid).update(p);
 
             if (QAMAR.ROOMS[rid]) {
@@ -953,6 +1245,9 @@
                 }
                 QAMAR.ROOMS[rid].bgType = d.bgType || null;
                 QAMAR.ROOMS[rid].bgValue = d.bgValue || null;
+                QAMAR.ROOMS[rid].nameColor = d.nameColor || null;
+                QAMAR.ROOMS[rid].fontColor = d.fontColor || null;
+                QAMAR.ROOMS[rid].fontSize = d.fontSize || null;
             }
 
             if (typeof buildRoomsList === 'function') buildRoomsList();
@@ -960,6 +1255,9 @@
                 var t = document.getElementById('room-title');
                 if (t) t.textContent = (d.name || QAMAR.ROOMS[rid].name) + ' ' + (d.icon || QAMAR.ROOMS[rid].icon);
                 if (typeof applyRoomBackground === 'function') applyRoomBackground(rid);
+                if (typeof applyRoomFont === 'function') {
+                    applyRoomFont({ fontColor: d.fontColor, fontSize: d.fontSize });
+                }
             }
 
             db.ref('audit_log').push({ type: 'edit_room', byUid: me.uid, byName: me.name, roomId: rid, at: firebase.database.ServerValue.TIMESTAMP }).catch(function () {});
@@ -968,16 +1266,157 @@
         } catch (e) { toast('fa-times', 'فشل: ' + e.message); }
     }
 
-    /* ═══ Bots ═══ */
+    /* ═══ Bots — محدّث v7 (+ زر بروفايلات البوتات) ═══ */
     function renderBots(body) {
-        body.innerHTML = '<div class="kr-card"><div class="kr-card-title">🤖 إدارة البوتات</div>' +
-            '<div style="color:#888;font-size:11px;margin-bottom:14px;">حكواتي · مسابقات · إسلاميات · سجن · طرد</div>' +
-            '<button class="kr-btn kr-btn-gold kr-btn-block" id="kr-ob">🤖 فتح لوحة البوتات</button></div>';
+        var h = '<div class="kr-card"><div class="kr-card-title">🤖 إدارة البوتات</div>';
+        h += '<div style="color:#888;font-size:11px;margin-bottom:14px;">حكواتي · مسابقات · إسلاميات · سجن · طرد · سفير</div>';
+        h += '<button class="kr-btn kr-btn-gold kr-btn-block" id="kr-ob" style="margin-bottom:8px;">🤖 فتح لوحة البوتات</button>';
+        h += '<button class="kr-btn kr-btn-outline kr-btn-block" id="kr-create-bot-profiles">🆕 إنشاء بروفايلات البوتات</button>';
+        h += '<div style="color:#888;font-size:10px;margin-top:6px;text-align:center;">ينشئ سجلات users/bot_* إن لم تكن موجودة</div>';
+        h += '</div>';
+        body.innerHTML = h;
+
         document.getElementById('kr-ob').onclick = function () {
             closeRoom();
             setTimeout(function () { if (typeof window.openBotManager === 'function') window.openBotManager(); }, 200);
         };
+
+        document.getElementById('kr-create-bot-profiles').onclick = async function () {
+            if (!confirm('إنشاء/إعادة تعيين بروفايلات البوتات الـ4؟')) return;
+            var btns = document.querySelectorAll('#kr-create-bot-profiles');
+            btns.forEach(function(b) { b.disabled = true; b.textContent = '⏳ جاري الإنشاء...'; });
+            try {
+                var bots = [
+                    { id: 'guardian', name: 'السجان', rank: 'Guardian', bio: '🚔 حارس القوانين — لا مكان للمسيء', color: '#ff4444' },
+                    { id: 'hakawati', name: 'حكواتي الشام', rank: 'Storyteller', bio: '📖 صديقك في كل سؤال · اكتب اسمي وأنا أرد', color: '#9C27B0' },
+                    { id: 'quiz', name: 'الشاطر', rank: 'Quiz Master', bio: '🎯 أسئلة ممتعة · نقاط قيمة · فرص متساوية', color: '#FF9800' },
+                    { id: 'islamic', name: 'قمر الشام', rank: 'Islamic', bio: '🌙 ذكر ودعاء وصلاة على النبي ﷺ', color: '#d4af37' },
+                    { id: 'ambassador', name: 'السفير', rank: 'Ambassador', bio: '🚪 يرحّب بالأعضاء الجدد في قمر الشام', color: '#84cc16' }
+                ];
+                var now = Date.now();
+                for (var i = 0; i < bots.length; i++) {
+                    var b = bots[i];
+                    var uid = 'bot_' + b.id;
+                    var avatar = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(b.name) + '&background=111&color=ffd700&bold=true&size=128';
+                    await db.ref('users/' + uid).update({
+                        uid: uid,
+                        name: b.name,
+                        code: 'BOT·' + b.id.substring(0, 3).toUpperCase(),
+                        rank: b.rank,
+                        rankLevel: 50,
+                        isBot: true,
+                        botId: b.id,
+                        bio: b.bio,
+                        avatar: avatar,
+                        color: b.color,
+                        createdAt: now,
+                        lastSeen: now,
+                        isGuest: false
+                    });
+                }
+                toast('fa-check', '✅ تم إنشاء ' + bots.length + ' بروفايلات');
+                btns.forEach(function(b) { b.disabled = false; b.textContent = '🆕 إنشاء بروفايلات البوتات'; });
+            } catch (e) {
+                toast('fa-times', '⚠️ فشل: ' + e.message);
+                btns.forEach(function(b) { b.disabled = false; b.textContent = '🆕 إنشاء بروفايلات البوتات'; });
+            }
+        };
     }
+
+    /* ═══════════════════════════════════════════ */
+    /* ⭐ v7: تبويب الترحيب                           */
+    /* ═══════════════════════════════════════════ */
+    async function renderWelcomeTab(body) {
+        if (!isKing()) { body.innerHTML = '<div class="kr-empty">للملك فقط</div>'; return; }
+        body.innerHTML = '<div class="kr-loading">⏳</div>';
+        try {
+            var s = await db.ref('room_settings').once('value');
+            var settings = s.val() || {};
+            var h = '<div class="kr-card"><div class="kr-card-title">🚪 رسائل الترحيب لكل غرفة</div>';
+            h += '<div style="color:#888;font-size:11px;margin-bottom:12px;">اضغط ✏️ لتعديل رسالة الترحيب</div>';
+
+            Object.keys(QAMAR.ROOMS).forEach(function(rid) {
+                var room = QAMAR.ROOMS[rid];
+                if (room.invisible) return;
+                var c = settings[rid] || {};
+                var welcome = c.welcome || {};
+                var text = welcome.text || ('🌟 أهلاً وسهلاً بك\n{name}\nفي {room}');
+                var enabled = welcome.enabled !== false;
+                h += '<div class="kr-user" style="margin-bottom:8px;">' +
+                    '<div style="font-size:22px;width:34px;text-align:center;">' + (room.icon || '🚪') + '</div>' +
+                    '<div class="kr-user-info">' +
+                        '<div class="kr-user-name">' + esc(room.name) + '</div>' +
+                        '<div class="kr-user-sub">' + (enabled ? '✅ مفعّل' : '❌ معطّل') + ' · ' + esc(text.substring(0, 30)) + '...</div>' +
+                    '</div>' +
+                    '<button class="kr-icon-btn more" data-wedit="' + esc(rid) + '">✏️</button>' +
+                    '</div>';
+            });
+            h += '</div>';
+            body.innerHTML = h;
+
+            body.querySelectorAll('[data-wedit]').forEach(function(b) {
+                b.onclick = function() {
+                    var rid = this.getAttribute('data-wedit');
+                    openWelcomeEditor(rid);
+                };
+            });
+        } catch(e) {
+            body.innerHTML = '<div class="kr-empty">❌ ' + esc(e.message) + '</div>';
+        }
+    }
+
+    /* ⭐ v7: محرر الترحيب — يُستدعى من index.html أيضاً */
+    async function openWelcomeEditor(rid) {
+        if (!rid) rid = (typeof ChatState !== 'undefined' && ChatState.currentRoom) || 'general';
+        if (myLevel() < 80) { toast('fa-lock', '🔒 Grand Owner+ فقط'); return; }
+
+        var snap = await db.ref('room_settings/' + rid).once('value');
+        var c = snap.val() || {};
+        var welcome = c.welcome || {};
+        var roomName = (QAMAR.ROOMS[rid] && QAMAR.ROOMS[rid].name) || rid;
+
+        var h = '';
+        h += '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:6px;">نص الترحيب:</label>';
+        h += '<textarea id="kw-text" style="width:100%;min-height:90px;padding:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#fff;font-family:inherit;font-size:13px;text-align:right;resize:vertical;box-sizing:border-box;">' + esc(welcome.text || '🌟 أهلاً وسهلاً بك\n{name}\nفي {room}') + '</textarea>';
+        h += '<div style="color:#888;font-size:10px;margin-top:4px;">المتغيرات: {name} = اسم العضو، {room} = اسم الغرفة</div>';
+
+        h += '<div style="display:flex;align-items:center;gap:10px;margin-top:14px;padding:8px 0;">';
+        h += '<input type="checkbox" id="kw-enabled" ' + (welcome.enabled !== false ? 'checked' : '') + ' style="width:20px;height:20px;accent-color:#ffd700;cursor:pointer;">';
+        h += '<label for="kw-enabled" style="flex:1;color:#ddd;font-size:13px;font-weight:700;cursor:pointer;">✅ تفعيل الترحيب في هذه الغرفة</label>';
+        h += '</div>';
+
+        h += '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;">';
+        h += '<input type="checkbox" id="kw-sound" ' + (welcome.sound !== false ? 'checked' : '') + ' style="width:20px;height:20px;accent-color:#ffd700;cursor:pointer;">';
+        h += '<label for="kw-sound" style="flex:1;color:#ddd;font-size:13px;font-weight:700;cursor:pointer;">🔊 تشغيل نغمة ترحيب</label>';
+        h += '</div>';
+
+        h += '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:6px;margin-top:12px;">مدة Cooldown (دقيقة):</label>';
+        h += '<input class="kr-input" id="kw-cd" type="number" min="1" max="60" value="' + (welcome.cooldown || 5) + '">';
+
+        openDlg('🚪 ترحيب: ' + roomName, '', h, async function() {
+            var newText = document.getElementById('kw-text').value;
+            var enabled = document.getElementById('kw-enabled').checked;
+            var sound = document.getElementById('kw-sound').checked;
+            var cooldown = parseInt(document.getElementById('kw-cd').value) || 5;
+            try {
+                await db.ref('room_settings/' + rid + '/welcome').update({
+                    text: newText,
+                    enabled: enabled,
+                    sound: sound,
+                    cooldown: cooldown,
+                    updatedAt: Date.now(),
+                    updatedBy: (getMe() || {}).uid
+                });
+                toast('fa-check', '✅ تم الحفظ');
+                if (KR.open) renderTab();
+            } catch(e) {
+                toast('fa-times', '⚠️ فشل: ' + e.message);
+            }
+        }, 'حفظ', 'kr-btn-green');
+    }
+
+    // تصدير للخارج (index.html يستدعيه)
+    window.openWelcomeEditor = openWelcomeEditor;
 
     /* ═══ Alerts ═══ */
     function renderAlerts(body) {
@@ -992,16 +1431,29 @@
         if (b) b.onclick = function () { closeRoom(); setTimeout(function () { RoomAlerts.open(); }, 200); };
     }
 
-    /* ═══ Settings ═══ */
+    /* ═══ Settings — محدّث v7 (زر الزجاج) ═══ */
     async function renderSettings(body) {
         if (!isKing()) { body.innerHTML = '<div class="kr-empty">للملك فقط</div>'; return; }
         body.innerHTML = '<div class="kr-loading">⏳</div>';
         var s = await db.ref('config').once('value');
         var c = s.val() || {};
-        body.innerHTML = '<div class="kr-card"><div class="kr-card-title">⚙️ إعدادات</div>' +
-            '<div style="color:#888;font-size:11px;margin-bottom:10px;">king_uid: <code style="color:#ffd700;font-size:10px;">' + esc(c.king_uid || '—') + '</code></div>' +
-            '<button class="kr-btn kr-btn-outline kr-btn-block" id="kr-sk" style="margin-bottom:8px;">👑 تعيين الملك</button>' +
-            '<button class="kr-btn kr-btn-outline kr-btn-block" id="kr-va">📜 سجل النشاط</button></div>';
+        var currentStyle = localStorage.getItem('qamar_sidebar_style') || 'classic';
+        var styleLabel = currentStyle === 'glass' ? '💎 التبديل إلى: كلاسيكي' : '◻️ التبديل إلى: زجاجي';
+
+        var h = '<div class="kr-card"><div class="kr-card-title">⚙️ إعدادات</div>';
+        h += '<div style="color:#888;font-size:11px;margin-bottom:10px;">king_uid: <code style="color:#ffd700;font-size:10px;">' + esc(c.king_uid || '—') + '</code></div>';
+        h += '<button class="kr-btn kr-btn-outline kr-btn-block" id="kr-sk" style="margin-bottom:8px;">👑 تعيين الملك</button>';
+        h += '<button class="kr-btn kr-btn-outline kr-btn-block" id="kr-va" style="margin-bottom:8px;">📜 سجل النشاط</button>';
+        h += '</div>';
+
+        // ⭐ v7: قسم المظهر
+        h += '<div class="kr-card"><div class="kr-card-title">🎨 المظهر</div>';
+        h += '<div style="color:#888;font-size:11px;margin-bottom:10px;">تبديل شكل القوائم الجانبية</div>';
+        h += '<button class="kr-btn kr-btn-gold kr-btn-block" id="kr-style-toggle">' + styleLabel + '</button>';
+        h += '</div>';
+
+        body.innerHTML = h;
+
         document.getElementById('kr-sk').onclick = function () {
             var uid = prompt('أدخل uid الملك الجديد:', c.king_uid || '');
             if (!uid) return;
@@ -1009,6 +1461,17 @@
             db.ref('config/king_uid').set(uid.trim()).then(function () { toast('fa-crown', '✅'); renderSettings(body); }).catch(function () { toast('fa-times', 'فشل'); });
         };
         document.getElementById('kr-va').onclick = function () { toast('fa-book', 'قريباً'); };
+
+        // ⭐ تبديل الزجاجي/الكلاسيكي
+        document.getElementById('kr-style-toggle').onclick = function () {
+            var cur = localStorage.getItem('qamar_sidebar_style') || 'classic';
+            var next = cur === 'glass' ? 'classic' : 'glass';
+            localStorage.setItem('qamar_sidebar_style', next);
+            document.body.classList.toggle('sidebar-glass', next === 'glass');
+            document.body.classList.toggle('sidebar-classic', next === 'classic');
+            toast('fa-check', next === 'glass' ? '💎 الشكل الزجاجي' : '◻️ الشكل الكلاسيكي');
+            this.textContent = next === 'glass' ? '💻 التبديل إلى: كلاسيكي' : '💎 التبديل إلى: زجاجي';
+        };
     }
 
     /* ═══ Open/Close ═══ */
@@ -1061,5 +1524,5 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
     else init();
 
-    console.log('👑 king-room.js v6 loaded — queen search by name/code/email');
+    console.log('👑 king-room.js v7 loaded — punishments + reports + welcome editor');
 })();
