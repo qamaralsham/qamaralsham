@@ -1,19 +1,16 @@
 // ==============================================
-// room-picker.js v1 — شاشة اختيار الغرف
+// room-picker.js v2 — شاشة اختيار الغرف
 // ==============================================
-// ✅ الميزات:
-//   • تظهر بعد التسجيل (مرة واحدة)
-//   • قائمة عمودية بالغرف المتاحة حسب الرتبة
-//   • عدد المتواجدين في كل غرفة (live)
-//   • حفظ آخر غرفة → دخول مباشر في المرات التالية
-//   • عند "مغادرة الغرفة" → العودة للشاشة
-//   • عند الطرد من غرفة → العودة للشاشة
+// ✅ v2 (إصلاح):
+//   • Patch فوري لـ initChat (بدون انتظار)
+//   • Reset isInitialized عند الاختيار
+//   • ضمان ظهور chat-container
 // ==============================================
 
 (function () {
     'use strict';
-    if (window.__roomPickerV1) return;
-    window.__roomPickerV1 = true;
+    if (window.__roomPickerV2) return;
+    window.__roomPickerV2 = true;
 
     var STORAGE_KEY = 'qamar_room_picker_done';
     var LAST_ROOM_KEY = 'qamar_last_room';
@@ -116,18 +113,6 @@
     transform: scale(0.98);
 }
 
-.rp-item.locked {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-.rp-item.locked:hover {
-    background: rgba(255,255,255,0.04);
-    border-color: rgba(255,215,0,0.25);
-    transform: none;
-    box-shadow: none;
-}
-.rp-item.locked::before { display: none; }
-
 .rp-icon {
     width: 46px;
     height: 46px;
@@ -160,7 +145,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
-.rp-name.color-custom { /* يُملأ من JS */ }
 .rp-meta {
     color: #888;
     font-size: 12px;
@@ -176,10 +160,6 @@
     font-weight: 700;
 }
 .rp-count.empty { color: #666; }
-.rp-lock {
-    color: #ff6666;
-    font-weight: 700;
-}
 
 .rp-arrow {
     color: #ffd700;
@@ -189,9 +169,6 @@
 }
 .rp-item:hover .rp-arrow {
     transform: translateX(-4px);
-}
-.rp-item.locked .rp-arrow {
-    display: none;
 }
 
 #rp-footer {
@@ -225,6 +202,14 @@
         return (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
     }
 
+    function escapeHtml(s) {
+        if (s == null) return '';
+        return String(s).replace(/[&<>"']/g, function(c) {
+            return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+        });
+    }
+    function escapeAttr(s) { return escapeHtml(s); }
+
     /* ⭐ بناء واجهة الغرف */
     function buildList() {
         var listEl = document.getElementById('rp-list');
@@ -239,7 +224,6 @@
             ? QAMAR.getVisibleRooms(me)
             : QAMAR.ROOMS;
 
-        // فلترة: لا نعرض bot_training, jail
         var roomIds = Object.keys(visible).filter(function(rid) {
             return rid !== 'bot_training' && rid !== 'jail';
         });
@@ -257,13 +241,11 @@
             item.className = 'rp-item';
             item.setAttribute('data-room-id', rid);
 
-            // أيقونة
             var iconHtml = room.icon || '🚪';
             if (room.iconImage) {
                 iconHtml = '<img src="' + escapeAttr(room.iconImage) + '" alt="">';
             }
 
-            // عدد المتواجدين (سيُحدَّث لاحقاً)
             var countHtml = '<span class="rp-count" data-count-for="' + escapeAttr(rid) + '">👥 ...</span>';
 
             var nameStyle = '';
@@ -284,11 +266,9 @@
             listEl.appendChild(item);
         });
 
-        // تحميل عدد المتواجدين
         loadPresenceCounts(roomIds);
     }
 
-    /* ⭐ جلب عدد المتواجدين */
     function loadPresenceCounts(roomIds) {
         if (typeof db === 'undefined' || !db) return;
         db.ref('user_presence').once('value').then(function(snap) {
@@ -335,18 +315,42 @@
             localStorage.setItem(LAST_ROOM_KEY, roomId);
         } catch(e) {}
 
-        // تحديث ChatState
+        // ⭐ إعادة تعيين ChatState لضمان تشغيل initChat
         if (typeof ChatState !== 'undefined') {
+            ChatState.isInitialized = false;
             ChatState.currentRoom = roomId;
         }
 
         // إغلاق الشاشة
         hidePicker();
 
-        // تشغيل الشات
+        // ⭐ إخفاء شاشة الدخول + عرض الشات
+        var ls = document.getElementById('login-screen');
+        if (ls) ls.style.display = 'none';
+        var cc = document.getElementById('chat-container');
+        if (cc) cc.style.display = 'flex';
+
+        // ⭐ استدعاء initChat الأصلي
         if (_origInitChat) {
-            _origInitChat.call(window);
+            try {
+                _origInitChat.call(window);
+            } catch(err) {
+                console.error('initChat call failed:', err);
+            }
+        } else {
+            // fallback: استدعاء النسخة الحالية
+            if (typeof window.initChat === 'function') {
+                window.initChat();
+            }
         }
+
+        // ⭐ ضمان ظهور الشات
+        setTimeout(function() {
+            var cc2 = document.getElementById('chat-container');
+            if (cc2 && cc2.style.display === 'none') {
+                cc2.style.display = 'flex';
+            }
+        }, 100);
     }
 
     /* ⭐ عرض الشاشة */
@@ -374,11 +378,9 @@
             document.body.appendChild(screen);
         }
 
-        // اسم المستخدم
         var nameEl = document.getElementById('rp-user-name');
         if (nameEl) nameEl.textContent = me.name || 'زائر';
 
-        // زر تسجيل الخروج
         var logoutBtn = document.getElementById('rp-logout');
         if (logoutBtn) {
             logoutBtn.onclick = function() {
@@ -391,7 +393,6 @@
             };
         }
 
-        // إخفاء شاشة الدخول + الشات
         var ls = document.getElementById('login-screen');
         if (ls) ls.style.display = 'none';
         var cc = document.getElementById('chat-container');
@@ -411,10 +412,18 @@
         console.log('🚪 Room picker: hidden');
     }
 
-    /* ⭐ Override initChat — يمنع الدخول بدون اختيار */
-    function patchInitChat() {
+    /* ⭐⭐⭐ Patch فوري لـ initChat (بدون انتظار) */
+    function patchInitChatNow() {
         if (typeof window.initChat !== 'function') {
-            setTimeout(patchInitChat, 200);
+            // انتظر قليلاً (لأن chat.js قد لا يكون منتهياً)
+            var wait = setInterval(function() {
+                if (typeof window.initChat === 'function') {
+                    clearInterval(wait);
+                    patchInitChatNow();
+                }
+            }, 20);
+            // توقف بعد 5 ثواني
+            setTimeout(function() { clearInterval(wait); }, 5000);
             return;
         }
         if (window.__roomPickerPatchedInitChat) return;
@@ -422,7 +431,6 @@
 
         _origInitChat = window.initChat;
         window.initChat = function() {
-            // إذا مرت المرة الأولى ولم يختر بعد → اعرض الشاشة
             var done = false;
             try { done = localStorage.getItem(STORAGE_KEY) === '1'; } catch(e) {}
 
@@ -430,41 +438,23 @@
                 showPicker();
                 return;
             }
-            // مرّت → دخول عادي
             return _origInitChat.apply(this, arguments);
         };
 
-        console.log('🚪 Room picker: initChat patched');
+        console.log('🚪 Room picker: initChat patched (immediate)');
     }
 
-    /* ⭐ إعادة العرض (عند مغادرة الغرفة أو الطرد) */
+    /* ⭐ إعادة العرض */
     window.showRoomPicker = function() {
         try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+        if (typeof ChatState !== 'undefined') {
+            ChatState.isInitialized = false;
+        }
         showPicker();
     };
 
-    /* ⭐ Helpers */
-    function escapeHtml(s) {
-        if (s == null) return '';
-        return String(s).replace(/[&<>"']/g, function(c) {
-            return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
-        });
-    }
-    function escapeAttr(s) { return escapeHtml(s); }
+    /* ⭐ Patch فوري عند تحميل room-picker.js */
+    patchInitChatNow();
 
-    /* ⭐ Init */
-    function init() {
-        var t = setInterval(function() {
-            if (typeof getCurrentUser === 'function' && getCurrentUser() && typeof db !== 'undefined' && db) {
-                clearInterval(t);
-                patchInitChat();
-            }
-        }, 300);
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else { init(); }
-
-    console.log('🚪 room-picker.js v1 loaded');
+    console.log('🚪 room-picker.js v2 loaded');
 })();
