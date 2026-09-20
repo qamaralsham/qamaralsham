@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#050508">
-<title>Qamar Profile</title>
+<title>Qamar Profile v6</title>
 
 <script>
 (function() {
@@ -49,7 +49,6 @@
 <input type="file" id="music-file-input" accept="audio/*" style="display:none">
 
 <div class="profile" id="profile-container" style="opacity:0;">
-
     <div id="profile-bg-layer" class="bg-layer"></div>
 
     <div class="cover" id="profile-cover-box">
@@ -57,12 +56,13 @@
         <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600" class="cover-img" id="profile-cover-img">
 
         <div class="cover-edit owner-only">
-            <button type="button" class="del-cov" id="btn-remove-cover" title="إزالة">✕</button>
-            <button type="button" id="btn-change-cover" title="تغيير">🖼️</button>
+            <button type="button" class="del-cov" id="btn-remove-cover" title="إزالة">✕ إزالة</button>
+            <button type="button" id="btn-change-cover" title="تغيير">🖼️ تغيير</button>
         </div>
 
         <div class="top-btns">
-            <button id="btn-collapse-info" title="طي المعلومات" type="button">👁️</button>
+            <button id="btn-mode-toggle" title="معاينة كزائر" type="button">👁️</button>
+            <button id="btn-collapse-info" title="طي المعلومات" type="button">👁️‍🗨️</button>
             <button id="btn-close" title="إغلاق" type="button">✕</button>
         </div>
 
@@ -113,9 +113,9 @@
     <div class="main-content">
         <div class="tabs" id="tabsBar"></div>
 
-        <div class="poetry-box owner-only">
-            <textarea id="poetry-input" class="poetry-in" placeholder="اكتب بيتاً من الشعر..." maxlength="300"></textarea>
-            <div id="poetry-display" class="poetry-disp"></div>
+        <div class="poetry-box owner-only" style="display:none;padding:10px 12px;margin:8px 12px;background:rgba(20,15,35,0.6);border:1px dashed rgba(255,215,0,0.4);border-radius:12px;">
+            <textarea id="poetry-input" placeholder="اكتب بيتاً من الشعر..." maxlength="300" style="width:100%;min-height:50px;background:transparent;border:none;color:#d4af37;font-family:'Amiri',serif;font-size:15px;font-style:italic;text-align:center;outline:none;resize:none;"></textarea>
+            <div id="poetry-display" style="text-align:center;color:#d4af37;font-family:'Amiri',serif;font-size:15px;font-style:italic;line-height:1.6;"></div>
         </div>
 
         <div class="scroll-box">
@@ -214,17 +214,14 @@
 
                     <div class="settings-block">
                         <h4><i class="fas fa-palette"></i> المظهر</h4>
-                        <div class="setting-row"><span class="setting-label">لون الاسم</span><span class="setting-value"><span class="setting-link" id="btn-name-color">تغيير ←</span></span></div>
-                        <div class="setting-row"><span class="setting-label">تدرج الاسم</span><span class="setting-value"><span class="setting-link" id="btn-name-gradient">تغيير ←</span></span></div>
-                        <div class="setting-row"><span class="setting-label">خلفية الاسم</span><span class="setting-value"><span class="setting-link" id="btn-name-shape">تغيير ←</span></span></div>
-                        <div class="setting-row"><span class="setting-label">توهج الاسم</span><span class="setting-value"><span class="setting-link" id="btn-name-glow">تغيير ←</span></span></div>
+
                         <div class="setting-row">
-                            <span class="setting-label">حجم الاسم</span>
-                            <span class="setting-value" style="gap:6px;">
-                                <input type="range" id="name-size-slider" min="12" max="40" value="20" style="width:80px;accent-color:#ffd700;">
-                                <span id="name-size-label" style="font-size:11px;min-width:36px;">20px</span>
+                            <span class="setting-label">🎨 تخصيص الاسم</span>
+                            <span class="setting-value">
+                                <span class="setting-link" id="btn-customize-name">فتح ←</span>
                             </span>
                         </div>
+
                         <div class="setting-row">
                             <span class="setting-label">حجم الإطار</span>
                             <span class="setting-value" style="gap:6px;">
@@ -232,11 +229,16 @@
                                 <span id="frame-size-label" style="font-size:11px;min-width:36px;">-8%</span>
                             </span>
                         </div>
+
                         <div class="setting-row"><span class="setting-label">توهج البروفايل</span><span class="setting-value"><span class="setting-link" id="btn-profile-glow">تغيير ←</span></span></div>
-                        <div class="setting-row"><span class="setting-label">خلفية البروفايل</span><span class="setting-value"><span class="setting-link" id="btn-profile-bg">تغيير ←</span></span></div>
+
+                        <div class="setting-row">
+                            <span class="setting-label">خلفية البروفايل</span>
+                            <span class="setting-value"><span class="setting-link" id="btn-profile-bg">تغيير ←</span></span>
+                        </div>
+
                         <div class="setting-row"><span class="setting-label">الموسيقى</span><span class="setting-value"><span class="setting-link" id="btn-profile-music">اختيار ←</span></span></div>
                         <div class="setting-row"><span class="setting-label">إطار الأفاتار</span><span class="setting-value"><span class="setting-link" id="avatar-frame-motion">تغيير ←</span></span></div>
-                        <div class="setting-row"><span class="setting-label">وضع الزائر</span><span class="setting-value"><span class="setting-link" id="btn-visitor-view">معاينة ←</span></span></div>
                     </div>
 
                     <div class="settings-block">
@@ -282,17 +284,22 @@
     </div>
 </div>
 
-<div class="modal" id="name-picker-modal">
+<div class="modal" id="name-customize-modal">
     <div class="modal-c">
-        <h3>تخصيص الاسم</h3>
-        <div class="modal-tabs" id="name-tabs">
-            <div class="modal-tab active" data-pick="color">لون</div>
-            <div class="modal-tab" data-pick="gradient">تدرج</div>
-            <div class="modal-tab" data-pick="shape">خلفية</div>
-            <div class="modal-tab" data-pick="glow">توهج</div>
+        <h3>🎨 تخصيص الاسم</h3>
+        <div id="name-preview-box" style="padding:14px;background:rgba(0,0,0,0.4);border-radius:10px;margin-bottom:10px;">
+            <div id="name-preview-el" style="font-size:20px;font-weight:900;text-align:center;">اسمك هنا</div>
         </div>
-        <div class="picker-grid" id="name-picker-grid"></div>
-        <div class="modal-btns"><button class="cancel" onclick="closeModal('name-picker-modal')">إغلاق</button></div>
+        <div class="modal-tabs" id="name-customize-tabs">
+            <div class="modal-tab active" data-pick="color">🎨 لون</div>
+            <div class="modal-tab" data-pick="gradient">🌈 تدرج</div>
+            <div class="modal-tab" data-pick="bg">🔲 خلفية</div>
+            <div class="modal-tab" data-pick="glow">✨ توهج</div>
+        </div>
+        <div class="picker-grid" id="name-customize-grid"></div>
+        <div class="modal-btns">
+            <button class="cancel" onclick="closeModal('name-customize-modal')">إغلاق</button>
+        </div>
     </div>
 </div>
 
@@ -301,6 +308,21 @@
         <h3>اختر لون التوهج</h3>
         <div class="colors-grid" id="profile-glow-grid"></div>
         <div class="modal-btns"><button class="cancel" id="glow-off-btn">إيقاف</button><button class="cancel" onclick="closeModal('profile-glow-modal')">إغلاق</button></div>
+    </div>
+</div>
+
+<div class="modal" id="profile-bg-modal">
+    <div class="modal-c">
+        <h3>خلفية البروفايل</h3>
+        <div class="modal-tabs" id="bg-type-tabs">
+            <div class="modal-tab active" data-bg="color">🎨 لون</div>
+            <div class="modal-tab" data-bg="image">🖼️ صورة</div>
+            <div class="modal-tab" data-bg="video">🎥 فيديو</div>
+        </div>
+        <div id="bg-content-area"></div>
+        <div class="modal-btns">
+            <button class="cancel" onclick="closeModal('profile-bg-modal')">إغلاق</button>
+        </div>
     </div>
 </div>
 
@@ -323,14 +345,24 @@
 
 <audio id="music-player" loop></audio>
 
-<script src="config.js?v=44"></script>
-<script src="ranks.js?v=44"></script>
-<script src="utils.js?v=44"></script>
-<script src="name-effects.js?v=44"></script>
-<script src="frames-engine.js?v=44"></script>
-<script src="stories.js?v=44"></script>
-<script src="profile-core.js?v=44"></script>
-<script src="profile-appearance.js?v=44"></script>
+<script src="config.js?v=42"></script>
+<script src="ranks.js?v=42"></script>
+<script src="utils.js?v=42"></script>
+<script src="name-effects.js?v=42"></script>
+<script src="frames-engine.js?v=42"></script>
+<script src="stories.js?v=42"></script>
+<script src="profile-core.js?v=42"></script>
+<script src="profile-appearance.js?v=42"></script>
+
+<script>
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('sw.js')
+            .then(function(reg) { console.log('✅ SW registered:', reg.scope); })
+            .catch(function(err) { console.warn('SW failed:', err); });
+    });
+}
+</script>
 
 </body>
 </html>
