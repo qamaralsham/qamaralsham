@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>🌙 معاينة بروفايل قمر الشام v2.1</title>
+<title>🌙 معاينة بروفايل قمر الشام v2.2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -19,25 +19,31 @@
     --purple: #4a148c;
     --bg: #050508;
     --bg-card: #0a0a15;
-    --bg-glass: rgba(255, 255, 255, 0.04);
     --border-gold: rgba(212, 175, 55, 0.3);
     --text: #ffffff;
     --text-dim: #9ca3af;
-    --success: #84cc16;
     --danger: #ef4444;
 }
 
+/* ═══════════════════════════════════════════ */
+/* body: خلفية الشات + padding للبروفايل       */
+/* ═══════════════════════════════════════════ */
 html, body {
-    background: #030108;
+    background: 
+        radial-gradient(ellipse at top, rgba(212, 175, 55, 0.08) 0%, transparent 55%),
+        radial-gradient(ellipse at bottom, rgba(100, 50, 150, 0.12) 0%, transparent 55%),
+        linear-gradient(180deg, #050508, #0a0a15);
     color: var(--text);
     font-family: 'Cairo', sans-serif;
-    min-height: 100vh;
+    height: 100vh;
     direction: rtl;
-    overflow-x: hidden;
+    overflow: hidden;
+    /* ⭐ البروفايل يحتل 95% — 2.5% من كل جهة */
+    padding: 2.5% 2.5% 0 2.5%;
 }
 
 /* ═══════════════════════════════════════════ */
-/* الخلفية العامة */
+/* الخلفية النجمية (وراء البروفايل) */
 /* ═══════════════════════════════════════════ */
 .starfield {
     position: fixed;
@@ -63,38 +69,52 @@ html, body {
 }
 
 /* ═══════════════════════════════════════════ */
-/* شريط الأدوات (Demo فقط) */
-/* ═══════════════════════════════════════════ */
-.demo-notice {
-    background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(74, 20, 140, 0.15));
-    border-bottom: 1px solid var(--border-gold);
-    padding: 10px 16px;
-    text-align: center;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--gold);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    backdrop-filter: blur(10px);
-}
-.demo-notice span { color: #fff; }
-
-/* ═══════════════════════════════════════════ */
-/* الحاوية */
+/* 🌟 البروفايل — مع توهج 4px وإطار متدرج     */
 /* ═══════════════════════════════════════════ */
 .container {
-    max-width: 480px;
-    margin: 0 auto;
-    min-height: 100vh;
     position: relative;
-    z-index: 1;
-    padding-bottom: 80px;
-    animation: fadeInUp 0.6s ease-out;
+    z-index: 2;
+    max-width: 480px;
+    width: 100%;
+    height: 100%;
+    margin: 0 auto;
+
+    /* ⭐ Border 4px + تدرج ذهبي */
+    border: 4px solid transparent;
+    background: 
+        linear-gradient(180deg, #050508 0%, #0a0518 50%, #050508 100%) padding-box,
+        linear-gradient(135deg, #d4af37 0%, #ffd700 25%, #ffec8b 50%, #ffd700 75%, #d4af37 100%) border-box;
+    border-radius: 28px 28px 0 0;
+
+    /* ⭐ التوهج */
+    box-shadow: 
+        0 0 20px rgba(255, 215, 0, 0.5),
+        0 0 40px rgba(255, 215, 0, 0.3),
+        0 0 80px rgba(255, 215, 0, 0.15),
+        inset 0 0 40px rgba(255, 215, 0, 0.04);
+
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    animation: containerGlow 3s ease-in-out infinite;
 }
-@keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+.container::-webkit-scrollbar { display: none; }
+
+@keyframes containerGlow {
+    0%, 100% {
+        box-shadow: 
+            0 0 20px rgba(255, 215, 0, 0.5),
+            0 0 40px rgba(255, 215, 0, 0.3),
+            0 0 80px rgba(255, 215, 0, 0.15),
+            inset 0 0 40px rgba(255, 215, 0, 0.04);
+    }
+    50% {
+        box-shadow: 
+            0 0 30px rgba(255, 215, 0, 0.7),
+            0 0 60px rgba(255, 215, 0, 0.4),
+            0 0 100px rgba(255, 215, 0, 0.2),
+            inset 0 0 60px rgba(255, 215, 0, 0.06);
+    }
 }
 
 /* ═══════════════════════════════════════════ */
@@ -114,6 +134,8 @@ html, body {
     flex-direction: column;
     align-items: center;
     justify-content: flex-end;
+    /* قص الزوايا العلوية */
+    border-radius: 24px 24px 0 0;
 }
 
 .hero-cover::before {
@@ -126,32 +148,15 @@ html, body {
         radial-gradient(circle at 70% 30%, rgba(255, 215, 0, 0.6) 1.2px, transparent 2px),
         radial-gradient(circle at 85% 75%, rgba(255, 255, 255, 0.4) 1px, transparent 1.8px),
         radial-gradient(circle at 30% 85%, rgba(255, 215, 0, 0.5) 1px, transparent 2px),
-        radial-gradient(circle at 55% 15%, rgba(255, 255, 255, 0.35) 0.8px, transparent 1.5px),
-        radial-gradient(circle at 90% 45%, rgba(255, 215, 0, 0.4) 1px, transparent 1.8px),
-        radial-gradient(circle at 10% 65%, rgba(255, 255, 255, 0.3) 0.8px, transparent 1.5px);
-    background-size: 200px 200px, 180px 180px, 220px 220px, 160px 160px, 240px 240px, 190px 190px, 210px 210px, 170px 170px;
+        radial-gradient(circle at 55% 15%, rgba(255, 255, 255, 0.35) 0.8px, transparent 1.5px);
+    background-size: 200px 200px, 180px 180px, 220px 220px, 160px 160px, 240px 240px, 190px 190px;
     animation: coverShift 30s linear infinite;
     pointer-events: none;
     z-index: 0;
 }
 @keyframes coverShift {
-    0% { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0; }
-    100% { background-position: 200px 200px, -180px 180px, 220px -220px, -160px -160px, 240px 240px, -190px 190px, 210px -210px, -170px -170px; }
-}
-.hero-cover::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: 
-        radial-gradient(ellipse 300px 100px at 30% 55%, rgba(100, 60, 150, 0.25) 0%, transparent 70%),
-        radial-gradient(ellipse 250px 80px at 70% 75%, rgba(74, 20, 140, 0.3) 0%, transparent 70%);
-    pointer-events: none;
-    z-index: 0;
-    animation: cloudFloat 15s ease-in-out infinite;
-}
-@keyframes cloudFloat {
-    0%, 100% { transform: translateX(0); }
-    50% { transform: translateX(15px); }
+    0% { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0; }
+    100% { background-position: 200px 200px, -180px 180px, 220px -220px, -160px -160px, 240px 240px, -190px 190px; }
 }
 
 .cover-moon {
@@ -196,65 +201,57 @@ html, body {
     50% { transform: translateX(-50%) translateY(-6px) scale(1.03); }
 }
 
-/* ═══ أزرار الهيدر (الكاميرا + العين) ═══ */
-.cover-actions {
+/* ═══ أزرار الغلاف ═══ */
+/* ⭐ العين على الطرف الأيسر (المعاينة) */
+.cover-eye {
     position: absolute;
     top: 16px;
     left: 16px;
-    z-index: 5;
-    display: flex;
-    gap: 8px;
-}
-.cover-btn {
-    background: rgba(0, 0, 0, 0.55);
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.6);
     border: 1px solid var(--border-gold);
     color: var(--gold);
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 15px;
+    font-size: 16px;
     transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(10px);
 }
-.cover-btn:hover {
+.cover-eye:hover {
     background: rgba(212, 175, 55, 0.25);
     border-color: var(--gold-light);
     transform: scale(1.1);
-    box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
 }
-.cover-btn:active { transform: scale(0.95); }
+.cover-eye:active { transform: scale(0.95); }
 
-/* ⭐ زر العين (معاينة) — يتحول بين الوضعين */
-.cover-btn.eye-btn {
-    position: relative;
-    background: rgba(0, 0, 0, 0.55);
-}
-.cover-btn.eye-btn.preview-mode {
-    background: linear-gradient(135deg, rgba(255, 68, 68, 0.6), rgba(200, 30, 30, 0.4));
+.cover-eye.preview-mode {
+    background: linear-gradient(135deg, rgba(255, 68, 68, 0.7), rgba(200, 30, 30, 0.5));
     border-color: #ff7777;
     color: #fff;
-    box-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
+    box-shadow: 0 0 25px rgba(255, 68, 68, 0.6);
     animation: eyePulse 2s ease-in-out infinite;
 }
 @keyframes eyePulse {
-    0%, 100% { box-shadow: 0 0 20px rgba(255, 68, 68, 0.5); }
-    50% { box-shadow: 0 0 30px rgba(255, 68, 68, 0.8); }
+    0%, 100% { box-shadow: 0 0 25px rgba(255, 68, 68, 0.6); }
+    50% { box-shadow: 0 0 40px rgba(255, 68, 68, 0.9); }
 }
 .eye-label {
     position: absolute;
-    top: 44px;
+    top: 46px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(0, 0, 0, 0.9);
     border: 1px solid var(--border-gold);
     color: var(--gold-light);
-    padding: 3px 8px;
+    padding: 4px 10px;
     border-radius: 6px;
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 900;
     white-space: nowrap;
     opacity: 0;
@@ -262,49 +259,55 @@ html, body {
     transition: opacity 0.2s;
     font-family: 'Cairo', sans-serif;
 }
-.cover-btn.eye-btn:hover .eye-label { opacity: 1; }
+.cover-eye:hover .eye-label { opacity: 1; }
 
-/* زر المشاركة (owner) */
-.cover-share {
+/* ⭐ الكاميرا على الطرف الأيمن */
+.cover-camera {
     position: absolute;
     top: 16px;
     right: 16px;
-    z-index: 5;
-    background: rgba(0, 0, 0, 0.55);
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.6);
     border: 1px solid var(--border-gold);
     color: var(--gold);
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 15px;
-    transition: all 0.25s;
-    backdrop-filter: blur(8px);
+    font-size: 16px;
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    backdrop-filter: blur(10px);
 }
-.cover-share:hover { background: rgba(212, 175, 55, 0.25); transform: scale(1.1); }
+.cover-camera:hover {
+    background: rgba(212, 175, 55, 0.25);
+    border-color: var(--gold-light);
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+}
+.cover-camera:active { transform: scale(0.95); }
 
-/* زر الإبلاغ (visitor) */
+/* زر الإبلاغ (visitor) — نفس مكان الكاميرا */
 .cover-report {
     position: absolute;
     top: 16px;
     right: 16px;
-    z-index: 5;
-    background: rgba(0, 0, 0, 0.55);
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.6);
     border: 1px solid rgba(255, 68, 68, 0.6);
     color: #ff7777;
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 15px;
+    font-size: 16px;
     transition: all 0.25s;
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(10px);
 }
 .cover-report:hover { background: rgba(255, 68, 68, 0.25); transform: scale(1.1); }
 
@@ -378,6 +381,10 @@ html, body {
     padding: 0 10px;
     animation: fadeInUp 0.6s ease-out 0.4s backwards;
 }
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 .rank-crown {
     font-size: 36px;
     line-height: 1;
@@ -401,7 +408,6 @@ html, body {
     animation: nameShimmer 3s linear infinite;
     letter-spacing: 0.5px;
     margin-bottom: 10px;
-    text-shadow: 0 0 40px rgba(212, 175, 55, 0.5);
     padding: 0 10px;
     word-break: break-word;
 }
@@ -515,24 +521,9 @@ html, body {
     transform: translateY(-3px);
     box-shadow: 0 12px 30px rgba(212, 175, 55, 0.25);
 }
-.stat-icon {
-    font-size: 18px;
-    margin-bottom: 4px;
-    display: block;
-}
-.stat-value {
-    font-size: 15px;
-    font-weight: 900;
-    color: #fff;
-    display: block;
-}
-.stat-label {
-    font-size: 9px;
-    color: var(--text-dim);
-    margin-top: 2px;
-    display: block;
-    font-weight: 700;
-}
+.stat-icon { font-size: 18px; margin-bottom: 4px; display: block; }
+.stat-value { font-size: 15px; font-weight: 900; color: #fff; display: block; }
+.stat-label { font-size: 9px; color: var(--text-dim); margin-top: 2px; display: block; font-weight: 700; }
 
 /* ═══ أزرار سريعة ═══ */
 .quick-actions {
@@ -578,17 +569,17 @@ html, body {
 .quick-btn.primary span { color: #050508; }
 
 /* ═══════════════════════════════════════════ */
-/* التبويبات (4 الآن) */
+/* التبويبات (4) */
 /* ═══════════════════════════════════════════ */
 .tabs {
     display: flex;
     gap: 4px;
     padding: 8px 12px;
-    background: rgba(5, 5, 12, 0.85);
+    background: rgba(5, 5, 12, 0.95);
     border-top: 1px solid rgba(212, 175, 55, 0.2);
     border-bottom: 1px solid rgba(212, 175, 55, 0.2);
     position: sticky;
-    top: 40px;
+    top: 0;
     z-index: 20;
     backdrop-filter: blur(20px);
     animation: fadeInUp 0.6s ease-out 0.7s backwards;
@@ -797,17 +788,9 @@ html, body {
     animation: ringRotate 8s linear infinite;
     box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
 }
-.moment-ring.seen {
-    background: conic-gradient(from 0deg, #444, #666, #444);
-    animation: none;
-}
-.moment-ring.add {
-    background: linear-gradient(135deg, #4a148c, #d4af37);
-    animation: none;
-}
-@keyframes ringRotate {
-    to { transform: rotate(360deg); }
-}
+.moment-ring.seen { background: conic-gradient(from 0deg, #444, #666, #444); animation: none; }
+.moment-ring.add { background: linear-gradient(135deg, #4a148c, #d4af37); animation: none; }
+@keyframes ringRotate { to { transform: rotate(360deg); } }
 .moment-img {
     width: 100%;
     height: 100%;
@@ -821,9 +804,7 @@ html, body {
     animation: ringRotate 8s linear infinite reverse;
 }
 .moment-ring.seen .moment-img,
-.moment-ring.add .moment-img {
-    animation: none;
-}
+.moment-ring.add .moment-img { animation: none; }
 .moment-name {
     font-size: 10px;
     color: #fff;
@@ -927,23 +908,15 @@ html, body {
     color: #050508;
     flex-shrink: 0;
 }
-.visitor-name {
-    font-size: 11px;
-    color: #fff;
-    font-weight: 700;
-    white-space: nowrap;
-}
+.visitor-name { font-size: 11px; color: #fff; font-weight: 700; white-space: nowrap; }
 
 /* ═══════════════════════════════════════════ */
-/* Bottom Nav */
+/* Bottom Nav — داخل البروفايل (sticky) */
 /* ═══════════════════════════════════════════ */
-.bottom-nav-demo {
-    position: fixed;
+.bottom-nav {
+    position: sticky;
     bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
     width: 100%;
-    max-width: 480px;
     height: 60px;
     background: rgba(5, 5, 8, 0.98);
     border-top: 1px solid var(--border-gold);
@@ -951,9 +924,11 @@ html, body {
     align-items: center;
     justify-content: space-around;
     backdrop-filter: blur(20px);
-    z-index: 50;
+    z-index: 30;
+    margin-top: auto;
+    border-radius: 0 0 24px 24px;
 }
-.nav-item-demo {
+.nav-item {
     flex: 1;
     height: 100%;
     display: flex;
@@ -970,8 +945,8 @@ html, body {
     font-family: inherit;
     transition: all 0.2s;
 }
-.nav-item-demo i { font-size: 16px; }
-.nav-item-demo.active { color: var(--gold-light); }
+.nav-item i { font-size: 16px; }
+.nav-item.active { color: var(--gold-light); }
 
 /* ═══════════════════════════════════════════ */
 /* Mode Switching */
@@ -994,7 +969,7 @@ body.mode-visitor .owner-only { display: none !important; }
     .stat-value { font-size: 13px; }
     .stat-icon { font-size: 16px; }
     .quick-btn { font-size: 11px; padding: 10px 6px; }
-    .cover-btn { width: 34px; height: 34px; font-size: 13px; }
+    .cover-eye, .cover-camera, .cover-report { width: 36px; height: 36px; font-size: 14px; }
 }
 </style>
 </head>
@@ -1002,36 +977,24 @@ body.mode-visitor .owner-only { display: none !important; }
 
 <div class="starfield" id="starfield"></div>
 
-<div class="demo-notice">
-    🎨 <span>معاينة v2.1</span> — زر المعاينة كعين + إزالة تبويب البحث
-</div>
-
 <div class="container">
 
     <!-- ═══ 🌙 الغلاف الكبير ═══ -->
     <div class="hero-cover">
         <div class="cover-moon"></div>
 
-        <!-- أزرار اليسار: كاميرا (owner) + عين المعاينة (الجميع) -->
-        <div class="cover-actions">
-            <!-- كاميرا (owner فقط) -->
-            <div class="cover-btn owner-only" title="تعديل الغلاف">
-                <i class="fas fa-camera"></i>
-            </div>
-
-            <!-- ⭐ زر العين للمعاينة (دائماً ظاهر) -->
-            <div class="cover-btn eye-btn" id="eyeToggle" title="معاينة كزائر">
-                <i class="fas fa-eye" id="eyeIcon"></i>
-                <span class="eye-label" id="eyeLabel">معاينة كزائر</span>
-            </div>
+        <!-- ⭐ زر العين (يسار) — المعاينة -->
+        <div class="cover-eye" id="eyeToggle" title="معاينة كزائر">
+            <i class="fas fa-eye" id="eyeIcon"></i>
+            <span class="eye-label" id="eyeLabel">معاينة كزائر</span>
         </div>
 
-        <!-- زر المشاركة (owner فقط) -->
-        <div class="cover-share owner-only" title="مشاركة">
-            <i class="fas fa-share-alt"></i>
+        <!-- ⭐ زر الكاميرا (يمين) — owner فقط -->
+        <div class="cover-camera owner-only" title="تعديل الغلاف">
+            <i class="fas fa-camera"></i>
         </div>
 
-        <!-- زر الإبلاغ (visitor فقط) -->
+        <!-- ⭐ زر الإبلاغ (يمين) — visitor فقط -->
         <div class="cover-report visitor-only" title="إبلاغ">
             <i class="fas fa-flag"></i>
         </div>
@@ -1119,7 +1082,7 @@ body.mode-visitor .owner-only { display: none !important; }
         </button>
     </div>
 
-    <!-- ═══ التبويبات (4 فقط الآن — بدون بحث) ═══ -->
+    <!-- ═══ التبويبات ═══ -->
     <div class="tabs">
         <button class="tab active">
             <i class="fas fa-home"></i>
@@ -1142,63 +1105,33 @@ body.mode-visitor .owner-only { display: none !important; }
     <!-- ═══ المحتوى ═══ -->
     <div class="content-area">
 
-        <!-- آخر الزوار (owner فقط) -->
         <div class="section owner-only">
             <div class="section-title">
                 <h3><i class="fas fa-eye"></i> آخر الزوار</h3>
                 <a class="more">الكل ←</a>
             </div>
             <div class="visitors-row">
-                <div class="visitor-chip">
-                    <div class="visitor-avatar">س</div>
-                    <span class="visitor-name">سارة</span>
-                </div>
-                <div class="visitor-chip">
-                    <div class="visitor-avatar">ع</div>
-                    <span class="visitor-name">علي</span>
-                </div>
-                <div class="visitor-chip">
-                    <div class="visitor-avatar">ن</div>
-                    <span class="visitor-name">نور</span>
-                </div>
-                <div class="visitor-chip">
-                    <div class="visitor-avatar">خ</div>
-                    <span class="visitor-name">خالد</span>
-                </div>
+                <div class="visitor-chip"><div class="visitor-avatar">س</div><span class="visitor-name">سارة</span></div>
+                <div class="visitor-chip"><div class="visitor-avatar">ع</div><span class="visitor-name">علي</span></div>
+                <div class="visitor-chip"><div class="visitor-avatar">ن</div><span class="visitor-name">نور</span></div>
+                <div class="visitor-chip"><div class="visitor-avatar">خ</div><span class="visitor-name">خالد</span></div>
             </div>
         </div>
 
-        <!-- الإنجازات -->
         <div class="section">
             <div class="section-title">
                 <h3><i class="fas fa-medal"></i> الإنجازات</h3>
                 <a class="more">الكل ←</a>
             </div>
             <div class="achievements-row">
-                <div class="achievement">
-                    <span class="achievement-icon">🏆</span>
-                    <span class="achievement-name">100 نقطة</span>
-                </div>
-                <div class="achievement">
-                    <span class="achievement-icon">👑</span>
-                    <span class="achievement-name">ملك شهر</span>
-                </div>
-                <div class="achievement">
-                    <span class="achievement-icon">🎯</span>
-                    <span class="achievement-name">50 إجابة</span>
-                </div>
-                <div class="achievement">
-                    <span class="achievement-icon">💬</span>
-                    <span class="achievement-name">1000 رسالة</span>
-                </div>
-                <div class="achievement">
-                    <span class="achievement-icon">❤️</span>
-                    <span class="achievement-name">100 إعجاب</span>
-                </div>
+                <div class="achievement"><span class="achievement-icon">🏆</span><span class="achievement-name">100 نقطة</span></div>
+                <div class="achievement"><span class="achievement-icon">👑</span><span class="achievement-name">ملك شهر</span></div>
+                <div class="achievement"><span class="achievement-icon">🎯</span><span class="achievement-name">50 إجابة</span></div>
+                <div class="achievement"><span class="achievement-icon">💬</span><span class="achievement-name">1000 رسالة</span></div>
+                <div class="achievement"><span class="achievement-icon">❤️</span><span class="achievement-name">100 إعجاب</span></div>
             </div>
         </div>
 
-        <!-- اللحظات -->
         <div class="section">
             <div class="section-title">
                 <h3><i class="fas fa-circle-notch"></i> اللحظات</h3>
@@ -1206,43 +1139,18 @@ body.mode-visitor .owner-only { display: none !important; }
             </div>
             <div class="moments-row">
                 <div class="moment owner-only">
-                    <div class="moment-ring add">
-                        <div class="moment-img">＋</div>
-                    </div>
+                    <div class="moment-ring add"><div class="moment-img">＋</div></div>
                     <span class="moment-name">أضف لحظة</span>
                 </div>
-                <div class="moment">
-                    <div class="moment-ring">
-                        <div class="moment-img">🌟</div>
-                    </div>
-                    <span class="moment-name">سارة</span>
-                </div>
-                <div class="moment">
-                    <div class="moment-ring">
-                        <div class="moment-img">🎨</div>
-                    </div>
-                    <span class="moment-name">علي</span>
-                </div>
-                <div class="moment">
-                    <div class="moment-ring seen">
-                        <div class="moment-img">📷</div>
-                    </div>
-                    <span class="moment-name">خالد</span>
-                </div>
-                <div class="moment">
-                    <div class="moment-ring">
-                        <div class="moment-img">✨</div>
-                    </div>
-                    <span class="moment-name">نور</span>
-                </div>
+                <div class="moment"><div class="moment-ring"><div class="moment-img">🌟</div></div><span class="moment-name">سارة</span></div>
+                <div class="moment"><div class="moment-ring"><div class="moment-img">🎨</div></div><span class="moment-name">علي</span></div>
+                <div class="moment"><div class="moment-ring seen"><div class="moment-img">📷</div></div><span class="moment-name">خالد</span></div>
+                <div class="moment"><div class="moment-ring"><div class="moment-img">✨</div></div><span class="moment-name">نور</span></div>
             </div>
         </div>
 
-        <!-- النشاط (owner) -->
         <div class="section owner-only">
-            <div class="section-title">
-                <h3><i class="fas fa-history"></i> نشاطك الحديث</h3>
-            </div>
+            <div class="section-title"><h3><i class="fas fa-history"></i> نشاطك الحديث</h3></div>
             <div class="activity-item">
                 <div class="activity-icon">🏆</div>
                 <div class="activity-info">
@@ -1257,20 +1165,10 @@ body.mode-visitor .owner-only { display: none !important; }
                     <div class="activity-time">قبل 5 دقائق</div>
                 </div>
             </div>
-            <div class="activity-item">
-                <div class="activity-icon">❤️</div>
-                <div class="activity-info">
-                    <div class="activity-text">أحببت 3 بروفايلات</div>
-                    <div class="activity-time">قبل 3 ساعات</div>
-                </div>
-            </div>
         </div>
 
-        <!-- النشاط (visitor) -->
         <div class="section visitor-only">
-            <div class="section-title">
-                <h3><i class="fas fa-fire"></i> نشاطه الأخير</h3>
-            </div>
+            <div class="section-title"><h3><i class="fas fa-fire"></i> نشاطه الأخير</h3></div>
             <div class="activity-item">
                 <div class="activity-icon">🏆</div>
                 <div class="activity-info">
@@ -1287,62 +1185,43 @@ body.mode-visitor .owner-only { display: none !important; }
             </div>
         </div>
 
-        <!-- الأصدقاء -->
         <div class="section">
             <div class="section-title">
                 <h3><i class="fas fa-user-friends"></i> أصدقاء مقربون</h3>
                 <a class="more">الكل ←</a>
             </div>
             <div class="friends-grid">
-                <div class="friend-card">
-                    <div class="friend-avatar">س</div>
-                    <span class="friend-name">سارة</span>
-                </div>
-                <div class="friend-card">
-                    <div class="friend-avatar">ع</div>
-                    <span class="friend-name">علي</span>
-                </div>
-                <div class="friend-card">
-                    <div class="friend-avatar">ن</div>
-                    <span class="friend-name">نور</span>
-                </div>
-                <div class="friend-card">
-                    <div class="friend-avatar">خ</div>
-                    <span class="friend-name">خالد</span>
-                </div>
-                <div class="friend-card">
-                    <div class="friend-avatar">م</div>
-                    <span class="friend-name">منى</span>
-                </div>
-                <div class="friend-card">
-                    <div class="friend-avatar">ل</div>
-                    <span class="friend-name">ليلى</span>
-                </div>
+                <div class="friend-card"><div class="friend-avatar">س</div><span class="friend-name">سارة</span></div>
+                <div class="friend-card"><div class="friend-avatar">ع</div><span class="friend-name">علي</span></div>
+                <div class="friend-card"><div class="friend-avatar">ن</div><span class="friend-name">نور</span></div>
+                <div class="friend-card"><div class="friend-avatar">خ</div><span class="friend-name">خالد</span></div>
+                <div class="friend-card"><div class="friend-avatar">م</div><span class="friend-name">منى</span></div>
+                <div class="friend-card"><div class="friend-avatar">ل</div><span class="friend-name">ليلى</span></div>
             </div>
         </div>
 
     </div>
 
-</div>
+    <!-- ═══ Bottom Nav (داخل البروفايل) ═══ -->
+    <div class="bottom-nav">
+        <button class="nav-item active">
+            <i class="fas fa-user"></i>
+            <span>بروفايلي</span>
+        </button>
+        <button class="nav-item">
+            <i class="fas fa-users"></i>
+            <span>المتواجدين</span>
+        </button>
+        <button class="nav-item">
+            <i class="fas fa-comments"></i>
+            <span>الرسائل</span>
+        </button>
+        <button class="nav-item">
+            <i class="fas fa-store"></i>
+            <span>المتجر</span>
+        </button>
+    </div>
 
-<!-- ═══ Bottom Nav ═══ -->
-<div class="bottom-nav-demo">
-    <button class="nav-item-demo active">
-        <i class="fas fa-user"></i>
-        <span>بروفايلي</span>
-    </button>
-    <button class="nav-item-demo">
-        <i class="fas fa-users"></i>
-        <span>المتواجدين</span>
-    </button>
-    <button class="nav-item-demo">
-        <i class="fas fa-comments"></i>
-        <span>الرسائل</span>
-    </button>
-    <button class="nav-item-demo">
-        <i class="fas fa-store"></i>
-        <span>المتجر</span>
-    </button>
 </div>
 
 <script>
@@ -1360,7 +1239,7 @@ body.mode-visitor .owner-only { display: none !important; }
     }
 })();
 
-/* ═══ 🎛️ زر العين — تبديل الوضع ═══ */
+/* ═══ 🎛️ زر العين ═══ */
 (function setupEyeToggle() {
     var eyeBtn = document.getElementById('eyeToggle');
     var eyeIcon = document.getElementById('eyeIcon');
@@ -1373,17 +1252,13 @@ body.mode-visitor .owner-only { display: none !important; }
         document.body.classList.add(isPreview ? 'mode-visitor' : 'mode-owner');
 
         if (isPreview) {
-            // وضع الزائر — عين مغلقة + خلفية حمراء
             eyeIcon.className = 'fas fa-eye-slash';
             eyeLabel.textContent = 'العودة كمالك';
             eyeBtn.classList.add('preview-mode');
-            eyeBtn.title = 'العودة كمالك';
         } else {
-            // وضع المالك — عين مفتوحة
             eyeIcon.className = 'fas fa-eye';
             eyeLabel.textContent = 'معاينة كزائر';
             eyeBtn.classList.remove('preview-mode');
-            eyeBtn.title = 'معاينة كزائر';
         }
     });
 })();
@@ -1397,14 +1272,14 @@ document.querySelectorAll('.tab').forEach(function(tab) {
 });
 
 /* ═══ Bottom Nav ═══ */
-document.querySelectorAll('.nav-item-demo').forEach(function(item) {
+document.querySelectorAll('.nav-item').forEach(function(item) {
     item.addEventListener('click', function() {
-        document.querySelectorAll('.nav-item-demo').forEach(function(n) { n.classList.remove('active'); });
+        document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
         item.classList.add('active');
     });
 });
 
-/* ═══ اهتزاز الإحصائيات ═══ */
+/* ═══ اهتزاز ═══ */
 document.querySelectorAll('.stat').forEach(function(stat) {
     stat.addEventListener('click', function() {
         stat.style.transform = 'scale(0.95)';
