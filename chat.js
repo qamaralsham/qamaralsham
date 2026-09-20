@@ -1,5 +1,5 @@
 // ==============================================
-// chat.js v3.12 — بنية v3.11 + room-picker integration
+// chat.js v3.13 — بنية v3.12 + NameEffects integration
 // ==============================================
 
 const ChatState = {
@@ -211,7 +211,6 @@ function startPunishmentWatcher() {
             if (!d) return;
             const now = Date.now();
 
-            // ⭐ v3.12: عندما ينتهي الحظر/السجن → لا نفعل شيء
             if (d.isBanned === true && d.bannedUntil && now >= d.bannedUntil) {
                 await db.ref('users/' + user.uid).update({ isBanned: false, bannedUntil: 0, permanentBan: false });
                 return;
@@ -221,7 +220,6 @@ function startPunishmentWatcher() {
                 return;
             }
 
-            // ⭐ v3.12: إذا أنا محظور/مطرود → انتقل لشاشة الغرف
             if (d.isBanned === true && d.bannedUntil && now < d.bannedUntil) {
                 const remaining = Math.ceil((d.bannedUntil - now) / 60000);
                 cleanupAllListeners();
@@ -233,11 +231,9 @@ function startPunishmentWatcher() {
                 } catch(e) {}
             }
 
-            // ⭐ v3.12: إذا كنت مطروداً من الروم الحالي → انتقل لشاشة الغرف
             try {
                 var kickSnap = await db.ref('room_kicks/' + ChatState.currentRoom + '/' + user.uid).once('value');
                 if (kickSnap.exists()) {
-                    var kickData = kickSnap.val() || {};
                     cleanupAllListeners();
                     if (typeof showToast === 'function') {
                         var rn = (QAMAR.ROOMS[ChatState.currentRoom] && QAMAR.ROOMS[ChatState.currentRoom].name) || ChatState.currentRoom;
@@ -353,7 +349,6 @@ function switchRoom(roomId,roomTitle){
     const user=getCurrentUser();
     if(!QAMAR.isRoomVisible(roomId,user)){showToast('fa-lock','🔒 غير متاحة');return}
 
-    // ⭐ v3.12: فحص الطرد من الروم
     if (user && user.uid && typeof db !== 'undefined' && db) {
         db.ref('room_kicks/' + roomId + '/' + user.uid).once('value').then(function(kickSnap) {
             if (kickSnap.exists()) {
@@ -381,7 +376,6 @@ function _doSwitchRoom(roomId, roomTitle, user) {
     updateMicsUI();startMessagesListener();
     if(typeof applyRoomBackground==='function'){applyRoomBackground(roomId);}
 
-    // ⭐ v3.12: تحديث presence فوراً
     if (user && user.uid && typeof db !== 'undefined' && db) {
         db.ref('user_presence/' + user.uid).set({
             state: 'online',
@@ -516,6 +510,73 @@ function _buildHiddenMessageEl(msg, msgId) {
     container.scrollTop = container.scrollHeight;
 }
 
+/* ⭐⭐⭐ v3.13: استخدام NameEffects المركزي */
+function _applyNameEffectsToUsername(usernameEl, msg) {
+    if (!usernameEl) return;
+
+    // استخدم NameEffects إن متوفر
+    if (window.NameEffects && typeof window.NameEffects.apply === 'function') {
+        window.NameEffects.apply(usernameEl, {
+            nameColor: msg.senderNameColor || msg.senderNameBgColor,
+            nameGradient: msg.senderNameGradient,
+            nameBgGradient: msg.senderNameBgGradient,
+            nameGlow: msg.senderNameGlow,
+            nameShape: msg.senderNameShape,
+            nameFrame: msg.senderNameFrame,
+            senderColor: msg.senderColor
+        });
+        // fallback للون الافتراضي
+        if (!usernameEl.classList.contains('name-color-active') &&
+            !usernameEl.classList.contains('name-gradient-active') &&
+            !usernameEl.className.includes('nf-')) {
+            usernameEl.style.color = safeColor(msg.senderColor) || '#ffd700';
+        }
+        return;
+    }
+
+    // fallback قديم (إن لم يُحمَّل NameEffects)
+    usernameEl.classList.remove('name-capsule','name-pill','name-rounded','name-ellipse','name-square');
+    usernameEl.classList.forEach(c=>{if(c.startsWith('nf-'))usernameEl.classList.remove(c)});
+    usernameEl.style.cssText = '';
+
+    if(msg.senderNameFrame&&/^nf-[a-z0-9-]+$/.test(msg.senderNameFrame)){
+        usernameEl.classList.add('nf',msg.senderNameFrame);
+        usernameEl.style.color='#fff';
+        usernameEl.style.textShadow='0 1px 4px rgba(0,0,0,0.95)';
+    } else {
+        const safeGrad = safeGradient(msg.senderNameGradient);
+        if(safeGrad){
+            usernameEl.style.background='linear-gradient(90deg,'+safeGrad[0]+','+safeGrad[1]+','+safeGrad[0]+','+safeGrad[1]+','+safeGrad[0]+')';
+            usernameEl.style.backgroundSize='300% 100%';
+            usernameEl.style.webkitBackgroundClip='text';
+            usernameEl.style.backgroundClip='text';
+            usernameEl.style.webkitTextFillColor='transparent';
+            usernameEl.style.animation='nameGradientMove 3s linear infinite';
+            usernameEl.style.color='';
+        } else {
+            const safeC = safeColor(msg.senderNameColor);
+            if(safeC){
+                usernameEl.style.color=safeC;
+            } else {
+                usernameEl.style.color=safeColor(msg.senderColor)||'#ffd700';
+            }
+        }
+    }
+
+    if(msg.senderNameShape&&/^name-(capsule|pill|rounded|ellipse|square)$/.test(msg.senderNameShape))
+        usernameEl.classList.add(msg.senderNameShape);
+
+    if(msg.senderNameGlow && msg.senderNameGlow !== 'none'){
+        if(msg.senderNameGlow==='soft')usernameEl.style.filter='drop-shadow(0 0 8px currentColor)';
+        else if(msg.senderNameGlow==='medium')usernameEl.style.filter='drop-shadow(0 0 15px currentColor)';
+        else if(msg.senderNameGlow==='strong')usernameEl.style.filter='drop-shadow(0 0 25px currentColor) drop-shadow(0 0 40px currentColor)';
+    }
+
+    if(msg.senderNameBgGradient && typeof window.applyNameBgToUsernameEl === 'function'){
+        window.applyNameBgToUsernameEl(usernameEl, msg.senderNameBgGradient);
+    }
+}
+
 function displayMessage(msg,msgId){
     const container=document.getElementById('messages');if(!container)return;
     const user=getCurrentUser();
@@ -559,7 +620,8 @@ function displayMessage(msg,msgId){
     if(isBot)dn+=' 🤖';
     username.textContent=dn;
 
-    applyUsernameStyle(username,msg);
+    // ⭐ v3.13: استخدام NameEffects
+    _applyNameEffectsToUsername(username, msg);
 
     if(!isBot) username.onclick=()=>insertMention(msg.senderName);
 
@@ -668,51 +730,9 @@ async function _hideWelcomeMessage(msgId, msgEl) {
 }
 window._hideWelcomeMessage = _hideWelcomeMessage;
 
+// ⭐ v3.13: applyUsernameStyle — للتوافق القديم
 function applyUsernameStyle(username,msg){
-    username.classList.remove('name-capsule','name-pill','name-rounded','name-ellipse','name-square');
-    username.classList.forEach(c=>{if(c.startsWith('nf-'))username.classList.remove(c)});
-    username.style.cssText = '';
-
-    if(msg.senderNameFrame&&/^nf-[a-z0-9-]+$/.test(msg.senderNameFrame)){
-        username.classList.add('nf',msg.senderNameFrame);
-        username.style.color='#fff';
-        username.style.textShadow='0 1px 4px rgba(0,0,0,0.95)';
-    }
-    else{
-        const safeGrad = safeGradient(msg.senderNameGradient);
-        if(safeGrad){
-            username.style.background='linear-gradient(90deg,'+safeGrad[0]+','+safeGrad[1]+','+safeGrad[0]+','+safeGrad[1]+','+safeGrad[0]+')';
-            username.style.backgroundSize='300% 100%';
-            username.style.webkitBackgroundClip='text';
-            username.style.backgroundClip='text';
-            username.style.webkitTextFillColor='transparent';
-            username.style.animation='nfMoveFast 1.5s linear infinite';
-            username.style.color='';
-        }
-        else{
-            const safeC = safeColor(msg.senderNameColor);
-            if(safeC){
-                username.style.color=safeC;
-                username.style.textShadow='0 2px 8px rgba(0,0,0,0.95)';
-            }
-            else{
-                username.style.color=safeColor(msg.senderColor)||'#ffd700';
-            }
-        }
-    }
-
-    if(msg.senderNameShape&&/^name-(capsule|pill|rounded|ellipse|square)$/.test(msg.senderNameShape))
-        username.classList.add(msg.senderNameShape);
-
-    if(msg.senderNameGlow){
-        if(msg.senderNameGlow==='soft')username.style.filter='drop-shadow(0 0 8px currentColor)';
-        else if(msg.senderNameGlow==='medium')username.style.filter='drop-shadow(0 0 15px currentColor)';
-        else if(msg.senderNameGlow==='strong')username.style.filter='drop-shadow(0 0 25px currentColor) drop-shadow(0 0 40px currentColor)';
-    }
-
-    if(msg.senderNameBgGradient && typeof applyNameBgToUsernameEl === 'function'){
-        applyNameBgToUsernameEl(username, msg.senderNameBgGradient);
-    }
+    _applyNameEffectsToUsername(username, msg);
 }
 
 function buildAttachmentElement(att){
@@ -739,6 +759,10 @@ async function sendMessage(){
     if (user.isJailed && user.jailUntil && Date.now() < user.jailUntil) {
         var jmins = Math.ceil((user.jailUntil - Date.now()) / 60000);
         showToast('fa-lock', '⛓️ أنت في السجن — ' + jmins + ' دقيقة');
+        return;
+    }
+    if (user.muteInRoom && user.muteRoom === ChatState.currentRoom) {
+        showToast('fa-microphone-slash', '🔇 أنت ممنوع من الكتابة في هذه الغرفة');
         return;
     }
 
@@ -1432,13 +1456,10 @@ window.addEventListener('message',e=>{
         if(u.avatarFrame!==undefined)refreshAvatarsInMessages(u.avatarFrame);
         refreshNameStylesInMessages(u);
     }
-    // ⭐ v3.12: مغادرة الغرفة من البروفايل → شاشة الغرف
     if (e.data && e.data.action === 'leaveRoom') {
-        // ⭐ نستدعي showRoomPicker (من room-picker.js)
         if (typeof window.showRoomPicker === 'function') {
             try { window.showRoomPicker(); } catch(err) { console.warn('showRoomPicker failed:', err); }
         } else {
-            // fallback: افتح السيدبار لو room-picker غير محمّل
             var roomsList = document.getElementById('rooms-sidebar');
             if (roomsList) {
                 roomsList.classList.add('open');
@@ -1463,7 +1484,7 @@ function refreshNameStylesInMessages(userData){
         const un=msgEl.querySelector('.message-username');
         if(!un)return;
         un.textContent=userData.name||u.name||'مجهول';
-        applyUsernameStyle(un,{
+        _applyNameEffectsToUsername(un, {
             senderColor:userData.color||'#ffd700',
             senderNameColor:userData.nameColor||userData.nameBgColor||null,
             senderNameGradient:userData.nameGradient||null,
@@ -1548,4 +1569,4 @@ window.applyRoomBackground=applyRoomBackground;
 window.buildRoomsList=buildRoomsList;
 window.clearPrivateNotifsFrom = _clearPrivateNotifsFrom;
 
-console.log('✅ chat.js v3.12 loaded — room-picker integration');
+console.log('✅ chat.js v3.13 loaded — NameEffects integration');
