@@ -6,9 +6,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#050508">
-<title>قمر الشام — البروفايل</title>
+<title>Qamar Profile v4</title>
 
-<!-- ⭐⭐⭐ v4: كشف فوري — في الـ head قبل Firebase -->
 <script>
 (function() {
     var startTime = Date.now();
@@ -58,23 +57,28 @@
 <input type="file" id="music-file-input" accept="audio/*" style="display:none">
 
 <div class="profile" id="profile-container" style="opacity:0;">
+
     <div id="profile-bg-layer" class="bg-layer"></div>
-    <div class="top-btns">
-        <button id="btn-close" title="إغلاق">✕</button>
-        <div class="owner-top">
-            <button class="owner-only" title="مشاركة">📤</button>
-            <button class="owner-only" title="حفظ">💾</button>
-        </div>
-    </div>
+
     <div class="cover" id="profile-cover-box">
+        <div class="cover-moon"></div>
         <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600" class="cover-img" id="profile-cover-img">
+
         <div class="cover-edit owner-only">
-            <button class="del-cov" id="btn-remove-cover">✕ إزالة</button>
-            <button id="btn-change-cover">🖼️ تغيير</button>
+            <button type="button" class="del-cov" id="btn-remove-cover" title="إزالة">✕</button>
+            <button type="button" id="btn-change-cover" title="تغيير">🖼️</button>
         </div>
+
+        <div class="top-btns">
+            <button id="btn-collapse-info" title="طي المعلومات" type="button">👁️</button>
+            <button id="btn-close" title="إغلاق" type="button">✕</button>
+        </div>
+
         <div class="avatar-cont">
-            <div class="avatar-box" id="avatar-box" style="position:relative;width:100px;height:100px;margin:0 auto">
-                <div class="avatar"><img src="https://ui-avatars.com/api/?name=User&background=555&color=fff" id="profile-avatar-img"></div>
+            <div class="avatar-box" id="avatar-box">
+                <div class="avatar">
+                    <img src="https://ui-avatars.com/api/?name=User&background=555&color=fff" id="profile-avatar-img">
+                </div>
                 <div id="activeAvatarFrame"></div>
             </div>
             <div class="avatar-edit owner-only">
@@ -82,12 +86,16 @@
                 <span id="btn-change-avatar">📷</span>
             </div>
         </div>
+
+        <button class="music-toggle-mini" id="music-btn-mini" style="display:none" title="تشغيل الموسيقى" type="button">
+            <i class="fas fa-play"></i>
+        </button>
+
         <div class="header">
-            <div class="role" id="display-role">
+            <div class="role">
                 <span class="status-dot" id="status-dot"></span>
                 <span id="role-text">User 👤</span>
             </div>
-            <button class="music-toggle-mini visitor-only" id="music-btn-mini" style="display:none" title="الموسيقى"><i class="fas fa-play"></i></button>
             <div class="user-cont">
                 <div class="username" id="profile-username">مستخدم</div>
                 <span class="edit-pen owner-only" id="btn-edit-username">✏️</span>
@@ -97,140 +105,192 @@
                 <span class="edit-pen owner-only" id="btn-edit-bio">✏️</span>
             </div>
         </div>
+
+        <div class="cover-fade"></div>
     </div>
+
     <div class="interact-btns visitor-only" style="display:none">
-        <button id="btn-heart">❤️</button>
-        <button id="btn-mail">💬</button>
-        <button id="btn-block">🚫</button>
-        <button id="btn-add-friend">➕</button>
-        <button id="btn-poke">👋</button>
-        <button id="btn-admin-actions" style="display:none;background:linear-gradient(135deg,#8b0000,#d4af37);border-color:#ffd700;color:#fff;font-weight:900;" title="أوامر إدارية">⚔️</button>
+        <button id="btn-heart" title="إعجاب">❤️</button>
+        <button id="btn-mail" title="رسالة">💬</button>
+        <button id="btn-block" title="حظر">🚫</button>
+        <button id="btn-add-friend" title="إضافة صديق">➕</button>
+        <button id="btn-poke" title="نكزة">👋</button>
+        <button id="btn-admin-actions" style="display:none" title="أوامر إدارية">⚔️</button>
     </div>
+
     <div class="main-content">
-        <div class="tabs">
-            <div class="tab active owner-only" data-target="privacy-tab">الخصوصية</div>
-            <div class="tab owner-only" data-target="appearance-tab">المظهر</div>
-            <div class="tab owner-only" data-target="commands-tab">الأوامر</div>
-            <div class="tab owner-only" data-target="story-tab">📸 حالتي</div>
-            <div class="tab" data-target="info-tab">المعلومات</div>
-            <div class="tab" data-target="friends-tab">الأصدقاء</div>
-            <div class="tab owner-only" data-target="search-tab">البحث</div>
-            <div class="tab owner-only" data-target="visitors-tab">الزوار</div>
-            <div class="tab owner-only" data-target="likes-tab">الإعجابات</div>
-            <div class="tab owner-only" data-target="blocked-tab">المحظورين</div>
-        </div>
+
+        <div class="tabs" id="tabsBar"></div>
+
         <div class="poetry-box">
             <textarea id="poetry-input" class="poetry-in owner-only" placeholder="اكتب بيتاً من الشعر..." maxlength="300"></textarea>
             <div id="poetry-display" class="poetry-disp"></div>
         </div>
+
         <div class="scroll-box">
 
-            <div id="privacy-tab" class="tab-c active">
-                <div class="priv-sec">
-                    <h3>إعدادات الخصوصية</h3>
-                    <div class="info-card">
-                        <div class="priv-row"><span class="priv-lb">البريد الإلكتروني</span><select class="priv-sel" id="privacy-email" data-field="email"><option value="public" selected>الجميع</option><option value="friends">الأصدقاء</option><option value="private">أنا فقط</option></select></div>
-                        <div class="priv-row"><span class="priv-lb">العمر</span><select class="priv-sel" id="privacy-age" data-field="age"><option value="public" selected>الجميع</option><option value="friends">الأصدقاء</option><option value="private">أنا فقط</option></select></div>
-                        <div class="priv-row"><span class="priv-lb">الجنس</span><select class="priv-sel" id="privacy-gender" data-field="gender"><option value="public" selected>الجميع</option><option value="friends">الأصدقاء</option><option value="private">أنا فقط</option></select></div>
-                        <div class="priv-row"><span class="priv-lb">الرسائل</span><select class="priv-sel" id="privacy-messages" data-field="messages"><option value="public" selected>الجميع</option><option value="friends">الأصدقاء</option><option value="private">أنا فقط</option></select></div>
-                        <div class="priv-row"><span class="priv-lb">قائمة الأصدقاء</span><select class="priv-sel" id="privacy-friends" data-field="friends"><option value="public" selected>الجميع</option><option value="friends">الأصدقاء فقط</option><option value="private">أنا فقط</option></select></div>
+            <div class="tab-content active" data-content="home">
+                <div class="stats">
+                    <div class="stat"><span class="stat-icon">❤️</span><span class="stat-value" id="stat-likes">0</span><span class="stat-label">إعجاب</span></div>
+                    <div class="stat"><span class="stat-icon">👥</span><span class="stat-value" id="stat-friends">0</span><span class="stat-label">صديق</span></div>
+                    <div class="stat"><span class="stat-icon">🏆</span><span class="stat-value" id="stat-achievements">0</span><span class="stat-label">إنجاز</span></div>
+                    <div class="stat"><span class="stat-icon">🎁</span><span class="stat-value" id="stat-gifts">0</span><span class="stat-label">هدية</span></div>
+                </div>
+
+                <div class="section owner-only">
+                    <div class="section-title"><h3><i class="fas fa-eye"></i> آخر الزوار</h3></div>
+                    <div id="visitors-container"><div class="empty">لا يوجد زوار</div></div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title"><h3><i class="fas fa-medal"></i> الإنجازات</h3></div>
+                    <div class="achievements-row">
+                        <div class="achievement"><span class="achievement-icon">🏆</span><span class="achievement-name">100 نقطة</span></div>
+                        <div class="achievement"><span class="achievement-icon">👑</span><span class="achievement-name">ملك شهر</span></div>
+                        <div class="achievement"><span class="achievement-icon">🎯</span><span class="achievement-name">50 إجابة</span></div>
+                        <div class="achievement"><span class="achievement-icon">💬</span><span class="achievement-name">1000 رسالة</span></div>
+                        <div class="achievement"><span class="achievement-icon">❤️</span><span class="achievement-name">100 إعجاب</span></div>
                     </div>
                 </div>
             </div>
 
-            <div id="appearance-tab" class="tab-c">
-                <div class="info-card">
-                    <div class="row"><span class="row-lb">لون الاسم</span><span class="row-vl"><span class="link" id="btn-name-color">تغيير</span></span></div>
-                    <div class="row"><span class="row-lb">تدرج الاسم</span><span class="row-vl"><span class="link" id="btn-name-gradient">تغيير</span></span></div>
-                    <div class="row"><span class="row-lb">خلفية الاسم</span><span class="row-vl"><span class="link" id="btn-name-shape">تغيير</span></span></div>
-                    <div class="row"><span class="row-lb">توهج الاسم</span><span class="row-vl"><span class="link" id="btn-name-glow">تغيير</span></span></div>
+            <div class="tab-content" data-content="moments">
+                <div class="section">
+                    <div class="section-title"><h3><i class="fas fa-circle-notch"></i> اللحظات</h3></div>
+                    <div class="moments-grid">
+                        <div class="moment-tile add owner-only">
+                            <div class="moment-tile-icon">＋</div>
+                            <div class="moment-tile-name">أضف لحظة</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                    <div class="row">
-                        <span class="row-lb">حجم الاسم</span>
-                        <span class="row-vl" style="display:flex;gap:8px;align-items:center;min-width:180px;">
-                            <input type="range" id="name-size-slider" min="12" max="40" value="20" style="flex:1;accent-color:#ffd700;">
-                            <span id="name-size-label" style="color:#ffd700;font-size:11px;font-weight:900;min-width:40px;text-align:center;">20px</span>
-                        </span>
+            <div class="tab-content" data-content="friends">
+                <div class="section">
+                    <div class="section-title"><h3><i class="fas fa-user-friends"></i> الأصدقاء</h3></div>
+                    <div class="friends-grid" id="friends-grid-container">
+                        <div style="grid-column:1/-1;text-align:center;color:#888;padding:20px;font-size:12px;">⏳ جاري التحميل...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" data-content="settings">
+                <div class="section">
+                    <div class="settings-block">
+                        <h4><i class="fas fa-lock"></i> الخصوصية</h4>
+                        <div class="setting-row">
+                            <span class="setting-label">البريد الإلكتروني</span>
+                            <select class="setting-select priv-sel" id="privacy-email" data-field="email">
+                                <option value="public" selected>🌍 الجميع</option>
+                                <option value="friends">👥 الأصدقاء</option>
+                                <option value="private">🔒 أنا فقط</option>
+                            </select>
+                        </div>
+                        <div class="setting-row">
+                            <span class="setting-label">العمر</span>
+                            <select class="setting-select priv-sel" id="privacy-age" data-field="age">
+                                <option value="public" selected>🌍 الجميع</option>
+                                <option value="friends">👥 الأصدقاء</option>
+                                <option value="private">🔒 أنا فقط</option>
+                            </select>
+                        </div>
+                        <div class="setting-row">
+                            <span class="setting-label">الجنس</span>
+                            <select class="setting-select priv-sel" id="privacy-gender" data-field="gender">
+                                <option value="public" selected>🌍 الجميع</option>
+                                <option value="friends">👥 الأصدقاء</option>
+                                <option value="private">🔒 أنا فقط</option>
+                            </select>
+                        </div>
+                        <div class="setting-row">
+                            <span class="setting-label">الرسائل</span>
+                            <select class="setting-select priv-sel" id="privacy-messages" data-field="messages">
+                                <option value="public" selected>🌍 الجميع</option>
+                                <option value="friends">👥 الأصدقاء</option>
+                                <option value="private">🔒 أنا فقط</option>
+                            </select>
+                        </div>
+                        <div class="setting-row">
+                            <span class="setting-label">قائمة الأصدقاء</span>
+                            <select class="setting-select priv-sel" id="privacy-friends" data-field="friends">
+                                <option value="public" selected>🌍 الجميع</option>
+                                <option value="friends">👥 الأصدقاء</option>
+                                <option value="private">🔒 أنا فقط</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <div class="row">
-                        <span class="row-lb">حجم الإطار</span>
-                        <span class="row-vl" style="display:flex;gap:8px;align-items:center;min-width:180px;">
-                            <input type="range" id="frame-size-slider" min="-30" max="20" value="-8" style="flex:1;accent-color:#ffd700;">
-                            <span id="frame-size-label" style="color:#ffd700;font-size:11px;font-weight:900;min-width:40px;text-align:center;">-8%</span>
-                        </span>
+                    <div class="settings-block">
+                        <h4><i class="fas fa-palette"></i> المظهر</h4>
+                        <div class="setting-row"><span class="setting-label">لون الاسم</span><span class="setting-value"><span class="setting-link" id="btn-name-color">تغيير ←</span></span></div>
+                        <div class="setting-row"><span class="setting-label">تدرج الاسم</span><span class="setting-value"><span class="setting-link" id="btn-name-gradient">تغيير ←</span></span></div>
+                        <div class="setting-row"><span class="setting-label">خلفية الاسم</span><span class="setting-value"><span class="setting-link" id="btn-name-shape">تغيير ←</span></span></div>
+                        <div class="setting-row"><span class="setting-label">توهج الاسم</span><span class="setting-value"><span class="setting-link" id="btn-name-glow">تغيير ←</span></span></div>
+                        <div class="setting-row">
+                            <span class="setting-label">حجم الاسم</span>
+                            <span class="setting-value" style="gap:6px;">
+                                <input type="range" id="name-size-slider" min="12" max="40" value="20" style="width:80px;accent-color:#ffd700;">
+                                <span id="name-size-label" style="font-size:11px;min-width:36px;">20px</span>
+                            </span>
+                        </div>
+                        <div class="setting-row">
+                            <span class="setting-label">حجم الإطار</span>
+                            <span class="setting-value" style="gap:6px;">
+                                <input type="range" id="frame-size-slider" min="-30" max="20" value="-8" style="width:80px;accent-color:#ffd700;">
+                                <span id="frame-size-label" style="font-size:11px;min-width:36px;">-8%</span>
+                            </span>
+                        </div>
+                        <div class="setting-row"><span class="setting-label">توهج البروفايل</span><span class="setting-value"><span class="setting-link" id="btn-profile-glow">تغيير ←</span></span></div>
+                        <div class="setting-row"><span class="setting-label">خلفية البروفايل</span><span class="setting-value"><span class="setting-link" id="btn-profile-bg">تغيير ←</span></span></div>
+                        <div class="setting-row"><span class="setting-label">الموسيقى</span><span class="setting-value"><span class="setting-link" id="btn-profile-music">اختيار ←</span></span></div>
+                        <div class="setting-row"><span class="setting-label">إطار الأفاتار</span><span class="setting-value"><span class="setting-link" id="avatar-frame-motion">تغيير ←</span></span></div>
+                        <div class="setting-row"><span class="setting-label">وضع الزائر</span><span class="setting-value"><span class="setting-link" id="btn-visitor-view">معاينة ←</span></span></div>
                     </div>
 
-                    <div class="row"><span class="row-lb">توهج البروفايل</span><span class="row-vl"><span class="link" id="btn-profile-glow">تغيير</span></span></div>
-                    <div class="row"><span class="row-lb">خلفية البروفايل</span><span class="row-vl"><span class="link" id="btn-profile-bg">تغيير</span></span></div>
-                    <div class="row"><span class="row-lb">الموسيقى</span><span class="row-vl"><span class="link" id="btn-profile-music">اختيار</span></span></div>
-                    <div class="row"><span class="row-lb">إطار الأفاتار</span><span class="row-vl"><span class="link" id="avatar-frame-motion">تغيير</span></span></div>
-                    <div class="row"><span class="row-lb">وضع الزائر</span><span class="row-vl"><span class="link" id="btn-visitor-view">معاينة</span></span></div>
-                </div>
-            </div>
-
-            <div id="commands-tab" class="tab-c">
-                <div class="info-card" id="commands-tab-content">
-                    <div class="row"><span class="row-lb">🎁 إرسال هدية</span><span class="row-vl"><span class="link" id="btn-gift">قريباً</span></span></div>
-                </div>
-            </div>
-
-            <div id="story-tab" class="tab-c">
-                <div class="info-card" id="story-tab-content">
-                    <div style="text-align:center;color:#888;padding:20px;font-size:12px;">⏳ جاري التحميل...</div>
-                </div>
-            </div>
-
-            <div id="info-tab" class="tab-c">
-                <div class="info-card">
-                    <div class="row"><span class="row-lb">الاسم</span><span class="row-vl"><span class="link" id="profile-username-id">@user</span><span id="btn-copy-id" style="cursor:pointer;margin-right:8px;color:#64b5f6">📋</span></span></div>
-                    <div class="row"><span class="row-lb">كود التعريف</span><span class="row-vl" style="display:flex;gap:8px;align-items:center"><span class="user-code" id="info-code-value">—</span><button id="btn-copy-code" class="share-btn"><i class="fas fa-copy"></i> نسخ</button></span></div>
-                    <div class="row" id="info-points-row" style="display:none;"><span class="row-lb">النقاط</span><span class="row-vl" id="info-points-value" style="color:#ffd700;font-weight:900;">—</span></div>
-                    <div class="row" id="info-level-row" style="display:none;"><span class="row-lb">المستوى</span><span class="row-vl" id="info-level-value" style="color:#84cc16;font-weight:900;">—</span></div>
-                    <div class="row" id="info-age-row"><span class="row-lb">العمر</span><span class="row-vl" id="info-age-value">—</span></div>
-                    <div class="row" id="info-gender-row"><span class="row-lb">الجنس</span><span class="row-vl" id="info-gender-value">—</span></div>
-                    <div class="row" id="info-join-row"><span class="row-lb">تاريخ الانضمام</span><span class="row-vl" id="info-join-value">—</span></div>
-                    <div class="row" id="info-lastseen-row"><span class="row-lb">آخر ظهور</span><span class="row-vl" id="info-lastseen-value">—</span></div>
-                    <div class="row" id="info-room-row"><span class="row-lb">الغرفة الحالية</span><span class="row-vl" id="info-room-value">—</span></div>
-                    <div class="row" id="info-country-row"><span class="row-lb">الدولة</span><span class="row-vl" id="info-country-value">—</span></div>
-                    <div class="row" id="info-email-row"><span class="row-lb">البريد الإلكتروني</span><span class="row-vl" id="info-email-value">—</span></div>
-                </div>
-            </div>
-
-            <div id="friends-tab" class="tab-c">
-                <div class="info-card">
-                    <h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">قائمة الأصدقاء</h3>
-                    <div id="friends-container"><div class="empty">جاري التحميل...</div></div>
-                </div>
-            </div>
-
-            <div id="search-tab" class="tab-c owner-only">
-                <div class="info-card">
-                    <h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">البحث عن عضو</h3>
-                    <div class="search-box">
-                        <input type="text" class="search-input" id="search-input" placeholder="اكتب الاسم أو الكود..." maxlength="30">
-                        <button class="search-btn" id="search-btn"><i class="fas fa-search"></i> بحث</button>
+                    <div class="settings-block">
+                        <h4><i class="fas fa-info-circle"></i> المعلومات</h4>
+                        <div class="setting-row"><span class="setting-label">الاسم</span><span class="setting-value" id="profile-username-id">@user</span></div>
+                        <div class="setting-row"><span class="setting-label">كود التعريف</span><span class="setting-value" style="font-family:monospace;color:var(--gold);" id="info-code-value">—</span></div>
+                        <div class="setting-row"><span class="setting-label">النقاط</span><span class="setting-value" style="color:var(--gold);" id="info-points-value">—</span></div>
+                        <div class="setting-row"><span class="setting-label">المستوى</span><span class="setting-value" style="color:#84cc16;" id="info-level-value">—</span></div>
+                        <div class="setting-row"><span class="setting-label">العمر</span><span class="setting-value" id="info-age-value">—</span></div>
+                        <div class="setting-row"><span class="setting-label">الجنس</span><span class="setting-value" id="info-gender-value">—</span></div>
+                        <div class="setting-row"><span class="setting-label">تاريخ الانضمام</span><span class="setting-value" id="info-join-value">—</span></div>
+                        <div class="setting-row"><span class="setting-label">آخر ظهور</span><span class="setting-value" id="info-lastseen-value">—</span></div>
+                        <div class="setting-row"><span class="setting-label">البريد</span><span class="setting-value" id="info-email-value">—</span></div>
                     </div>
-                    <div id="search-results"></div>
+
+                    <div class="settings-block">
+                        <h4><i class="fas fa-walking"></i> الغرفة الحالية</h4>
+                        <div class="setting-row">
+                            <span class="setting-label">الغرفة</span>
+                            <span class="setting-value" id="info-room-value">—</span>
+                        </div>
+                        <div class="danger-section">
+                            <button type="button" class="danger-btn warning" id="btn-leave-room">
+                                <i class="fas fa-door-open"></i> مغادرة الغرفة
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="settings-block">
+                        <h4><i class="fas fa-exclamation-triangle" style="color:#ff6666;"></i> إجراءات حساسة</h4>
+                        <button type="button" class="danger-btn" id="btn-delete-account">
+                            <i class="fas fa-trash"></i> حذف الحساب
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <div id="visitors-tab" class="tab-c owner-only">
-                <div class="info-card"><h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">الزوار الجدد</h3><div id="visitors-container"><div class="empty">لا يوجد زوار</div></div></div>
+            <div class="tab-content" data-content="admin">
+                <div class="section"></div>
             </div>
 
-            <div id="likes-tab" class="tab-c owner-only">
-                <div class="info-card"><h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">من أعجب بي</h3><div id="likes-container"><div class="empty">لا يوجد إعجابات</div></div></div>
-            </div>
-
-            <div id="blocked-tab" class="tab-c owner-only">
-                <div class="info-card"><h3 style="color:var(--gold);font-size:13px;margin-bottom:10px">قائمة المحظورين</h3><div id="blocked-container"><div class="empty">لا يوجد محظورين</div></div></div>
-            </div>
         </div>
     </div>
 </div>
 
-<!-- ═══ Modal اختيار الاسم ═══ -->
 <div class="modal" id="name-picker-modal">
     <div class="modal-c">
         <h3>تخصيص الاسم</h3>
@@ -272,16 +332,15 @@
 
 <audio id="music-player" loop></audio>
 
-<script src="config.js?v=35"></script>
-<script src="ranks.js?v=35"></script>
-<script src="utils.js?v=35"></script>
-<script src="name-effects.js?v=35"></script>
-<script src="frames-engine.js?v=35"></script>
-<script src="stories.js?v=35"></script>
-<script src="profile-core.js?v=35"></script>
-<script src="profile-appearance.js?v=35"></script>
+<script src="config.js?v=40"></script>
+<script src="ranks.js?v=40"></script>
+<script src="utils.js?v=40"></script>
+<script src="name-effects.js?v=40"></script>
+<script src="frames-engine.js?v=40"></script>
+<script src="stories.js?v=40"></script>
+<script src="profile-core.js?v=40"></script>
+<script src="profile-appearance.js?v=40"></script>
 
-<!-- ⭐⭐⭐ Service Worker -->
 <script>
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
