@@ -1,16 +1,7 @@
 // ==============================================
-// profile-appearance.js v9 — مبني على NameEffects
-// ==============================================
-// ✅ v9:
-//   1. إزالة CSS المكرر (نُقل إلى name-effects.css)
-//   2. استخدام NameEffects.apply بدل التكرار
-//   3. الاحتفاظ بجميع النوافذ (ألوان/تدرجات/توهج/خلفية مخصصة)
-//   4. توافق كامل مع profile-core.js v4
+// profile-appearance.js v11 — Modal موحد
 // ==============================================
 
-/* ══════════════════════════════════════════════ */
-/* NameBgState — لاختيار خلفية الاسم المخصصة      */
-/* ══════════════════════════════════════════════ */
 var NameBgState = {
     enabled: false,
     direction: 'diagonal',
@@ -19,457 +10,122 @@ var NameBgState = {
 };
 
 /* ══════════════════════════════════════════════ */
-/* CSS للنوافذ (name-bg modal فقط)               */
-/* ══════════════════════════════════════════════ */
-(function injectModalCSS() {
-    if (document.getElementById('name-bg-modal-css')) return;
-    var s = document.createElement('style');
-    s.id = 'name-bg-modal-css';
-    s.textContent = `
-#name-bg-modal {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.88);
-    display: none;
-    justify-content: center; align-items: center;
-    z-index: 99999; padding: 15px; direction: rtl;
-}
-#name-bg-modal.active { display: flex; }
-#name-bg-modal .bg-modal-box {
-    background: #110724;
-    border: 2px solid #ffd700;
-    border-radius: 18px; padding: 18px;
-    width: 100%; max-width: 420px; max-height: 92vh;
-    overflow-y: auto;
-    display: flex; flex-direction: column; gap: 14px;
-    font-family: 'Cairo', sans-serif; color: #fff;
-    scrollbar-width: none;
-}
-#name-bg-modal .bg-modal-box::-webkit-scrollbar { display: none; }
-#name-bg-modal .bg-modal-header {
-    display: flex; justify-content: space-between; align-items: center;
-    padding-bottom: 8px; border-bottom: 1px solid rgba(255,215,0,0.2);
-}
-#name-bg-modal .bg-modal-header h3 { color: #ffd700; font-size: 16px; font-weight: 900; margin: 0; }
-#name-bg-modal .bg-modal-close { background: none; border: none; font-size: 22px; cursor: pointer; color: #888; padding: 4px 8px; }
-#name-bg-modal .bg-preview {
-    background: #1a1a20; border-radius: 12px; padding: 16px;
-    display: flex; justify-content: center; align-items: center;
-    min-height: 70px; border: 2px solid rgba(255,215,0,0.2);
-}
-#name-bg-modal .bg-preview-name {
-    font-size: 18px; font-weight: 900; padding: 3px 14px;
-    border-radius: 999px; display: inline-block; color: #fff;
-    text-shadow: 0 2px 6px rgba(0,0,0,0.9); position: relative;
-}
-#name-bg-modal .bg-colors { display: flex; justify-content: space-around; gap: 12px; padding: 8px 0; }
-#name-bg-modal .bg-color-wrap {
-    position: relative; width: 60px; height: 60px; border-radius: 50%;
-    overflow: hidden; cursor: pointer; border: 3px solid rgba(255,215,0,0.3);
-    box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-}
-#name-bg-modal .bg-color-wrap input[type="color"] {
-    position: absolute; inset: -10px; width: 120%; height: 120%;
-    border: none; cursor: pointer; background: none; padding: 0;
-}
-#name-bg-modal .bg-color-wrap input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
-#name-bg-modal .bg-color-wrap input[type="color"]::-webkit-color-swatch { border: none; }
-#name-bg-modal .bg-directions { display: flex; gap: 8px; justify-content: center; }
-#name-bg-modal .bg-dir-btn {
-    flex: 1; padding: 10px; background: rgba(255,255,255,0.06);
-    border: 2px solid #3b82f6; color: #3b82f6;
-    border-radius: 10px; font-weight: 900; font-size: 13px;
-    cursor: pointer; font-family: 'Cairo', sans-serif;
-}
-#name-bg-modal .bg-dir-btn.active { background: #3b82f6; color: #fff; }
-#name-bg-modal .bg-slider-row { display: flex; align-items: center; gap: 12px; padding: 6px 0; }
-#name-bg-modal .bg-slider-row label { color: #ccc; font-size: 12px; font-weight: 700; min-width: 140px; text-align: right; }
-#name-bg-modal .bg-slider-row input[type="range"] { flex: 1; accent-color: #ffd700; cursor: pointer; }
-#name-bg-modal .bg-actions { display: flex; gap: 8px; padding-top: 8px; }
-#name-bg-modal .bg-apply-btn {
-    flex: 1; padding: 12px; background: #84cc16; color: #fff;
-    border: none; border-radius: 10px; font-weight: 900; font-size: 14px;
-    cursor: pointer; font-family: 'Cairo', sans-serif;
-}
-#name-bg-modal .bg-remove-btn {
-    padding: 12px 18px; background: #ef4444; color: #fff;
-    border: none; border-radius: 10px; font-weight: 900; font-size: 14px;
-    cursor: pointer; font-family: 'Cairo', sans-serif;
-}
-#name-bg-modal .bg-presets { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; padding-top: 6px; }
-#name-bg-modal .bg-preset {
-    aspect-ratio: 1; border-radius: 8px; cursor: pointer;
-    border: 2px solid rgba(255,215,0,0.2);
-    transition: transform 0.15s, border-color 0.15s;
-}
-#name-bg-modal .bg-preset:hover { transform: scale(1.08); border-color: #ffd700; }
-    `;
-    document.head.appendChild(s);
-})();
-
-/* ══════════════════════════════════════════════ */
-/* تطبيق كل التأثيرات — v9 (يستخدم NameEffects)  */
+/* تطبيق كل التأثيرات                            */
 /* ══════════════════════════════════════════════ */
 function applyAllNameStyles() {
     var el = document.getElementById('profile-username');
     if (!el) return;
 
-    // استخدم NameEffects المركزي
+    var user = (typeof targetUser !== 'undefined' && targetUser) 
+             ? targetUser 
+             : ((typeof currentUser !== 'undefined' && currentUser) ? currentUser : {});
+
+    // استخدم NameEffects
     if (window.NameEffects && typeof window.NameEffects.apply === 'function') {
         window.NameEffects.apply(el, {
-            nameColor: (typeof nameColor !== 'undefined' ? nameColor : null),
-            nameGradient: (typeof nameGradient !== 'undefined' ? nameGradient : null),
-            nameBgGradient: (typeof NameBgState !== 'undefined' && NameBgState.enabled) ? {
-                enabled: true,
-                direction: NameBgState.direction,
-                colors: NameBgState.colors.slice(),
-                positions: NameBgState.positions.slice()
-            } : null,
-            nameGlow: (typeof nameGlow !== 'undefined' ? nameGlow : 'none'),
-            nameShape: (typeof nameShape !== 'undefined' ? nameShape : null),
-            nameFrame: (typeof nameFrame !== 'undefined' ? nameFrame : null),
-            color: (typeof currentUser !== 'undefined' && currentUser && currentUser.color) || '#ffd700'
+            nameColor: user.nameColor,
+            nameGradient: user.nameGradient,
+            nameBgGradient: user.nameBgGradient,
+            nameGlow: user.nameGlow,
+            nameShape: user.nameShape,
+            nameFrame: user.nameFrame,
+            color: user.color || '#ffd700'
         });
 
-        // fallback للّون الافتراضي إذا لم يطبَّق أي تأثير
         if (!el.classList.contains('name-color-active') &&
             !el.classList.contains('name-gradient-active') &&
             !el.className.includes('nf-')) {
-            el.style.color = (typeof currentUser !== 'undefined' && currentUser && currentUser.color) || '#ffd700';
+            el.style.color = user.color || '#ffd700';
         }
-    } else {
-        // fallback كامل (لو NameEffects ما تحمّل)
-        _applyNameStylesFallback(el);
-    }
-
-    // تطبيق حجم الاسم
-    if (typeof nameSize !== 'undefined' && nameSize) {
-        el.style.fontSize = nameSize + 'px';
     }
 }
 
 /* ══════════════════════════════════════════════ */
-/* Fallback: تطبيق يدوي                           */
+/* Modal موحد لتخصيص الاسم                        */
 /* ══════════════════════════════════════════════ */
-function _applyNameStylesFallback(el) {
-    if (!el) return;
+var _currentNameTab = 'color';
 
-    // نظف
-    var toRemove = [];
-    el.classList.forEach(function (c) {
-        if (c.indexOf('nf-') === 0 || c.indexOf('name-') === 0 ||
-            c === 'glow-soft' || c === 'glow-medium' || c === 'glow-strong' ||
-            c === 'text-gradient') toRemove.push(c);
-    });
-    toRemove.forEach(function (c) { el.classList.remove(c); });
-    el.style.cssText = '';
+function openNameCustomizeModal(tab) {
+    _currentNameTab = tab || 'color';
 
-    var hasBg = (typeof NameBgState !== 'undefined' && NameBgState.enabled);
-    var hasGradient = (typeof nameGradient !== 'undefined' && nameGradient && nameGradient.length >= 2);
-    var hasColor = (typeof nameColor !== 'undefined' && !!nameColor);
-    var hasGlow = (typeof nameGlow !== 'undefined' && nameGlow && nameGlow !== 'none');
+    var modal = document.getElementById('name-customize-modal');
+    if (!modal) return;
 
-    // الخلفية
-    if (hasBg) {
-        el.classList.add('name-has-effects', 'name-bg-active');
-        var angle = 90;
-        if (NameBgState.direction === 'vertical') angle = 180;
-        else if (NameBgState.direction === 'diagonal') angle = 135;
-        var c = NameBgState.colors, p = NameBgState.positions;
-        var grad = 'linear-gradient(' + angle + 'deg, ' +
-            c[0] + ' ' + p[0] + '%, ' +
-            c[1] + ' ' + p[1] + '%, ' +
-            c[2] + ' ' + p[2] + '%)';
-        el.style.setProperty('--name-bg', grad);
-    }
-
-    // التدرج أو اللون
-    if (hasGradient) {
-        el.classList.add('name-gradient-active');
-        el.style.setProperty('--name-gradient', 'linear-gradient(90deg, ' + nameGradient[0] + ', ' + nameGradient[1] + ', ' + nameGradient[0] + ')');
-    } else if (hasColor) {
-        el.classList.add('name-color-active');
-        el.style.setProperty('--name-color', nameColor);
-    } else if (hasBg) {
-        el.classList.add('name-color-active');
-        el.style.setProperty('--name-color', '#ffffff');
-    }
-
-    // التوهج
-    if (hasGlow) {
-        var glowColor = hasColor ? nameColor : (hasGradient ? nameGradient[0] : '#ffffff');
-        el.style.setProperty('--name-glow-color', glowColor);
-        el.classList.add('name-glow-' + nameGlow);
-    }
-}
-
-/* ══════════════════════════════════════════════ */
-/* التوافق القديم                                  */
-/* ══════════════════════════════════════════════ */
-function applyNameColor() { applyAllNameStyles(); }
-function applyNameGradient() { applyAllNameStyles(); }
-function applyNameGlow() { applyAllNameStyles(); }
-function applyNameBg() { applyAllNameStyles(); }
-function applyNameFrame() {}
-function applyNameShape() {}
-function clearNameStyles() {
-    var el = document.getElementById('profile-username');
-    if (el) el.style.cssText = '';
-}
-function reapplyShapeFrame() {}
-function updateShapeLbl() {}
-
-function updateGlowLbl() {
-    var b = document.getElementById('btn-name-glow');
-    if (b && typeof GLOWS !== 'undefined') {
-        var f = GLOWS.find(function (x) { return x.id === nameGlow; });
-        b.innerText = f ? f.name : 'تغيير';
-    }
-}
-
-/* ══════════════════════════════════════════════ */
-/* خلفية الاسم المخصصة — Modal                    */
-/* ══════════════════════════════════════════════ */
-var PRESETS = [
-    ['#ff006e', '#8338ec', '#3a86ff'], ['#f72585', '#b5179e', '#7209b7'],
-    ['#ff4d00', '#ff8800', '#ffcc00'], ['#00f5d4', '#00bbf9', '#0077b6'],
-    ['#06ffa5', '#00cc66', '#009944'], ['#ffd700', '#ff8c00', '#8b0000'],
-    ['#a855f7', '#ec4899', '#f43f5e'], ['#0ea5e9', '#06b6d4', '#14b8a6'],
-    ['#f59e0b', '#ef4444', '#b91c1c'], ['#1e293b', '#334155', '#475569'],
-    ['#ffffff', '#cccccc', '#808080'], ['#000000', '#333333', '#666666']
-];
-
-function buildGradientCSS(state) {
-    var angle = 90;
-    if (state.direction === 'vertical') angle = 180;
-    else if (state.direction === 'diagonal') angle = 135;
-    var c = state.colors, p = state.positions;
-    return 'linear-gradient(' + angle + 'deg, ' + c[0] + ' ' + p[0] + '%, ' + c[1] + ' ' + p[1] + '%, ' + c[2] + ' ' + p[2] + '%)';
-}
-
-function setColor(i, v) {
-    NameBgState.colors[i] = v;
-    updatePreview();
-}
-function setPosition(i, v) {
-    NameBgState.positions[i] = parseInt(v);
-    updatePreview();
-}
-function setDirection(dir) {
-    NameBgState.direction = dir;
-    document.querySelectorAll('#name-bg-modal .bg-dir-btn').forEach(function (b) {
-        b.classList.toggle('active', b.getAttribute('data-dir') === dir);
-    });
-    updatePreview();
-}
-
-function updatePreview() {
-    var p = document.getElementById('name-bg-preview-name');
-    if (!p) return;
-    var nm = (typeof currentUser !== 'undefined' && currentUser && currentUser.name) ? currentUser.name : 'اسمك هنا';
-    p.textContent = nm;
-    if (NameBgState.enabled) {
-        var g = buildGradientCSS(NameBgState);
-        p.style.background = g;
-        p.style.backgroundImage = g;
-    } else {
-        p.style.background = 'rgba(255,255,255,0.08)';
-        p.style.backgroundImage = '';
-    }
-    for (var i = 0; i < 3; i++) {
-        var inp = document.getElementById('bg-color-' + i);
-        if (inp) inp.value = NameBgState.colors[i];
-        var sl = document.getElementById('bg-slider-' + i);
-        if (sl) sl.value = NameBgState.positions[i];
-    }
-}
-
-function createNameBgModal() {
-    if (document.getElementById('name-bg-modal')) return;
-    var modal = document.createElement('div');
-    modal.id = 'name-bg-modal';
-    modal.innerHTML =
-        '<div class="bg-modal-box">' +
-            '<div class="bg-modal-header">' +
-                '<h3>🎨 خلفية الاسم</h3>' +
-                '<button class="bg-modal-close" onclick="closeNameBgModal()" type="button">✕</button>' +
-            '</div>' +
-            '<div class="bg-preview"><span class="bg-preview-name" id="name-bg-preview-name">اسمك هنا</span></div>' +
-            '<div class="bg-colors">' +
-                '<div class="bg-color-wrap" style="background:' + NameBgState.colors[0] + '"><input type="color" id="bg-color-0" value="' + NameBgState.colors[0] + '"></div>' +
-                '<div class="bg-color-wrap" style="background:' + NameBgState.colors[1] + '"><input type="color" id="bg-color-1" value="' + NameBgState.colors[1] + '"></div>' +
-                '<div class="bg-color-wrap" style="background:' + NameBgState.colors[2] + '"><input type="color" id="bg-color-2" value="' + NameBgState.colors[2] + '"></div>' +
-            '</div>' +
-            '<div class="bg-directions">' +
-                '<button class="bg-dir-btn" data-dir="vertical" onclick="setDirection(\'vertical\')" type="button">عمودي</button>' +
-                '<button class="bg-dir-btn" data-dir="horizontal" onclick="setDirection(\'horizontal\')" type="button">أفقي</button>' +
-                '<button class="bg-dir-btn active" data-dir="diagonal" onclick="setDirection(\'diagonal\')" type="button">مختلط</button>' +
-            '</div>' +
-            '<div class="bg-slider-row"><input type="range" id="bg-slider-0" min="0" max="100" value="' + NameBgState.positions[0] + '"><label>اتجاه اللون الأول :</label></div>' +
-            '<div class="bg-slider-row"><input type="range" id="bg-slider-1" min="0" max="100" value="' + NameBgState.positions[1] + '"><label>اتجاه اللون الثاني :</label></div>' +
-            '<div class="bg-slider-row"><input type="range" id="bg-slider-2" min="0" max="100" value="' + NameBgState.positions[2] + '"><label>اتجاه اللون الثالث :</label></div>' +
-            '<div class="bg-actions">' +
-                '<button class="bg-remove-btn" onclick="removeNameBg()" type="button">🗑️</button>' +
-                '<button class="bg-apply-btn" onclick="applyAndSaveNameBg()" type="button">✓ تغيير خلفية الاسم</button>' +
-            '</div>' +
-            '<div class="bg-presets" id="bg-presets-grid"></div>' +
-        '</div>';
-    document.body.appendChild(modal);
-
-    for (var i = 0; i < 3; i++) {
-        (function (idx) {
-            var inp = document.getElementById('bg-color-' + idx);
-            if (inp) inp.addEventListener('input', function () {
-                setColor(idx, this.value);
-                this.parentElement.style.background = this.value;
+    // ربط التبويبات
+    modal.querySelectorAll('#name-customize-tabs .modal-tab').forEach(function (t) {
+        t.classList.toggle('active', t.getAttribute('data-pick') === _currentNameTab);
+        t.onclick = function () {
+            _currentNameTab = t.getAttribute('data-pick');
+            renderNameCustomizeContent();
+            modal.querySelectorAll('#name-customize-tabs .modal-tab').forEach(function (x) {
+                x.classList.toggle('active', x.getAttribute('data-pick') === _currentNameTab);
             });
-            var sl = document.getElementById('bg-slider-' + idx);
-            if (sl) sl.addEventListener('input', function () { setPosition(idx, this.value); });
-        })(i);
-    }
-
-    var pg = document.getElementById('bg-presets-grid');
-    PRESETS.forEach(function (p) {
-        var b = document.createElement('div');
-        b.className = 'bg-preset';
-        b.style.background = 'linear-gradient(135deg, ' + p[0] + ', ' + p[1] + ', ' + p[2] + ')';
-        b.onclick = function () {
-            NameBgState.colors = p.slice();
-            for (var k = 0; k < 3; k++) {
-                var inp = document.getElementById('bg-color-' + k);
-                if (inp) { inp.value = p[k]; inp.parentElement.style.background = p[k]; }
-            }
-            updatePreview();
         };
-        pg.appendChild(b);
     });
 
-    modal.addEventListener('click', function (e) { if (e.target === modal) closeNameBgModal(); });
+    // معاينة
+    updateNamePreview();
+
+    renderNameCustomizeContent();
+    modal.classList.add('active');
 }
 
-function openNameBgModal() {
-    createNameBgModal();
-    if (typeof currentUser !== 'undefined' && currentUser && currentUser.nameBgGradient) {
-        var g = currentUser.nameBgGradient;
-        NameBgState.enabled = g.enabled !== false;
-        NameBgState.direction = g.direction || 'diagonal';
-        NameBgState.colors = (g.colors && g.colors.length === 3) ? g.colors.slice() : ['#ff006e', '#8338ec', '#3a86ff'];
-        NameBgState.positions = (g.positions && g.positions.length === 3) ? g.positions.slice() : [0, 50, 100];
-    } else {
-        NameBgState.enabled = true;
+function updateNamePreview() {
+    var preview = document.getElementById('name-preview-el');
+    if (!preview) return;
+    var user = (typeof targetUser !== 'undefined' && targetUser) 
+             ? targetUser 
+             : ((typeof currentUser !== 'undefined' && currentUser) ? currentUser : {});
+    preview.textContent = user.name || 'اسمك هنا';
+
+    // تطبيق التأثيرات على المعاينة
+    if (window.NameEffects && typeof window.NameEffects.apply === 'function') {
+        window.NameEffects.apply(preview, {
+            nameColor: user.nameColor,
+            nameGradient: user.nameGradient,
+            nameBgGradient: user.nameBgGradient,
+            nameGlow: user.nameGlow,
+            nameShape: user.nameShape,
+            nameFrame: user.nameFrame,
+            color: user.color || '#ffd700'
+        });
     }
-    document.querySelectorAll('#name-bg-modal .bg-dir-btn').forEach(function (b) {
-        b.classList.toggle('active', b.getAttribute('data-dir') === NameBgState.direction);
-    });
-    for (var i = 0; i < 3; i++) {
-        var inp = document.getElementById('bg-color-' + i);
-        if (inp) { inp.value = NameBgState.colors[i]; inp.parentElement.style.background = NameBgState.colors[i]; }
-        var sl = document.getElementById('bg-slider-' + i);
-        if (sl) sl.value = NameBgState.positions[i];
-    }
-    updatePreview();
-    document.getElementById('name-bg-modal').classList.add('active');
 }
 
-function closeNameBgModal() {
-    var m = document.getElementById('name-bg-modal');
-    if (m) m.classList.remove('active');
-}
-
-function applyAndSaveNameBg() {
-    NameBgState.enabled = true;
-    applyAllNameStyles();
-
-    if (typeof currentUser !== 'undefined' && currentUser) {
-        currentUser.nameBgGradient = {
-            enabled: true,
-            direction: NameBgState.direction,
-            colors: NameBgState.colors.slice(),
-            positions: NameBgState.positions.slice()
-        };
-    }
-
-    try {
-        var stored = JSON.parse(localStorage.getItem('qamar_current_user') || '{}');
-        stored.nameBgGradient = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.nameBgGradient : null;
-        localStorage.setItem('qamar_current_user', JSON.stringify(stored));
-        localStorage.setItem('qamar_user', JSON.stringify(stored));
-    } catch (e) {}
-
-    if (typeof currentUser !== 'undefined' && currentUser && currentUser.uid && typeof db !== 'undefined' && db) {
-        db.ref('users/' + currentUser.uid + '/nameBgGradient').set(currentUser.nameBgGradient).catch(function () {});
-    }
-
-    if (typeof saveToChat === 'function') saveToChat();
-    if (typeof toast === 'function') toast('✅ تم تطبيق خلفية الاسم');
-    closeNameBgModal();
-}
-
-function removeNameBg() {
-    NameBgState.enabled = false;
-
-    if (typeof currentUser !== 'undefined' && currentUser) currentUser.nameBgGradient = null;
-    applyAllNameStyles();
-
-    try {
-        var stored = JSON.parse(localStorage.getItem('qamar_current_user') || '{}');
-        stored.nameBgGradient = null;
-        localStorage.setItem('qamar_current_user', JSON.stringify(stored));
-        localStorage.setItem('qamar_user', JSON.stringify(stored));
-    } catch (e) {}
-
-    if (typeof currentUser !== 'undefined' && currentUser && currentUser.uid && typeof db !== 'undefined' && db) {
-        db.ref('users/' + currentUser.uid + '/nameBgGradient').remove().catch(function () {});
-    }
-
-    if (typeof saveToChat === 'function') saveToChat();
-    if (typeof toast === 'function') toast('✅ تم إزالة الخلفية');
-    closeNameBgModal();
-}
-
-/* ══════════════════════════════════════════════ */
-/* openNamePicker — اختيار اللون/التدرج/التوهج   */
-/* ══════════════════════════════════════════════ */
-function openNamePicker(tab) {
-    if (tab === 'shape') { openNameBgModal(); return; }
-    if (tab === 'frame') return;
-
-    document.querySelectorAll('#name-tabs .modal-tab').forEach(function (t) {
-        t.classList.toggle('active', t.getAttribute('data-pick') === tab);
-        t.onclick = function () { openNamePicker(t.getAttribute('data-pick')); };
-    });
-
-    var grid = document.getElementById('name-picker-grid');
+function renderNameCustomizeContent() {
+    var grid = document.getElementById('name-customize-grid');
     if (!grid) return;
     grid.innerHTML = '';
 
-    var realName = (typeof viewMode !== 'undefined' && viewMode === 'owner' && typeof currentUser !== 'undefined' && currentUser && currentUser.name)
-        ? currentUser.name
-        : ((typeof targetUser !== 'undefined' && targetUser && targetUser.name) || 'مستخدم');
+    var user = (typeof targetUser !== 'undefined' && targetUser) 
+             ? targetUser 
+             : ((typeof currentUser !== 'undefined' && currentUser) ? currentUser : {});
 
-    if (tab === 'color') {
-        COLORS.forEach(function (c) {
+    if (_currentNameTab === 'color') {
+        // شبكة ألوان
+        (typeof COLORS !== 'undefined' ? COLORS : []).forEach(function (c) {
             var d = document.createElement('div');
             d.className = 'picker-item';
-            if (typeof nameColor !== 'undefined' && nameColor === c) d.classList.add('selected');
+            if (user.nameColor === c) d.classList.add('selected');
             var p = document.createElement('div');
             p.className = 'picker-prev';
             p.style.color = c;
-            p.innerText = realName;
+            p.innerText = user.name || 'اسمك';
             d.appendChild(p);
             d.onclick = function () {
-                nameColor = c;
-                nameGradient = null;
-                localStorage.setItem('name_color', c);
-                localStorage.removeItem('name_gradient');
+                if (typeof currentUser !== 'undefined' && currentUser) currentUser.nameColor = c;
+                if (typeof targetUser !== 'undefined' && targetUser) targetUser.nameColor = c;
+                if (typeof currentUser !== 'undefined' && currentUser) currentUser.nameGradient = null;
+                if (typeof targetUser !== 'undefined' && targetUser) targetUser.nameGradient = null;
                 applyAllNameStyles();
+                updateNamePreview();
                 if (typeof saveToChat === 'function') saveToChat();
                 if (typeof toast === 'function') toast('✅ تم');
-                closeModal('name-picker-modal');
             };
             grid.appendChild(d);
         });
-    } else if (tab === 'gradient') {
-        GRADS.forEach(function (g) {
+    } else if (_currentNameTab === 'gradient') {
+        (typeof GRADS !== 'undefined' ? GRADS : []).forEach(function (g) {
             var d = document.createElement('div');
             d.className = 'picker-item';
             var p = document.createElement('div');
@@ -479,29 +135,87 @@ function openNamePicker(tab) {
             p.style.webkitBackgroundClip = 'text';
             p.style.backgroundClip = 'text';
             p.style.webkitTextFillColor = 'transparent';
-            p.innerText = realName;
+            p.innerText = user.name || 'اسمك';
             d.appendChild(p);
             d.onclick = function () {
-                nameGradient = g;
-                nameColor = null;
-                localStorage.setItem('name_gradient', JSON.stringify(g));
-                localStorage.removeItem('name_color');
+                if (typeof currentUser !== 'undefined' && currentUser) currentUser.nameGradient = g;
+                if (typeof targetUser !== 'undefined' && targetUser) targetUser.nameGradient = g;
+                if (typeof currentUser !== 'undefined' && currentUser) currentUser.nameColor = null;
+                if (typeof targetUser !== 'undefined' && targetUser) targetUser.nameColor = null;
                 applyAllNameStyles();
+                updateNamePreview();
                 if (typeof saveToChat === 'function') saveToChat();
                 if (typeof toast === 'function') toast('✅ تم');
-                closeModal('name-picker-modal');
             };
             grid.appendChild(d);
         });
-    } else if (tab === 'glow') {
-        GLOWS.forEach(function (g) {
+    } else if (_currentNameTab === 'bg') {
+        // ألوان جاهزة للخلفية
+        var presets = [
+            ['#ff006e', '#8338ec', '#3a86ff'],
+            ['#f72585', '#b5179e', '#7209b7'],
+            ['#ff4d00', '#ff8800', '#ffcc00'],
+            ['#00f5d4', '#00bbf9', '#0077b6'],
+            ['#06ffa5', '#00cc66', '#009944'],
+            ['#ffd700', '#ff8c00', '#8b0000'],
+            ['#a855f7', '#ec4899', '#f43f5e'],
+            ['#0ea5e9', '#06b6d4', '#14b8a6'],
+            ['#f59e0b', '#ef4444', '#b91c1c'],
+            ['#1e293b', '#334155', '#475569'],
+            ['#ffffff', '#cccccc', '#808080'],
+            ['#000000', '#333333', '#666666']
+        ];
+        presets.forEach(function (p) {
             var d = document.createElement('div');
             d.className = 'picker-item';
-            if (typeof nameGlow !== 'undefined' && nameGlow === g.id) d.classList.add('selected');
+            var pEl = document.createElement('div');
+            pEl.className = 'picker-prev';
+            pEl.style.background = 'linear-gradient(135deg, ' + p[0] + ', ' + p[1] + ', ' + p[2] + ')';
+            pEl.style.color = '#fff';
+            pEl.innerText = user.name || 'اسمك';
+            pEl.style.textShadow = '0 1px 3px rgba(0,0,0,0.9)';
+            d.appendChild(pEl);
+            d.onclick = function () {
+                var g = { enabled: true, direction: 'diagonal', colors: p, positions: [0, 50, 100] };
+                if (typeof currentUser !== 'undefined' && currentUser) currentUser.nameBgGradient = g;
+                if (typeof targetUser !== 'undefined' && targetUser) targetUser.nameBgGradient = g;
+                applyAllNameStyles();
+                updateNamePreview();
+                if (typeof saveToChat === 'function') saveToChat();
+                if (typeof toast === 'function') toast('✅ تم');
+            };
+            grid.appendChild(d);
+        });
+
+        // زر إزالة
+        var removeBtn = document.createElement('div');
+        removeBtn.className = 'picker-item';
+        removeBtn.style.gridColumn = '1 / -1';
+        removeBtn.innerHTML = '<div style="color:#ff7777;font-weight:900;font-size:13px;">🗑️ إزالة الخلفية</div>';
+        removeBtn.onclick = function () {
+            if (typeof currentUser !== 'undefined' && currentUser) currentUser.nameBgGradient = null;
+            if (typeof targetUser !== 'undefined' && targetUser) targetUser.nameBgGradient = null;
+            applyAllNameStyles();
+            updateNamePreview();
+            if (typeof saveToChat === 'function') saveToChat();
+            if (typeof toast === 'function') toast('✅ تم');
+        };
+        grid.appendChild(removeBtn);
+    } else if (_currentNameTab === 'glow') {
+        var glows = [
+            { id: 'none', name: 'بدون' },
+            { id: 'soft', name: 'خفيف' },
+            { id: 'medium', name: 'متوسط' },
+            { id: 'strong', name: 'قوي' }
+        ];
+        glows.forEach(function (g) {
+            var d = document.createElement('div');
+            d.className = 'picker-item';
+            if (user.nameGlow === g.id || (!user.nameGlow && g.id === 'none')) d.classList.add('selected');
             var p = document.createElement('div');
             p.className = 'picker-prev';
             p.style.color = '#ffd700';
-            p.innerText = realName;
+            p.innerText = user.name || 'اسمك';
             if (g.id === 'soft') p.style.textShadow = '0 0 4px #ffd700';
             else if (g.id === 'medium') p.style.textShadow = '0 0 6px #ffd700, 0 0 12px #ffd700';
             else if (g.id === 'strong') p.style.textShadow = '0 0 8px #ffd700, 0 0 16px #ffd700, 0 0 24px #ffd700';
@@ -512,19 +226,16 @@ function openNamePicker(tab) {
             d.style.flexDirection = 'column';
             d.appendChild(lbl);
             d.onclick = function () {
-                nameGlow = g.id;
-                localStorage.setItem('name_glow', g.id);
+                if (typeof currentUser !== 'undefined' && currentUser) currentUser.nameGlow = g.id === 'none' ? null : g.id;
+                if (typeof targetUser !== 'undefined' && targetUser) targetUser.nameGlow = g.id === 'none' ? null : g.id;
                 applyAllNameStyles();
-                updateGlowLbl();
+                updateNamePreview();
                 if (typeof saveToChat === 'function') saveToChat();
                 if (typeof toast === 'function') toast('✅ تم');
-                closeModal('name-picker-modal');
             };
             grid.appendChild(d);
         });
     }
-
-    openModal('name-picker-modal');
 }
 
 /* ══════════════════════════════════════════════ */
@@ -552,51 +263,218 @@ function applyBg() {
     layer.style.backgroundImage = '';
     layer.style.background = '';
     if (bgType === 'color') layer.style.background = bgValue || '#050508';
-    else if (bgType === 'image') layer.style.backgroundImage = 'url(' + bgValue + ')';
+    else if (bgType === 'image') {
+        layer.style.backgroundImage = 'url("' + bgValue + '")';
+        layer.style.backgroundSize = 'contain';
+        layer.style.backgroundPosition = 'center center';
+        layer.style.backgroundRepeat = 'no-repeat';
+        layer.style.background = 'url("' + bgValue + '") center center / contain no-repeat #050508';
+    }
     else if (bgType === 'video') {
         var v = document.createElement('video');
         v.src = bgValue;
         v.autoplay = true; v.loop = true; v.muted = true; v.playsInline = true;
+        v.style.cssText = 'width:100%;height:100%;object-fit:contain;background:#050508;position:absolute;inset:0;';
         layer.appendChild(v);
     }
 }
 
 /* ══════════════════════════════════════════════ */
-/* initAppearance — ربط الأزرار                   */
+/* Modal خلفية البروفايل                          */
+/* ══════════════════════════════════════════════ */
+function openProfileBgModal() {
+    var modal = document.getElementById('profile-bg-modal');
+    if (!modal) return;
+
+    modal.querySelectorAll('#bg-type-tabs .modal-tab').forEach(function (t) {
+        t.onclick = function () {
+            modal.querySelectorAll('#bg-type-tabs .modal-tab').forEach(function (x) { x.classList.remove('active'); });
+            t.classList.add('active');
+            renderBgContent(t.getAttribute('data-bg'));
+        };
+    });
+
+    renderBgContent('color');
+    modal.classList.add('active');
+}
+
+function renderBgContent(type) {
+    var area = document.getElementById('bg-content-area');
+    if (!area) return;
+    area.innerHTML = '';
+
+    if (type === 'color') {
+        // ⭐ منتقي لون فعلي
+        var wrap = document.createElement('div');
+        wrap.style.cssText = 'display:flex;flex-direction:column;gap:12px;padding:10px;';
+
+        var inputWrap = document.createElement('div');
+        inputWrap.style.cssText = 'display:flex;align-items:center;gap:12px;justify-content:center;padding:10px;background:rgba(0,0,0,0.3);border-radius:10px;';
+        var input = document.createElement('input');
+        input.type = 'color';
+        input.value = bgType === 'color' ? (bgValue || '#050508') : '#050508';
+        input.style.cssText = 'width:80px;height:60px;border:2px solid #ffd700;border-radius:10px;background:transparent;cursor:pointer;';
+        var code = document.createElement('div');
+        code.style.cssText = 'color:#fff;font-family:monospace;font-size:14px;font-weight:900;';
+        code.textContent = input.value;
+        input.oninput = function () { code.textContent = this.value; };
+        inputWrap.appendChild(input);
+        inputWrap.appendChild(code);
+        wrap.appendChild(inputWrap);
+
+        // عينات سريعة
+        var quick = document.createElement('div');
+        quick.style.cssText = 'display:grid;grid-template-columns:repeat(6,1fr);gap:6px;';
+        ['#050508','#0a0518','#1a0e2e','#4a148c','#8b0000','#000000',
+         '#d4af37','#ffd700','#ff006e','#00f5d4','#84cc16','#3b82f6'].forEach(function (c) {
+            var b = document.createElement('div');
+            b.style.cssText = 'aspect-ratio:1;border-radius:6px;cursor:pointer;border:2px solid rgba(255,215,0,0.3);background:' + c;
+            b.onclick = function () {
+                input.value = c;
+                code.textContent = c;
+            };
+            quick.appendChild(b);
+        });
+        wrap.appendChild(quick);
+
+        var saveBtn = document.createElement('button');
+        saveBtn.textContent = '✓ حفظ';
+        saveBtn.style.cssText = 'padding:12px;background:#84cc16;color:#fff;border:none;border-radius:10px;font-weight:900;font-size:14px;cursor:pointer;font-family:inherit;';
+        saveBtn.onclick = function () {
+            bgType = 'color';
+            bgValue = input.value;
+            localStorage.setItem('profile_bg_type', 'color');
+            localStorage.setItem('profile_bg_value', bgValue);
+            applyBg();
+            if (typeof saveToChat === 'function') saveToChat();
+            if (typeof toast === 'function') toast('✅ تم');
+            closeModal('profile-bg-modal');
+        };
+        wrap.appendChild(saveBtn);
+        area.appendChild(wrap);
+    } else if (type === 'image') {
+        var wrap2 = document.createElement('div');
+        wrap2.style.cssText = 'display:flex;flex-direction:column;gap:12px;padding:10px;';
+        var uploadBtn = document.createElement('button');
+        uploadBtn.textContent = '📤 اختيار صورة من الجهاز';
+        uploadBtn.style.cssText = 'padding:16px;background:linear-gradient(135deg,#d4af37,#b8860b);color:#000;border:none;border-radius:10px;font-weight:900;font-size:14px;cursor:pointer;font-family:inherit;';
+        uploadBtn.onclick = function () {
+            var inp = document.getElementById('profile-bg-input');
+            if (inp) {
+                inp.setAttribute('accept', 'image/*');
+                inp.click();
+            }
+        };
+        wrap2.appendChild(uploadBtn);
+
+        var urlInput = document.createElement('input');
+        urlInput.type = 'url';
+        urlInput.placeholder = 'أو الصق رابط صورة...';
+        urlInput.style.cssText = 'padding:12px;background:rgba(255,255,255,0.08);border:1px solid #ffd700;border-radius:10px;color:#fff;font-family:inherit;text-align:right;';
+        wrap2.appendChild(urlInput);
+
+        var saveBtn2 = document.createElement('button');
+        saveBtn2.textContent = '✓ حفظ الرابط';
+        saveBtn2.style.cssText = 'padding:12px;background:#84cc16;color:#fff;border:none;border-radius:10px;font-weight:900;font-size:14px;cursor:pointer;font-family:inherit;';
+        saveBtn2.onclick = function () {
+            var u = urlInput.value.trim();
+            if (!u) return;
+            bgType = 'image';
+            bgValue = u;
+            localStorage.setItem('profile_bg_type', 'image');
+            localStorage.setItem('profile_bg_value', u);
+            applyBg();
+            if (typeof saveToChat === 'function') saveToChat();
+            if (typeof toast === 'function') toast('✅ تم');
+            closeModal('profile-bg-modal');
+        };
+        wrap2.appendChild(saveBtn2);
+        area.appendChild(wrap2);
+    } else if (type === 'video') {
+        var wrap3 = document.createElement('div');
+        wrap3.style.cssText = 'display:flex;flex-direction:column;gap:12px;padding:10px;';
+        var uploadBtn2 = document.createElement('button');
+        uploadBtn2.textContent = '📤 اختيار فيديو من الجهاز';
+        uploadBtn2.style.cssText = 'padding:16px;background:linear-gradient(135deg,#d4af37,#b8860b);color:#000;border:none;border-radius:10px;font-weight:900;font-size:14px;cursor:pointer;font-family:inherit;';
+        uploadBtn2.onclick = function () {
+            var inp = document.getElementById('profile-bg-input');
+            if (inp) {
+                inp.setAttribute('accept', 'video/*');
+                inp.click();
+            }
+        };
+        wrap3.appendChild(uploadBtn2);
+        var note = document.createElement('div');
+        note.style.cssText = 'color:#888;font-size:11px;text-align:center;padding:8px;';
+        note.textContent = '⚠️ الفيديو من الجهاز فقط (حجم صغير)';
+        wrap3.appendChild(note);
+        area.appendChild(wrap3);
+    }
+}
+
+/* ══════════════════════════════════════════════ */
+/* initCover + initAvatar                        */
+/* ══════════════════════════════════════════════ */
+function initCover() {
+    var ci = document.getElementById('cover-file-input');
+    var cc = document.getElementById('btn-change-cover');
+    var rc = document.getElementById('btn-remove-cover');
+    var cimg = document.getElementById('profile-cover-img');
+    if (cc && ci) cc.onclick = function () { ci.click(); };
+    if (ci) ci.onchange = async function (e) {
+        var f = e.target.files[0]; if (!f) return;
+        var u = await uploadLoad(f, 5);
+        if (u) {
+            if (cimg) { cimg.src = u; cimg.style.display = 'block'; }
+            localStorage.setItem('saved_cover', u);
+            if (typeof saveToChat === 'function') saveToChat();
+        }
+    };
+    if (rc && cimg) rc.onclick = function () {
+        cimg.src = '';
+        cimg.style.display = 'none';
+        localStorage.removeItem('saved_cover');
+        if (currentUser && currentUser.uid && db) db.ref('users/' + currentUser.uid + '/cover').remove().catch(function () {});
+        if (typeof saveToChat === 'function') saveToChat();
+        if (typeof toast === 'function') toast('✅ تم');
+    };
+}
+
+function initAvatar() {
+    var ai = document.getElementById('avatar-file-input');
+    var ca = document.getElementById('btn-change-avatar');
+    var ra = document.getElementById('btn-remove-avatar');
+    var aimg = document.getElementById('profile-avatar-img');
+    if (ca && ai) ca.onclick = function () { ai.click(); };
+    if (ai) ai.onchange = async function (e) {
+        var f = e.target.files[0]; if (!f) return;
+        var u = await uploadLoad(f, 5);
+        if (u) {
+            if (aimg) aimg.src = u;
+            localStorage.setItem('saved_avatar', u);
+            if (typeof saveToChat === 'function') saveToChat();
+        }
+    };
+    if (ra && aimg) ra.onclick = function () {
+        aimg.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent((currentUser && currentUser.name) || 'User') + '&background=555&color=fff';
+        localStorage.removeItem('saved_avatar');
+        if (currentUser && currentUser.uid && db) db.ref('users/' + currentUser.uid + '/avatar').remove().catch(function () {});
+        if (typeof saveToChat === 'function') saveToChat();
+        if (typeof toast === 'function') toast('✅ تم');
+    };
+}
+
+/* ══════════════════════════════════════════════ */
+/* initAppearance                                */
 /* ══════════════════════════════════════════════ */
 function initAppearance() {
     if (typeof viewMode === 'undefined' || viewMode !== 'owner') return;
 
-    // أزرار الاسم
-    var bc = document.getElementById('btn-name-color');
-    if (bc) bc.onclick = function () { openNamePicker('color'); };
+    // ⭐ زر موحد لتخصيص الاسم
+    var bcn = document.getElementById('btn-customize-name');
+    if (bcn) bcn.onclick = function () { openNameCustomizeModal('color'); };
 
-    var bg = document.getElementById('btn-name-gradient');
-    if (bg) bg.onclick = function () { openNamePicker('gradient'); };
-
-    var bnf = document.getElementById('btn-name-shape') || document.getElementById('btn-name-bg');
-    if (bnf) bnf.onclick = function () { openNameBgModal(); };
-
-    var bgl = document.getElementById('btn-name-glow');
-    if (bgl) bgl.onclick = function () { openNamePicker('glow'); };
-
-    // حجم الاسم
-    var sizeSlider = document.getElementById('name-size-slider');
-    if (sizeSlider) {
-        sizeSlider.value = (typeof nameSize !== 'undefined') ? nameSize : 20;
-        sizeSlider.oninput = function () {
-            nameSize = parseInt(this.value);
-            localStorage.setItem('name_size', nameSize);
-            var el = document.getElementById('profile-username');
-            if (el) el.style.fontSize = nameSize + 'px';
-            var lbl = document.getElementById('name-size-label');
-            if (lbl) lbl.innerText = nameSize + 'px';
-        };
-        var lbl = document.getElementById('name-size-label');
-        if (lbl) lbl.innerText = ((typeof nameSize !== 'undefined') ? nameSize : 20) + 'px';
-    }
-
-    // حجم الإطار
+    // حجم الإطار فقط
     var frameSlider = document.getElementById('frame-size-slider');
     if (frameSlider) {
         frameSlider.value = (typeof frameInset !== 'undefined') ? frameInset : -8;
@@ -644,21 +522,9 @@ function initAppearance() {
 
     // خلفية البروفايل
     var bb = document.getElementById('btn-profile-bg');
-    if (bb) bb.onclick = function () {
-        openAppModal('تغيير خلفية البروفايل', 'اختر النوع:', 'select', ['لون','صورة','فيديو'], 'لون', function (v) {
-            if (v === 'صورة' || v === 'فيديو') {
-                var inp = document.getElementById('profile-bg-input');
-                if (inp) inp.click();
-            } else {
-                bgType = 'color'; bgValue = '#050508';
-                localStorage.setItem('profile_bg_type', 'color');
-                localStorage.setItem('profile_bg_value', '#050508');
-                applyBg();
-                if (typeof saveToChat === 'function') saveToChat();
-            }
-        });
-    };
+    if (bb) bb.onclick = function () { openProfileBgModal(); };
 
+    // استقبال ملف الخلفية
     var bi = document.getElementById('profile-bg-input');
     if (bi) bi.onchange = async function (e) {
         var f = e.target.files[0];
@@ -671,6 +537,7 @@ function initAppearance() {
                 localStorage.setItem('profile_bg_value', bgValue);
                 applyBg();
                 if (typeof saveToChat === 'function') saveToChat();
+                closeModal('profile-bg-modal');
             };
             r.readAsDataURL(f);
             return;
@@ -682,6 +549,7 @@ function initAppearance() {
             localStorage.setItem('profile_bg_value', u);
             applyBg();
             if (typeof saveToChat === 'function') saveToChat();
+            closeModal('profile-bg-modal');
         }
     };
 
@@ -715,46 +583,86 @@ function initAppearance() {
             renderFramesGrid(document.getElementById('frames-container'));
         }
     };
+
+    // أزرار الغلاف والأفاتار
+    initCover();
+    initAvatar();
+
+    // زر مغادرة الغرفة
+    var lrb = document.getElementById('btn-leave-room');
+    if (lrb) lrb.onclick = function () {
+        if (!confirm('مغادرة الغرفة؟')) return;
+        try {
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({ action: 'leaveRoom' }, '*');
+            }
+        } catch(e) {}
+        try { window.parent.postMessage({ action: 'closeProfile' }, '*'); } catch(e) {}
+    };
+
+    // حذف الحساب
+    var dab = document.getElementById('btn-delete-account');
+    if (dab) dab.onclick = function () {
+        if (!confirm('⚠️ حذف الحساب نهائياً؟')) return;
+        var email = prompt('اكتب إيميلك للتأكيد:');
+        if (!email) return;
+        if (typeof logout === 'function') logout().then(function() { location.reload(); });
+    };
 }
 
 /* ══════════════════════════════════════════════ */
-/* عند التحميل — تطبيق التأثيرات المحفوظة          */
+/* زر تبديل الوضع (مالك/زائر)                     */
 /* ══════════════════════════════════════════════ */
-window.addEventListener('load', function () {
-    setTimeout(function () {
-        // اقرأ خلفية الاسم من currentUser
-        if (typeof currentUser !== 'undefined' && currentUser && currentUser.nameBgGradient) {
-            var g = currentUser.nameBgGradient;
-            NameBgState.enabled = g.enabled !== false;
-            NameBgState.direction = g.direction || 'diagonal';
-            NameBgState.colors = (g.colors && g.colors.length === 3) ? g.colors.slice() : NameBgState.colors;
-            NameBgState.positions = (g.positions && g.positions.length === 3) ? g.positions.slice() : NameBgState.positions;
+function setupModeToggle() {
+    var btn = document.getElementById('btn-mode-toggle');
+    if (!btn) return;
+    if (btn.__setup) return;
+    btn.__setup = true;
+
+    btn.onclick = function () {
+        if (typeof viewMode === 'undefined') return;
+        if (viewMode === 'owner') {
+            // التبديل لوضع الزائر
+            var uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
+            if (!uid) return;
+            if (typeof currentUser !== 'undefined' && currentUser) {
+                localStorage.setItem('profile_target_data_' + uid, JSON.stringify(currentUser));
+            }
+            location.href = 'profile.html?uid=' + uid;
+        } else {
+            // عودة للمالك
+            location.href = 'profile.html?owner=1';
         }
-        applyAllNameStyles();
-    }, 600);
-});
+    };
+}
 
 /* ══════════════════════════════════════════════ */
-/* تصدير                                         */
+/* زر الطي (وضع الزائر)                          */
 /* ══════════════════════════════════════════════ */
-window.openNameBgModal = openNameBgModal;
-window.closeNameBgModal = closeNameBgModal;
-window.applyAndSaveNameBg = applyAndSaveNameBg;
-window.removeNameBg = removeNameBg;
-window.setColor = setColor;
-window.setPosition = setPosition;
-window.setDirection = setDirection;
-window.updatePreview = updatePreview;
-window.NameBgState = NameBgState;
+function setupCollapseToggle() {
+    var btn = document.getElementById('btn-collapse-info');
+    if (!btn) return;
+    if (btn.__setup) return;
+    btn.__setup = true;
+
+    btn.onclick = function () {
+        var isCollapsed = document.body.classList.toggle('visitor-collapsed');
+        btn.textContent = isCollapsed ? '👁️' : '👁️‍🗨️';
+        btn.title = isCollapsed ? 'إظهار المعلومات' : 'طي المعلومات';
+    };
+}
+
+/* ══════════════════════════════════════════════ */
+/* Exports                                       */
+/* ══════════════════════════════════════════════ */
 window.applyAllNameStyles = applyAllNameStyles;
-window.applyNameColor = applyNameColor;
-window.applyNameGradient = applyNameGradient;
-window.applyNameGlow = applyNameGlow;
-window.applyNameBg = applyNameBg;
-window.updateGlowLbl = updateGlowLbl;
 window.applyGlow = applyGlow;
 window.applyBg = applyBg;
-window.openNamePicker = openNamePicker;
 window.initAppearance = initAppearance;
+window.openNameCustomizeModal = openNameCustomizeModal;
+window.openProfileBgModal = openProfileBgModal;
+window.setupModeToggle = setupModeToggle;
+window.setupCollapseToggle = setupCollapseToggle;
+window.NameBgState = NameBgState;
 
-console.log('✅ profile-appearance.js v9 loaded — built on NameEffects');
+console.log('✅ profile-appearance.js v11 loaded');
