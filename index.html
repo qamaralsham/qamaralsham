@@ -575,6 +575,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // ⭐ v3: تحديث ظهور زر الإبلاغات وزر ⚙️ حسب الرتبة
     setInterval(_updateHeaderButtons, 2000);
     setTimeout(_updateHeaderButtons, 1000);
+
+    // ⭐ v3: عند الدخول الأول، دخل مباشرة للغرفة الأخيرة (لا نافذة اختيار)
+    // ملاحظة: شاشة اختيار الغرف ستُضاف لاحقاً كملف منفصل (room-picker.js)
 });
 
 /* ⭐ v3: تحديث أزرار الهيدر حسب الرتبة */
@@ -616,8 +619,11 @@ function openRoomSettings() {
 
 /* ⭐ v3: فتح لوحة الإبلاغات */
 function openReportsPanel() {
-    if (typeof ReportsUI !== 'undefined' && ReportsUI.open) {
-        ReportsUI.open();
+    // نفتح غرفة الملك على تبويب الإبلاغات
+    if (typeof KingRoom !== 'undefined' && KingRoom.open) {
+        // نحتاج نوجهه لتبويب الإبلاغات
+        if (typeof window.__krSetTab === 'function') window.__krSetTab('reports');
+        KingRoom.open();
     } else if (typeof showToast === 'function') {
         showToast('fa-exclamation-triangle', '🚨 قريباً');
     }
@@ -672,6 +678,7 @@ window._updateHeaderButtons = _updateHeaderButtons;
 <script defer src="dice.js?v=33"></script>
 <script defer src="chat-fixes.js?v=33"></script>
 <script defer src="invisible-mode.js?v=33"></script>
+<script defer src="stories.js?v=33"></script>
 
 <script>
 let selectedGender = 'male';
