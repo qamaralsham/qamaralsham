@@ -6,13 +6,15 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#050508">
-<title>Qamar Profile v6</title>
+<title>قمر الشام — البروفايل</title>
 
+<!-- كشف فوري -->
 <script>
 (function() {
     var startTime = Date.now();
     var revealed = false;
     var interval = null;
+
     function tryReveal() {
         if (revealed) return true;
         var p = document.getElementById('profile-container');
@@ -23,9 +25,16 @@
         if (interval) { clearInterval(interval); interval = null; }
         return true;
     }
+
     interval = setInterval(function() {
-        if (tryReveal()) { if (interval) { clearInterval(interval); interval = null; } return; }
-        if (Date.now() - startTime > 1500) { if (interval) { clearInterval(interval); interval = null; } tryReveal(); }
+        if (tryReveal()) {
+            if (interval) { clearInterval(interval); interval = null; }
+            return;
+        }
+        if (Date.now() - startTime > 1500) {
+            if (interval) { clearInterval(interval); interval = null; }
+            tryReveal();
+        }
     }, 30);
 })();
 </script>
@@ -49,23 +58,28 @@
 <input type="file" id="music-file-input" accept="audio/*" style="display:none">
 
 <div class="profile" id="profile-container" style="opacity:0;">
+
+    <!-- خلفية البروفايل -->
     <div id="profile-bg-layer" class="bg-layer"></div>
 
+    <!-- ═══ الغلاف ═══ -->
     <div class="cover" id="profile-cover-box">
         <div class="cover-moon"></div>
         <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600" class="cover-img" id="profile-cover-img">
 
+        <!-- أزرار اليسار (owner: كاميرا) -->
         <div class="cover-edit owner-only">
-            <button type="button" class="del-cov" id="btn-remove-cover" title="إزالة">✕ إزالة</button>
-            <button type="button" id="btn-change-cover" title="تغيير">🖼️ تغيير</button>
+            <button type="button" class="del-cov" id="btn-remove-cover" title="إزالة">✕</button>
+            <button type="button" id="btn-change-cover" title="تغيير">🖼️</button>
         </div>
 
+        <!-- أزرار اليمين (طي + إغلاق) -->
         <div class="top-btns">
-            <button id="btn-mode-toggle" title="معاينة كزائر" type="button">👁️</button>
-            <button id="btn-collapse-info" title="طي المعلومات" type="button">👁️‍🗨️</button>
-            <button id="btn-close" title="إغلاق" type="button">✕</button>
+            <button id="btn-collapse-info" title="طي المعلومات">👁️</button>
+            <button id="btn-close" title="إغلاق">✕</button>
         </div>
 
+        <!-- الأفاتار -->
         <div class="avatar-cont">
             <div class="avatar-box" id="avatar-box">
                 <div class="avatar">
@@ -79,10 +93,12 @@
             </div>
         </div>
 
+        <!-- زر الموسيقى (visitor only) -->
         <button class="music-toggle-mini" id="music-btn-mini" style="display:none" title="تشغيل الموسيقى" type="button">
             <i class="fas fa-play"></i>
         </button>
 
+        <!-- الهوية -->
         <div class="header">
             <div class="role">
                 <span class="status-dot" id="status-dot"></span>
@@ -101,6 +117,7 @@
         <div class="cover-fade"></div>
     </div>
 
+    <!-- ═══ الأزرار التفاعلية (visitor only) ═══ -->
     <div class="interact-btns visitor-only" style="display:none">
         <button id="btn-heart" title="إعجاب">❤️</button>
         <button id="btn-mail" title="رسالة">💬</button>
@@ -110,16 +127,22 @@
         <button id="btn-admin-actions" style="display:none" title="أوامر إدارية">⚔️</button>
     </div>
 
+    <!-- ═══ منطقة المحتوى ═══ -->
     <div class="main-content">
+
+        <!-- التبويبات (تُبنى من profile-core.js) -->
         <div class="tabs" id="tabsBar"></div>
 
-        <div class="poetry-box owner-only" style="display:none;padding:10px 12px;margin:8px 12px;background:rgba(20,15,35,0.6);border:1px dashed rgba(255,215,0,0.4);border-radius:12px;">
-            <textarea id="poetry-input" placeholder="اكتب بيتاً من الشعر..." maxlength="300" style="width:100%;min-height:50px;background:transparent;border:none;color:#d4af37;font-family:'Amiri',serif;font-size:15px;font-style:italic;text-align:center;outline:none;resize:none;"></textarea>
-            <div id="poetry-display" style="text-align:center;color:#d4af37;font-family:'Amiri',serif;font-size:15px;font-style:italic;line-height:1.6;"></div>
+        <!-- صندوق الشعر (owner only) -->
+        <div class="poetry-box">
+            <textarea id="poetry-input" class="poetry-in owner-only" placeholder="اكتب بيتاً من الشعر..." maxlength="300"></textarea>
+            <div id="poetry-display" class="poetry-disp"></div>
         </div>
 
+        <!-- صندوق المحتوى -->
         <div class="scroll-box">
 
+            <!-- 🏠 الرئيسية -->
             <div class="tab-content active" data-content="home">
                 <div class="stats">
                     <div class="stat"><span class="stat-icon">❤️</span><span class="stat-value" id="stat-likes">0</span><span class="stat-label">إعجاب</span></div>
@@ -129,8 +152,8 @@
                 </div>
 
                 <div class="section owner-only">
-                    <div class="section-title"><h3><i class="fas fa-eye"></i> آخر الزوار</h3></div>
-                    <div id="visitors-container"><div class="empty">لا يوجد زوار</div></div>
+                    <div class="section-title"><h3><i class="fas fa-eye"></i> آخر الزوار</h3><span class="more">الكل ←</span></div>
+                    <div id="visitors-container" class="section-title" style="border:none; padding:0;"><div class="empty">لا يوجد زوار</div></div>
                 </div>
 
                 <div class="section">
@@ -143,13 +166,34 @@
                         <div class="achievement"><span class="achievement-icon">❤️</span><span class="achievement-name">100 إعجاب</span></div>
                     </div>
                 </div>
+
+                <div class="section owner-only">
+                    <div class="section-title"><h3><i class="fas fa-history"></i> نشاطك الحديث</h3></div>
+                    <div id="activity-owner-container">
+                        <div class="activity-item" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(20,15,35,0.98);border:1px solid rgba(212,175,55,0.2);border-radius:11px;margin-bottom:7px;">
+                            <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,rgba(212,175,55,0.3),rgba(212,175,55,0.1));border:1px solid var(--border-gold);display:flex;align-items:center;justify-content:center;font-size:15px;">🏆</div>
+                            <div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:#fff;">إنجاز جديد: 50 إجابة صحيحة</div><div style="font-size:9.5px;color:#9ca3af;">قبل ساعتين</div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section visitor-only">
+                    <div class="section-title"><h3><i class="fas fa-fire"></i> نشاطه الأخير</h3></div>
+                    <div id="activity-visitor-container">
+                        <div class="activity-item" style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(20,15,35,0.98);border:1px solid rgba(212,175,55,0.2);border-radius:11px;margin-bottom:7px;">
+                            <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,rgba(212,175,55,0.3),rgba(212,175,55,0.1));border:1px solid var(--border-gold);display:flex;align-items:center;justify-content:center;font-size:15px;">🏆</div>
+                            <div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:#fff;">حصل على إنجاز جديد</div><div style="font-size:9.5px;color:#9ca3af;">قبل ساعتين</div></div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
+            <!-- 📸 اللحظات -->
             <div class="tab-content" data-content="moments">
                 <div class="section">
                     <div class="section-title"><h3><i class="fas fa-circle-notch"></i> اللحظات</h3></div>
                     <div class="moments-grid">
-                        <div class="moment-tile add owner-only">
+                        <div class="moment-tile add owner-only" onclick="if(typeof openStoryPublish==='function')openStoryPublish()">
                             <div class="moment-tile-icon">＋</div>
                             <div class="moment-tile-name">أضف لحظة</div>
                         </div>
@@ -157,6 +201,7 @@
                 </div>
             </div>
 
+            <!-- 👥 الأصدقاء -->
             <div class="tab-content" data-content="friends">
                 <div class="section">
                     <div class="section-title"><h3><i class="fas fa-user-friends"></i> الأصدقاء</h3></div>
@@ -166,13 +211,14 @@
                 </div>
             </div>
 
+            <!-- ⚙️ الإعدادات (owner only) -->
             <div class="tab-content" data-content="settings">
                 <div class="section">
                     <div class="settings-block">
                         <h4><i class="fas fa-lock"></i> الخصوصية</h4>
                         <div class="setting-row">
                             <span class="setting-label">البريد الإلكتروني</span>
-                            <select class="setting-select priv-sel" id="privacy-email" data-field="email">
+                            <select class="setting-select" id="privacy-email" data-field="email">
                                 <option value="public" selected>🌍 الجميع</option>
                                 <option value="friends">👥 الأصدقاء</option>
                                 <option value="private">🔒 أنا فقط</option>
@@ -180,7 +226,7 @@
                         </div>
                         <div class="setting-row">
                             <span class="setting-label">العمر</span>
-                            <select class="setting-select priv-sel" id="privacy-age" data-field="age">
+                            <select class="setting-select" id="privacy-age" data-field="age">
                                 <option value="public" selected>🌍 الجميع</option>
                                 <option value="friends">👥 الأصدقاء</option>
                                 <option value="private">🔒 أنا فقط</option>
@@ -188,7 +234,7 @@
                         </div>
                         <div class="setting-row">
                             <span class="setting-label">الجنس</span>
-                            <select class="setting-select priv-sel" id="privacy-gender" data-field="gender">
+                            <select class="setting-select" id="privacy-gender" data-field="gender">
                                 <option value="public" selected>🌍 الجميع</option>
                                 <option value="friends">👥 الأصدقاء</option>
                                 <option value="private">🔒 أنا فقط</option>
@@ -196,7 +242,7 @@
                         </div>
                         <div class="setting-row">
                             <span class="setting-label">الرسائل</span>
-                            <select class="setting-select priv-sel" id="privacy-messages" data-field="messages">
+                            <select class="setting-select" id="privacy-messages" data-field="messages">
                                 <option value="public" selected>🌍 الجميع</option>
                                 <option value="friends">👥 الأصدقاء</option>
                                 <option value="private">🔒 أنا فقط</option>
@@ -204,7 +250,7 @@
                         </div>
                         <div class="setting-row">
                             <span class="setting-label">قائمة الأصدقاء</span>
-                            <select class="setting-select priv-sel" id="privacy-friends" data-field="friends">
+                            <select class="setting-select" id="privacy-friends" data-field="friends">
                                 <option value="public" selected>🌍 الجميع</option>
                                 <option value="friends">👥 الأصدقاء</option>
                                 <option value="private">🔒 أنا فقط</option>
@@ -214,14 +260,17 @@
 
                     <div class="settings-block">
                         <h4><i class="fas fa-palette"></i> المظهر</h4>
-
+                        <div class="setting-row"><span class="setting-label">لون الاسم</span><span class="setting-value"><span class="setting-link" id="btn-name-color">تغيير ←</span></span></div>
+                        <div class="setting-row"><span class="setting-label">تدرج الاسم</span><span class="setting-value"><span class="setting-link" id="btn-name-gradient">تغيير ←</span></span></div>
+                        <div class="setting-row"><span class="setting-label">خلفية الاسم</span><span class="setting-value"><span class="setting-link" id="btn-name-shape">تغيير ←</span></span></div>
+                        <div class="setting-row"><span class="setting-label">توهج الاسم</span><span class="setting-value"><span class="setting-link" id="btn-name-glow">تغيير ←</span></span></div>
                         <div class="setting-row">
-                            <span class="setting-label">🎨 تخصيص الاسم</span>
-                            <span class="setting-value">
-                                <span class="setting-link" id="btn-customize-name">فتح ←</span>
+                            <span class="setting-label">حجم الاسم</span>
+                            <span class="setting-value" style="gap:6px;">
+                                <input type="range" id="name-size-slider" min="12" max="40" value="20" style="width:80px;accent-color:#ffd700;">
+                                <span id="name-size-label" style="font-size:11px;min-width:36px;">20px</span>
                             </span>
                         </div>
-
                         <div class="setting-row">
                             <span class="setting-label">حجم الإطار</span>
                             <span class="setting-value" style="gap:6px;">
@@ -229,16 +278,11 @@
                                 <span id="frame-size-label" style="font-size:11px;min-width:36px;">-8%</span>
                             </span>
                         </div>
-
                         <div class="setting-row"><span class="setting-label">توهج البروفايل</span><span class="setting-value"><span class="setting-link" id="btn-profile-glow">تغيير ←</span></span></div>
-
-                        <div class="setting-row">
-                            <span class="setting-label">خلفية البروفايل</span>
-                            <span class="setting-value"><span class="setting-link" id="btn-profile-bg">تغيير ←</span></span>
-                        </div>
-
+                        <div class="setting-row"><span class="setting-label">خلفية البروفايل</span><span class="setting-value"><span class="setting-link" id="btn-profile-bg">تغيير ←</span></span></div>
                         <div class="setting-row"><span class="setting-label">الموسيقى</span><span class="setting-value"><span class="setting-link" id="btn-profile-music">اختيار ←</span></span></div>
                         <div class="setting-row"><span class="setting-label">إطار الأفاتار</span><span class="setting-value"><span class="setting-link" id="avatar-frame-motion">تغيير ←</span></span></div>
+                        <div class="setting-row"><span class="setting-label">وضع الزائر</span><span class="setting-value"><span class="setting-link" id="btn-visitor-view">معاينة ←</span></span></div>
                     </div>
 
                     <div class="settings-block">
@@ -276,30 +320,29 @@
                 </div>
             </div>
 
+            <!-- ⚔️ الأوامر (visitor admin+ only) -->
             <div class="tab-content" data-content="admin">
-                <div class="section"></div>
+                <div class="section">
+                    <!-- يُبنى من profile-core.js -->
+                </div>
             </div>
 
         </div>
     </div>
 </div>
 
-<div class="modal" id="name-customize-modal">
+<!-- ═══ Modals ═══ -->
+<div class="modal" id="name-picker-modal">
     <div class="modal-c">
-        <h3>🎨 تخصيص الاسم</h3>
-        <div id="name-preview-box" style="padding:14px;background:rgba(0,0,0,0.4);border-radius:10px;margin-bottom:10px;">
-            <div id="name-preview-el" style="font-size:20px;font-weight:900;text-align:center;">اسمك هنا</div>
+        <h3>تخصيص الاسم</h3>
+        <div class="modal-tabs" id="name-tabs">
+            <div class="modal-tab active" data-pick="color">لون</div>
+            <div class="modal-tab" data-pick="gradient">تدرج</div>
+            <div class="modal-tab" data-pick="shape">خلفية</div>
+            <div class="modal-tab" data-pick="glow">توهج</div>
         </div>
-        <div class="modal-tabs" id="name-customize-tabs">
-            <div class="modal-tab active" data-pick="color">🎨 لون</div>
-            <div class="modal-tab" data-pick="gradient">🌈 تدرج</div>
-            <div class="modal-tab" data-pick="bg">🔲 خلفية</div>
-            <div class="modal-tab" data-pick="glow">✨ توهج</div>
-        </div>
-        <div class="picker-grid" id="name-customize-grid"></div>
-        <div class="modal-btns">
-            <button class="cancel" onclick="closeModal('name-customize-modal')">إغلاق</button>
-        </div>
+        <div class="picker-grid" id="name-picker-grid"></div>
+        <div class="modal-btns"><button class="cancel" onclick="closeModal('name-picker-modal')">إغلاق</button></div>
     </div>
 </div>
 
@@ -308,21 +351,6 @@
         <h3>اختر لون التوهج</h3>
         <div class="colors-grid" id="profile-glow-grid"></div>
         <div class="modal-btns"><button class="cancel" id="glow-off-btn">إيقاف</button><button class="cancel" onclick="closeModal('profile-glow-modal')">إغلاق</button></div>
-    </div>
-</div>
-
-<div class="modal" id="profile-bg-modal">
-    <div class="modal-c">
-        <h3>خلفية البروفايل</h3>
-        <div class="modal-tabs" id="bg-type-tabs">
-            <div class="modal-tab active" data-bg="color">🎨 لون</div>
-            <div class="modal-tab" data-bg="image">🖼️ صورة</div>
-            <div class="modal-tab" data-bg="video">🎥 فيديو</div>
-        </div>
-        <div id="bg-content-area"></div>
-        <div class="modal-btns">
-            <button class="cancel" onclick="closeModal('profile-bg-modal')">إغلاق</button>
-        </div>
     </div>
 </div>
 
@@ -345,14 +373,14 @@
 
 <audio id="music-player" loop></audio>
 
-<script src="config.js?v=42"></script>
-<script src="ranks.js?v=42"></script>
-<script src="utils.js?v=42"></script>
-<script src="name-effects.js?v=42"></script>
-<script src="frames-engine.js?v=42"></script>
-<script src="stories.js?v=42"></script>
-<script src="profile-core.js?v=42"></script>
-<script src="profile-appearance.js?v=42"></script>
+<script src="config.js?v=36"></script>
+<script src="ranks.js?v=36"></script>
+<script src="utils.js?v=36"></script>
+<script src="name-effects.js?v=36"></script>
+<script src="frames-engine.js?v=36"></script>
+<script src="stories.js?v=36"></script>
+<script src="profile-core.js?v=36"></script>
+<script src="profile-appearance.js?v=36"></script>
 
 <script>
 if ('serviceWorker' in navigator) {
