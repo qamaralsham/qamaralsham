@@ -1,5 +1,5 @@
 // ==============================================
-// chat.js v3.9 — بنية v3.7 + 15 رسالة + نجوم متأخرة
+// chat.js v3.10 — بنية v3.9 + hidden messages + welcome delete
 // ==============================================
 
 const ChatState = {
@@ -171,12 +171,37 @@ function applyRoomBackground(roomId) {
                     container.style.setProperty('background', bgValue, 'important');
                 }
             }
+            // ⭐ خط الرسائل
+            applyRoomFont(c);
         }).catch(function () {});
     }
 }
 
+/* ⭐ v3.10: تطبيق لون/حجم خط الشات */
+function applyRoomFont(settings) {
+    var container = document.getElementById('messages');
+    if (!container) return;
+    var fontColor = settings && settings.fontColor;
+    var fontSize = settings && settings.fontSize;
+    if (fontColor && safeColor(fontColor)) {
+        container.style.setProperty('--chat-font-color', fontColor);
+    } else {
+        container.style.removeProperty('--chat-font-color');
+    }
+    if (fontSize && parseInt(fontSize) >= 12 && parseInt(fontSize) <= 28) {
+        container.style.setProperty('--chat-font-size', parseInt(fontSize) + 'px');
+    } else {
+        container.style.removeProperty('--chat-font-size');
+    }
+    // نحدّث الرسائل الموجودة
+    container.querySelectorAll('.message-text').forEach(function(el) {
+        el.style.color = fontColor || '';
+    });
+}
+
 window.applyRoomSettings = applyRoomSettings;
 window.applyRoomBackground = applyRoomBackground;
+window.applyRoomFont = applyRoomFont;
 
 function startPunishmentWatcher() {
     const user = getCurrentUser();
@@ -236,7 +261,6 @@ function initChat(){
         }
     }
 
-    // ⭐⭐⭐ v3.9: التشغيل الفوري (بنية v3.7)
     startMessagesListener();
     startNotificationsListener();
     startPrivateChatsListener();
@@ -248,7 +272,6 @@ function initChat(){
     startPunishmentWatcher();
     if(typeof applyRoomBackground==='function'){applyRoomBackground(ChatState.currentRoom);}
 
-    // ⭐⭐⭐ v3.9: النجوم والخلفية - آخر شيء (بعد 900ms)
     setTimeout(function() {
         var sb = localStorage.getItem(QAMAR.STORAGE_KEYS.BACKGROUND);
         if (sb && typeof changeBackground === 'function') changeBackground(sb);
@@ -282,6 +305,11 @@ function buildRoomsList(){
         const item=document.createElement('div');item.className='sidebar-item';item.setAttribute('data-room-id',room.id);
         const i=document.createElement('span');i.innerText=room.icon;
         const n=document.createElement('span');n.innerText=room.name;
+        // ⭐ لون اسم الغرفة
+        if (room.nameColor && typeof safeColor === 'function') {
+            const col = safeColor(room.nameColor);
+            if (col) n.style.color = col;
+        }
         item.appendChild(i);item.appendChild(n);
         if(room.id===ChatState.currentRoom)item.classList.add('active');
         item.onclick=()=>switchRoom(room.id,room.name+' '+room.icon);
@@ -319,7 +347,7 @@ function switchRoom(roomId,roomTitle){
     closeAllPanels();
 }
 
-/* ⭐⭐⭐ v3.9: 15 رسالة بدل 30 */
+/* ⭐ v3.10: تمرير _fbKey */
 function startMessagesListener(){
     if(!db)return;
     if(ChatState.messagesListener)ChatState.messagesListener.off();
@@ -332,10 +360,23 @@ function startMessagesListener(){
         if(msg.senderUid&&isBlocked(msg.senderUid))return;
         const key=roomId+'_'+s.key;
         if(!ChatState.seenMessages.has(key)){ChatState.seenMessages.add(key);displayMessage(msg,s.key);if(msg.mentions&&msg.mentions.includes(user.name))playBirdSound()}
-        if(typeof processIncomingMessage==='function'){try{processIncomingMessage(Object.assign({},msg,{_key:key})).catch(e=>console.warn(e))}catch(e){}}
+        // ⭐ v3.10: تمرير _fbKey
+        if(typeof processIncomingMessage==='function'){try{processIncomingMessage(Object.assign({},msg,{_key:key,_fbKey:s.key})).catch(e=>console.warn(e))}catch(e){}}
     });
     ref.on('child_changed',s=>{
-        const msg=s.val();const el=document.querySelector('[data-msg-id="'+s.key+'"]');
+        const msg=s.val();
+        const el=document.querySelector('[data-msg-id="'+s.key+'"]');
+        if (msg && msg.hidden === true) {
+            const u = getCurrentUser();
+            if (u && (u.rank === 'King' || u.rank === 'Queen')) {
+                // الملك يرى الإطار التحذيري — نعيد البناء
+                if (el) el.remove();
+                displayMessage(msg, s.key);
+            } else {
+                if (el) el.remove();
+            }
+            return;
+        }
         if(el&&msg){
             if(msg.deleted){el.classList.add('deleted');const t=el.querySelector('.message-text');if(t)t.innerText='🚫 رسالة محذوفة'}
             else if(msg.edited){const t=el.querySelector('.message-text');if(t)t.innerText=msg.text}
@@ -393,9 +434,61 @@ async function openProfileByCode(code){
     }catch(e){showToast('fa-exclamation-circle','⚠️ خطأ')}
 }
 
+/* ⭐ v3.10: عرض الرسالة المخفية للملك/الملكة */
+function _buildHiddenMessageEl(msg, msgId) {
+    const container = document.getElementById('messages');
+    if (!container) return;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'message hidden-message-king';
+    wrapper.setAttribute('data-msg-id', msgId);
+    wrapper.setAttribute('data-sender', msg.senderName || '');
+    wrapper.setAttribute('data-sender-uid', msg.senderUid || '');
+    wrapper.style.cssText = 'background:linear-gradient(135deg,rgba(120,0,0,0.35),rgba(0,0,0,0.5));border:2px solid #ff4444;border-radius:12px;padding:12px;margin:8px 0;font-family:Cairo,sans-serif;';
+
+    const header = document.createElement('div');
+    header.style.cssText = 'color:#ff6666;font-weight:900;font-size:12px;margin-bottom:8px;display:flex;align-items:center;gap:6px;';
+    header.innerHTML = '⚠️ <span>رسالة مخفية</span>';
+
+    const senderLine = document.createElement('div');
+    senderLine.style.cssText = 'color:#fff;font-weight:900;font-size:13px;margin-bottom:6px;';
+    senderLine.textContent = (msg.senderName || 'مجهول') + ':';
+
+    const textLine = document.createElement('div');
+    textLine.style.cssText = 'color:#ffcccc;font-size:13px;line-height:1.5;background:rgba(0,0,0,0.4);padding:8px;border-radius:8px;margin-bottom:8px;word-break:break-word;text-decoration:line-through;text-decoration-color:rgba(255,68,68,0.6);';
+    textLine.textContent = msg.text || msg.originalText || '—';
+
+    const infoLine = document.createElement('div');
+    infoLine.style.cssText = 'color:#ff9999;font-size:10px;display:flex;gap:12px;flex-wrap:wrap;';
+    const hiddenBy = msg.hiddenBy === 'guardian' ? '🚔 السجان' : (msg.hiddenByName || 'مشرف');
+    const timeStr = (typeof formatTime === 'function') ? formatTime(msg.hiddenAt || msg.time) : '';
+    infoLine.innerHTML = '<span>🗑️ حذفها: ' + hiddenBy + '</span><span>🕐 ' + timeStr + '</span>';
+
+    wrapper.appendChild(header);
+    wrapper.appendChild(senderLine);
+    wrapper.appendChild(textLine);
+    wrapper.appendChild(infoLine);
+    container.appendChild(wrapper);
+    container.scrollTop = container.scrollHeight;
+}
+
 function displayMessage(msg,msgId){
     const container=document.getElementById('messages');if(!container)return;
     const user=getCurrentUser();
+
+    // ⭐ v3.10: معالجة الرسائل المخفية
+    if (msg.hidden === true) {
+        var uLevel = 0;
+        if (user) {
+            uLevel = user.rankLevel || (typeof getRankLevel === 'function' ? getRankLevel(user.rank) : 0);
+        }
+        var canSee = user && (user.rank === 'King' || user.rank === 'Queen' || uLevel >= 95);
+        if (canSee) {
+            _buildHiddenMessageEl(msg, msgId);
+        }
+        return;
+    }
+
     const isBot=msg.isBot===true;
     const msgEl=document.createElement('div');
     msgEl.className='message'+(isBot?' bot':'');
@@ -458,6 +551,11 @@ function displayMessage(msg,msgId){
             msgText.textContent=msg.text||'';
         }
     }
+    // ⭐ v3.10: تطبيق لون الخط من إعدادات الغرفة
+    const _fontColor = msg._roomFontColor || (QAMAR.ROOMS[ChatState.currentRoom] && QAMAR.ROOMS[ChatState.currentRoom].fontColor);
+    if (_fontColor && safeColor(_fontColor)) {
+        msgText.style.color = _fontColor;
+    }
     content.appendChild(header);content.appendChild(msgText);
 
     if(msg.attachment&&!msg.deleted){const a=buildAttachmentElement(msg.attachment);if(a)content.appendChild(a)}
@@ -484,9 +582,51 @@ function displayMessage(msg,msgId){
     content.appendChild(reactions);
 
     msgEl.appendChild(aw);msgEl.appendChild(content);
+
+    // ⭐ v3.10: زر ✕ لحذف رسالة الترحيب
+    if (msg.isWelcome === true && user) {
+        var uLevel2 = user.rankLevel || (typeof getRankLevel === 'function' ? getRankLevel(user.rank) : 0);
+        var canDeleteWelcome = (msg.welcomeFor === user.uid) || (uLevel2 >= 80) || user.rank === 'King' || user.rank === 'Queen';
+        if (canDeleteWelcome) {
+            var delBtn = document.createElement('button');
+            delBtn.type = 'button';
+            delBtn.className = 'welcome-del-btn';
+            delBtn.textContent = '✕';
+            delBtn.title = 'حذف رسالة الانضمام';
+            delBtn.style.cssText = 'position:absolute;top:6px;left:6px;width:24px;height:24px;border-radius:50%;background:rgba(255,68,68,0.85);color:#fff;border:2px solid #050508;font-weight:900;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1;z-index:5;';
+            delBtn.onclick = function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                _hideWelcomeMessage(msgId, msgEl);
+            };
+            msgEl.style.position = 'relative';
+            msgEl.appendChild(delBtn);
+        }
+    }
+
     container.appendChild(msgEl);
     container.scrollTop=container.scrollHeight;
 }
+
+/* ⭐ v3.10: إخفاء رسالة الترحيب */
+async function _hideWelcomeMessage(msgId, msgEl) {
+    if (!confirm('حذف رسالة الانضمام؟')) return;
+    var roomId = (typeof ChatState !== 'undefined' && ChatState.currentRoom) || 'general';
+    try {
+        await db.ref('room_messages/' + roomId + '/' + msgId).update({
+            hidden: true,
+            hiddenBy: getCurrentUser() && getCurrentUser().uid,
+            hiddenByName: (getCurrentUser() && getCurrentUser().name) || 'مشرف',
+            hiddenAt: Date.now(),
+            hiddenReason: 'welcome_deleted'
+        });
+        if (msgEl && msgEl.parentNode) msgEl.remove();
+    } catch (e) {
+        console.warn('hide welcome failed:', e);
+        if (typeof showToast === 'function') showToast('fa-times', '⚠️ فشل');
+    }
+}
+window._hideWelcomeMessage = _hideWelcomeMessage;
 
 function applyUsernameStyle(username,msg){
     username.classList.remove('name-capsule','name-pill','name-rounded','name-ellipse','name-square');
@@ -682,15 +822,37 @@ async function toggleReaction(msgId,emoji){
     closeAllMenus();
 }
 
+/* ⭐ v3.10: حذف (إخفاء) الرسالة */
 async function editMessage(msgEl,msgId){
     const t=msgEl.querySelector('.message-text');if(!t)return;
     const cur=t.innerText,nt=prompt('✏️ تعديل:',cur);
     if(nt&&nt.trim()&&nt!==cur){try{await db.ref('room_messages/'+ChatState.currentRoom+'/'+msgId).update({text:nt.trim(),edited:true})}catch(e){showToast('fa-exclamation-circle','⚠️ فشل')}}
     closeAllMenus();
 }
+
+/* ⭐ v3.10: إخفاء بدل حذف كامل — الملك يراها */
 async function deleteMessage(msgEl,msgId){
-    if(!msgId)return;if(!confirm('🗑️ حذف؟'))return;
-    try{await db.ref('room_messages/'+ChatState.currentRoom+'/'+msgId).update({deleted:true,text:''})}catch(e){showToast('fa-exclamation-circle','⚠️ فشل')}
+    if(!msgId)return;
+    if(!confirm('🗑️ حذف هذه الرسالة؟'))return;
+    const user=getCurrentUser();
+    try{
+        await db.ref('room_messages/'+ChatState.currentRoom+'/'+msgId).update({
+            hidden: true,
+            hiddenBy: user ? user.uid : null,
+            hiddenByName: user ? user.name : 'مشرف',
+            hiddenAt: Date.now(),
+            hiddenReason: 'manual'
+        });
+        // الملك/الملكة يرون الإطار التحذيري بدلاً من الاختفاء
+        const uLevel = user ? (user.rankLevel || (typeof getRankLevel === 'function' ? getRankLevel(user.rank) : 0)) : 0;
+        const canSee = user && (user.rank === 'King' || user.rank === 'Queen' || uLevel >= 95);
+        if (!canSee && msgEl && msgEl.parentNode) {
+            msgEl.remove();
+        }
+    }catch(e){
+        console.warn('delete message failed:', e);
+        showToast('fa-exclamation-circle','⚠️ فشل');
+    }
     closeAllMenus();
 }
 
@@ -1334,4 +1496,4 @@ window.applyRoomBackground=applyRoomBackground;
 window.buildRoomsList=buildRoomsList;
 window.clearPrivateNotifsFrom = _clearPrivateNotifsFrom;
 
-console.log('✅ chat.js v3.9 loaded — v3.7 structure + 15 msgs + delayed stars');
+console.log('✅ chat.js v3.10 loaded — v3.9 + _fbKey + hidden messages + welcome delete');
