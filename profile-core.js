@@ -1,5 +1,15 @@
 // ==============================================
-// profile-core.js v2.9 — منع FOUC عند التحميل
+// profile-core.js v3.0 — تبويب الأوامر الكامل + الحالة اليومية
+// ==============================================
+// ✅ v3.0 (الجديد):
+//   1. تبويب الأوامر يظهر في visitor فقط (لكل الرتب)
+//   2. قسم "إجراءات على [الاسم]" (فك منع/طرد/حظر/سجن)
+//   3. قسم "أوامر جديدة" (حسب الرتبة)
+//   4. زر ⚔️ موحّد للجميع (يفتح قائمة)
+//   5. زر 🚪 مغادرة الغرفة في تبويب المعلومات
+//   6. زر 🗑️ حذف الحساب (24 ساعة للأعضاء، فوري للزوار)
+//   7. ربط تبويب "📸 حالتي" بـ Stories.renderMyTab
+//   8. تنظيف الحذف المعلق عند فتح البروفايل (للملك)
 // ==============================================
 
 let currentUser = null, targetUser = null, viewMode = 'owner';
@@ -17,32 +27,6 @@ const FRAMES = [];
 const COLORS = ['#ffffff','#000000','#ffd700','#ff8c00','#ff69b4','#ff1493','#e0115f','#ff4757','#ff0000','#ff6347','#ff4500','#ffa500','#feca57','#ffff00','#adff2f','#39ff14','#00cc00','#00ff88','#2ecc71','#00b894','#00f3ff','#00bfff','#00bcd4','#1e90ff','#3498db','#0066ff','#0000ff','#8a2be2','#a855f7','#7c3aed','#6c5ce7','#9b59b6','#ff00ff','#da70d6','#e84393','#c0c0c0','#808080','#696969','#8b4513','#ff006e'];
 
 const GRADS = [['#ffd700','#ff8c00'],['#ff69b4','#ff1493'],['#00f3ff','#0066ff'],['#39ff14','#00cc00'],['#a855f7','#7c3aed'],['#e0115f','#ff4757'],['#feca57','#ff9f43'],['#00b894','#0984e3'],['#fd79a8','#e84393'],['#6c5ce7','#a29bfe'],['#74b9ff','#0984e3'],['#55efc4','#00b894'],['#ffeaa7','#fdcb6e'],['#e17055','#d35400'],['#81ecec','#00cec9'],['#fab1a0','#e17055'],['#ffffff','#cccccc'],['#000000','#333333'],['#ffd700','#ff006e'],['#00ff88','#0066ff'],['#ff0055','#ffd700'],['#8b00ff','#ff006e'],['#00f3ff','#ff00ff'],['#ffcc00','#ff6699'],['#00ffcc','#0066ff'],['#ff66cc','#9900ff'],['#ffaa00','#ff0000'],['#00ccff','#6600ff'],['#ff8c00','#ff1493'],['#c0c0c0','#ffd700']];
-
-const FRAMES_LIST = [
-    {id:'nf-rainbow'},{id:'nf-fire'},{id:'nf-smoke'},{id:'nf-fog'},
-    {id:'nf-waves'},{id:'nf-galaxy'},{id:'nf-stars'},{id:'nf-snow'},
-    {id:'nf-sunset'},{id:'nf-neon'},{id:'nf-gold'},{id:'nf-diamond'},
-    {id:'nf-ocean'},{id:'nf-blood'},{id:'nf-forest'},{id:'nf-ruby'},
-    {id:'nf-emerald'},{id:'nf-sapphire'},{id:'nf-lava'},{id:'nf-aurora'},
-    {id:'nf-cyber'},{id:'nf-lightning'},{id:'nf-sparkle'},{id:'nf-butterflies'},
-    {id:'nf-clouds'},{id:'nf-water'},{id:'nf-waterfall'},{id:'nf-streams'},
-    {id:'nf-blossom'},{id:'nf-leaves'},{id:'nf-hearts'},{id:'nf-sun'},
-    {id:'nf-crystal'},{id:'nf-magic'},{id:'nf-royal'},{id:'nf-rainbowstraight'},
-    {id:'nf-rainbowtext'},{id:'nf-starstext'},{id:'nf-watertext'},{id:'nf-firetext'},
-    {id:'nf-icetext'},{id:'nf-goldtext'},{id:'nf-fogtext'},{id:'nf-smoketext'},
-    {id:'nf-spiral-rainbow'},{id:'nf-spiral-fire'},{id:'nf-spiral-gold'},
-    {id:'nf-spiral-ocean'},{id:'nf-spiral-purple'},{id:'nf-spiral-neon'},
-    {id:'nf-spiral-candy'},{id:'nf-spiral-galaxy'},{id:'nf-spiral-emerald'},
-    {id:'nf-spiral-ruby'}
-];
-
-const SHAPES = [
-    {id:'name-capsule', name:'كبسولة'},
-    {id:'name-pill', name:'حبة'},
-    {id:'name-rounded', name:'مستدير'},
-    {id:'name-ellipse', name:'بيضاوي'},
-    {id:'name-square', name:'مربع'}
-];
 
 const GLOWS = [
     {id:'none', name:'بدون'},
@@ -92,7 +76,6 @@ function formatDate(ts) {
     return d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear();
 }
 
-/* ⭐⭐⭐ v2.9: إظهار البروفايل بعد التحميل الكامل (منع FOUC) */
 function _revealProfile() {
     var p = document.getElementById('profile-container');
     if (!p) return;
@@ -158,6 +141,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             targetUser = f;
             localStorage.setItem('profile_target_data_' + urlUid, JSON.stringify(f));
             if (Date.now() > _localLockUntil) loadProfile();
+            // ⭐ v3: تحديث تبويب الأوامر بعد وصول البيانات
+            if (document.getElementById('commands-tab') && document.getElementById('commands-tab').classList.contains('active')) {
+                renderCommandsTab();
+            }
         });
         db.ref('user_presence/' + urlUid).on('value', s => {
             const p = s.val() || {};
@@ -190,7 +177,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     setTimeout(loadFriends, 800);
     setTimeout(loadPoints, 800);
 
-    // ⭐⭐⭐ v2.9: إظهار البروفايل بعد استقرار الصفحة (منع FOUC)
+    // ⭐ v3: تنظيف المعلقين + فحص حذفي
+    setTimeout(_checkMyDeletionStatus, 1200);
+    if (viewMode === 'owner' && currentUser && currentUser.uid && typeof db !== 'undefined' && db) {
+        setTimeout(_cleanupPendingDeletions, 2500);
+    }
+
     setTimeout(_revealProfile, 180);
 
     console.log('Profile loaded | Mode:', viewMode);
@@ -202,12 +194,117 @@ function _userHash(u) {
         return JSON.stringify({
             n: u.name, b: u.bio, a: u.avatar, c: u.cover, r: u.rank,
             nc: u.nameColor, ng: u.nameGradient, ngl: u.nameGlow,
-            af: u.avatarFrame, nbg: u.nameBgGradient, bg: u.profileBgValue
+            af: u.avatarFrame, nbg: u.nameBgGradient, bg: u.profileBgValue,
+            ij: u.isJailed, ju: u.jailUntil, ib: u.isBanned, bu: u.bannedUntil,
+            mw: u.muteInRoom, dp: u.deletionScheduled
         });
     } catch(e) { return ''; }
 }
 
-/* ⭐⭐⭐ loadFriends — شبكة 68×68 */
+/* ⭐ v3: فحص حالة الحذف الخاصة بي */
+async function _checkMyDeletionStatus() {
+    if (!currentUser || !currentUser.uid || typeof db === 'undefined' || !db) return;
+    try {
+        var snap = await db.ref('users/' + currentUser.uid + '/deletionScheduled').once('value');
+        var d = snap.val();
+        if (d && d.willDeleteAt) {
+            if (Date.now() >= d.willDeleteAt) {
+                // نفّذ الحذف
+                await _executeAccountDeletion(currentUser.uid);
+            } else {
+                _renderDeletionPendingUI(d);
+            }
+        }
+    } catch(e) { console.warn('checkMyDeletionStatus:', e); }
+}
+
+/* ⭐ v3: الملك ينظّف المعلقين */
+async function _cleanupPendingDeletions() {
+    try {
+        var snap = await db.ref('users').limitToLast(500).once('value');
+        var all = snap.val() || {};
+        var now = Date.now();
+        var pending = [];
+        Object.keys(all).forEach(function(uid) {
+            var u = all[uid];
+            if (u && u.deletionScheduled && u.deletionScheduled.willDeleteAt && u.deletionScheduled.willDeleteAt <= now) {
+                pending.push(uid);
+            }
+        });
+        if (pending.length === 0) return;
+        console.log('🧹 Cleanup: ' + pending.length + ' pending deletions');
+        for (var i = 0; i < pending.length; i++) {
+            await _executeAccountDeletion(pending[i]);
+        }
+    } catch(e) { console.warn('cleanup:', e); }
+}
+
+async function _executeAccountDeletion(uid) {
+    try {
+        var snap = await db.ref('users/' + uid).once('value');
+        var u = snap.val() || {};
+        var name = u.name;
+        var code = u.code;
+
+        await Promise.all([
+            db.ref('users/' + uid).remove(),
+            db.ref('user_presence/' + uid).remove(),
+            name ? db.ref('user_names/' + name).remove().catch(function(){}) : Promise.resolve(),
+            code ? db.ref('user_codes/' + code).remove().catch(function(){}) : Promise.resolve(),
+            db.ref('user_private_chats/' + uid).remove().catch(function(){}),
+            db.ref('user_notifications/' + uid).remove().catch(function(){}),
+            db.ref('stories/' + uid).remove().catch(function(){})
+        ]);
+        console.log('✅ Deleted user:', uid);
+    } catch(e) { console.warn('executeDeletion:', e); }
+}
+
+/* ⭐ v3: عرض حالة الحذف المعلق */
+function _renderDeletionPendingUI(d) {
+    var infoTab = document.getElementById('info-tab');
+    if (!infoTab) return;
+    var existing = document.getElementById('deletion-pending-banner');
+    if (existing) existing.remove();
+
+    var b = document.createElement('div');
+    b.id = 'deletion-pending-banner';
+    var remaining = Math.ceil((d.willDeleteAt - Date.now()) / 3600000);
+    b.style.cssText = 'background:linear-gradient(135deg,rgba(255,68,68,0.2),rgba(255,0,0,0.1));border:2px solid #ff4444;border-radius:12px;padding:12px;margin-bottom:12px;text-align:center;';
+    b.innerHTML =
+        '<div style="color:#ff7777;font-weight:900;font-size:13px;margin-bottom:6px;">⚠️ حسابك مجدول للحذف</div>' +
+        '<div style="color:#fff;font-size:11px;margin-bottom:10px;">سيُحذف بعد ' + remaining + ' ساعة</div>' +
+        '<button id="cancel-deletion-btn" type="button" style="padding:8px 20px;background:#84cc16;color:#fff;border:none;border-radius:8px;font-family:inherit;font-weight:900;font-size:12px;cursor:pointer;">❌ إلغاء الحذف</button>';
+    infoTab.insertBefore(b, infoTab.firstChild);
+
+    setTimeout(function() {
+        var cb = document.getElementById('cancel-deletion-btn');
+        if (cb) cb.onclick = _cancelMyDeletion;
+    }, 50);
+}
+
+async function _cancelMyDeletion() {
+    if (!currentUser || !currentUser.uid) return;
+    if (!confirm('إلغاء حذف الحساب؟')) return;
+    try {
+        await db.ref('users/' + currentUser.uid + '/deletionScheduled').remove();
+        try {
+            localStorage.removeItem('qamar_deletion_scheduled');
+        } catch(e) {}
+        toast('✅ تم إلغاء الحذف');
+        var b = document.getElementById('deletion-pending-banner');
+        if (b) b.remove();
+        // إعادة زر الحذف
+        var acts = document.getElementById('info-actions-section');
+        if (acts) acts.remove();
+        _renderInfoActions();
+    } catch(e) {
+        toast('⚠️ فشل: ' + e.message);
+    }
+}
+
+/* ═══════════════════════════════════════════ */
+/* Load Friends (شبكة 68×68)                   */
+/* ═══════════════════════════════════════════ */
 async function loadFriends() {
     const container = document.getElementById('friends-container');
     if (!container) return;
@@ -260,7 +357,6 @@ async function loadFriends() {
     }
 }
 
-/* ⭐⭐⭐ مربع صديق — 68×68 — الاسم داخل الصورة */
 function _buildFriendTile(f) {
     var tile = document.createElement('div');
     tile.style.cssText = 'position:relative;width:68px;height:68px;border-radius:10px;overflow:hidden;cursor:pointer;border:1px solid rgba(212,175,55,0.4);background:#111;transition:transform .15s ease;';
@@ -314,10 +410,6 @@ async function loadPoints() {
         if (ptRow) ptRow.style.display = 'none';
         if (lvlRow) lvlRow.style.display = 'none';
     }
-}
-
-function renderFriendCard(container, f, points, giftsCount) {
-    container.appendChild(_buildFriendTile(f));
 }
 
 function renderList(cid, data, sortField, isBlocked) {
@@ -522,6 +614,117 @@ function loadProfile() {
         const mbb = document.getElementById('music-btn-mini');
         if (mbb) mbb.style.display = 'none';
     }
+
+    // ⭐ v3: قسم الإجراءات في تبويب المعلومات (owner فقط)
+    if (viewMode === 'owner') {
+        _renderInfoActions();
+    }
+}
+
+/* ⭐ v3: قسم الإجراءات في تبويب المعلومات */
+function _renderInfoActions() {
+    var infoTab = document.getElementById('info-tab');
+    if (!infoTab) return;
+    if (document.getElementById('info-actions-section')) return;
+
+    var section = document.createElement('div');
+    section.id = 'info-actions-section';
+    section.style.cssText = 'margin-top:20px;padding-top:16px;border-top:1px dashed rgba(212,175,55,0.3);';
+
+    var h = '<h3 style="color:#ffd700;font-size:13px;font-weight:900;margin-bottom:10px;">⚡ الإجراءات</h3>';
+
+    // زر مغادرة الغرفة
+    h += '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);">';
+    h += '<span style="color:#ffab91;font-weight:700;font-size:13px;">🚪 مغادرة الغرفة</span>';
+    h += '<button class="profile-action-btn" id="action-leave-room" type="button" style="padding:8px 16px;background:rgba(212,175,55,0.15);border:1px solid rgba(212,175,55,0.4);color:#ffd700;border-radius:8px;font-family:inherit;font-weight:900;font-size:12px;cursor:pointer;">مغادرة</button>';
+    h += '</div>';
+
+    // زر حذف الحساب
+    h += '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;">';
+    h += '<span style="color:#ff7777;font-weight:700;font-size:13px;">🗑️ حذف الحساب</span>';
+    h += '<button class="profile-action-btn" id="action-delete-account" type="button" style="padding:8px 16px;background:rgba(255,68,68,0.15);border:1px solid rgba(255,68,68,0.5);color:#ff7777;border-radius:8px;font-family:inherit;font-weight:900;font-size:12px;cursor:pointer;">حذف</button>';
+    h += '</div>';
+
+    section.innerHTML = h;
+    infoTab.appendChild(section);
+
+    setTimeout(function() {
+        var leaveBtn = document.getElementById('action-leave-room');
+        if (leaveBtn) leaveBtn.onclick = _actionLeaveRoom;
+        var delBtn = document.getElementById('action-delete-account');
+        if (delBtn) delBtn.onclick = _actionDeleteAccount;
+    }, 50);
+}
+
+function _actionLeaveRoom() {
+    if (!confirm('مغادرة الغرفة الحالية؟')) return;
+    try {
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ action: 'leaveRoom' }, '*');
+        }
+        // إغلاق البروفايل
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ action: 'closeProfile' }, '*');
+        }
+        toast('✅ جاري المغادرة...');
+    } catch(e) {
+        toast('⚠️ فشل');
+    }
+}
+
+function _actionDeleteAccount() {
+    if (!currentUser || !currentUser.uid) { toast('⚠️ لا يوجد مستخدم'); return; }
+    var isGuest = currentUser.isGuest === true || !currentUser.email;
+
+    if (isGuest) {
+        // زائر → تأكيد بالاسم + حذف فوري
+        var confirmName = prompt('⚠️ اكتب اسمك للتأكيد:\n"' + (currentUser.name || '') + '"');
+        if (confirmName !== currentUser.name) {
+            if (confirmName !== null) toast('❌ الاسم غير متطابق');
+            return;
+        }
+        if (!confirm('تأكيد نهائي: حذف حسابك فوراً؟')) return;
+        _executeAccountDeletion(currentUser.uid).then(function() {
+            toast('✅ تم حذف الحساب');
+            try {
+                if (typeof logout === 'function') logout();
+            } catch(e) {}
+            setTimeout(function() {
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({ action: 'closeProfile' }, '*');
+                }
+                try { location.href = 'index.html'; } catch(e) {}
+            }, 1200);
+        });
+        return;
+    }
+
+    // عضو → إيميل + 24 ساعة
+    var confirmEmail = prompt('⚠️ اكتب إيميلك للتأكيد:');
+    if (!confirmEmail || confirmEmail.trim().toLowerCase() !== (currentUser.email || '').toLowerCase()) {
+        if (confirmEmail !== null) toast('❌ الإيميل غير متطابق');
+        return;
+    }
+    if (!confirm('سيُجدول حذف حسابك بعد 24 ساعة. متابعة؟')) return;
+
+    var willDeleteAt = Date.now() + 24 * 60 * 60 * 1000;
+    db.ref('users/' + currentUser.uid + '/deletionScheduled').set({
+        scheduledAt: Date.now(),
+        willDeleteAt: willDeleteAt,
+        email: currentUser.email,
+        type: 'member'
+    }).then(function() {
+        try {
+            localStorage.setItem('qamar_deletion_scheduled', JSON.stringify({
+                willDeleteAt: willDeleteAt,
+                uid: currentUser.uid
+            }));
+        } catch(e) {}
+        toast('✅ سيُحذف حسابك بعد 24 ساعة');
+        _renderDeletionPendingUI({ willDeleteAt: willDeleteAt });
+    }).catch(function(e) {
+        toast('⚠️ فشل: ' + e.message);
+    });
 }
 
 function initTabs() {
@@ -534,7 +737,570 @@ function initTabs() {
         this.classList.add('active');
         const tc = document.getElementById(t);
         if (tc) tc.classList.add('active');
+
+        // ⭐ v3: عند تفعيل تبويب معين
+        if (t === 'commands-tab') renderCommandsTab();
+        if (t === 'story-tab') {
+            var stc = document.getElementById('story-tab-content');
+            if (stc && window.Stories && typeof window.Stories.renderMyTab === 'function') {
+                window.Stories.renderMyTab(stc);
+            }
+        }
     }));
+}
+
+/* ⭐ v3: عرض تبويب الأوامر */
+function renderCommandsTab() {
+    var container = document.getElementById('commands-tab-content');
+    if (!container) return;
+
+    // يظهر فقط في وضع الزيارة
+    if (viewMode !== 'visitor') {
+        container.innerHTML = '<div class="empty">هذا التبويب متاح فقط عند زيارة بروفايل شخص آخر</div>';
+        return;
+    }
+
+    if (!currentUser) { container.innerHTML = '<div class="empty">سجّل دخول</div>'; return; }
+    if (!targetUser || !targetUser.uid) { container.innerHTML = '<div class="empty">لا يوجد هدف</div>'; return; }
+
+    var me = currentUser;
+    var tg = targetUser;
+    var myLvl = me.rankLevel || (typeof getRankLevel === 'function' ? getRankLevel(me.rank) : 0);
+    var tgLvl = tg.rankLevel || (typeof getRankLevel === 'function' ? getRankLevel(tg.rank) : 0);
+    var now = Date.now();
+
+    var h = '';
+
+    /* ─── قسم 1: إجراءات على [الاسم] (فك العقوبات) ─── */
+    var hasAnyActive = false;
+    var activeActions = '';
+
+    // فك المنع من الكتابة
+    if (tg.muteInRoom && tg.muteUntil > now) {
+        hasAnyActive = true;
+        activeActions += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);">' +
+            '<span style="color:#ffbb66;font-size:12px;font-weight:700;">🔇 ممنوع من الكتابة</span>' +
+            '<button class="cmd-btn" data-cmd="unmute" type="button" style="padding:6px 14px;background:#84cc16;color:#fff;border:none;border-radius:6px;font-family:inherit;font-weight:900;font-size:11px;cursor:pointer;">🔊 فك</button>' +
+            '</div>';
+    }
+    // فك السجن
+    if (tg.isJailed && tg.jailUntil > now) {
+        hasAnyActive = true;
+        activeActions += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);">' +
+            '<span style="color:#ffbb66;font-size:12px;font-weight:700;">⛓️ مسجون</span>' +
+            '<button class="cmd-btn" data-cmd="unjail" type="button" style="padding:6px 14px;background:#84cc16;color:#fff;border:none;border-radius:6px;font-family:inherit;font-weight:900;font-size:11px;cursor:pointer;">🔓 فك</button>' +
+            '</div>';
+    }
+    // فك الحظر
+    if (tg.isBanned && tg.bannedUntil > now) {
+        hasAnyActive = true;
+        activeActions += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);">' +
+            '<span style="color:#ff7777;font-size:12px;font-weight:700;">🚫 محظور</span>' +
+            '<button class="cmd-btn" data-cmd="unban" type="button" style="padding:6px 14px;background:#84cc16;color:#fff;border:none;border-radius:6px;font-family:inherit;font-weight:900;font-size:11px;cursor:pointer;">🔓 فك</button>' +
+            '</div>';
+    }
+    // فك الطرد من الروم (نفحص)
+    if (typeof db !== 'undefined' && db) {
+        db.ref('room_kicks').once('value').then(function(snap) {
+            var all = snap.val() || {};
+            var kickedFrom = [];
+            Object.keys(all).forEach(function(rid) {
+                if (all[rid] && all[rid][tg.uid]) kickedFrom.push(rid);
+            });
+            if (kickedFrom.length > 0) {
+                var existing = document.getElementById('cmd-kicked-info');
+                if (existing) existing.remove();
+                var kd = document.createElement('div');
+                kd.id = 'cmd-kicked-info';
+                kd.style.cssText = 'padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);';
+                kd.innerHTML = '<div style="color:#ffbb66;font-size:12px;font-weight:700;margin-bottom:6px;">🚪 مطرود من: ' + kickedFrom.join('، ') + '</div>' +
+                    '<button class="cmd-btn" data-cmd="unkick" data-rooms="' + kickedFrom.join(',') + '" type="button" style="padding:6px 14px;background:#84cc16;color:#fff;border:none;border-radius:6px;font-family:inherit;font-weight:900;font-size:11px;cursor:pointer;">🔓 فك الطرد من كل الرومات</button>';
+                var sect2 = document.getElementById('cmd-section-active');
+                if (sect2) sect2.appendChild(kd);
+                var kb = kd.querySelector('[data-cmd="unkick"]');
+                if (kb) kb.onclick = function() { _cmdUnkick(this.getAttribute('data-rooms')); };
+            }
+        });
+    }
+
+    if (hasAnyActive) {
+        h += '<div style="background:rgba(255,68,68,0.06);border:1px solid rgba(255,68,68,0.3);border-radius:12px;padding:12px;margin-bottom:14px;">';
+        h += '<div style="color:#ff9999;font-size:13px;font-weight:900;margin-bottom:8px;">⚡ إجراءات سارية على ' + (tg.name || '') + '</div>';
+        h += '<div id="cmd-section-active">' + activeActions + '</div>';
+        h += '</div>';
+    }
+
+    /* ─── قسم 2: الأوامر الجديدة ─── */
+    h += '<div style="color:#ffd700;font-size:13px;font-weight:900;margin-bottom:10px;">📋 الأوامر المتاحة</div>';
+    h += '<div style="display:flex;flex-direction:column;gap:6px;" id="cmd-new-list">';
+
+    // 🎁 إرسال هدية (الكل)
+    h += '<button class="cmd-new-btn" data-new="gift" type="button">🎁 إرسال هدية</button>';
+
+    // 📞 مكالمة صوتية (الكل) — مؤجل
+    h += '<button class="cmd-new-btn" data-new="call" type="button" style="opacity:0.6;">📞 مكالمة صوتية (قريباً)</button>';
+
+    // 🚨 إبلاغ (الكل)
+    h += '<button class="cmd-new-btn" data-new="report" type="button">🚨 إبلاغ عن المستخدم</button>';
+
+    // ⭐ إهداء نقاط (Owner+ = 75+)
+    if (myLvl >= 75) {
+        h += '<button class="cmd-new-btn" data-new="points" type="button">⭐ إهداء نقاط</button>';
+    }
+
+    // 🔇 منع كتابة في الروم (Grand Owner+ = 80+)
+    if (myLvl >= 80) {
+        h += '<button class="cmd-new-btn" data-new="mute" type="button">🔇 منع كتابة في الروم</button>';
+    }
+
+    // 🚪 طرد من الروم (Grand Owner+ = 80+)
+    if (myLvl >= 80) {
+        h += '<button class="cmd-new-btn" data-new="kick_room" type="button">🚪 طرد من الروم</button>';
+    }
+
+    // ⏸️ حظر مؤقت (Master Owner+ = 90+)
+    if (myLvl >= 90) {
+        h += '<button class="cmd-new-btn" data-new="tempban" type="button">⏸️ حظر مؤقت</button>';
+    }
+
+    // ⏱️ طرد مؤقت (Master Owner+ = 90+)
+    if (myLvl >= 90) {
+        h += '<button class="cmd-new-btn" data-new="tempkick" type="button">⏱️ طرد مؤقت</button>';
+    }
+
+    // 🚫 طرد دائم (Master Owner+ = 90+)
+    if (myLvl >= 90) {
+        h += '<button class="cmd-new-btn" data-new="permkick" type="button" style="color:#ff7777;">🚫 طرد دائم</button>';
+    }
+
+    // ⛓️ سجن (Admin+ = 65+)
+    if (myLvl >= 65) {
+        h += '<button class="cmd-new-btn" data-new="jail" type="button">⛓️ سجن</button>';
+    }
+
+    // 🎖️ ترقية (حسب الصلاحية)
+    var canP = (typeof canPromoteTo === 'function') ? canPromoteTo(me, tg, 'Room Owner') : false;
+    if (canP) {
+        h += '<button class="cmd-new-btn" data-new="promote" type="button">🎖️ ترقية</button>';
+    }
+
+    // 📉 تخفيض (Master Owner+ = 90+)
+    var canD = (typeof canDemoteUser === 'function') ? canDemoteUser(me, tg) : false;
+    if (canD && myLvl >= 90) {
+        h += '<button class="cmd-new-btn" data-new="demote" type="button">📉 تخفيض الرتبة</button>';
+    }
+
+    // ⚔️ أوامر إدارية (King/Queen فقط)
+    if (me.rank === 'King' || me.rank === 'Queen') {
+        h += '<button class="cmd-new-btn" data-new="admin" type="button" style="background:linear-gradient(135deg,#8b0000,#d4af37);color:#fff;">⚔️ أوامر إدارية متقدمة</button>';
+    }
+
+    h += '</div>';
+
+    container.innerHTML = h;
+
+    // ستايل الأزرار الجديدة (inject)
+    if (!document.getElementById('cmd-new-styles')) {
+        var st = document.createElement('style');
+        st.id = 'cmd-new-styles';
+        st.textContent = `
+.cmd-new-btn {
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(212,175,55,0.3);
+    border-radius: 10px;
+    color: #fff;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: right;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.cmd-new-btn:hover {
+    background: rgba(212,175,55,0.15);
+    border-color: #ffd700;
+}
+.cmd-new-btn:active { transform: scale(0.98); }
+        `;
+        document.head.appendChild(st);
+    }
+
+    // ربط الأحداث
+    container.querySelectorAll('[data-cmd]').forEach(function(btn) {
+        btn.onclick = function() { _cmdUnblock(btn.getAttribute('data-cmd'), btn); };
+    });
+    container.querySelectorAll('[data-new]').forEach(function(btn) {
+        btn.onclick = function() { _cmdNew(btn.getAttribute('data-new')); };
+    });
+}
+
+/* ⭐ v3: تنفيذ أوامر الفك */
+async function _cmdUnblock(cmd, btn) {
+    if (!targetUser || !currentUser) return;
+    if (!confirm('تنفيذ هذا الإجراء؟')) return;
+    if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+    try {
+        if (cmd === 'unmute') {
+            await db.ref('users/' + targetUser.uid).update({ muteInRoom: null, muteUntil: 0, muteRoom: null });
+            toast('🔊 تم فك المنع');
+        } else if (cmd === 'unjail') {
+            await db.ref('users/' + targetUser.uid).update({ isJailed: false, jailUntil: 0, jailReleasedAt: Date.now() });
+            toast('🔓 تم فك السجن');
+        } else if (cmd === 'unban') {
+            await db.ref('users/' + targetUser.uid).update({ isBanned: false, bannedUntil: 0, permanentBan: false });
+            toast('🔓 تم فك الحظر');
+        }
+        // سجل
+        try {
+            db.ref('audit_log').push({
+                type: 'unblock_' + cmd,
+                byUid: currentUser.uid, byName: currentUser.name,
+                targetUid: targetUser.uid, targetName: targetUser.name,
+                at: firebase.database.ServerValue.TIMESTAMP
+            }).catch(function(){});
+        } catch(e) {}
+        setTimeout(function() { renderCommandsTab(); }, 400);
+    } catch(e) {
+        toast('⚠️ فشل: ' + e.message);
+        if (btn) { btn.disabled = false; btn.textContent = '🔓 فك'; }
+    }
+}
+
+async function _cmdUnkick(roomsStr) {
+    if (!roomsStr || !currentUser) return;
+    var rooms = roomsStr.split(',');
+    try {
+        for (var i = 0; i < rooms.length; i++) {
+            await db.ref('room_kicks/' + rooms[i] + '/' + targetUser.uid).remove();
+        }
+        toast('🔓 تم فك الطرد');
+        setTimeout(function() { renderCommandsTab(); }, 400);
+    } catch(e) {
+        toast('⚠️ فشل: ' + e.message);
+    }
+}
+
+/* ⭐ v3: تنفيذ الأوامر الجديدة */
+async function _cmdNew(cmd) {
+    if (!targetUser || !currentUser) return;
+
+    if (cmd === 'gift') { toast('🎁 قريباً'); return; }
+    if (cmd === 'call') { toast('📞 قريباً — يحتاج منصة صوتية'); return; }
+    if (cmd === 'report') {
+        _cmdReportUser();
+        return;
+    }
+    if (cmd === 'points') {
+        _cmdGivePoints();
+        return;
+    }
+    if (cmd === 'mute') {
+        _cmdMuteInRoom();
+        return;
+    }
+    if (cmd === 'kick_room') {
+        _cmdKickFromRoom();
+        return;
+    }
+    if (cmd === 'tempban') {
+        _cmdTempBan();
+        return;
+    }
+    if (cmd === 'tempkick') {
+        _cmdTempKick();
+        return;
+    }
+    if (cmd === 'permkick') {
+        _cmdPermKick();
+        return;
+    }
+    if (cmd === 'jail') {
+        _cmdJail();
+        return;
+    }
+    if (cmd === 'promote') {
+        _cmdPromote();
+        return;
+    }
+    if (cmd === 'demote') {
+        _cmdDemote();
+        return;
+    }
+    if (cmd === 'admin') {
+        _cmdAdminAdvanced();
+        return;
+    }
+}
+
+function _cmdReportUser() {
+    if (!targetUser) return;
+    var reasons = [
+        { id: 'abuse', name: '🚫 محتوى مسيء' },
+        { id: 'promo', name: '📢 ترويج / إعلان' },
+        { id: 'adult', name: '🔞 محتوى غير لائق' },
+        { id: 'harass', name: '💢 تحرش / إزعاج' },
+        { id: 'other', name: '❓ سبب آخر' }
+    ];
+    var h = '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:8px;">اختر سبب الإبلاغ:</label>';
+    h += '<div style="display:flex;flex-direction:column;gap:6px;">';
+    reasons.forEach(function(r) {
+        h += '<button type="button" class="cmd-reason-btn" data-r="' + r.id + '" style="padding:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(212,175,55,0.3);border-radius:8px;color:#fff;font-family:inherit;font-size:13px;font-weight:700;text-align:right;cursor:pointer;">' + r.name + '</button>';
+    });
+    h += '</div>';
+    openAppModal('🚨 إبلاغ عن ' + (targetUser.name || ''), '', h, function() {
+        // إغلاق فقط
+    }, null, 'modal-close-only');
+
+    setTimeout(function() {
+        document.querySelectorAll('.cmd-reason-btn').forEach(function(b) {
+            b.onclick = async function() {
+                var reason = this.getAttribute('data-r');
+                closeModal('app-modal');
+                try {
+                    var hourAgo = Date.now() - 3600000;
+                    var ex = await db.ref('reports').orderByChild('time').startAt(hourAgo).once('value');
+                    var data = ex.val() || {};
+                    var dup = Object.values(data).some(function(r) {
+                        return r.reporterUid === currentUser.uid && r.targetUid === targetUser.uid;
+                    });
+                    if (dup) { toast('⏳ أبلغت عنه مؤخراً'); return; }
+                    await db.ref('reports').push({
+                        reporterUid: currentUser.uid,
+                        reporterName: currentUser.name || 'زائر',
+                        reporterAvatar: currentUser.avatar || '',
+                        targetUid: targetUser.uid,
+                        targetName: targetUser.name || '',
+                        targetAvatar: targetUser.avatar || '',
+                        reason: reason,
+                        messageText: '',
+                        roomId: 'profile',
+                        isPrivate: false,
+                        time: Date.now(),
+                        status: 'pending'
+                    });
+                    toast('✅ تم الإبلاغ');
+                } catch(e) {
+                    toast('⚠️ فشل: ' + e.message);
+                }
+            };
+        });
+    }, 100);
+}
+
+function _cmdGivePoints() {
+    var h = '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:6px;">عدد النقاط:</label>';
+    h += '<input type="number" id="cmd-pts-input" min="1" max="10000" value="100" style="width:100%;padding:10px;background:rgba(255,255,255,0.08);border:1px solid #ffd700;border-radius:8px;color:#fff;font-family:inherit;font-size:14px;text-align:center;outline:none;">';
+    openAppModal('⭐ إهداء نقاط', '', h, async function() {
+        var amt = parseInt(document.getElementById('cmd-pts-input').value);
+        if (!amt || amt < 1 || amt > 10000) { toast('⚠️ رقم غير صحيح'); return; }
+        try {
+            await db.ref('bot_data/quiz/scores/' + targetUser.uid).transaction(function(c) { return (c || 0) + amt; });
+            db.ref('audit_log').push({
+                type: 'give_points', byUid: currentUser.uid, byName: currentUser.name,
+                targetUid: targetUser.uid, targetName: targetUser.name, amount: amt,
+                at: firebase.database.ServerValue.TIMESTAMP
+            }).catch(function(){});
+            toast('⭐ أُهدي ' + amt + ' نقطة');
+        } catch(e) { toast('⚠️ فشل'); }
+    });
+}
+
+function _cmdMuteInRoom() {
+    var roomId = (typeof ChatState !== 'undefined' && ChatState.currentRoom) || 'general';
+    var roomName = (QAMAR.ROOMS[roomId] && QAMAR.ROOMS[roomId].name) || roomId;
+    openAppModal('🔇 منع كتابة', 'هل تريد منع ' + (targetUser.name || '') + ' من الكتابة في ' + roomName + '؟', '', async function() {
+        try {
+            await db.ref('users/' + targetUser.uid).update({
+                muteInRoom: true,
+                muteRoom: roomId,
+                muteUntil: 0  // حتى فك يدوي
+            });
+            db.ref('audit_log').push({
+                type: 'mute_room', byUid: currentUser.uid, byName: currentUser.name,
+                targetUid: targetUser.uid, targetName: targetUser.name, roomId: roomId,
+                at: firebase.database.ServerValue.TIMESTAMP
+            }).catch(function(){});
+            toast('🔇 تم المنع');
+            setTimeout(function() { renderCommandsTab(); }, 400);
+        } catch(e) { toast('⚠️ فشل'); }
+    });
+}
+
+function _cmdKickFromRoom() {
+    var roomId = (typeof ChatState !== 'undefined' && ChatState.currentRoom) || 'general';
+    var roomName = (QAMAR.ROOMS[roomId] && QAMAR.ROOMS[roomId].name) || roomId;
+    openAppModal('🚪 طرد من الروم', 'طرد ' + (targetUser.name || '') + ' من ' + roomName + '؟', '', async function() {
+        try {
+            await db.ref('room_kicks/' + roomId + '/' + targetUser.uid).set({
+                by: currentUser.uid, byName: currentUser.name, at: Date.now()
+            });
+            db.ref('audit_log').push({
+                type: 'kick_room', byUid: currentUser.uid, byName: currentUser.name,
+                targetUid: targetUser.uid, targetName: targetUser.name, roomId: roomId,
+                at: firebase.database.ServerValue.TIMESTAMP
+            }).catch(function(){});
+            toast('🚪 تم الطرد من الروم');
+            setTimeout(function() { renderCommandsTab(); }, 400);
+        } catch(e) { toast('⚠️ فشل'); }
+    });
+}
+
+function _cmdTempBan() {
+    var h = '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:6px;">المدة:</label>';
+    h += '<select id="cmd-tb-dur" style="width:100%;padding:10px;background:rgba(255,255,255,0.08);border:1px solid #ffd700;border-radius:8px;color:#fff;font-family:inherit;font-size:14px;text-align:center;outline:none;">';
+    h += '<option value="60">ساعة</option><option value="360">6 ساعات</option><option value="1440" selected>يوم</option><option value="10080">أسبوع</option>';
+    h += '</select>';
+    openAppModal('⏸️ حظر مؤقت', '', h, async function() {
+        var mins = parseInt(document.getElementById('cmd-tb-dur').value);
+        try {
+            await db.ref('users/' + targetUser.uid).update({
+                isBanned: true,
+                bannedUntil: Date.now() + mins * 60000,
+                banReason: 'إجراء إداري'
+            });
+            db.ref('audit_log').push({
+                type: 'temp_ban', byUid: currentUser.uid, byName: currentUser.name,
+                targetUid: targetUser.uid, targetName: targetUser.name, minutes: mins,
+                at: firebase.database.ServerValue.TIMESTAMP
+            }).catch(function(){});
+            toast('⏸️ تم الحظر المؤقت');
+            setTimeout(function() { renderCommandsTab(); }, 400);
+        } catch(e) { toast('⚠️ فشل'); }
+    });
+}
+
+function _cmdTempKick() {
+    var h = '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:6px;">المدة:</label>';
+    h += '<select id="cmd-tk-dur" style="width:100%;padding:10px;background:rgba(255,255,255,0.08);border:1px solid #ffd700;border-radius:8px;color:#fff;font-family:inherit;font-size:14px;text-align:center;outline:none;">';
+    h += '<option value="60">ساعة</option><option value="360">6 ساعات</option><option value="1440" selected>يوم</option><option value="10080">أسبوع</option>';
+    h += '</select>';
+    openAppModal('⏱️ طرد مؤقت', '', h, async function() {
+        var mins = parseInt(document.getElementById('cmd-tk-dur').value);
+        try {
+            await db.ref('users/' + targetUser.uid).update({
+                isBanned: true,
+                bannedUntil: Date.now() + mins * 60000,
+                banReason: 'طرد مؤقت',
+                tempKick: true
+            });
+            db.ref('audit_log').push({
+                type: 'temp_kick', byUid: currentUser.uid, byName: currentUser.name,
+                targetUid: targetUser.uid, targetName: targetUser.name, minutes: mins,
+                at: firebase.database.ServerValue.TIMESTAMP
+            }).catch(function(){});
+            toast('⏱️ تم الطرد المؤقت');
+            setTimeout(function() { renderCommandsTab(); }, 400);
+        } catch(e) { toast('⚠️ فشل'); }
+    });
+}
+
+function _cmdPermKick() {
+    openAppModal('🚫 طرد دائم', '⚠️ سيتم طرد ' + (targetUser.name || '') + ' نهائياً. متابعة؟', '', async function() {
+        try {
+            await db.ref('users/' + targetUser.uid).update({
+                isBanned: true,
+                bannedUntil: Date.now() + 365 * 24 * 60 * 60 * 1000,
+                banReason: 'طرد دائم',
+                permanentBan: true
+            });
+            db.ref('audit_log').push({
+                type: 'perm_kick', byUid: currentUser.uid, byName: currentUser.name,
+                targetUid: targetUser.uid, targetName: targetUser.name,
+                at: firebase.database.ServerValue.TIMESTAMP
+            }).catch(function(){});
+            toast('🚫 تم الطرد الدائم');
+            setTimeout(function() { renderCommandsTab(); }, 400);
+        } catch(e) { toast('⚠️ فشل'); }
+    });
+}
+
+function _cmdJail() {
+    var h = '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:6px;">المدة (1-120 دقيقة):</label>';
+    h += '<input type="number" id="cmd-jail-min" min="1" max="120" value="5" style="width:100%;padding:10px;background:rgba(255,255,255,0.08);border:1px solid #ffd700;border-radius:8px;color:#fff;font-family:inherit;font-size:14px;text-align:center;outline:none;">';
+    openAppModal('⛓️ سجن', '', h, async function() {
+        var mins = parseInt(document.getElementById('cmd-jail-min').value);
+        if (!mins || mins < 1 || mins > 120) { toast('⚠️ رقم غير صحيح'); return; }
+        try {
+            await db.ref('users/' + targetUser.uid).update({
+                isJailed: true,
+                jailUntil: Date.now() + mins * 60000,
+                jailReason: 'إجراء إداري'
+            });
+            db.ref('audit_log').push({
+                type: 'jail', byUid: currentUser.uid, byName: currentUser.name,
+                targetUid: targetUser.uid, targetName: targetUser.name, minutes: mins,
+                at: firebase.database.ServerValue.TIMESTAMP
+            }).catch(function(){});
+            toast('⛓️ تم السجن');
+            setTimeout(function() { renderCommandsTab(); }, 400);
+        } catch(e) { toast('⚠️ فشل'); }
+    });
+}
+
+function _cmdPromote() {
+    var me = currentUser;
+    var all = ['User', 'Premium', 'Admin', 'Super Admin', 'Owner', 'Grand Owner', 'Room Owner', 'Master Owner'];
+    if (me.rank === 'King') all.push('Queen');
+    var opts = all.filter(function(r) {
+        return typeof canPromoteTo === 'function' && canPromoteTo(me, targetUser, r);
+    });
+    if (!opts.length) { toast('⚠️ لا يمكنك الترقية'); return; }
+    var h = '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:6px;">الرتبة الجديدة:</label>';
+    h += '<select id="cmd-promote-r" style="width:100%;padding:10px;background:rgba(255,255,255,0.08);border:1px solid #ffd700;border-radius:8px;color:#fff;font-family:inherit;font-size:14px;text-align:center;outline:none;">';
+    opts.forEach(function(r) {
+        h += '<option value="' + r + '">' + rankBadge(r) + ' ' + r + '</option>';
+    });
+    h += '</select>';
+    openAppModal('🎖️ ترقية', 'الحالية: ' + targetUser.rank, h, async function() {
+        var newRank = document.getElementById('cmd-promote-r').value;
+        var lvl = (typeof getRankLevel === 'function') ? getRankLevel(newRank) : 50;
+        try {
+            await db.ref('users/' + targetUser.uid).update({ rank: newRank, rankLevel: lvl });
+            db.ref('audit_log').push({
+                type: 'promote', byUid: currentUser.uid, byName: currentUser.name,
+                targetUid: targetUser.uid, targetName: targetUser.name,
+                fromRank: targetUser.rank, toRank: newRank,
+                at: firebase.database.ServerValue.TIMESTAMP
+            }).catch(function(){});
+            toast('✅ تمت الترقية');
+            setTimeout(function() { renderCommandsTab(); }, 400);
+        } catch(e) { toast('⚠️ فشل'); }
+    });
+}
+
+function _cmdDemote() {
+    openAppModal('📉 تخفيض الرتبة', 'سيُنزل ' + (targetUser.name || '') + ' إلى User.', '', async function() {
+        try {
+            await db.ref('users/' + targetUser.uid).update({ rank: 'User', rankLevel: 50, queenOrder: null });
+            db.ref('audit_log').push({
+                type: 'demote', byUid: currentUser.uid, byName: currentUser.name,
+                targetUid: targetUser.uid, targetName: targetUser.name,
+                fromRank: targetUser.rank, toRank: 'User',
+                at: firebase.database.ServerValue.TIMESTAMP
+            }).catch(function(){});
+            toast('✅ تم التخفيض');
+            setTimeout(function() { renderCommandsTab(); }, 400);
+        } catch(e) { toast('⚠️ فشل'); }
+    });
+}
+
+function _cmdAdminAdvanced() {
+    // نرسل رسالة للأب (index.html) لفتح أدوات الملك
+    try {
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage({
+                action: 'openUserActions',
+                targetUid: targetUser.uid,
+                targetName: targetUser.name
+            }, '*');
+        }
+    } catch(e) {
+        toast('⚠️ فشل');
+    }
 }
 
 function initPriv() {
@@ -904,17 +1670,18 @@ function initVisitor() {
         toast('👋 تم');
     };
 
+    // ⭐ v3: زر ⚔️ متاح للجميع في visitor mode
     const cmd = document.getElementById('btn-admin-actions');
-    if (cmd && currentUser && (currentUser.rank === 'King' || currentUser.rank === 'Queen')) {
+    if (cmd) {
         cmd.style.display = 'flex';
         cmd.onclick = () => {
-            if (typeof window.parent !== 'undefined' && window.parent !== window) {
-                window.parent.postMessage({
-                    action: 'openUserActions',
-                    targetUid: targetUser.uid,
-                    targetName: targetUser.name
-                }, '*');
-            }
+            // يفتح تبويب الأوامر
+            var tabs = document.querySelectorAll('.tab');
+            tabs.forEach(function(t) {
+                if (t.getAttribute('data-target') === 'commands-tab') {
+                    t.click();
+                }
+            });
         };
     }
 }
@@ -1030,10 +1797,7 @@ function renderSearchResult(u) {
 
 async function sendNotif(targetUid, type, icon, title) {
     if (!targetUid) return;
-    if (typeof db === 'undefined' || !db) {
-        console.warn('[sendNotif] Firebase غير متاح');
-        return;
-    }
+    if (typeof db === 'undefined' || !db) return;
     var payload = {
         fromUid: (currentUser && currentUser.uid) || '',
         fromName: (currentUser && currentUser.name) || 'زائر',
@@ -1046,9 +1810,8 @@ async function sendNotif(targetUid, type, icon, title) {
     };
     try {
         await db.ref('user_notifications/' + targetUid).push(payload);
-        console.log('[sendNotif] ✅ أُرسل:', type, '→', targetUid);
     } catch (e) {
-        console.error('[sendNotif] ❌ فشل:', e && e.message, e);
+        console.error('[sendNotif] فشل:', e);
     }
 }
 
@@ -1061,20 +1824,26 @@ function openChat(uid, name) {
     }
 }
 
-function openAppModal(title, text, type, options, currentVal, onSave) {
+/* ⭐ v3: openAppModal — دعم أوضاع متعددة */
+function openAppModal(title, text, typeOrHtml, options, currentVal, onSave) {
     const m = document.getElementById('app-modal');
     if (!m) return;
     document.getElementById('modal-title').innerText = title;
-    document.getElementById('modal-text').innerText = text;
+    const textEl = document.getElementById('modal-text');
+    textEl.innerText = text || '';
     const c = document.getElementById('modal-dyn');
     c.innerHTML = '';
-    if (type === 'input') {
+
+    // إذا كان typeOrHtml يحتوي HTML (يبدأ بـ <)
+    if (typeof typeOrHtml === 'string' && typeOrHtml.trim().startsWith('<')) {
+        c.innerHTML = typeOrHtml;
+    } else if (typeOrHtml === 'input') {
         const i = document.createElement('input');
         i.type = 'text';
         i.id = 'modal-input-val';
         i.value = currentVal || '';
         c.appendChild(i);
-    } else if (type === 'select') {
+    } else if (typeOrHtml === 'select') {
         const s = document.createElement('select');
         s.id = 'modal-select-val';
         (options || []).forEach(o => {
@@ -1085,20 +1854,31 @@ function openAppModal(title, text, type, options, currentVal, onSave) {
         });
         c.appendChild(s);
     }
+
     m.classList.add('active');
     document.getElementById('modal-ok').onclick = function() {
         let v = '';
-        if (type === 'input') {
+        if (typeOrHtml === 'input') {
             const i = document.getElementById('modal-input-val');
             if (i) v = i.value;
-        } else if (type === 'select') {
+        } else if (typeOrHtml === 'select') {
             const s = document.getElementById('modal-select-val');
             if (s) v = s.value;
         }
-        if (onSave) onSave(v);
+        if (typeof onSave === 'function') onSave(v);
         m.classList.remove('active');
     };
     document.getElementById('modal-cancel').onclick = () => m.classList.remove('active');
+
+    // ⭐ v3: إذا كان "modal-close-only" → زر OK يغلق فقط
+    if (onSave === 'modal-close-only') {
+        document.getElementById('modal-ok').textContent = 'حسناً';
+        document.getElementById('modal-ok').onclick = () => m.classList.remove('active');
+        document.getElementById('modal-cancel').style.display = 'none';
+    } else {
+        document.getElementById('modal-ok').textContent = 'موافق';
+        document.getElementById('modal-cancel').style.display = '';
+    }
 }
 
-console.log('✅ profile-core.js v2.9 loaded — FOUC fixed');
+console.log('✅ profile-core.js v3.0 loaded — commands tab + stories + info actions');
