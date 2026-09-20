@@ -1,5 +1,5 @@
 // ==============================================
-// chat.js v3.10 — بنية v3.9 + hidden messages + welcome delete
+// chat.js v3.11 — بنية v3.10 + presence on room switch
 // ==============================================
 
 const ChatState = {
@@ -171,13 +171,11 @@ function applyRoomBackground(roomId) {
                     container.style.setProperty('background', bgValue, 'important');
                 }
             }
-            // ⭐ خط الرسائل
             applyRoomFont(c);
         }).catch(function () {});
     }
 }
 
-/* ⭐ v3.10: تطبيق لون/حجم خط الشات */
 function applyRoomFont(settings) {
     var container = document.getElementById('messages');
     if (!container) return;
@@ -193,7 +191,6 @@ function applyRoomFont(settings) {
     } else {
         container.style.removeProperty('--chat-font-size');
     }
-    // نحدّث الرسائل الموجودة
     container.querySelectorAll('.message-text').forEach(function(el) {
         el.style.color = fontColor || '';
     });
@@ -305,7 +302,6 @@ function buildRoomsList(){
         const item=document.createElement('div');item.className='sidebar-item';item.setAttribute('data-room-id',room.id);
         const i=document.createElement('span');i.innerText=room.icon;
         const n=document.createElement('span');n.innerText=room.name;
-        // ⭐ لون اسم الغرفة
         if (room.nameColor && typeof safeColor === 'function') {
             const col = safeColor(room.nameColor);
             if (col) n.style.color = col;
@@ -329,6 +325,7 @@ function changeBackground(bgId){
     if(bg&&c){QAMAR.BACKGROUNDS.forEach(b=>c.classList.remove(b.class));c.classList.add(bg.class);localStorage.setItem(QAMAR.STORAGE_KEYS.BACKGROUND,bgId)}
 }
 
+/* ⭐ v3.11: switchRoom يُحدّث presence فوراً */
 function switchRoom(roomId,roomTitle){
     const user=getCurrentUser();
     if(!QAMAR.isRoomVisible(roomId,user)){showToast('fa-lock','🔒 غير متاحة');return}
@@ -342,12 +339,21 @@ function switchRoom(roomId,roomTitle){
     addSystemMessage('📢 تم فتح '+roomTitle);
     updateMicsUI();startMessagesListener();
     if(typeof applyRoomBackground==='function'){applyRoomBackground(roomId);}
+
+    // ⭐ v3.11: تحديث presence فوراً (بدون انتظار heartbeat الـ 30s)
+    if (user && user.uid && typeof db !== 'undefined' && db) {
+        db.ref('user_presence/' + user.uid).set({
+            state: 'online',
+            lastChanged: Date.now(),
+            room: roomId
+        }).catch(function(){});
+    }
+
     if(typeof RoomAlerts!=='undefined'&&RoomAlerts.onRoomChanged){try{RoomAlerts.onRoomChanged()}catch(e){}}
     if(typeof onRoomChanged==='function'){try{onRoomChanged(roomId)}catch(e){}}
     closeAllPanels();
 }
 
-/* ⭐ v3.10: تمرير _fbKey */
 function startMessagesListener(){
     if(!db)return;
     if(ChatState.messagesListener)ChatState.messagesListener.off();
@@ -360,7 +366,6 @@ function startMessagesListener(){
         if(msg.senderUid&&isBlocked(msg.senderUid))return;
         const key=roomId+'_'+s.key;
         if(!ChatState.seenMessages.has(key)){ChatState.seenMessages.add(key);displayMessage(msg,s.key);if(msg.mentions&&msg.mentions.includes(user.name))playBirdSound()}
-        // ⭐ v3.10: تمرير _fbKey
         if(typeof processIncomingMessage==='function'){try{processIncomingMessage(Object.assign({},msg,{_key:key,_fbKey:s.key})).catch(e=>console.warn(e))}catch(e){}}
     });
     ref.on('child_changed',s=>{
@@ -369,7 +374,6 @@ function startMessagesListener(){
         if (msg && msg.hidden === true) {
             const u = getCurrentUser();
             if (u && (u.rank === 'King' || u.rank === 'Queen')) {
-                // الملك يرى الإطار التحذيري — نعيد البناء
                 if (el) el.remove();
                 displayMessage(msg, s.key);
             } else {
@@ -434,7 +438,6 @@ async function openProfileByCode(code){
     }catch(e){showToast('fa-exclamation-circle','⚠️ خطأ')}
 }
 
-/* ⭐ v3.10: عرض الرسالة المخفية للملك/الملكة */
 function _buildHiddenMessageEl(msg, msgId) {
     const container = document.getElementById('messages');
     if (!container) return;
@@ -476,7 +479,6 @@ function displayMessage(msg,msgId){
     const container=document.getElementById('messages');if(!container)return;
     const user=getCurrentUser();
 
-    // ⭐ v3.10: معالجة الرسائل المخفية
     if (msg.hidden === true) {
         var uLevel = 0;
         if (user) {
@@ -551,7 +553,6 @@ function displayMessage(msg,msgId){
             msgText.textContent=msg.text||'';
         }
     }
-    // ⭐ v3.10: تطبيق لون الخط من إعدادات الغرفة
     const _fontColor = msg._roomFontColor || (QAMAR.ROOMS[ChatState.currentRoom] && QAMAR.ROOMS[ChatState.currentRoom].fontColor);
     if (_fontColor && safeColor(_fontColor)) {
         msgText.style.color = _fontColor;
@@ -583,7 +584,6 @@ function displayMessage(msg,msgId){
 
     msgEl.appendChild(aw);msgEl.appendChild(content);
 
-    // ⭐ v3.10: زر ✕ لحذف رسالة الترحيب
     if (msg.isWelcome === true && user) {
         var uLevel2 = user.rankLevel || (typeof getRankLevel === 'function' ? getRankLevel(user.rank) : 0);
         var canDeleteWelcome = (msg.welcomeFor === user.uid) || (uLevel2 >= 80) || user.rank === 'King' || user.rank === 'Queen';
@@ -608,7 +608,6 @@ function displayMessage(msg,msgId){
     container.scrollTop=container.scrollHeight;
 }
 
-/* ⭐ v3.10: إخفاء رسالة الترحيب */
 async function _hideWelcomeMessage(msgId, msgEl) {
     if (!confirm('حذف رسالة الانضمام؟')) return;
     var roomId = (typeof ChatState !== 'undefined' && ChatState.currentRoom) || 'general';
@@ -822,7 +821,6 @@ async function toggleReaction(msgId,emoji){
     closeAllMenus();
 }
 
-/* ⭐ v3.10: حذف (إخفاء) الرسالة */
 async function editMessage(msgEl,msgId){
     const t=msgEl.querySelector('.message-text');if(!t)return;
     const cur=t.innerText,nt=prompt('✏️ تعديل:',cur);
@@ -830,7 +828,6 @@ async function editMessage(msgEl,msgId){
     closeAllMenus();
 }
 
-/* ⭐ v3.10: إخفاء بدل حذف كامل — الملك يراها */
 async function deleteMessage(msgEl,msgId){
     if(!msgId)return;
     if(!confirm('🗑️ حذف هذه الرسالة؟'))return;
@@ -843,7 +840,6 @@ async function deleteMessage(msgEl,msgId){
             hiddenAt: Date.now(),
             hiddenReason: 'manual'
         });
-        // الملك/الملكة يرون الإطار التحذيري بدلاً من الاختفاء
         const uLevel = user ? (user.rankLevel || (typeof getRankLevel === 'function' ? getRankLevel(user.rank) : 0)) : 0;
         const canSee = user && (user.rank === 'King' || user.rank === 'Queen' || uLevel >= 95);
         if (!canSee && msgEl && msgEl.parentNode) {
@@ -1395,6 +1391,16 @@ window.addEventListener('message',e=>{
         if(u.avatarFrame!==undefined)refreshAvatarsInMessages(u.avatarFrame);
         refreshNameStylesInMessages(u);
     }
+    // ⭐ v3.11: مغادرة الغرفة من البروفايل
+    if (e.data && e.data.action === 'leaveRoom') {
+        var roomsList = document.getElementById('rooms-sidebar');
+        if (roomsList) {
+            roomsList.classList.add('open');
+            closeAllPanels();
+            var ov = document.getElementById('overlay');
+            if (ov) ov.classList.add('show');
+        }
+    }
 });
 
 function refreshAvatarsInMessages(newFrame){
@@ -1496,4 +1502,4 @@ window.applyRoomBackground=applyRoomBackground;
 window.buildRoomsList=buildRoomsList;
 window.clearPrivateNotifsFrom = _clearPrivateNotifsFrom;
 
-console.log('✅ chat.js v3.10 loaded — v3.9 + _fbKey + hidden messages + welcome delete');
+console.log('✅ chat.js v3.11 loaded — presence on room switch');
