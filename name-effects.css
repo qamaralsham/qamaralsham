@@ -1,13 +1,12 @@
 /* ==============================================
-   name-effects.css v5
+   name-effects.css v7
    ==============================================
-   ✅ v5:
-     1. خلفية اسم بحجم الاسم + 1px (padding مضبوط)
-     2. تدرج خلفية متحرك (نفس حركة النص)
-     3. توهج أقوى (طبقتان)
-     4. إصلاح stacking context
-     5. الإطار الافتراضي للأفاتار حسب الرتبة
-     6. توافق مع خلفية البروفايل الشفافة
+   ✅ v7:
+     1. 9 أنماط سينمائية للنص (data-cinema-text)
+     2. 9 أنماط سينمائية للخلفية (data-cinema-bg)
+     3. multicolor + sugar: تحتاج تقسيم حروف (JS)
+     4. باقي الأنماط: CSS فقط
+     5. الأنماط القديمة (nameGradient/nameBgColor) كما هي
    ============================================== */
 
 :root {
@@ -16,56 +15,27 @@
 }
 
 /* ══════════════════════════════════════════════ */
-/* العنصر الأساسي للاسم                           */
+/* العنصر الأساسي                                 */
 /* ══════════════════════════════════════════════ */
 .name-styled,
 .message-username.name-styled,
 .username.name-styled {
-    position: relative;
-    display: inline-block;
-    padding: 2px 8px;
+    position: relative !important;
+    display: inline-block !important;
+    padding: 3px 10px;
     font-weight: 900;
     line-height: 1.3;
-    border-radius: 6px;
+    border-radius: 8px;
     color: var(--name-color, #ffffff);
     isolation: isolate;
     z-index: 1;
-    /* ⭐ مهم: يسمح للخلفية بالتمدد خارج النص بـ 1px فقط */
     box-sizing: content-box;
 }
 
 /* ══════════════════════════════════════════════ */
-/* الطبقة 1: الخلفية (لون أو تدرج)                */
+/* الأساس المشترك لـ cinema text                  */
 /* ══════════════════════════════════════════════ */
-.name-styled.has-bg::before {
-    content: '';
-    position: absolute;
-    top: -1px;
-    right: -1px;
-    bottom: -1px;
-    left: -1px;
-    border-radius: inherit;
-    background: var(--name-bg, transparent);
-    /* ⭐ توهج قوي (طبقتان) */
-    box-shadow:
-        0 0 4px 1px var(--name-bg-glow, transparent),
-        0 0 10px 2px var(--name-bg-glow, transparent);
-    z-index: -1;
-    pointer-events: none;
-    /* خلفية ثابتة (لون) */
-    background-size: 100% 100%;
-}
-
-/* ⭐ خلفية متحركة للتدرجات */
-.name-styled.has-bg-gradient::before {
-    background-size: 400% 100% !important;
-    animation: nameGradientSlide 3s linear infinite;
-}
-
-/* ══════════════════════════════════════════════ */
-/* الطبقة 3: التدرج المتحرك فوق النص              */
-/* ══════════════════════════════════════════════ */
-.name-styled.has-gradient::after {
+.name-styled[data-cinema-text]:not(.cinema-split)::after {
     content: attr(data-text);
     position: absolute;
     top: -1px;
@@ -74,46 +44,360 @@
     left: -1px;
     padding: inherit;
     border-radius: inherit;
-    background: var(--name-gradient);
-    background-size: 400% 100%;
+    background: var(--cinema-bg, transparent);
+    background-size: var(--cinema-bg-size, 100% 100%);
+    background-position: var(--cinema-bg-pos, 0 0);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     color: transparent;
-    animation: nameGradientSlide 3s linear infinite;
-    pointer-events: none;
+    animation: var(--cinema-anim, none);
+    filter: var(--cinema-filter, none);
+    text-shadow: var(--cinema-shadow, none);
     z-index: 2;
-    opacity: var(--name-gradient-opacity, 0.85);
-    /* ⭐ لضمان عدم تأثير الخلفية */
+    pointer-events: none;
     line-height: 1.3;
     font-weight: 900;
     box-sizing: content-box;
 }
 
-/* ⭐ الحركة الموحّدة (تستخدمها الخلفية والنص) */
+/* ══════════════════════════════════════════════ */
+/* الأساس المشترك لـ cinema bg                    */
+/* ══════════════════════════════════════════════ */
+.name-styled[data-cinema-bg]::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    bottom: -1px;
+    left: -1px;
+    border-radius: inherit;
+    background: var(--cinema-bg, transparent);
+    background-size: var(--cinema-bg-size, 100% 100%);
+    background-position: var(--cinema-bg-pos, 0 0);
+    animation: var(--cinema-anim, none);
+    filter: var(--cinema-filter, none);
+    box-shadow:
+        0 0 4px 1px var(--name-bg-glow, transparent),
+        0 0 10px 2px var(--name-bg-glow, transparent);
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* ══════════════════════════════════════════════ */
+/* 1. 🌈 قوس قزح لكل حرف — multicolor             */
+/* (يحتاج تقسيم حروف — JS يضيف class)            */
+/* ══════════════════════════════════════════════ */
+
+/* النص */
+.name-styled[data-cinema-text="multicolor"].cinema-split .nc {
+    animation: cinemaMultiColorText 1.5s linear infinite;
+    animation-delay: calc(var(--ci, 0) * 0.22s);
+}
+@keyframes cinemaMultiColorText {
+    0%   { color: #ff0000; text-shadow: 0 0 6px #ff0000; }
+    16%  { color: #ffd700; text-shadow: 0 0 6px #ffd700; }
+    33%  { color: #00ff88; text-shadow: 0 0 6px #00ff88; }
+    50%  { color: #00f3ff; text-shadow: 0 0 6px #00f3ff; }
+    66%  { color: #a855f7; text-shadow: 0 0 6px #a855f7; }
+    83%  { color: #ff0080; text-shadow: 0 0 6px #ff0080; }
+    100% { color: #ff0000; text-shadow: 0 0 6px #ff0000; }
+}
+
+/* الخلفية */
+.name-styled[data-cinema-bg="multicolor"].cinema-split-bg .nc {
+    animation: cinemaMultiColorBg 1.5s linear infinite;
+    animation-delay: calc(var(--ci, 0) * 0.22s);
+}
+@keyframes cinemaMultiColorBg {
+    0%   { background-color: rgba(255, 0, 0, 0.35); }
+    16%  { background-color: rgba(255, 215, 0, 0.35); }
+    33%  { background-color: rgba(0, 255, 136, 0.35); }
+    50%  { background-color: rgba(0, 243, 255, 0.35); }
+    66%  { background-color: rgba(168, 85, 247, 0.35); }
+    83%  { background-color: rgba(255, 0, 128, 0.35); }
+    100% { background-color: rgba(255, 0, 0, 0.35); }
+}
+
+/* ══════════════════════════════════════════════ */
+/* 2. 🌀 حلزون                                    */
+/* ══════════════════════════════════════════════ */
+.name-styled[data-cinema-text="spiral"] {
+    --cinema-bg: conic-gradient(from 0deg, #ff0000, #ffd700, #00ff88, #00f3ff, #a855f7, #ff0080, #ff0000);
+    --cinema-bg-size: 100% 100%;
+    --cinema-anim: cinemaSpiralRotate 2s linear infinite;
+}
+.name-styled[data-cinema-bg="spiral"] {
+    --cinema-bg: conic-gradient(from 0deg, rgba(255,0,0,0.4), rgba(255,215,0,0.4), rgba(0,255,136,0.4), rgba(0,243,255,0.4), rgba(168,85,247,0.4), rgba(255,0,128,0.4), rgba(255,0,0,0.4));
+    --cinema-bg-size: 100% 100%;
+    --cinema-anim: cinemaSpiralRotate 2s linear infinite;
+}
+@keyframes cinemaSpiralRotate {
+    from { transform: rotate(0deg) scale(1); }
+    to   { transform: rotate(360deg) scale(1); }
+}
+
+/* ══════════════════════════════════════════════ */
+/* 3. 🌌 سديم                                     */
+/* ══════════════════════════════════════════════ */
+.name-styled[data-cinema-text="nebula"] {
+    --cinema-bg:
+        radial-gradient(circle at 20% 30%, #6a0dad, transparent 50%),
+        radial-gradient(circle at 80% 70%, #1e90ff, transparent 50%),
+        radial-gradient(circle at 50% 50%, #ff69b4, transparent 40%),
+        radial-gradient(circle at 30% 80%, #00ffff, transparent 40%),
+        linear-gradient(90deg, #1a0033, #4b0082, #1a0033);
+    --cinema-bg-size: 200% 200%;
+    --cinema-anim: cinemaNebulaShift 5s ease-in-out infinite alternate;
+}
+.name-styled[data-cinema-bg="nebula"] {
+    --cinema-bg:
+        radial-gradient(circle at 20% 30%, rgba(106,13,173,0.5), transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(30,144,255,0.5), transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(255,105,180,0.4), transparent 40%),
+        linear-gradient(90deg, #1a0033, #4b0082, #1a0033);
+    --cinema-bg-size: 200% 200%;
+    --cinema-anim: cinemaNebulaShift 5s ease-in-out infinite alternate;
+}
+@keyframes cinemaNebulaShift {
+    0%   { background-position: 0 0, 0 0, 0 0, 0 0; }
+    100% { background-position: 40% 30%, -30% 40%, 20% -20%, 100% 50%; }
+}
+
+/* ══════════════════════════════════════════════ */
+/* 4. ⚡ عاصفة رعدية                              */
+/* ══════════════════════════════════════════════ */
+.name-styled[data-cinema-text="storm"] {
+    --cinema-shadow: 0 0 5px #fff, 0 0 10px #00f3ff;
+    --cinema-bg: linear-gradient(90deg, #c0c0ff, #ffffff, #c0c0ff);
+    --cinema-bg-size: 300% 100%;
+    --cinema-anim: cinemaStormFlash 0.6s steps(2) infinite;
+    --cinema-filter: drop-shadow(0 0 8px #00f3ff);
+}
+.name-styled[data-cinema-bg="storm"] {
+    --cinema-bg:
+        linear-gradient(120deg, #001a33 0%, #003d66 40%, #ffffff 50%, #003d66 60%, #001a33 100%);
+    --cinema-bg-size: 300% 100%;
+    --cinema-anim: cinemaStormBg 0.8s steps(3) infinite;
+}
+@keyframes cinemaStormFlash {
+    0%, 100% {
+        background-position: 0 0;
+        filter: drop-shadow(0 0 4px #00f3ff);
+    }
+    50% {
+        background-position: 100% 0;
+        filter: drop-shadow(0 0 20px #ffffff) drop-shadow(0 0 40px #00f3ff);
+    }
+}
+@keyframes cinemaStormBg {
+    0%, 100% { background-position: 0 0; filter: brightness(1); }
+    33%      { background-position: 50% 0; filter: brightness(1.5); }
+    66%      { background-position: 100% 0; filter: brightness(1.2); }
+}
+
+/* ══════════════════════════════════════════════ */
+/* 5. 🎆 أضواء العيد                              */
+/* ══════════════════════════════════════════════ */
+.name-styled[data-cinema-text="fireworks"] {
+    --cinema-bg: repeating-linear-gradient(
+        90deg,
+        transparent 0%,
+        #ff0000 5%,
+        transparent 10%,
+        #ffd700 15%,
+        transparent 20%,
+        #00ff88 25%,
+        transparent 30%,
+        #00f3ff 35%,
+        transparent 40%,
+        #ff00ff 45%,
+        transparent 50%
+    );
+    --cinema-bg-size: 200% 100%;
+    --cinema-anim: cinemaFireworksSlide 3s linear infinite;
+    --cinema-filter: drop-shadow(0 0 6px rgba(255,255,255,0.5));
+}
+.name-styled[data-cinema-bg="fireworks"] {
+    --cinema-bg: repeating-linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255,0,0,0.4) 5%,
+        transparent 10%,
+        rgba(255,215,0,0.4) 15%,
+        transparent 20%,
+        rgba(0,255,136,0.4) 25%,
+        transparent 30%,
+        rgba(0,243,255,0.4) 35%,
+        transparent 40%
+    );
+    --cinema-bg-size: 200% 100%;
+    --cinema-anim: cinemaFireworksSlide 3s linear infinite;
+}
+@keyframes cinemaFireworksSlide {
+    from { background-position: 0 0; }
+    to   { background-position: 200% 0; }
+}
+
+/* ══════════════════════════════════════════════ */
+/* 6. ✨ حبات السكر                               */
+/* (يحتاج تقسيم حروف)                              */
+/* ══════════════════════════════════════════════ */
+.name-styled[data-cinema-text="sugar"].cinema-split .nc {
+    animation: cinemaSugarPulse 1.5s ease-in-out infinite;
+    animation-delay: calc(var(--ci, 0) * 0.18s);
+    color: var(--sugar-color, #ffffff);
+}
+@keyframes cinemaSugarPulse {
+    0%, 100% {
+        text-shadow: 0 0 3px currentColor;
+        transform: scale(1);
+    }
+    50% {
+        text-shadow:
+            0 0 8px currentColor,
+            0 0 15px currentColor,
+            0 0 25px currentColor;
+        transform: scale(1.12);
+    }
+}
+
+.name-styled[data-cinema-bg="sugar"].cinema-split-bg .nc {
+    animation: cinemaSugarBgPulse 1.5s ease-in-out infinite;
+    animation-delay: calc(var(--ci, 0) * 0.18s);
+    background-color: var(--sugar-bg-color, rgba(255,255,255,0.2));
+    border-radius: 4px;
+    padding: 1px 3px;
+    margin: 0 1px;
+}
+@keyframes cinemaSugarBgPulse {
+    0%, 100% {
+        box-shadow: 0 0 4px var(--sugar-bg-color, transparent);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow:
+            0 0 10px var(--sugar-bg-color, transparent),
+            0 0 18px var(--sugar-bg-color, transparent);
+        transform: scale(1.08);
+    }
+}
+
+/* ══════════════════════════════════════════════ */
+/* 7. ❄️ ثلج                                      */
+/* ══════════════════════════════════════════════ */
+.name-styled[data-cinema-text="snow"] {
+    --cinema-bg: linear-gradient(
+        180deg,
+        #ffffff 0%,
+        #b3e5fc 25%,
+        #87ceeb 50%,
+        #b3e5fc 75%,
+        #ffffff 100%
+    );
+    --cinema-bg-size: 100% 250%;
+    --cinema-anim: cinemaSnowFall 3s linear infinite;
+    --cinema-filter: drop-shadow(0 0 5px #87ceeb);
+}
+.name-styled[data-cinema-bg="snow"] {
+    --cinema-bg: linear-gradient(
+        180deg,
+        rgba(255,255,255,0.5) 0%,
+        rgba(179,229,252,0.5) 30%,
+        rgba(135,206,235,0.5) 60%,
+        rgba(255,255,255,0.5) 100%
+    );
+    --cinema-bg-size: 100% 250%;
+    --cinema-anim: cinemaSnowFall 3s linear infinite;
+}
+@keyframes cinemaSnowFall {
+    from { background-position: 0 0; }
+    to   { background-position: 0 250%; }
+}
+
+/* ══════════════════════════════════════════════ */
+/* 8. 🌋 براكين                                   */
+/* ══════════════════════════════════════════════ */
+.name-styled[data-cinema-text="volcano"] {
+    --cinema-bg: linear-gradient(
+        90deg,
+        #1a0000, #8b0000, #ff4400, #ffd700, #ffff00,
+        #ffd700, #ff4400, #8b0000, #1a0000
+    );
+    --cinema-bg-size: 250% 100%;
+    --cinema-anim: cinemaVolcanoFlow 2s linear infinite;
+    --cinema-filter: drop-shadow(0 0 8px #ff4400);
+}
+.name-styled[data-cinema-bg="volcano"] {
+    --cinema-bg: linear-gradient(
+        90deg,
+        rgba(26,0,0,0.6), rgba(139,0,0,0.6), rgba(255,68,0,0.6),
+        rgba(255,215,0,0.6), rgba(139,0,0,0.6), rgba(26,0,0,0.6)
+    );
+    --cinema-bg-size: 250% 100%;
+    --cinema-anim: cinemaVolcanoFlow 2s linear infinite;
+}
+@keyframes cinemaVolcanoFlow {
+    from { background-position: 0 0; }
+    to   { background-position: 250% 0; }
+}
+
+/* ══════════════════════════════════════════════ */
+/* 9. 🌊 أمواج                                    */
+/* ══════════════════════════════════════════════ */
+.name-styled[data-cinema-text="waves"] {
+    --cinema-bg: repeating-linear-gradient(
+        90deg,
+        #001a66 0%,
+        #0066cc 15%,
+        #00ffff 30%,
+        #0066cc 45%,
+        #001a66 60%
+    );
+    --cinema-bg-size: 300% 100%;
+    --cinema-anim: cinemaWavesFlow 3s linear infinite;
+    --cinema-filter: drop-shadow(0 0 5px #00bfff);
+}
+.name-styled[data-cinema-bg="waves"] {
+    --cinema-bg: repeating-linear-gradient(
+        90deg,
+        rgba(0,26,102,0.5) 0%,
+        rgba(0,102,204,0.5) 15%,
+        rgba(0,255,255,0.5) 30%,
+        rgba(0,102,204,0.5) 45%,
+        rgba(0,26,102,0.5) 60%
+    );
+    --cinema-bg-size: 300% 100%;
+    --cinema-anim: cinemaWavesFlow 3s linear infinite;
+}
+@keyframes cinemaWavesFlow {
+    from { background-position: 0 0; }
+    to   { background-position: 300% 0; }
+}
+
+/* ══════════════════════════════════════════════ */
+/* خلفية الاسم التقليدية (كما هي)                 */
+/* ══════════════════════════════════════════════ */
+.name-styled.has-bg::before {
+    /* موجود في الأسفل — يبقى يعمل */
+}
+
+.name-styled.has-bg-gradient::before {
+    background-size: 400% 100% !important;
+    animation: nameGradientSlide 3s linear infinite;
+}
+
+.name-styled.has-gradient::after {
+    /* يبقى يعمل */
+}
+
 @keyframes nameGradientSlide {
     0%   { background-position: 0% 50%; }
     100% { background-position: 400% 50%; }
 }
 
-/* حالات مبسطة */
-.name-styled.name-color-only {
-    color: var(--name-color, #ffffff);
-}
-
-.name-styled.name-gradient-only {
-    background: var(--name-gradient);
-    background-size: 400% 100%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: transparent;
-    animation: nameGradientSlide 3s linear infinite;
-}
-.name-styled.name-gradient-only::after { display: none; }
-
 /* ══════════════════════════════════════════════ */
-/* الإطار الافتراضي للأفاتار (يبقى)               */
+/* الإطار الافتراضي للأفاتار                      */
 /* ══════════════════════════════════════════════ */
 .avatar-box { position: relative; }
 
@@ -132,7 +416,6 @@
     z-index: 5;
     box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
 }
-
 .avatar-box.default-frame-pink::after {
     content: '';
     position: absolute;
@@ -148,7 +431,6 @@
     z-index: 5;
     box-shadow: 0 0 20px rgba(255, 105, 180, 0.6);
 }
-
 .avatar-box.default-frame-silver::after {
     content: '';
     position: absolute;
@@ -164,7 +446,6 @@
     z-index: 5;
     box-shadow: 0 0 16px rgba(192, 192, 192, 0.5);
 }
-
 .avatar-box.default-frame-gray::after {
     content: '';
     position: absolute;
