@@ -1,28 +1,17 @@
 // ==============================================
-// profile-core.js v8 — All Fixes + Cinema Styles
+// profile-core.js v9 — cinema bg 22 + no video
 // ==============================================
-// ✅ v8:
-//   1. renderNameCinemaTextPicker + renderNameCinemaBgPicker
-//   2. applyIdentityToDOM يطبّق الأنماط السينمائية
-//   3. إصلاح حفظ الإطار (onSelect محسّن)
-//   4. إصلاح _openUserProfile (500ms)
-//   5. إصلاح زر 💬 (500ms)
-//   6. رفع الفيديو عبر catbox.moe
-//   7. إصلاح حالة الصديق (incoming)
-//   8. إصلاح النقر على صديق
+// ✅ v9:
+//   1. CINEMA_STYLES: من NameEffects.CINEMA_BG_STYLES (22)
+//   2. حذف دعم فيديو خلفية البروفايل
+//   3. رفض الفيديو في الرفع
+//   4. hide cinema-text (لكن الدالة موجودة)
 // ==============================================
 
-/* ══════════════════════════════════════════════ */
-/* ProfileState                                    */
-/* ══════════════════════════════════════════════ */
 const ProfileState = {
-    mode: 'owner',
-    me: null,
-    subject: null,
-    isAdminVisitor: false,
-    collapsed: false,
-    lastUserHash: '',
-    localLockUntil: 0,
+    mode: 'owner', me: null, subject: null,
+    isAdminVisitor: false, collapsed: false,
+    lastUserHash: '', localLockUntil: 0,
     settingsHistory: [],
     poetry: { text: '', bg: null, attachment: null },
     likes: { isLiked: false, count: 0 },
@@ -30,9 +19,6 @@ const ProfileState = {
     blocked: { isBlocked: false }
 };
 
-/* ══════════════════════════════════════════════ */
-/* Constants                                       */
-/* ══════════════════════════════════════════════ */
 const IMGBB_KEY = '80fd32c4ef79b5f25fbcf0893547de4f';
 
 const NAME_GRADIENTS = [
@@ -61,23 +47,25 @@ const NAME_GRADIENTS = [
     ['#00ccff','#6600ff'], ['#c0c0c0','#ffd700']
 ];
 
-/* ⭐ v8: قائمة الأنماط السينمائية */
-const CINEMA_STYLES = [
-    { id: '',             label: 'بدون',                icon: '❌' },
-    { id: 'multicolor',   label: 'ألوان متعددة',        icon: '🌈' },
-    { id: 'spiral',       label: 'حلزون',                icon: '🌀' },
-    { id: 'nebula',       label: 'سديم',                 icon: '🌌' },
-    { id: 'storm',        label: 'عاصفة رعدية',          icon: '⚡' },
-    { id: 'fireworks',    label: 'أضواء العيد',          icon: '🎆' },
-    { id: 'sugar',        label: 'حبات السكر',           icon: '✨' },
-    { id: 'snow',         label: 'ثلج',                  icon: '❄️' },
-    { id: 'volcano',      label: 'براكين',               icon: '🌋' },
-    { id: 'waves',        label: 'أمواج',                icon: '🌊' }
-];
+/* ⭐ v9: القائمة من NameEffects (22 نمط) */
+function _getCinemaBgStyles() {
+    if (window.NameEffects && Array.isArray(window.NameEffects.CINEMA_BG_STYLES)) {
+        // تحويل من array of ids إلى array of objects
+        const list = window.NameEffects.CINEMA_BG_STYLES.map(function (id) {
+            // نبحث عن الوصف في CINEMA_STYLES
+            if (window.NameEffects.CINEMA_STYLES) {
+                const item = window.NameEffects.CINEMA_STYLES.find(function (x) { return x.id === id; });
+                if (item) return item;
+            }
+            return { id: id, label: id, icon: '🎬' };
+        });
+        return list;
+    }
+    // fallback
+    return [{ id: '', label: 'بدون', icon: '❌' }];
+}
 
-/* ══════════════════════════════════════════════ */
-/* Helpers                                         */
-/* ══════════════════════════════════════════════ */
+/* ═══ Helpers ═══ */
 function _getUser() {
     try {
         return JSON.parse(
@@ -148,7 +136,7 @@ function _userHash(u) {
             n: u.name, b: u.bio, a: u.avatar, c: u.cover, r: u.rank,
             nc: u.nameColor, ng: u.nameGradient,
             nbc: u.nameBgColor, nbg: u.nameBgGradient,
-            nct: u.cinemaTextStyle, ncb: u.cinemaBgStyle,
+            ncb: u.cinemaBgStyle,
             af: u.avatarFrame, pg: u.profileGlow,
             pbt: u.profileBgType, pbv: u.profileBgValue,
             mu: u.musicURL, p: u.poetry, pb: u.poetryBg, pa: u.poetryAttachment,
@@ -160,7 +148,6 @@ function _userHash(u) {
     } catch (e) { return ''; }
 }
 
-/* ⭐ v8: فتح بروفايل مستخدم — تأخير 500ms */
 function _openUserProfile(uid, name) {
     if (!uid) return;
     try {
@@ -181,9 +168,7 @@ function _openUserProfile(uid, name) {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* Open App Modal                                  */
-/* ══════════════════════════════════════════════ */
+/* ═══ Modal ═══ */
 function openAppModal(opts) {
     opts = opts || {};
     const m = document.getElementById('app-modal');
@@ -263,11 +248,9 @@ function openAppModal(opts) {
 
 window.openAppModal = openAppModal;
 
-/* ══════════════════════════════════════════════ */
-/* Bootstrap                                       */
-/* ══════════════════════════════════════════════ */
+/* ═══ Bootstrap ═══ */
 document.addEventListener('DOMContentLoaded', async function () {
-    console.log('🚀 profile-core.js v8 booting...');
+    console.log('🚀 profile-core.js v9 booting...');
 
     const params = new URLSearchParams(location.search);
     const urlUid = params.get('uid');
@@ -339,12 +322,10 @@ document.addEventListener('DOMContentLoaded', async function () {
         renderFriendsTab();
     }, 400);
 
-    console.log('✅ profile-core.js v8 ready | Mode:', ProfileState.mode);
+    console.log('✅ profile-core.js v9 ready | Mode:', ProfileState.mode);
 });
 
-/* ══════════════════════════════════════════════ */
-/* Load Subject                                    */
-/* ══════════════════════════════════════════════ */
+/* ═══ Load Subject ═══ */
 function _loadSubjectFromCache(uid) {
     try {
         const key = uid ? ('profile_target_data_' + uid) : QAMAR.STORAGE_KEYS.CURRENT_USER;
@@ -449,9 +430,7 @@ function _startSubjectListener() {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* ⭐ v8: Apply Identity — مع الأنماط السينمائية   */
-/* ══════════════════════════════════════════════ */
+/* ⭐ v9: applyIdentityToDOM — cinema bg فقط */
 function applyIdentityToDOM() {
     const subj = ProfileState.subject;
     if (!subj) return;
@@ -463,13 +442,11 @@ function applyIdentityToDOM() {
         nameEl.setAttribute('data-name', displayName);
         nameEl.setAttribute('data-text', displayName);
 
-        // 1. طبّق النمط السينمائي للنص (أو أزله)
+        // ⭐ v9: cinema bg فقط (text محذوف)
         if (window.NameEffects && typeof window.NameEffects.applyCinemaStyle === 'function') {
-            window.NameEffects.applyCinemaStyle(nameEl, subj.cinemaTextStyle || '', 'text');
             window.NameEffects.applyCinemaStyle(nameEl, subj.cinemaBgStyle || '', 'bg');
         }
 
-        // 2. طبّق الأنماط التقليدية (apply يعرف أن cinema موجود فيتجنبه)
         if (window.NameEffects && typeof window.NameEffects.apply === 'function') {
             window.NameEffects.apply(nameEl, {
                 nameColor: subj.nameColor || null,
@@ -510,36 +487,17 @@ function applyIdentityToDOM() {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* Apply Cover / Avatar / BG / Glow / Music       */
-/* ══════════════════════════════════════════════ */
+/* ⭐ v9: Cover — بدون فيديو */
 function _applyCover(subj) {
     const img = document.getElementById('profile-cover-img');
-    const video = document.getElementById('profile-cover-video');
-    if (!img || !video) return;
+    if (!img) return;
     const cover = subj.cover;
     if (!cover) {
         img.style.display = 'none';
-        video.style.display = 'none';
-        if (video.pause) video.pause();
-        video.removeAttribute('src');
         return;
     }
-    const isVideo = /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(cover) || (subj.coverType === 'video');
-    if (isVideo) {
-        img.style.display = 'none';
-        video.style.display = 'block';
-        if (video.src !== cover) {
-            video.src = cover;
-            video.load();
-            video.play().catch(function () {});
-        }
-    } else {
-        video.style.display = 'none';
-        if (video.pause) video.pause();
-        img.style.display = 'block';
-        if (img.src !== cover) img.src = cover;
-    }
+    img.style.display = 'block';
+    if (img.src !== cover) img.src = cover;
 }
 
 function _applyAvatar(subj) {
@@ -559,6 +517,7 @@ function _applyAvatar(subj) {
     }
 }
 
+/* ⭐ v9: Profile BG — بدون فيديو */
 function _applyProfileBackground(subj) {
     const layer = document.getElementById('profile-bg-layer');
     if (!layer) return;
@@ -574,17 +533,8 @@ function _applyProfileBackground(subj) {
         layer.style.backgroundImage = 'url("' + value + '")';
         layer.style.backgroundSize = 'cover';
         layer.style.backgroundPosition = 'center';
-    } else if (type === 'video') {
-        const v = document.createElement('video');
-        v.src = value;
-        v.muted = true;
-        v.loop = true;
-        v.playsInline = true;
-        v.setAttribute('playsinline', '');
-        v.autoplay = true;
-        layer.appendChild(v);
-        v.play().catch(function () {});
     }
+    // ⭐ v9: 'video' محذوف
 }
 
 function _applyProfileGlow(subj) {
@@ -633,9 +583,7 @@ function _applyMusicButton(subj) {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* Info Grid                                       */
-/* ══════════════════════════════════════════════ */
+/* ═══ Info Grid ═══ */
 function renderInfoGrid() {
     const grid = document.getElementById('info-grid');
     if (!grid) return;
@@ -687,9 +635,7 @@ function renderInfoGrid() {
 
 window.renderInfoGrid = renderInfoGrid;
 
-/* ══════════════════════════════════════════════ */
-/* Cover Buttons / Tabs                            */
-/* ══════════════════════════════════════════════ */
+/* ═══ Cover Buttons ═══ */
 function _bindCoverButtons() {
     const closeBtn = document.getElementById('btn-close');
     if (closeBtn) {
@@ -712,6 +658,7 @@ function _bindCoverButtons() {
     }
 }
 
+/* ═══ Tabs ═══ */
 function renderTabsForMode() {
     const tabsBar = document.getElementById('tabsBar');
     if (!tabsBar) return;
@@ -750,9 +697,7 @@ function switchTab(tabName) {
 
 window.switchTab = switchTab;
 
-/* ══════════════════════════════════════════════ */
-/* Drill-down                                      */
-/* ══════════════════════════════════════════════ */
+/* ═══ Drill-down ═══ */
 function _resetSettingsPage() {
     ProfileState.settingsHistory = ['main'];
     _showSettingsPage('main', false);
@@ -785,14 +730,12 @@ function _goBackSettings() {
     _showSettingsPage(prev, false);
 }
 
-/* ⭐ v8: أضفت الصفحتين الجديدتين */
 function _renderSettingsPage(pageId) {
     switch (pageId) {
         case 'name-color': renderNameColorPicker(); break;
         case 'name-gradient': renderNameGradientPicker(); break;
         case 'name-bg-color': renderNameBgColorPicker(); break;
         case 'name-bg-gradient': renderNameBgGradientPicker(); break;
-        case 'name-cinema-text': renderNameCinemaTextPicker(); break;
         case 'name-cinema-bg': renderNameCinemaBgPicker(); break;
         case 'avatar-page': renderAvatarPage(); break;
         case 'cover-page': renderCoverPage(); break;
@@ -817,32 +760,20 @@ function _bindSettingsNavigation() {
     });
 }
 
-/* ══════════════════════════════════════════════ */
-/* ⭐ v8: Upload — catbox للفيديو                  */
-/* ══════════════════════════════════════════════ */
+/* ⭐ v9: Upload — يرفض الفيديو */
 async function uploadToImgBB(file) {
-    // ⭐ v8: الفيديو → catbox.moe
+    // ⭐ v9: الفيديو مرفوض
     if (file.type && file.type.indexOf('video/') === 0) {
-        const fd = new FormData();
-        fd.append('reqtype', 'fileupload');
-        fd.append('fileToUpload', file);
-        const res = await fetch('https://catbox.moe/user/api.php', {
-            method: 'POST',
-            body: fd
-        });
-        const text = await res.text();
-        if (text && text.indexOf('https://') === 0) return text.trim();
-        throw new Error('Video upload failed');
+        throw new Error('Video not supported');
     }
 
-    // الصور → imgBB
     const fd = new FormData();
     fd.append('key', IMGBB_KEY);
     fd.append('image', file);
     const res = await fetch('https://api.imgbb.com/1/upload', { method: 'POST', body: fd });
     const data = await res.json();
     if (data && data.success && data.data && data.data.url) return data.data.url;
-    throw new Error('Image upload failed');
+    throw new Error('Upload failed');
 }
 
 function pickImageFile(inputId, onFile, opts) {
@@ -853,6 +784,11 @@ function pickImageFile(inputId, onFile, opts) {
     inp.onchange = async function () {
         const file = this.files[0];
         if (!file) return;
+        // ⭐ v9: فحص الفيديو
+        if (file.type && file.type.indexOf('video/') === 0) {
+            _toast('⚠️ الفيديو غير مدعوم حالياً');
+            return;
+        }
         const maxMb = opts.maxMb || 5;
         if (file.size / (1024 * 1024) > maxMb) {
             _toast('⚠️ الحد ' + maxMb + 'MB');
@@ -898,9 +834,7 @@ async function updateIdentityField(field, value) {
     } catch (e) {}
 }
 
-/* ══════════════════════════════════════════════ */
-/* Edit Name / Bio / Visitor View                  */
-/* ══════════════════════════════════════════════ */
+/* ═══ Edit Name / Bio / Visitor View ═══ */
 function _bindEditName() {
     const btn = document.getElementById('btn-edit-username');
     if (!btn || btn.__bound) return;
@@ -973,9 +907,7 @@ function _bindVisitorView() {
     };
 }
 
-/* ══════════════════════════════════════════════ */
-/* Name Color / Gradient / Bg Color / Bg Gradient */
-/* ══════════════════════════════════════════════ */
+/* ═══ Name Color / Gradient / Bg Color / Bg Gradient ═══ */
 function renderNameColorPicker() {
     const grid = document.getElementById('name-color-grid');
     const preview = document.getElementById('name-preview-color');
@@ -1095,11 +1027,16 @@ function renderNameBgColorPicker() {
     const currentBgGrad = subj ? subj.nameBgGradient : null;
     const currentColor = subj ? subj.nameColor : null;
     const currentGrad = subj ? subj.nameGradient : null;
+    const currentCinema = subj ? subj.cinemaBgStyle : null;
 
     if (preview) {
         preview.textContent = displayName;
         preview.setAttribute('data-text', displayName);
         preview.setAttribute('data-name', displayName);
+        // ⭐ v9: طبّق cinema bg إذا موجود
+        if (currentCinema) {
+            window.NameEffects.applyCinemaStyle(preview, currentCinema, 'bg');
+        }
         window.NameEffects.apply(preview, {
             nameColor: currentColor,
             nameGradient: currentGrad,
@@ -1116,13 +1053,16 @@ function renderNameBgColorPicker() {
         const item = window.NameEffects.previewTemplate(displayName, {
             nameColor: '#ffffff',
             nameBgColor: color
-        }, currentBgColor === color && !currentBgGrad ? 'selected' : '');
+        }, currentBgColor === color && !currentBgGrad && !currentCinema ? 'selected' : '');
         item.onclick = function () {
             updateIdentityField('nameBgColor', color);
             updateIdentityField('nameBgGradient', null);
+            updateIdentityField('cinemaBgStyle', null);
             grid.querySelectorAll('.name-grid-item').forEach(function (x) { x.classList.remove('selected'); });
             item.classList.add('selected');
             if (preview) {
+                // أزل cinema bg أولاً
+                window.NameEffects.applyCinemaStyle(preview, '', 'bg');
                 window.NameEffects.apply(preview, {
                     nameColor: currentColor,
                     nameGradient: currentGrad,
@@ -1154,11 +1094,15 @@ function renderNameBgGradientPicker() {
     const currentBgGrad = subj ? subj.nameBgGradient : null;
     const currentColor = subj ? subj.nameColor : null;
     const currentGrad = subj ? subj.nameGradient : null;
+    const currentCinema = subj ? subj.cinemaBgStyle : null;
 
     if (preview) {
         preview.textContent = displayName;
         preview.setAttribute('data-text', displayName);
         preview.setAttribute('data-name', displayName);
+        if (currentCinema) {
+            window.NameEffects.applyCinemaStyle(preview, currentCinema, 'bg');
+        }
         window.NameEffects.apply(preview, {
             nameColor: currentColor,
             nameGradient: currentGrad,
@@ -1170,7 +1114,7 @@ function renderNameBgGradientPicker() {
 
     grid.innerHTML = '';
     NAME_GRADIENTS.forEach(function (grad) {
-        const isSelected = currentBgGrad && currentBgGrad[0] === grad[0] && currentBgGrad[1] === grad[1];
+        const isSelected = currentBgGrad && currentBgGrad[0] === grad[0] && currentBgGrad[1] === grad[1] && !currentCinema;
         const item = window.NameEffects.previewTemplate(displayName, {
             nameColor: '#ffffff',
             nameBgGradient: grad
@@ -1178,9 +1122,11 @@ function renderNameBgGradientPicker() {
         item.onclick = function () {
             updateIdentityField('nameBgColor', null);
             updateIdentityField('nameBgGradient', grad);
+            updateIdentityField('cinemaBgStyle', null);
             grid.querySelectorAll('.name-grid-item').forEach(function (x) { x.classList.remove('selected'); });
             item.classList.add('selected');
             if (preview) {
+                window.NameEffects.applyCinemaStyle(preview, '', 'bg');
                 window.NameEffects.apply(preview, {
                     nameColor: currentColor,
                     nameGradient: currentGrad,
@@ -1203,75 +1149,7 @@ function renderNameBgGradientPicker() {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* ⭐ v8: Cinema Text Picker                       */
-/* ══════════════════════════════════════════════ */
-function renderNameCinemaTextPicker() {
-    const grid = document.getElementById('name-cinema-text-grid');
-    const preview = document.getElementById('name-preview-cinema-text');
-    if (!grid) return;
-
-    const subj = ProfileState.subject;
-    const displayName = subj ? (subj.name || 'مستخدم') : 'مستخدم';
-    const currentStyle = subj ? (subj.cinemaTextStyle || '') : '';
-
-    if (preview) {
-        preview.textContent = displayName;
-        preview.setAttribute('data-text', displayName);
-        preview.setAttribute('data-name', displayName);
-        window.NameEffects.applyCinemaStyle(preview, currentStyle, 'text');
-    }
-
-    grid.innerHTML = '';
-    CINEMA_STYLES.forEach(function (style) {
-        const item = document.createElement('div');
-        item.className = 'name-grid-item' + (currentStyle === style.id ? ' selected' : '');
-
-        const inner = document.createElement('span');
-        inner.className = 'name-styled';
-        inner.textContent = displayName;
-        inner.setAttribute('data-name', displayName);
-        inner.setAttribute('data-text', displayName);
-        item.appendChild(inner);
-
-        if (style.id) {
-            window.NameEffects.applyCinemaStyle(inner, style.id, 'text');
-        } else {
-            inner.style.color = '#ffffff';
-        }
-
-        const lbl = document.createElement('div');
-        lbl.style.cssText = 'font-size:10px;color:#888;margin-top:8px;text-align:center;';
-        lbl.textContent = style.icon + ' ' + style.label;
-        item.style.flexDirection = 'column';
-        item.appendChild(lbl);
-
-        item.onclick = function () {
-            updateIdentityField('cinemaTextStyle', style.id || null);
-            grid.querySelectorAll('.name-grid-item').forEach(function (x) { x.classList.remove('selected'); });
-            item.classList.add('selected');
-
-            // حدّث المعاينة
-            if (preview) {
-                window.NameEffects.applyCinemaStyle(preview, style.id || '', 'text');
-            }
-        };
-        grid.appendChild(item);
-    });
-
-    const removeBtn = document.getElementById('remove-name-cinema-text');
-    if (removeBtn && !removeBtn.__bound) {
-        removeBtn.__bound = true;
-        removeBtn.onclick = function () {
-            updateIdentityField('cinemaTextStyle', null);
-            renderNameCinemaTextPicker();
-        };
-    }
-}
-
-/* ══════════════════════════════════════════════ */
-/* ⭐ v8: Cinema Bg Picker                         */
-/* ══════════════════════════════════════════════ */
+/* ⭐ v9: Cinema BG Picker — 22 نمط */
 function renderNameCinemaBgPicker() {
     const grid = document.getElementById('name-cinema-bg-grid');
     const preview = document.getElementById('name-preview-cinema-bg');
@@ -1285,11 +1163,14 @@ function renderNameCinemaBgPicker() {
         preview.textContent = displayName;
         preview.setAttribute('data-text', displayName);
         preview.setAttribute('data-name', displayName);
+        preview.style.color = '#ffffff';
         window.NameEffects.applyCinemaStyle(preview, currentStyle, 'bg');
     }
 
+    const styles = _getCinemaBgStyles();
+
     grid.innerHTML = '';
-    CINEMA_STYLES.forEach(function (style) {
+    styles.forEach(function (style) {
         const item = document.createElement('div');
         item.className = 'name-grid-item' + (currentStyle === style.id ? ' selected' : '');
 
@@ -1307,12 +1188,17 @@ function renderNameCinemaBgPicker() {
 
         const lbl = document.createElement('div');
         lbl.style.cssText = 'font-size:10px;color:#888;margin-top:8px;text-align:center;';
-        lbl.textContent = style.icon + ' ' + style.label;
+        lbl.textContent = (style.icon || '🎬') + ' ' + (style.label || style.id);
         item.style.flexDirection = 'column';
         item.appendChild(lbl);
 
         item.onclick = function () {
             updateIdentityField('cinemaBgStyle', style.id || null);
+            // أزل الأنماط القديمة
+            if (style.id) {
+                updateIdentityField('nameBgColor', null);
+                updateIdentityField('nameBgGradient', null);
+            }
             grid.querySelectorAll('.name-grid-item').forEach(function (x) { x.classList.remove('selected'); });
             item.classList.add('selected');
 
@@ -1333,9 +1219,7 @@ function renderNameCinemaBgPicker() {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* Avatar Page                                     */
-/* ══════════════════════════════════════════════ */
+/* ═══ Avatar / Cover / Frame / Glow / ProfileBG ═══ */
 function renderAvatarPage() {
     const subj = ProfileState.subject;
     const img = document.getElementById('avatar-preview-img');
@@ -1380,13 +1264,11 @@ function _bindImagesUploads() {
                 _toast('⏳ جاري الرفع...');
                 try {
                     const url = await uploadToImgBB(file);
-                    const isVideo = file.type.indexOf('video/') === 0;
                     await updateIdentityField('cover', url);
-                    await updateIdentityField('coverType', isVideo ? 'video' : 'image');
                     renderCoverPage();
                     _toast('✅ تم');
                 } catch (e) { _toast('⚠️ فشل الرفع'); }
-            }, { maxMb: 200 });
+            }, { maxMb: 32 });
         };
     }
 
@@ -1396,7 +1278,6 @@ function _bindImagesUploads() {
         removeCover.onclick = function () {
             if (!confirm('إزالة الغلاف؟')) return;
             updateIdentityField('cover', null);
-            updateIdentityField('coverType', null);
             renderCoverPage();
             _toast('✅ تم');
         };
@@ -1431,13 +1312,12 @@ function _bindImagesUploads() {
                 _toast('⏳ جاري الرفع...');
                 try {
                     const url = await uploadToImgBB(file);
-                    const isVideo = file.type.indexOf('video/') === 0;
-                    await updateIdentityField('profileBgType', isVideo ? 'video' : 'image');
+                    await updateIdentityField('profileBgType', 'image');
                     await updateIdentityField('profileBgValue', url);
                     renderProfileBgPage();
                     _toast('✅ تم');
                 } catch (e) { _toast('⚠️ فشل الرفع'); }
-            }, { maxMb: 200 });
+            }, { maxMb: 32 });
         };
     }
 
@@ -1459,17 +1339,12 @@ function _switchBgTypeUI(type) {
     const mediaSec = document.getElementById('bg-media-section');
     if (!colorSec || !mediaSec) return;
     colorSec.style.display = (type === 'color') ? 'block' : 'none';
-    mediaSec.style.display = (type === 'image' || type === 'video') ? 'block' : 'none';
-    const lbl = document.getElementById('bg-upload-label');
-    if (lbl) lbl.textContent = type === 'video' ? 'رفع فيديو' : 'رفع صورة';
+    mediaSec.style.display = (type === 'image') ? 'block' : 'none';
     document.querySelectorAll('[data-bg-type]').forEach(function (b) {
         b.style.opacity = (b.getAttribute('data-bg-type') === type) ? '1' : '0.5';
     });
 }
 
-/* ══════════════════════════════════════════════ */
-/* Cover Page                                      */
-/* ══════════════════════════════════════════════ */
 function renderCoverPage() {
     const subj = ProfileState.subject;
     const img = document.getElementById('cover-preview-img');
@@ -1482,13 +1357,9 @@ function renderCoverPage() {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* ⭐ v8: Frame Page — إصلاح الحفظ                  */
-/* ══════════════════════════════════════════════ */
 function renderFramePage() {
     const container = document.getElementById('frames-grid-container');
     if (!container) return;
-
     const subj = ProfileState.subject;
     const avatarSrc = subj ? subj.avatar : null;
     const currentFrame = subj ? subj.avatarFrame : null;
@@ -1501,7 +1372,6 @@ function renderFramePage() {
                 try {
                     await updateIdentityField('avatarFrame', frameId || null);
                     _toast(frameId ? '✅ تم حفظ الإطار' : '✅ أُزيل الإطار');
-                    // إعادة تطبيق الإطار بصرياً
                     setTimeout(function () {
                         const box = document.getElementById('avatar-box');
                         if (box && typeof applyAvatarFrameFromUser === 'function') {
@@ -1531,9 +1401,6 @@ function renderFramePage() {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* Glow Page                                       */
-/* ══════════════════════════════════════════════ */
 function renderGlowPage() {
     const container = document.getElementById('glow-grid-container');
     if (!container) return;
@@ -1568,9 +1435,6 @@ function renderGlowPage() {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* Profile BG Page                                 */
-/* ══════════════════════════════════════════════ */
 function renderProfileBgPage() {
     const subj = ProfileState.subject;
     if (!subj) return;
@@ -1582,9 +1446,7 @@ function renderProfileBgPage() {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* Music Page                                      */
-/* ══════════════════════════════════════════════ */
+/* ═══ Music ═══ */
 function renderMusicPage() {
     const subj = ProfileState.subject;
     const status = document.getElementById('music-status');
@@ -1621,9 +1483,7 @@ function _bindMusic() {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* Poetry                                          */
-/* ══════════════════════════════════════════════ */
+/* ═══ Poetry ═══ */
 function renderPoetryPage() {
     const subj = ProfileState.subject;
     if (!subj) return;
@@ -1805,9 +1665,7 @@ function _bindPoetry() {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* Privacy Page                                    */
-/* ══════════════════════════════════════════════ */
+/* ═══ Privacy ═══ */
 const PRIVACY_FIELDS = [
     { key: 'country',  label: 'الدولة' },
     { key: 'age',      label: 'العمر' },
@@ -1854,9 +1712,6 @@ function renderPrivacyPage() {
 
 function _bindPrivacy() {}
 
-/* ══════════════════════════════════════════════ */
-/* Room Page                                       */
-/* ══════════════════════════════════════════════ */
 function renderRoomPage() {
     const el = document.getElementById('current-room-name');
     if (!el) return;
@@ -1865,9 +1720,7 @@ function renderRoomPage() {
     el.textContent = room ? (room.icon + ' ' + room.name) : roomId;
 }
 
-/* ══════════════════════════════════════════════ */
-/* Danger Actions                                  */
-/* ══════════════════════════════════════════════ */
+/* ═══ Danger ═══ */
 function _bindDangerActions() {
     const leaveBtn = document.getElementById('btn-leave-room');
     if (leaveBtn && !leaveBtn.__bound) {
@@ -1964,9 +1817,7 @@ async function _executeDeleteAccount() {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* ⭐ v8: Visitor Buttons — إصلاح الصديق           */
-/* ══════════════════════════════════════════════ */
+/* ═══ Visitor Buttons ═══ */
 async function checkVisitorStatus() {
     if (!_isVisitor()) return;
     const subj = ProfileState.subject;
@@ -1978,7 +1829,6 @@ async function checkVisitorStatus() {
         ProfileState.likes.isLiked = likeSnap.exists();
     } catch (e) {}
 
-    // ⭐ v8: فحص شامل لحالة الصديق
     try {
         const fSnap = await db.ref('users/' + subj.uid + '/friends/' + me.uid).once('value');
         const f = fSnap.val();
@@ -1987,13 +1837,9 @@ async function checkVisitorStatus() {
         } else {
             const r1 = await db.ref('users/' + me.uid + '/friend_requests/' + subj.uid).once('value');
             const r2 = await db.ref('users/' + subj.uid + '/friend_requests/' + me.uid).once('value');
-            if (r2.exists() && !r1.exists()) {
-                ProfileState.friends.state = 'incoming';
-            } else if (r1.exists()) {
-                ProfileState.friends.state = 'pending';
-            } else {
-                ProfileState.friends.state = 'off';
-            }
+            if (r2.exists() && !r1.exists()) ProfileState.friends.state = 'incoming';
+            else if (r1.exists()) ProfileState.friends.state = 'pending';
+            else ProfileState.friends.state = 'off';
         }
     } catch (e) {}
 
@@ -2082,7 +1928,6 @@ function _bindLikesFriendsBlocked() {
         };
     }
 
-    // ⭐ v8: زر 💬 — تأخير 500ms
     const mail = document.getElementById('btn-mail');
     if (mail && !mail.__bound) {
         mail.__bound = true;
@@ -2105,7 +1950,6 @@ function _bindLikesFriendsBlocked() {
         };
     }
 
-    // ⭐ v8: زر صديق — 4 حالات
     const friend = document.getElementById('btn-friend');
     if (friend && !friend.__bound) {
         friend.__bound = true;
@@ -2115,7 +1959,6 @@ function _bindLikesFriendsBlocked() {
             if (!subj || !me || !me.uid) return;
             const st = ProfileState.friends.state;
 
-            // ✅ صديق — إزالة
             if (st === 'accepted') {
                 if (!confirm('إزالة الصداقة؟')) return;
                 try {
@@ -2130,7 +1973,6 @@ function _bindLikesFriendsBlocked() {
                 return;
             }
 
-            // ⏳ معلّق — إلغاء
             if (st === 'pending') {
                 if (!confirm('إلغاء الطلب؟')) return;
                 try {
@@ -2141,7 +1983,6 @@ function _bindLikesFriendsBlocked() {
                 return;
             }
 
-            // 📩 وارد — قبول
             if (st === 'incoming') {
                 try {
                     await Promise.all([
@@ -2162,7 +2003,6 @@ function _bindLikesFriendsBlocked() {
                 return;
             }
 
-            // ➕ إرسال طلب
             try {
                 await db.ref('users/' + me.uid + '/friend_requests/' + subj.uid).set({
                     time: Date.now(),
@@ -2223,38 +2063,31 @@ function _bindLikesFriendsBlocked() {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* Home Stats                                      */
-/* ══════════════════════════════════════════════ */
+/* ═══ Home Stats ═══ */
 async function renderHomeStats() {
     const subj = ProfileState.subject;
     if (!subj || !subj.uid) return;
     if (typeof db === 'undefined' || !db) return;
-
     try {
         const s = await db.ref('users/' + subj.uid + '/likes').once('value');
         const likes = s.val() || {};
         const el = document.getElementById('stat-likes');
         if (el) el.textContent = Object.keys(likes).length;
     } catch (e) {}
-
     try {
         const s = await db.ref('users/' + subj.uid + '/friends').once('value');
         const f = s.val() || {};
         const el = document.getElementById('stat-friends');
         if (el) el.textContent = Object.keys(f).length;
     } catch (e) {}
-
     try {
         const s = await db.ref('bot_data/quiz/scores/' + subj.uid).once('value');
         const pts = s.val() || 0;
         const el = document.getElementById('stat-achievements');
         if (el) el.textContent = Math.floor(pts / 100);
     } catch (e) {}
-
     const el4 = document.getElementById('stat-gifts');
     if (el4) el4.textContent = '0';
-
     if (_isOwner()) {
         renderVisitors();
         renderLikers();
@@ -2334,9 +2167,6 @@ async function renderLikers() {
 window.renderVisitors = renderVisitors;
 window.renderLikers = renderLikers;
 
-/* ══════════════════════════════════════════════ */
-/* Moments Tab                                     */
-/* ══════════════════════════════════════════════ */
 async function renderMomentsTab() {
     const grid = document.getElementById('moments-grid');
     if (!grid) return;
@@ -2381,9 +2211,6 @@ async function renderMomentsTab() {
     } catch (e) {}
 }
 
-/* ══════════════════════════════════════════════ */
-/* Friends Tab                                     */
-/* ══════════════════════════════════════════════ */
 async function renderFriendsTab() {
     const grid = document.getElementById('friends-grid-container');
     if (!grid) return;
@@ -2422,9 +2249,7 @@ async function renderFriendsTab() {
             card.innerHTML =
                 '<div class="friend-avatar">' + avatarHTML + '</div>' +
                 '<div class="friend-name">' + _esc(fr.name) + '</div>';
-            card.onclick = function () {
-                _openUserProfile(fr.uid, fr.name);
-            };
+            card.onclick = function () { _openUserProfile(fr.uid, fr.name); };
             grid.appendChild(card);
         });
     } catch (e) {
@@ -2432,9 +2257,6 @@ async function renderFriendsTab() {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* Admin Tab                                       */
-/* ══════════════════════════════════════════════ */
 function renderAdminTab() {
     const container = document.getElementById('admin-actions-container');
     if (!container) return;
@@ -2596,9 +2418,7 @@ function _executeAdminAction(action) {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* Exports                                         */
-/* ══════════════════════════════════════════════ */
+/* ═══ Exports ═══ */
 window.ProfileState = ProfileState;
 window.applyIdentityToDOM = applyIdentityToDOM;
 window.updateIdentityField = updateIdentityField;
@@ -2609,4 +2429,4 @@ window.renderVisitors = renderVisitors;
 window.renderLikers = renderLikers;
 window._openUserProfile = _openUserProfile;
 
-console.log('✅ profile-core.js v8 loaded — cinema styles + all fixes');
+console.log('✅ profile-core.js v9 loaded — cinema bg 22 + no video');
