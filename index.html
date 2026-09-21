@@ -38,7 +38,6 @@
 <style>
 /* ═══════════════════════════════════════════ */
 /* تنسيقات حرجة يجب أن تكون inline            */
-/* (لا يمكن نقلها إلى ملف خارجي)               */
 /* ═══════════════════════════════════════════ */
 
 /* keyboard-open — إخفاء الأشرطة عند فتح الكيبورد */
@@ -212,7 +211,7 @@ body.pm-open .floating-toolbar {
     display: none !important;
 }
 
-/* nav-pm-slot — slot الرسائل في الشريط السفلي */
+/* nav-pm-slot */
 .nav-pm-slot {
     position: relative;
     display: flex;
@@ -562,7 +561,6 @@ input, textarea, select { font-size: 16px !important; }
 <!-- ═══ inline script — تهيئة سريعة ═══ -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // pm-open class
     var modal = document.getElementById('private-chat-modal');
     if (modal) {
         new MutationObserver(function() {
@@ -570,7 +568,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }).observe(modal, { attributes: true, attributeFilter: ['class'] });
     }
 
-    // minimized-chat-avatar مخفي دائماً
     var floatingAvatar = document.getElementById('minimized-chat-avatar');
     if (floatingAvatar) {
         floatingAvatar.style.display = 'none';
@@ -581,7 +578,6 @@ document.addEventListener('DOMContentLoaded', function() {
         obs.observe(floatingAvatar, { attributes: true, attributeFilter: ['class', 'style'] });
     }
 
-    // طبّق الـ background transparent فوراً
     setTimeout(function() {
         var targets = [
             '.header', '.bottom-nav', '.input-area', '.mics-bar',
@@ -596,16 +592,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }, 500);
 
-    // pm slot sync
     setInterval(syncPMSlot, 3000);
     setTimeout(syncPMSlot, 2000);
 
-    // header buttons
     setInterval(_updateHeaderButtons, 2000);
     setTimeout(_updateHeaderButtons, 1000);
 });
 
-/* ═══ Header Buttons (room-settings + reports) ═══ */
 function _updateHeaderButtons() {
     var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
     if (!user) return;
@@ -624,7 +617,6 @@ function _updateHeaderButtons() {
     }
 }
 
-/* ═══ Open Room Settings (يفتح welcome editor) ═══ */
 function openRoomSettings() {
     var user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
     if (!user) return;
@@ -640,7 +632,6 @@ function openRoomSettings() {
     }
 }
 
-/* ═══ Open Reports Panel ═══ */
 function openReportsPanel() {
     if (typeof KingRoom !== 'undefined' && KingRoom.open) {
         if (typeof window.__krSetTab === 'function') window.__krSetTab('reports');
@@ -650,7 +641,6 @@ function openReportsPanel() {
     }
 }
 
-/* ═══ Friends / Minimized ═══ */
 function showFriends() { if (typeof showToast === 'function') showToast('fa-user-friends', '👥 قريباً'); }
 
 function openMinimizedChat() {
@@ -664,7 +654,6 @@ function openMinimizedChat() {
     }
 }
 
-/* ═══ PM Slot Sync ═══ */
 function syncPMSlot() {
     var slot = document.getElementById('nav-pm-slot');
     var img = document.getElementById('pm-slot-img');
@@ -696,7 +685,7 @@ window._updateHeaderButtons = _updateHeaderButtons;
 
 <!-- ═══ الأساسي (sync) ═══ -->
 <script src="auth.js?v=37"></script>
-<script src="chat.js?v=37"></script>
+<script src="chat.js?v=38"></script>
 
 <!-- ═══ الثانوي (defer) ═══ -->
 <script defer src="islamic-library.js?v=37"></script>
