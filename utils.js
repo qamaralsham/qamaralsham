@@ -1,6 +1,14 @@
 // ==============================================
-// قمر الشام - دوال مساعدة (v4)
-// Qamar Al Sham - Utilities v4
+// قمر الشام - دوال مساعدة (v5)
+// Qamar Al Sham - Utilities v5
+// ==============================================
+// ✅ v5:
+//   1. generateUserCode: defensive (uid فارغ)
+//   2. extractUserCode: يدعم أكواد البوتات BOT·XXX
+//   3. formatLastSeen: لعمود آخر تواجد (تاريخ+ساعة+غرفة)
+//   4. isValidCountry / isValidFamily: حقول جديدة
+//   5. buildProfileUrl: موحّد لبناء روابط البروفايل
+//   6. formatTimeShort: وقت قصير (15:30)
 // ==============================================
 
 // ==============================================
@@ -105,7 +113,7 @@ function showToast(icon, message, duration = 3000) {
 }
 
 // ==============================================
-// 3. التنسيق
+// 3. التنسيق (Time & Dates)
 // ==============================================
 
 function formatTime(timestamp) {
@@ -125,6 +133,15 @@ function formatDateTime(timestamp) {
     return formatDate(timestamp) + ' - ' + formatTime(timestamp);
 }
 
+// ⭐ v5: وقت قصير بدون AM/PM (15:30)
+function formatTimeShort(timestamp) {
+    if (!timestamp) return '';
+    const d = new Date(timestamp);
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    return hh + ':' + mm;
+}
+
 function timeAgo(timestamp) {
     if (!timestamp) return '';
     const seconds = Math.floor((Date.now() - timestamp) / 1000);
@@ -136,6 +153,14 @@ function timeAgo(timestamp) {
     const days = Math.floor(hours / 24);
     if (days < 30) return `قبل ${days} يوم`;
     return formatDate(timestamp);
+}
+
+// ⭐ v5: آخر تواجد = تاريخ + ساعة + غرفة
+function formatLastSeen(timestamp, roomName) {
+    if (!timestamp) return '—';
+    const parts = [formatDate(timestamp), formatTimeShort(timestamp)];
+    if (roomName) parts.push('📌 ' + roomName);
+    return parts.join(' · ');
 }
 
 function formatFileSize(bytes) {
@@ -161,25 +186,23 @@ function truncate(text, max = 80) {
 // ==============================================
 
 /**
- * ⭐⭐⭐ نسخة معدّلة — تتجاهل الرموز الداخلية:
+ * ⭐ isLink — يتجاهل الرموز الداخلية:
  *   [img:URL]  → للصور العادية
  *   [e:N]      → للإيموجيات من GitHub
  *   [cu:URL]   → للصور المخصصة (imgBB)
+ *   [sticker:X] → للملصقات
  */
 function isLink(text) {
     if (!text) return false;
 
-    // 1. احذف كل الرموز الداخلية قبل الفحص
     var cleaned = String(text)
         .replace(/\[img:[^\]]+\]/gi, '')
         .replace(/\[e:\d+\]/gi, '')
         .replace(/\[cu:[^\]]+\]/gi, '')
         .replace(/\[sticker:[^\]]+\]/gi, '');
 
-    // 2. لو النص صار فاضي → مو رابط
     if (!cleaned.trim()) return false;
 
-    // 3. افحص النص النظيف
     const patterns = [
         /(https?:\/\/[^\s]+)/i,
         /(www\.[^\s]+)/i,
@@ -203,6 +226,19 @@ function isValidName(name) {
     if (!name) return false;
     const trimmed = name.trim();
     return trimmed.length >= 2 && trimmed.length <= 20;
+}
+
+// ⭐ v5: حقول جديدة
+function isValidCountry(name) {
+    if (!name) return false;
+    const t = String(name).trim();
+    return t.length >= 2 && t.length <= 40;
+}
+
+function isValidFamily(name) {
+    if (!name) return false;
+    const t = String(name).trim();
+    return t.length >= 2 && t.length <= 30;
 }
 
 // ==============================================
@@ -399,6 +435,15 @@ function isIOS() {
 // 13. كود البصمة الفريد (User Code)
 // ==============================================
 
+/**
+ * يبني كود بصمة فريد:
+ *   - أوله حرفان من الاسم (UPPERCASE)
+ *   - أو U1/U2/... لو الاسم غير صالح
+ *   - ثم · ثم 3 خانات hash (base36)
+ * مثال: AH·XY3
+ *
+ * ⭐ v5: defensive — إذا uid فارغ يستخدم Math.random()
+ */
 function generateUserCode(name, uid) {
     let prefix = '';
     const clean = (name || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
@@ -407,16 +452,21 @@ function generateUserCode(name, uid) {
     else prefix = 'U' + Math.floor(Math.random() * 9 + 1);
 
     let hash = 5381;
-    for (let i = 0; i < uid.length; i++) {
-        hash = ((hash * 33) ^ uid.charCodeAt(i)) >>> 0;
+    const source = String(uid || (Math.random().toString(36) + Date.now()));
+    for (let i = 0; i < source.length; i++) {
+        hash = ((hash * 33) ^ source.charCodeAt(i)) >>> 0;
     }
     const h = hash.toString(36).toUpperCase().padStart(3, '0').slice(-3);
     return prefix + '·' + h;
 }
 
+/**
+ * يستخرج كود المستخدم من نص.
+ * ⭐ v5: يدعم أكواد المستخدمين (AH·XY3) وأكواد البوتات (BOT·GUA)
+ */
 function extractUserCode(text) {
     if (!text) return null;
-    const m = text.match(/([A-Z0-9]{2,3})·([A-Z0-9]{3,4})/);
+    const m = text.match(/([A-Z0-9]{2,5})·([A-Z0-9]{3,4})/);
     if (m) return m[0];
     return null;
 }
@@ -426,7 +476,23 @@ function hasUserCode(text) {
 }
 
 // ==============================================
+// 14. روابط موحّدة
+// ==============================================
+
+/**
+ * ⭐ v5: بناء رابط البروفايل بشكل موحّد.
+ * @param {string} uid — معرّف المستخدم
+ * @param {boolean} asOwner — عرض كمالك؟
+ */
+function buildProfileUrl(uid, asOwner = false) {
+    const base = (typeof QAMAR !== 'undefined' && QAMAR.PROFILE_URL) || 'profile.html';
+    if (asOwner) return base + '?owner=1';
+    if (!uid) return base;
+    return base + '?uid=' + encodeURIComponent(uid);
+}
+
+// ==============================================
 // تصدير
 // ==============================================
 
-console.log('📦 Utils v4 loaded — Security + User Code + Image Tokens 🔑');
+console.log('📦 Utils v5 loaded — Security + User Code + Identity Helpers + Profile URL 🔑');
