@@ -1,12 +1,9 @@
 // ==============================================
-// chat.js v3.14 — دمج chat-fixes + NameEffects + pm-enhanced
+// chat.js v3.15 — chat-fixes merged + NameEffects + pm-enhanced
 // ==============================================
-// ✅ v3.14:
-//   1. دمج chat-fixes.js كاملاً (background + sidebar + keyboard + mics)
-//   2. حذف دوال الخاص (pm-enhanced يتولى)
-//   3. NameEffects.apply بدل المنطق القديم
-//   4. senderNameBgColor حقل جديد
-//   5. handleLogout يمسح كل مفاتيح الهوية
+// ✅ v3.15:
+//   1. setTimeout في postMessage (openPrivateChat + openUserProfile)
+//   2. باقي السلوك كما هو v3.14
 // ==============================================
 
 const ChatState = {
@@ -26,15 +23,12 @@ const ChatState = {
     _friendRequestsCache: {}
 };
 
-/* ══════════════════════════════════════════════ */
-/* أدوات مساعدة                                    */
-/* ══════════════════════════════════════════════ */
+/* ═══ أدوات ═══ */
 function safeColor(c) {
     if (!c || typeof c !== 'string') return null;
     const s = c.trim();
     return /^#[0-9a-fA-F]{3,8}$|^rgb\([\d\s,.%]+\)$|^rgba\([\d\s,.%]+\)$|^hsl\([\d\s,.%]+\)$|^hsla\([\d\s,.%]+\)$/.test(s) ? s : null;
 }
-
 function safeGradient(g) {
     if (!Array.isArray(g) || g.length < 2) return null;
     const a = safeColor(g[0]);
@@ -42,9 +36,7 @@ function safeGradient(g) {
     return (a && b) ? [a, b] : null;
 }
 
-/* ══════════════════════════════════════════════ */
-/* الأصوات                                        */
-/* ══════════════════════════════════════════════ */
+/* ═══ الأصوات ═══ */
 var _audioCtx = null;
 function getAudioCtx() {
     if (!_audioCtx) {
@@ -55,7 +47,6 @@ function getAudioCtx() {
     }
     return _audioCtx;
 }
-
 function _unlockAudio() {
     getAudioCtx();
     document.removeEventListener('touchstart', _unlockAudio);
@@ -86,7 +77,6 @@ function playBirdSound() {
         });
     } catch (e) {}
 }
-
 function playPrivateMsgSound() {
     try {
         const ctx = getAudioCtx();
@@ -106,9 +96,7 @@ function playPrivateMsgSound() {
     } catch (e) {}
 }
 
-/* ══════════════════════════════════════════════ */
-/* تنظيف المستمعين                                */
-/* ══════════════════════════════════════════════ */
+/* ═══ تنظيف ═══ */
 function cleanupAllListeners() {
     try {
         Object.values(ChatState.listeners).forEach(ref => {
@@ -141,21 +129,16 @@ function cleanupAllListeners() {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* ⭐ applyRoomBackground — نسخة chat-fixes (Firebase مباشر) */
-/* ══════════════════════════════════════════════ */
+/* ═══ applyRoomBackground ═══ */
 function applyRoomBackground(roomId) {
     var container = document.getElementById('messages');
     if (!container) return;
-
-    // نظّف
     container.style.removeProperty('background');
     container.style.removeProperty('background-image');
     container.style.removeProperty('background-color');
     container.style.removeProperty('background-size');
     container.style.removeProperty('background-position');
     container.style.removeProperty('background-repeat');
-
     if (!roomId) return;
     if (typeof db === 'undefined' || !db) return;
 
@@ -165,7 +148,6 @@ function applyRoomBackground(roomId) {
         var bgValue = c.bgValue;
         var bgImage = c.bgImage;
 
-        // 1. صورة من الجهاز
         if (bgType === 'custom' && bgImage) {
             container.style.setProperty('background-image', 'url("' + bgImage + '")', 'important');
             container.style.setProperty('background-size', 'cover', 'important');
@@ -173,7 +155,6 @@ function applyRoomBackground(roomId) {
             container.style.setProperty('background-repeat', 'no-repeat', 'important');
             return;
         }
-        // 2. صورة URL
         if (bgType === 'image' && bgValue) {
             if (/^https?:\/\//i.test(bgValue)) {
                 container.style.setProperty('background-image', 'url("' + bgValue + '")', 'important');
@@ -183,34 +164,26 @@ function applyRoomBackground(roomId) {
             }
             return;
         }
-        // 3. لون
         if (bgType === 'color' && bgValue) {
             var col = safeColor(bgValue);
             if (col) container.style.setProperty('background', col, 'important');
             return;
         }
-        // 4. تدرج
         if (bgType === 'gradient' && bgValue) {
             if (/linear-gradient|radial-gradient/i.test(bgValue) && !/[<>]/.test(bgValue)) {
                 container.style.setProperty('background', bgValue, 'important');
             }
             return;
         }
-        // 5. fallback — bgImage بدون bgType
         if (!bgType && bgImage) {
             container.style.setProperty('background-image', 'url("' + bgImage + '")', 'important');
             container.style.setProperty('background-size', 'cover', 'important');
             container.style.setProperty('background-position', 'center', 'important');
         }
-
-        // طبّق الخط
         applyRoomFont(c);
     }).catch(function (e) { console.warn('applyRoomBackground error:', e); });
 }
 
-/* ══════════════════════════════════════════════ */
-/* applyRoomFont                                   */
-/* ══════════════════════════════════════════════ */
 function applyRoomFont(settings) {
     var container = document.getElementById('messages');
     if (!container) return;
@@ -231,9 +204,6 @@ function applyRoomFont(settings) {
     });
 }
 
-/* ══════════════════════════════════════════════ */
-/* applyRoomImage — للسيدبار                       */
-/* ══════════════════════════════════════════════ */
 function applyRoomImage(roomId, settings) {
     var el = document.querySelector('.sidebar-item[data-room-id="' + roomId + '"]');
     if (!el) return;
@@ -255,15 +225,12 @@ function applyRoomImage(roomId, settings) {
     } else {
         iconSpan.textContent = settings.icon || '🚪';
     }
-
     if (settings.name) nameSpan.textContent = settings.name;
-
     if (settings.nameColor && safeColor(settings.nameColor)) {
         nameSpan.style.color = settings.nameColor;
     } else {
         nameSpan.style.color = '';
     }
-
     if (typeof QAMAR !== 'undefined' && QAMAR.ROOMS && QAMAR.ROOMS[roomId]) {
         if (settings.name) QAMAR.ROOMS[roomId].name = settings.name;
         if (settings.icon) QAMAR.ROOMS[roomId].icon = settings.icon;
@@ -278,9 +245,6 @@ function applyRoomImage(roomId, settings) {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* watchRoomSettings                               */
-/* ══════════════════════════════════════════════ */
 function watchRoomSettings() {
     if (typeof db === 'undefined' || !db) { setTimeout(watchRoomSettings, 1500); return; }
     db.ref('room_settings').on('value', function (s) {
@@ -296,9 +260,6 @@ function watchRoomSettings() {
     });
 }
 
-/* ══════════════════════════════════════════════ */
-/* applyRoomSettings (sync settings كامل)         */
-/* ══════════════════════════════════════════════ */
 async function applyRoomSettings() {
     if (typeof db === 'undefined' || !db) return;
     try {
@@ -320,9 +281,6 @@ async function applyRoomSettings() {
     } catch (e) { console.warn('applyRoomSettings error:', e.message); }
 }
 
-/* ══════════════════════════════════════════════ */
-/* Keyboard handlers (من chat-fixes)              */
-/* ══════════════════════════════════════════════ */
 function checkActiveInputs() {
     var a = document.activeElement;
     var m = document.getElementById('message-input');
@@ -351,9 +309,6 @@ function setupKeyboardHandlers() {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* ensureMicsRendered (من chat-fixes)             */
-/* ══════════════════════════════════════════════ */
 function ensureMicsRendered() {
     var attempts = 0;
     var t = setInterval(function () {
@@ -366,18 +321,12 @@ function ensureMicsRendered() {
     }, 500);
 }
 
-/* ══════════════════════════════════════════════ */
-/* applySidebarStyle (from chat-fixes)            */
-/* ══════════════════════════════════════════════ */
 function applySidebarStyle(style) {
     document.body.classList.toggle('sidebar-glass', style === 'glass');
     document.body.classList.toggle('sidebar-classic', style === 'classic');
     try { localStorage.setItem(QAMAR.STORAGE_KEYS.SIDEBAR_STYLE, style); } catch (e) {}
 }
 
-/* ══════════════════════════════════════════════ */
-/* Punishment Watcher                             */
-/* ══════════════════════════════════════════════ */
 function startPunishmentWatcher() {
     const user = getCurrentUser();
     if (!user || !user.uid) return;
@@ -397,14 +346,12 @@ function startPunishmentWatcher() {
                 await db.ref('users/' + user.uid).update({ isJailed: false, jailUntil: 0, jailReleasedAt: now });
                 return;
             }
-
             if (d.isBanned === true && d.bannedUntil && now < d.bannedUntil) {
                 const remaining = Math.ceil((d.bannedUntil - now) / 60000);
                 cleanupAllListeners();
                 if (typeof showToast === 'function') showToast('fa-ban', '🚪 أنت محظور — ' + remaining + ' دقيقة');
                 try { if (typeof window.showRoomPicker === 'function') window.showRoomPicker(); } catch(e) {}
             }
-
             try {
                 var kickSnap = await db.ref('room_kicks/' + ChatState.currentRoom + '/' + user.uid).once('value');
                 if (kickSnap.exists()) {
@@ -418,21 +365,16 @@ function startPunishmentWatcher() {
             } catch(e) {}
         } catch (e) { console.warn('punishment check error:', e); }
     };
-
     check();
     ChatState._punishmentCheckInterval = setInterval(check, 60000);
 }
 
-/* ══════════════════════════════════════════════ */
-/* initChat                                       */
-/* ══════════════════════════════════════════════ */
 function initChat() {
     if (ChatState.isInitialized) return;
     const user = getCurrentUser();
     if (!user) return;
     ChatState.isInitialized = true;
 
-    // ─── اقرأ ستايل السيدبار وطبّقه ───
     const savedStyle = localStorage.getItem(QAMAR.STORAGE_KEYS.SIDEBAR_STYLE) || 'classic';
     applySidebarStyle(savedStyle);
 
@@ -472,11 +414,9 @@ function initChat() {
     startUserDataListener();
     startPunishmentWatcher();
 
-    // ⭐ v3.14: مراقبة إعدادات الغرف + تطبيق الخلفية
     watchRoomSettings();
     applyRoomBackground(ChatState.currentRoom);
 
-    // ⭐ v3.14: مراقبة تبديل الغرفة (بسيط جداً — يستدعي applyRoomBackground)
     var _lastRoom = ChatState.currentRoom;
     setInterval(function () {
         if (ChatState.currentRoom && ChatState.currentRoom !== _lastRoom) {
@@ -485,7 +425,6 @@ function initChat() {
         }
     }, 500);
 
-    // keyboard + mics
     setupKeyboardHandlers();
     ensureMicsRendered();
 
@@ -501,9 +440,6 @@ function initChat() {
     console.log('✅ Chat initialized | Room:', ChatState.currentRoom);
 }
 
-/* ══════════════════════════════════════════════ */
-/* Blocked users                                  */
-/* ══════════════════════════════════════════════ */
 function startBlockedListener() {
     const user = getCurrentUser(); if (!user || !user.uid || !db) return;
     const ref = db.ref('users/' + user.uid + '/blocked');
@@ -521,9 +457,6 @@ function isBlocked(uid) {
     return b === true || (b && b.time);
 }
 
-/* ══════════════════════════════════════════════ */
-/* Rooms                                          */
-/* ══════════════════════════════════════════════ */
 function buildRoomsList() {
     const list = document.getElementById('rooms-list'); if (!list) return; list.innerHTML = '';
     const user = getCurrentUser(); if (!user) return;
@@ -567,9 +500,6 @@ function changeBackground(bgId) {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* Room switching                                 */
-/* ══════════════════════════════════════════════ */
 function switchRoom(roomId, roomTitle) {
     const user = getCurrentUser();
     if (!QAMAR.isRoomVisible(roomId, user)) { showToast('fa-lock', '🔒 غير متاحة'); return; }
@@ -602,15 +532,11 @@ function _doSwitchRoom(roomId, roomTitle, user) {
     addSystemMessage('📢 تم فتح ' + roomTitle);
     updateMicsUI();
     startMessagesListener();
-
-    // ⭐ v3.14: تطبيق الخلفية مباشرة (بدون observer)
     applyRoomBackground(roomId);
 
     if (user && user.uid && typeof db !== 'undefined' && db) {
         db.ref('user_presence/' + user.uid).set({
-            state: 'online',
-            lastChanged: Date.now(),
-            room: roomId
+            state: 'online', lastChanged: Date.now(), room: roomId
         }).catch(function(){});
     }
 
@@ -623,9 +549,6 @@ function _doSwitchRoom(roomId, roomTitle, user) {
     closeAllPanels();
 }
 
-/* ══════════════════════════════════════════════ */
-/* Messages listener                              */
-/* ══════════════════════════════════════════════ */
 function startMessagesListener() {
     if (!db) return;
     if (ChatState.messagesListener) ChatState.messagesListener.off();
@@ -679,9 +602,6 @@ function startMessagesListener() {
     });
 }
 
-/* ══════════════════════════════════════════════ */
-/* applyFrameToWrapper — يفوّض لـ frames-engine   */
-/* ══════════════════════════════════════════════ */
 function applyFrameToWrapper(wrapper, frameId) {
     if (!wrapper) return;
     wrapper.querySelectorAll('.qf').forEach(el => el.remove());
@@ -691,9 +611,6 @@ function applyFrameToWrapper(wrapper, frameId) {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* Codes                                          */
-/* ══════════════════════════════════════════════ */
 function extractCodeFromText(text) {
     if (!text) return null;
     const m = text.match(/([A-Z0-9]{2,5})·([A-Z0-9]{3,4})/);
@@ -733,9 +650,6 @@ async function openProfileByCode(code) {
     } catch (e) { showToast('fa-exclamation-circle', '⚠️ خطأ'); }
 }
 
-/* ══════════════════════════════════════════════ */
-/* Hidden messages UI                             */
-/* ══════════════════════════════════════════════ */
 function _buildHiddenMessageEl(msg, msgId) {
     const container = document.getElementById('messages');
     if (!container) return;
@@ -773,9 +687,6 @@ function _buildHiddenMessageEl(msg, msgId) {
     container.scrollTop = container.scrollHeight;
 }
 
-/* ══════════════════════════════════════════════ */
-/* ⭐ v3.14: NameEffects integration               */
-/* ══════════════════════════════════════════════ */
 function _applyNameEffectsToUsername(usernameEl, msg) {
     if (!usernameEl) return;
 
@@ -789,14 +700,9 @@ function _applyNameEffectsToUsername(usernameEl, msg) {
         });
         return;
     }
-
-    // fallback — لون فقط
     usernameEl.style.color = safeColor(msg.senderColor) || '#ffd700';
 }
 
-/* ══════════════════════════════════════════════ */
-/* displayMessage                                 */
-/* ══════════════════════════════════════════════ */
 function displayMessage(msg, msgId) {
     const container = document.getElementById('messages'); if (!container) return;
     const user = getCurrentUser();
@@ -838,7 +744,6 @@ function displayMessage(msg, msgId) {
     if (isBot) dn += ' 🤖';
     username.textContent = dn;
     username.setAttribute('data-name', msg.senderName || '');
-
     _applyNameEffectsToUsername(username, msg);
 
     if (!isBot) username.onclick = () => insertMention(msg.senderName);
@@ -957,9 +862,6 @@ async function _hideWelcomeMessage(msgId, msgEl) {
 }
 window._hideWelcomeMessage = _hideWelcomeMessage;
 
-/* ══════════════════════════════════════════════ */
-/* Attachments                                    */
-/* ══════════════════════════════════════════════ */
 function buildAttachmentElement(att) {
     if (!att || !att.url) return null;
     const w = document.createElement('div'); w.className = 'message-attachment';
@@ -981,9 +883,6 @@ function buildAttachmentElement(att) {
     return w;
 }
 
-/* ══════════════════════════════════════════════ */
-/* sendMessage                                    */
-/* ══════════════════════════════════════════════ */
 async function sendMessage() {
     const input = document.getElementById('message-input'); if (!input) return;
     const text = input.value.trim();
@@ -1041,6 +940,8 @@ async function sendMessage() {
         senderNameGradient: user.nameGradient || null,
         senderNameBgColor: user.nameBgColor || null,
         senderNameBgGradient: user.nameBgGradient || null,
+        senderCinemaText: user.cinemaTextStyle || null,
+        senderCinemaBg: user.cinemaBgStyle || null,
         text: text,
         mentions: mentions,
         replyTo: ChatState.replyingTo,
@@ -1072,14 +973,9 @@ function notifyMentions(mentions, text) {
             const s = await db.ref('user_names/' + name).once('value');
             const uid = s.val();
             if (uid) db.ref('user_notifications/' + uid).push({
-                fromUid: user.uid,
-                fromName: user.name,
-                fromAvatar: user.avatar || '',
-                type: 'mention',
-                roomId: ChatState.currentRoom,
-                preview: truncate(text, 80),
-                time: Date.now(),
-                read: false
+                fromUid: user.uid, fromName: user.name, fromAvatar: user.avatar || '',
+                type: 'mention', roomId: ChatState.currentRoom,
+                preview: truncate(text, 80), time: Date.now(), read: false
             });
         } catch (e) {}
     });
@@ -1089,9 +985,6 @@ function handleKeyPress(e) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 }
 
-/* ══════════════════════════════════════════════ */
-/* Reply + Mention                                */
-/* ══════════════════════════════════════════════ */
 function startReply(sender, text, msgId) {
     ChatState.replyingTo = { id: msgId, senderName: sender, text: truncate(text, 100) };
     const n = document.getElementById('reply-name'), t = document.getElementById('reply-text-preview'), p = document.getElementById('reply-preview');
@@ -1116,9 +1009,6 @@ function insertMention(name) {
     closeAllMenus();
 }
 
-/* ══════════════════════════════════════════════ */
-/* Message menu                                   */
-/* ══════════════════════════════════════════════ */
 function showMessageMenu(msgEl, sender, text, msgId) {
     closeAllMenus();
     const user = getCurrentUser(); if (!user) return;
@@ -1233,9 +1123,6 @@ async function deleteMessage(msgEl, msgId) {
     closeAllMenus();
 }
 
-/* ══════════════════════════════════════════════ */
-/* Private Chat (toggle + open) — التنفيذ في pm-enhanced */
-/* ══════════════════════════════════════════════ */
 function togglePrivateMessages() {
     const s = document.getElementById('pm-sidebar'); if (!s) return;
     const o = s.classList.toggle('open');
@@ -1300,11 +1187,9 @@ function openPrivateChatWith(uid, name, av) {
 
     db.ref('user_private_chats/' + user.uid + '/' + uid + '/unread').set(0).catch(function(){});
 
-    // ⭐ v3.14: استدعاء pm-enhanced
     if (typeof window.loadPrivateMessages === 'function') {
         window.loadPrivateMessages();
     }
-
     if (typeof window.clearPrivateNotifsFrom === 'function') {
         window.clearPrivateNotifsFrom(uid);
     }
@@ -1323,16 +1208,11 @@ function _clearPrivateNotifsFrom(fromUid) {
             }
         });
         if (promises.length > 0) {
-            Promise.all(promises).then(function() {
-                console.log('🧹 حُذف', promises.length, 'إشعار خاص من', fromUid);
-            });
+            Promise.all(promises).then(function() {});
         }
     }).catch(function(){});
 }
 
-/* ══════════════════════════════════════════════ */
-/* Notifications                                  */
-/* ══════════════════════════════════════════════ */
 function toggleNotifications() {
     const s = document.getElementById('notif-sidebar'); if (!s) return;
     const o = s.classList.toggle('open');
@@ -1356,7 +1236,6 @@ function startNotificationsListener() {
     if (ChatState.notificationsListener) ChatState.notificationsListener.off();
 
     let lastKnownKey = '';
-
     db.ref('user_notifications/' + user.uid).limitToLast(50).once('value').then(function (s) {
         var unread = 0;
         s.forEach(function (c) {
@@ -1380,7 +1259,6 @@ function startNotificationsListener() {
             if (s.key <= lastKnownKey) return;
             if (n.fromUid === user.uid) return;
             if (n.read) return;
-
             lastKnownKey = s.key;
 
             if (n.type === 'mention') {
@@ -1529,41 +1407,29 @@ async function acceptFriendRequest(myUid, fromUid, fromName, fromAvatar, notifEl
     try {
         var now = Date.now();
         var myData = getCurrentUser() || {};
-
         await db.ref('users/' + myUid + '/friends/' + fromUid).set({
             status: 'accepted', time: now,
             name: fromName || 'صديق', avatar: fromAvatar || ''
         });
-
         await db.ref('users/' + fromUid + '/friends/' + myUid).set({
             status: 'accepted', time: now,
             name: myData.name || 'صديق', avatar: myData.avatar || ''
         });
-
         try {
             await db.ref('user_notifications/' + fromUid).push({
-                fromUid: myUid,
-                fromName: myData.name || 'صديق',
-                fromAvatar: myData.avatar || '',
-                type: 'friend_accepted',
-                icon: '✅',
-                preview: 'قبل صداقتك',
-                time: Date.now(),
-                read: false
+                fromUid: myUid, fromName: myData.name || 'صديق', fromAvatar: myData.avatar || '',
+                type: 'friend_accepted', icon: '✅', preview: 'قبل صداقتك',
+                time: Date.now(), read: false
             });
         } catch (e) {}
-
         if (notifEl && notifEl.dataset && notifEl.dataset.notifId) {
             db.ref('user_notifications/' + myUid + '/' + notifEl.dataset.notifId).remove().catch(function(){});
         }
-
         if (acceptBtn) { acceptBtn.textContent = '✅ تم'; acceptBtn.style.background = '#65a30d'; }
         if (rejectBtn) rejectBtn.style.display = 'none';
-
         showToast('fa-check', '✅ تمت الصداقة');
     } catch (e) {
-        console.error('[acceptFriendRequest] فشل:', e);
-        showToast('fa-times', '⚠️ فشل القبول: ' + (e.message || ''));
+        showToast('fa-times', '⚠️ فشل القبول');
         if (acceptBtn) { acceptBtn.disabled = false; acceptBtn.textContent = '✅ قبول'; }
         if (rejectBtn) rejectBtn.disabled = false;
     }
@@ -1585,7 +1451,6 @@ async function rejectFriendRequest(myUid, fromUid, notifEl, acceptBtn, rejectBtn
         }
         showToast('fa-times', '❌ تم الرفض');
     } catch (e) {
-        console.error('[rejectFriendRequest] فشل:', e);
         if (acceptBtn) acceptBtn.disabled = false;
         if (rejectBtn) { rejectBtn.disabled = false; rejectBtn.textContent = '❌ رفض'; }
     }
@@ -1611,9 +1476,6 @@ function markAllNotificationsRead() {
     });
 }
 
-/* ══════════════════════════════════════════════ */
-/* Presence                                       */
-/* ══════════════════════════════════════════════ */
 function startPresenceHeartbeat() {
     const user = getCurrentUser(); if (!user || !user.uid) return;
     const ref = db.ref('user_presence/' + user.uid);
@@ -1625,9 +1487,6 @@ function startPresenceHeartbeat() {
     ref.onDisconnect().set({ state: 'offline', lastChanged: Date.now() });
 }
 
-/* ══════════════════════════════════════════════ */
-/* Invisible                                      */
-/* ══════════════════════════════════════════════ */
 function startInvisibleListener() {
     const u = getCurrentUser(); if (!u || !u.uid) return;
     const ref = db.ref('users/' + u.uid + '/invisible');
@@ -1646,9 +1505,6 @@ async function toggleInvisible() {
     } catch (e) { showToast('fa-exclamation-circle', '⚠️ فشل'); }
 }
 
-/* ══════════════════════════════════════════════ */
-/* Mics                                           */
-/* ══════════════════════════════════════════════ */
 function updateMicsUI() {
     const mb = document.getElementById('mics-bar'); if (!mb) return;
     const r = QAMAR.ROOMS[ChatState.currentRoom]; if (!r) return;
@@ -1661,11 +1517,9 @@ function updateMicsUI() {
     mb.classList.remove('hidden');
     for (let i = 0; i < count; i++) {
         const b = document.createElement('button');
-        b.className = 'mic-btn';
-        b.setAttribute('data-mic', i);
+        b.className = 'mic-btn'; b.setAttribute('data-mic', i);
         if (!canUse) b.disabled = true;
-        const ic = document.createElement('i');
-        ic.className = 'fas fa-microphone';
+        const ic = document.createElement('i'); ic.className = 'fas fa-microphone';
         b.appendChild(ic);
         b.onclick = () => toggleMic(i);
         mc.appendChild(b);
@@ -1692,9 +1546,6 @@ function toggleMicsBar() {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* Sidebars toggles                               */
-/* ══════════════════════════════════════════════ */
 function toggleRooms() {
     const s = document.getElementById('rooms-sidebar'); if (!s) return;
     const o = s.classList.toggle('open');
@@ -1726,9 +1577,6 @@ function closeAllPanels() {
     if (ov) ov.classList.remove('show');
 }
 
-/* ══════════════════════════════════════════════ */
-/* System messages                                */
-/* ══════════════════════════════════════════════ */
 function addSystemMessage(text) {
     const c = document.getElementById('messages'); if (!c) return;
     const m = document.createElement('div');
@@ -1738,9 +1586,6 @@ function addSystemMessage(text) {
     c.scrollTop = c.scrollHeight;
 }
 
-/* ══════════════════════════════════════════════ */
-/* Profile (iframe)                               */
-/* ══════════════════════════════════════════════ */
 function openUserProfile(uid, name) {
     const user = getCurrentUser(); if (!user) return;
     if (uid === user.uid) { openProfile(); return; }
@@ -1779,9 +1624,6 @@ function closeProfileFrame() {
     if (i) i.src = 'about:blank';
 }
 
-/* ══════════════════════════════════════════════ */
-/* Toolbar                                        */
-/* ══════════════════════════════════════════════ */
 function toggleToolbar() {
     const t = document.getElementById('floating-toolbar'), b = document.getElementById('plus-btn');
     if (t) t.classList.toggle('open');
@@ -1800,14 +1642,12 @@ function searchYouTube() {
 }
 
 function insertEmoji() {
-    // ⭐ v3.14: media-picker يتولى
     if (typeof window.MediaPicker !== 'undefined' && window.MediaPicker.open) {
         window.MediaPicker.open('general');
     }
 }
 
 function showOnlineUsers() {
-    // ⭐ v3.14: invisible-mode يتولى
     if (typeof window.showOnlineUsers === 'function' && window.showOnlineUsers !== showOnlineUsers) {
         window.showOnlineUsers();
     } else {
@@ -1818,9 +1658,6 @@ function showOnlineUsers() {
 
 function showStore() { closeAllPanels(); showToast('fa-store', '🛒 قريباً'); }
 
-/* ══════════════════════════════════════════════ */
-/* Upgrade modal                                  */
-/* ══════════════════════════════════════════════ */
 function openUpgradeModal() {
     const u = getCurrentUser();
     if (!u || !u.isGuest) { showToast('fa-check', '✅ أنت عضو'); return; }
@@ -1832,9 +1669,6 @@ function closeUpgradeModal() {
     if (m) m.classList.remove('active');
 }
 
-/* ══════════════════════════════════════════════ */
-/* Logout                                         */
-/* ══════════════════════════════════════════════ */
 async function handleLogout() {
     if (!confirm('تأكيد الخروج؟')) return;
     cleanupAllListeners();
@@ -1842,9 +1676,6 @@ async function handleLogout() {
     location.reload();
 }
 
-/* ══════════════════════════════════════════════ */
-/* Private chat modal (minimize/close)            */
-/* ══════════════════════════════════════════════ */
 window.addEventListener('DOMContentLoaded', () => {
     const u = getCurrentUser();
     if (u) setTimeout(() => { if (typeof initChat === 'function') initChat(); }, 100);
@@ -1887,14 +1718,22 @@ function restorePrivateChat() {
     openPrivateChatWith(c.otherUid, c.otherName, c.otherAvatar);
 }
 
-/* ══════════════════════════════════════════════ */
-/* Messages from iframe                           */
-/* ══════════════════════════════════════════════ */
+/* ⭐ v3.15: مستمع postMessage — مع تأخير */
 window.addEventListener('message', e => {
     if (!e.data) return;
-    if (e.data.action === 'openPrivateChat') openPrivateChatWith(e.data.uid, e.data.name, e.data.avatar || '');
-    if (e.data.action === 'closeProfile') closeProfileFrame();
-    if (e.data.action === 'openUserProfile' && e.data.uid) openUserProfile(e.data.uid, e.data.name);
+    if (e.data.action === 'openPrivateChat') {
+        setTimeout(function () {
+            openPrivateChatWith(e.data.uid, e.data.name, e.data.avatar || '');
+        }, 100);
+    }
+    if (e.data.action === 'closeProfile') {
+        closeProfileFrame();
+    }
+    if (e.data.action === 'openUserProfile' && e.data.uid) {
+        setTimeout(function () {
+            openUserProfile(e.data.uid, e.data.name);
+        }, 100);
+    }
     if (e.data.action === 'userDataUpdated' && e.data.userData) {
         const u = e.data.userData;
         if (typeof saveSession === 'function') saveSession(u, u.isGuest === true);
@@ -1915,9 +1754,6 @@ window.addEventListener('message', e => {
     }
 });
 
-/* ══════════════════════════════════════════════ */
-/* Refresh helpers                                */
-/* ══════════════════════════════════════════════ */
 function refreshAvatarsInMessages(newFrame) {
     const u = getCurrentUser(); if (!u || !u.uid) return;
     document.querySelectorAll('[data-sender-uid="' + u.uid + '"] .message-avatar-wrapper').forEach(w => {
@@ -1948,9 +1784,6 @@ function refreshNameStylesInMessages(userData) {
 window.refreshAvatarsInMessages = refreshAvatarsInMessages;
 window.refreshNameStylesInMessages = refreshNameStylesInMessages;
 
-/* ══════════════════════════════════════════════ */
-/* User data listener                             */
-/* ══════════════════════════════════════════════ */
 function startUserDataListener() {
     const u = getCurrentUser(); if (!u || !u.uid) return;
     let lastRelevant = '';
@@ -1961,6 +1794,7 @@ function startUserDataListener() {
             name: d.name, avatar: d.avatar, avatarFrame: d.avatarFrame,
             nameColor: d.nameColor, nameGradient: d.nameGradient,
             nameBgColor: d.nameBgColor, nameBgGradient: d.nameBgGradient,
+            cinemaTextStyle: d.cinemaTextStyle, cinemaBgStyle: d.cinemaBgStyle,
             profileGlow: d.profileGlow,
             isBanned: d.isBanned, bannedUntil: d.bannedUntil,
             isJailed: d.isJailed, jailUntil: d.jailUntil
@@ -1978,9 +1812,6 @@ function startUserDataListener() {
 }
 window.startUserDataListener = startUserDataListener;
 
-/* ══════════════════════════════════════════════ */
-/* Export                                         */
-/* ══════════════════════════════════════════════ */
 window.ChatState = ChatState;
 window.initChat = initChat;
 window.sendMessage = sendMessage;
@@ -2025,4 +1856,4 @@ window.buildRoomsList = buildRoomsList;
 window.clearPrivateNotifsFrom = _clearPrivateNotifsFrom;
 window.applySidebarStyle = applySidebarStyle;
 
-console.log('✅ chat.js v3.14 loaded — chat-fixes merged + NameEffects + pm-enhanced ready');
+console.log('✅ chat.js v3.15 loaded — postMessage with delays');
