@@ -1,35 +1,79 @@
 // ==============================================
-// profile-core.js v5 — الجزء 1/3
-// ProfileState + Bootstrap + Drill-down + Identity
+// profile-core.js v5 — Unified
+// ProfileState + Bootstrap + Settings + Buttons + Stats
 // ==============================================
-// ⚠️ هذا ملف مؤقت — الجزءان 2 و 3 يُضافان لاحقاً
-//    (E3: صفحات الإعدادات + الزوار + الإحصائيات + الأزرار الديناميكية)
+// ✅ v5:
+//   1. ProfileState موحّد (me / subject / mode)
+//   2. identityUpdatedAt reconciliation
+//   3. Drill-down navigation (stack)
+//   4. 12 صفحة إعدادات
+//   5. NameEffects + Frames integration
+//   6. أزرار ديناميكية (إعجاب/صديق/حظر)
+//   7. الإحصائيات + آخر الزوار
+//   8. الشعر (نص + خلفية + مرفقة)
+//   9. الإجراءات الحساسة (logout + delete)
 // ==============================================
 
 /* ══════════════════════════════════════════════ */
-/* ProfileState — الحالة الموحّدة                  */
+/* ProfileState                                    */
 /* ══════════════════════════════════════════════ */
 const ProfileState = {
-    mode: 'owner',           // 'owner' | 'visitor'
-    me: null,                // المستخدم الحالي (المشاهد)
-    subject: null,           // صاحب البروفايل
+    mode: 'owner',
+    me: null,
+    subject: null,
     isAdminVisitor: false,
     collapsed: false,
     lastUserHash: '',
     localLockUntil: 0,
-    settingsHistory: [],     // stack للـ drill-down
-    poetry: {
-        text: '',
-        bg: null,
-        attachment: null
-    },
+    settingsHistory: [],
+    poetry: { text: '', bg: null, attachment: null },
     likes: { isLiked: false, count: 0 },
     friends: { state: 'off', count: 0 },
     blocked: { isBlocked: false }
 };
 
 /* ══════════════════════════════════════════════ */
-/* أدوات مساعدة                                    */
+/* Constants                                       */
+/* ══════════════════════════════════════════════ */
+const IMGBB_KEY = '80fd32c4ef79b5f25fbcf0893547de4f';
+
+const NAME_GRADIENTS = [
+    // ذهبي / فاخر
+    ['#d4af37','#ffec8b'], ['#b8860b','#ffd700'], ['#ffd700','#ff8c00'],
+    ['#f4c430','#fff8dc'], ['#ffd700','#b8860b'], ['#e6b800','#ffeeaa'],
+    // وردي / بنفسجي
+    ['#ff69b4','#ff1493'], ['#e84393','#fd79a8'], ['#a855f7','#7c3aed'],
+    ['#8b00ff','#ff006e'], ['#ff00ff','#da70d6'], ['#c084fc','#f0abfc'],
+    ['#d946ef','#a21caf'], ['#ec4899','#f43f5e'],
+    // أزرق / سماوي
+    ['#00f3ff','#0066ff'], ['#00bfff','#1e90ff'], ['#0ea5e9','#06b6d4'],
+    ['#3b82f6','#8b5cf6'], ['#1e40af','#3b82f6'], ['#00d4ff','#0080ff'],
+    ['#74b9ff','#0984e3'],
+    // أخضر
+    ['#39ff14','#00cc00'], ['#00b894','#0984e3'], ['#55efc4','#00b894'],
+    ['#10b981','#059669'], ['#84cc16','#65a30d'], ['#a3e635','#4ade80'],
+    // أحمر / نار
+    ['#ff0000','#ff4500'], ['#ff4500','#ff8c00'], ['#dc143c','#ff0066'],
+    ['#b91c1c','#ef4444'], ['#ff0040','#ff3366'], ['#e0115f','#ff4757'],
+    ['#ff8c00','#ff1493'], ['#d35400','#e17055'],
+    // قوس قزح
+    ['#ff0000','#ffd700'], ['#ff0000','#00ff00'], ['#00ff00','#0000ff'],
+    ['#ff00ff','#00ffff'], ['#ff006e','#8338ec'], ['#3a86ff','#ff006e'],
+    // فاتح
+    ['#ffffff','#cccccc'], ['#fef9e7','#f9e79f'], ['#fdebd0','#f5b7b1'],
+    ['#ffeaa7','#fdcb6e'], ['#fab1a0','#e17055'],
+    // داكن
+    ['#000000','#333333'], ['#1a1a2e','#16213e'], ['#2c3e50','#4ca1af'],
+    ['#434343','#000000'],
+    // مركبات
+    ['#ffd700','#ff006e'], ['#00ff88','#0066ff'], ['#ff0055','#ffd700'],
+    ['#8b00ff','#ff006e'], ['#00f3ff','#ff00ff'], ['#ffcc00','#ff6699'],
+    ['#00ffcc','#0066ff'], ['#ff66cc','#9900ff'], ['#ffaa00','#ff0000'],
+    ['#00ccff','#6600ff'], ['#c0c0c0','#ffd700']
+];
+
+/* ══════════════════════════════════════════════ */
+/* Helpers                                         */
 /* ══════════════════════════════════════════════ */
 function _getUser() {
     try {
@@ -50,13 +94,8 @@ function _toast(msg) {
     else console.log('[profile]', msg);
 }
 
-function _isOwner() {
-    return ProfileState.mode === 'owner';
-}
-
-function _isVisitor() {
-    return ProfileState.mode === 'visitor';
-}
+function _isOwner() { return ProfileState.mode === 'owner'; }
+function _isVisitor() { return ProfileState.mode === 'visitor'; }
 
 function _isAdminUser() {
     const u = ProfileState.me;
@@ -73,29 +112,15 @@ function _userHash(u) {
     if (!u) return '';
     try {
         return JSON.stringify({
-            n: u.name,
-            b: u.bio,
-            a: u.avatar,
-            c: u.cover,
-            r: u.rank,
-            nc: u.nameColor,
-            ng: u.nameGradient,
-            nbc: u.nameBgColor,
-            nbg: u.nameBgGradient,
-            af: u.avatarFrame,
-            pg: u.profileGlow,
-            pbt: u.profileBgType,
-            pbv: u.profileBgValue,
-            mu: u.musicURL,
-            p: u.poetry,
-            pb: u.poetryBg,
-            pa: u.poetryAttachment,
-            co: u.country,
-            fa: u.family,
-            ij: u.isJailed,
-            ju: u.jailUntil,
-            ib: u.isBanned,
-            bu: u.bannedUntil,
+            n: u.name, b: u.bio, a: u.avatar, c: u.cover, r: u.rank,
+            nc: u.nameColor, ng: u.nameGradient,
+            nbc: u.nameBgColor, nbg: u.nameBgGradient,
+            af: u.avatarFrame, pg: u.profileGlow,
+            pbt: u.profileBgType, pbv: u.profileBgValue,
+            mu: u.musicURL, p: u.poetry, pb: u.poetryBg, pa: u.poetryAttachment,
+            co: u.country, fa: u.family,
+            ij: u.isJailed, ju: u.jailUntil,
+            ib: u.isBanned, bu: u.bannedUntil,
             iv: u.invisible
         });
     } catch (e) { return ''; }
@@ -104,19 +129,6 @@ function _userHash(u) {
 /* ══════════════════════════════════════════════ */
 /* Open App Modal (v5 — signature جديدة)          */
 /* ══════════════════════════════════════════════ */
-/**
- * @param {Object} opts
- *   @param {string}   opts.title
- *   @param {string}   [opts.text]
- *   @param {string}   [opts.html]         — HTML content (يستبدل text)
- *   @param {string}   [opts.type]         — 'input' | 'select' | null
- *   @param {Array}    [opts.options]      — لـ select
- *   @param {string}   [opts.value]        — القيمة الحالية
- *   @param {Function} [opts.onSave]       — (value) => {} — إن وُجد، يظهر زر "موافق"
- *   @param {string}   [opts.okLabel]
- *   @param {string}   [opts.cancelLabel]
- *   @param {boolean}  [opts.hideOk]       — لإخفاء زر "موافق" (HTML فقط)
- */
 function openAppModal(opts) {
     opts = opts || {};
     const m = document.getElementById('app-modal');
@@ -135,20 +147,15 @@ function openAppModal(opts) {
     }
     if (dyn) dyn.innerHTML = '';
 
-    // HTML content
     if (opts.html && dyn) {
         dyn.innerHTML = opts.html;
-    }
-    // Input
-    else if (opts.type === 'input' && dyn) {
+    } else if (opts.type === 'input' && dyn) {
         const i = document.createElement('input');
         i.type = 'text';
         i.id = 'modal-input-val';
         i.value = opts.value || '';
         dyn.appendChild(i);
-    }
-    // Select
-    else if (opts.type === 'select' && dyn) {
+    } else if (opts.type === 'select' && dyn) {
         const s = document.createElement('select');
         s.id = 'modal-select-val';
         (opts.options || []).forEach(o => {
@@ -163,7 +170,6 @@ function openAppModal(opts) {
 
     m.classList.add('active');
 
-    // Ok button
     if (opts.hideOk) {
         okBtn.style.display = 'none';
         cancelBtn.textContent = opts.cancelLabel || 'إغلاق';
@@ -188,14 +194,8 @@ function openAppModal(opts) {
         };
     }
 
-    cancelBtn.onclick = function () {
-        m.classList.remove('active');
-    };
-
-    // إغلاق عند النقر خارج الصندوق
-    m.onclick = function (e) {
-        if (e.target === m) m.classList.remove('active');
-    };
+    cancelBtn.onclick = function () { m.classList.remove('active'); };
+    m.onclick = function (e) { if (e.target === m) m.classList.remove('active'); };
 }
 
 window.openAppModal = openAppModal;
@@ -212,15 +212,13 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     ProfileState.me = _getUser();
 
-    // ⭐ حدد الوضع
     if (isOwnerParam === '1' || (!urlUid && ProfileState.me)) {
         ProfileState.mode = 'owner';
         ProfileState.subject = ProfileState.me;
     } else if (urlUid) {
         ProfileState.mode = 'visitor';
-        ProfileState.subject = null; // سيُحمّل من Firebase
+        ProfileState.subject = null;
     } else {
-        // No user, no urlUid → رسالة خطأ
         document.body.innerHTML =
             '<div style="padding:40px;text-align:center;color:#fff;font-family:Cairo,sans-serif;">' +
             '⚠️ لا يوجد مستخدم — افتح من التطبيق' +
@@ -229,49 +227,37 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     document.body.classList.add(ProfileState.mode + '-mode');
-
-    // ⭐ حدد هل المشاهد admin visitor
     ProfileState.isAdminVisitor = _isVisitor() && _isAdminUser();
 
-    // ⭐ owner: subject = me
     if (_isOwner() && ProfileState.me) {
         ProfileState.subject = ProfileState.me;
-        // اقرأ من cache
         _loadSubjectFromCache();
     }
 
-    // ⭐ visitor: load subject from cache أو Firebase
     if (_isVisitor() && urlUid) {
         _loadSubjectFromCache(urlUid);
     }
 
-    // ⭐ اربط الأحداث
     _bindCoverButtons();
     _bindSettingsNavigation();
-    _bindLikesFriendsBlocked(); // في E3
-    _bindImagesUploads(); // في E3
-    _bindMusic(); // في E3
-    _bindPoetry(); // في E3
-    _bindPrivacy(); // في E3
-    _bindDangerActions(); // في E3
+    _bindLikesFriendsBlocked();
+    _bindImagesUploads();
+    _bindMusic();
+    _bindPoetry();
+    _bindPrivacy();
+    _bindDangerActions();
 
-    // ⭐ ابنِ التبويبات
     renderTabsForMode();
 
-    // ⭐ حمّل من Firebase
     if (_isVisitor() && urlUid) {
         await _loadVisitorSubject(urlUid);
     } else if (_isOwner() && ProfileState.me) {
         await _loadOwnerSubject();
     }
 
-    // ⭐ طبّق الهوية على الـ DOM
     applyIdentityToDOM();
-
-    // ⭐ ربط listeners التغييرات
     _startSubjectListener();
 
-    // ⭐ كشف الواجهة
     setTimeout(function () {
         const p = document.getElementById('profile-container');
         if (p) {
@@ -280,11 +266,10 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
     }, 200);
 
-    // ⭐ trigger الأولي
     setTimeout(function () {
-        if (typeof renderHomeStats === 'function') renderHomeStats();
-        if (typeof renderMomentsTab === 'function') renderMomentsTab();
-        if (typeof renderFriendsTab === 'function') renderFriendsTab();
+        renderHomeStats();
+        renderMomentsTab();
+        renderFriendsTab();
     }, 400);
 
     console.log('✅ profile-core.js v5 ready | Mode:', ProfileState.mode);
@@ -315,10 +300,7 @@ async function _loadOwnerSubject() {
         const remote = snap.val();
         if (!remote) return;
 
-        // ⭐ merge: Firebase + cache (بقاعدة identityUpdatedAt)
         ProfileState.subject = _mergeIdentity(ProfileState.me, remote);
-
-        // ⭐ حدّث session
         ProfileState.me = Object.assign({}, ProfileState.me, remote);
         if (typeof saveSession === 'function') {
             saveSession(ProfileState.me, ProfileState.me.isGuest === true);
@@ -344,12 +326,10 @@ async function _loadVisitorSubject(uid) {
 
         ProfileState.subject = remote;
 
-        // cache
         try {
             localStorage.setItem('profile_target_data_' + uid, JSON.stringify(remote));
         } catch (e) {}
 
-        // تسجيل الزيارة
         if (ProfileState.me && ProfileState.me.uid && ProfileState.me.uid !== uid) {
             db.ref('users/' + uid + '/visitors/' + ProfileState.me.uid).set({
                 time: Date.now(),
@@ -358,17 +338,14 @@ async function _loadVisitorSubject(uid) {
             }).catch(function () {});
         }
 
-        // فحص الحالة (likes/friends/blocked)
-        if (typeof checkVisitorStatus === 'function') {
-            await checkVisitorStatus();
-        }
+        await checkVisitorStatus();
     } catch (e) {
         console.warn('load visitor subject failed:', e);
     }
 }
 
 /* ══════════════════════════════════════════════ */
-/* Merge Identity (Firebase vs cache)              */
+/* Merge Identity                                  */
 /* ══════════════════════════════════════════════ */
 function _mergeIdentity(cachedUser, remoteUser) {
     if (!cachedUser) return remoteUser;
@@ -377,10 +354,8 @@ function _mergeIdentity(cachedUser, remoteUser) {
     const cachedAt = cachedUser.identityUpdatedAt || 0;
     const remoteAt = remoteUser.identityUpdatedAt || 0;
 
-    // Firebase أحدث → يفوز
     if (remoteAt >= cachedAt) return remoteUser;
 
-    // cache أحدث → رفع لـ Firebase
     const fields = (QAMAR.IDENTITY_FIELDS || []);
     const patch = {};
     fields.forEach(function (k) {
@@ -411,12 +386,10 @@ function _startSubjectListener() {
         if (newHash === ProfileState.lastUserHash) return;
         ProfileState.lastUserHash = newHash;
 
-        // تحديث subject
         if (Date.now() > ProfileState.localLockUntil) {
             ProfileState.subject = Object.assign({}, ProfileState.subject, remote);
         }
 
-        // cache
         try {
             if (_isVisitor()) {
                 localStorage.setItem('profile_target_data_' + subj.uid, JSON.stringify(remote));
@@ -425,11 +398,9 @@ function _startSubjectListener() {
             }
         } catch (e) {}
 
-        // إعادة التطبيق
         applyIdentityToDOM();
     });
 
-    // Presence listener (visitor only — status dot)
     if (_isVisitor()) {
         db.ref('user_presence/' + subj.uid).on('value', function (snap) {
             const p = snap.val() || {};
@@ -447,13 +418,13 @@ function _startSubjectListener() {
 }
 
 /* ══════════════════════════════════════════════ */
-/* applyIdentityToDOM — الدالة الرئيسية           */
+/* Apply Identity to DOM                           */
 /* ══════════════════════════════════════════════ */
 function applyIdentityToDOM() {
     const subj = ProfileState.subject;
     if (!subj) return;
 
-    // ⭐ 1. الاسم
+    // 1. الاسم
     const nameEl = document.getElementById('profile-username');
     if (nameEl) {
         const displayName = subj.name || 'مستخدم';
@@ -470,55 +441,41 @@ function applyIdentityToDOM() {
                 color: subj.color || '#ffd700'
             });
         } else {
-            // fallback
             nameEl.style.color = subj.color || '#ffd700';
         }
     }
 
-    // ⭐ 2. البايو
+    // 2. البايو
     const bioEl = document.getElementById('profile-bio');
     if (bioEl) {
         bioEl.textContent = subj.bio || (QAMAR.DEFAULT_BIO || '❋ نجوم الشام ❋');
     }
 
-    // ⭐ 3. الرتبة
+    // 3. الرتبة
     const roleEl = document.getElementById('role-text');
     if (roleEl) {
         const badge = (typeof getRankBadge === 'function') ? getRankBadge(subj.rank) : '👤';
         roleEl.textContent = badge + ' ' + (subj.rank || 'User');
     }
 
-    // ⭐ 4. الغلاف
+    // 4-8
     _applyCover(subj);
-
-    // ⭐ 5. الأفاتار + الإطار
     _applyAvatar(subj);
-
-    // ⭐ 6. خلفية البروفايل
     _applyProfileBackground(subj);
-
-    // ⭐ 7. توهج البروفايل
     _applyProfileGlow(subj);
-
-    // ⭐ 8. زر الموسيقى (visitor only)
     _applyMusicButton(subj);
 
-    // ⭐ 9. الشعر
-    if (typeof renderPoetry === 'function') renderPoetry();
+    // 9. الشعر
+    renderPoetry();
 
-    // ⭐ 10. أزرار الزيارة (visitor)
-    if (_isVisitor() && typeof updateVisitorButtons === 'function') {
-        updateVisitorButtons();
-    }
+    // 10. أزرار الزيارة
+    if (_isVisitor()) updateVisitorButtons();
 
-    // ⭐ 11. زر admin actions
+    // 11. admin button
     const adminBtn = document.getElementById('btn-admin-actions');
     if (adminBtn) {
         adminBtn.style.display = ProfileState.isAdminVisitor ? 'flex' : 'none';
     }
-
-    // ⭐ 12. زر الطي (visitor only)
-    // (CSS يتولى — body.visitor-mode)
 }
 
 /* ══════════════════════════════════════════════ */
@@ -533,7 +490,7 @@ function _applyCover(subj) {
     if (!cover) {
         img.style.display = 'none';
         video.style.display = 'none';
-        video.pause && video.pause();
+        if (video.pause) video.pause();
         video.removeAttribute('src');
         return;
     }
@@ -551,7 +508,7 @@ function _applyCover(subj) {
         }
     } else {
         video.style.display = 'none';
-        video.pause && video.pause();
+        if (video.pause) video.pause();
         img.style.display = 'block';
         if (img.src !== cover) img.src = cover;
     }
@@ -567,7 +524,6 @@ function _applyAvatar(subj) {
         if (img.src !== src) img.src = src;
     }
 
-    // ⭐ إطار الأفاتار
     const box = document.getElementById('avatar-box');
     if (!box) return;
 
@@ -581,7 +537,7 @@ function _applyAvatar(subj) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* Apply Profile Background                        */
+/* Apply Profile BG                                */
 /* ══════════════════════════════════════════════ */
 function _applyProfileBackground(subj) {
     const layer = document.getElementById('profile-bg-layer');
@@ -590,7 +546,6 @@ function _applyProfileBackground(subj) {
     const type = subj.profileBgType;
     const value = subj.profileBgValue;
 
-    // نظّف
     layer.innerHTML = '';
     layer.style.backgroundImage = '';
     layer.style.background = '';
@@ -633,7 +588,7 @@ function _applyProfileGlow(subj) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* Music Button (visitor)                          */
+/* Music Button                                    */
 /* ══════════════════════════════════════════════ */
 function _applyMusicButton(subj) {
     const btn = document.getElementById('music-btn-mini');
@@ -642,12 +597,11 @@ function _applyMusicButton(subj) {
 
     if (!subj.musicURL) {
         btn.style.display = 'none';
-        player.pause && player.pause();
+        if (player.pause) player.pause();
         player.removeAttribute('src');
         return;
     }
 
-    // visitor only
     if (!_isVisitor()) {
         btn.style.display = 'none';
         return;
@@ -684,7 +638,7 @@ function _applyMusicButton(subj) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* Cover buttons (close + collapse)                */
+/* Cover Buttons                                   */
 /* ══════════════════════════════════════════════ */
 function _bindCoverButtons() {
     const closeBtn = document.getElementById('btn-close');
@@ -710,7 +664,7 @@ function _bindCoverButtons() {
 }
 
 /* ══════════════════════════════════════════════ */
-/* Tabs — Render + Switch                          */
+/* Tabs                                            */
 /* ══════════════════════════════════════════════ */
 function renderTabsForMode() {
     const tabsBar = document.getElementById('tabsBar');
@@ -751,17 +705,16 @@ function switchTab(tabName) {
     const scrollBox = document.getElementById('scroll-box');
     if (scrollBox) scrollBox.scrollTop = 0;
 
-    // ⭐ عند التبديل
-    if (tabName === 'moments' && typeof renderMomentsTab === 'function') renderMomentsTab();
-    if (tabName === 'friends' && typeof renderFriendsTab === 'function') renderFriendsTab();
+    if (tabName === 'moments') renderMomentsTab();
+    if (tabName === 'friends') renderFriendsTab();
     if (tabName === 'settings') _resetSettingsPage();
-    if (tabName === 'admin' && typeof renderAdminTab === 'function') renderAdminTab();
+    if (tabName === 'admin') renderAdminTab();
 }
 
 window.switchTab = switchTab;
 
 /* ══════════════════════════════════════════════ */
-/* Drill-down — Navigation                         */
+/* Drill-down                                      */
 /* ══════════════════════════════════════════════ */
 function _resetSettingsPage() {
     ProfileState.settingsHistory = ['main'];
@@ -769,24 +722,19 @@ function _resetSettingsPage() {
 }
 
 function _showSettingsPage(pageId, pushHistory) {
-    // اخفِ الكل
     document.querySelectorAll('.settings-page').forEach(function (p) {
         p.classList.remove('active');
     });
 
-    // اظهر المطلوب
     const target = document.querySelector('.settings-page[data-page="' + pageId + '"]');
     if (target) target.classList.add('active');
 
-    // history
     if (pushHistory !== false) {
         ProfileState.settingsHistory.push(pageId);
     }
 
-    // trigger specific render
     _renderSettingsPage(pageId);
 
-    // scroll to top
     const scrollBox = document.getElementById('scroll-box');
     if (scrollBox) scrollBox.scrollTop = 0;
 }
@@ -806,61 +754,29 @@ function _goBackSettings() {
 
 function _renderSettingsPage(pageId) {
     switch (pageId) {
-        case 'name-color':
-            if (typeof renderNameColorPicker === 'function') renderNameColorPicker();
-            break;
-        case 'name-gradient':
-            if (typeof renderNameGradientPicker === 'function') renderNameGradientPicker();
-            break;
-        case 'name-bg-color':
-            if (typeof renderNameBgColorPicker === 'function') renderNameBgColorPicker();
-            break;
-        case 'name-bg-gradient':
-            if (typeof renderNameBgGradientPicker === 'function') renderNameBgGradientPicker();
-            break;
-        case 'avatar-page':
-            if (typeof renderAvatarPage === 'function') renderAvatarPage();
-            break;
-        case 'cover-page':
-            if (typeof renderCoverPage === 'function') renderCoverPage();
-            break;
-        case 'frame-page':
-            if (typeof renderFramePage === 'function') renderFramePage();
-            break;
-        case 'glow-page':
-            if (typeof renderGlowPage === 'function') renderGlowPage();
-            break;
-        case 'profile-bg-page':
-            if (typeof renderProfileBgPage === 'function') renderProfileBgPage();
-            break;
-        case 'music':
-            if (typeof renderMusicPage === 'function') renderMusicPage();
-            break;
-        case 'poetry':
-            if (typeof renderPoetryPage === 'function') renderPoetryPage();
-            break;
-        case 'privacy':
-            if (typeof renderPrivacyPage === 'function') renderPrivacyPage();
-            break;
-        case 'room':
-            if (typeof renderRoomPage === 'function') renderRoomPage();
-            break;
-        case 'danger':
-            // static HTML
-            break;
+        case 'name-color': renderNameColorPicker(); break;
+        case 'name-gradient': renderNameGradientPicker(); break;
+        case 'name-bg-color': renderNameBgColorPicker(); break;
+        case 'name-bg-gradient': renderNameBgGradientPicker(); break;
+        case 'avatar-page': renderAvatarPage(); break;
+        case 'cover-page': renderCoverPage(); break;
+        case 'frame-page': renderFramePage(); break;
+        case 'glow-page': renderGlowPage(); break;
+        case 'profile-bg-page': renderProfileBgPage(); break;
+        case 'music': renderMusicPage(); break;
+        case 'poetry': renderPoetryPage(); break;
+        case 'privacy': renderPrivacyPage(); break;
+        case 'room': renderRoomPage(); break;
     }
 }
 
 function _bindSettingsNavigation() {
-    // open page buttons
     document.querySelectorAll('[data-open-page]').forEach(function (btn) {
         btn.onclick = function () {
-            const pageId = btn.getAttribute('data-open-page');
-            _showSettingsPage(pageId);
+            _showSettingsPage(btn.getAttribute('data-open-page'));
         };
     });
 
-    // back buttons
     document.querySelectorAll('[data-back]').forEach(function (btn) {
         btn.onclick = function () {
             _goBackSettings();
@@ -869,55 +785,1524 @@ function _bindSettingsNavigation() {
 }
 
 /* ══════════════════════════════════════════════ */
-/* Placeholders — تُبنى في E3                      */
+/* Upload Helpers                                  */
 /* ══════════════════════════════════════════════ */
-/* الدوال التالية تُستدعى من bootstrap لكن تُنفَّذ في E3:
- *   _bindLikesFriendsBlocked
- *   _bindImagesUploads
- *   _bindMusic
- *   _bindPoetry
- *   _bindPrivacy
- *   _bindDangerActions
- *   checkVisitorStatus
- *   updateVisitorButtons
- *   renderPoetry
- *   renderHomeStats
- *   renderMomentsTab
- *   renderFriendsTab
- *   renderAdminTab
- *   renderNameColorPicker
- *   renderNameGradientPicker
- *   renderNameBgColorPicker
- *   renderNameBgGradientPicker
- *   renderAvatarPage
- *   renderCoverPage
- *   renderFramePage
- *   renderGlowPage
- *   renderProfileBgPage
- *   renderMusicPage
- *   renderPoetryPage
- *   renderPrivacyPage
- *   renderRoomPage
- */
+async function uploadToImgBB(file) {
+    const fd = new FormData();
+    fd.append('key', IMGBB_KEY);
+    fd.append('image', file);
+    const res = await fetch('https://api.imgbb.com/1/upload', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data && data.success && data.data && data.data.url) return data.data.url;
+    throw new Error('Upload failed');
+}
 
-// ⭐ stubs — تُستبدل في E3
-if (typeof window._bindLikesFriendsBlocked !== 'function') {
-    window._bindLikesFriendsBlocked = function () {};
+function pickImageFile(inputId, onFile, opts) {
+    opts = opts || {};
+    const inp = document.getElementById(inputId);
+    if (!inp) return;
+    inp.value = '';
+    inp.onchange = async function () {
+        const file = this.files[0];
+        if (!file) return;
+        const maxMb = opts.maxMb || 5;
+        if (file.size / (1024 * 1024) > maxMb) {
+            _toast('⚠️ الحد ' + maxMb + 'MB');
+            return;
+        }
+        onFile(file);
+    };
+    inp.click();
 }
-if (typeof window._bindImagesUploads !== 'function') {
-    window._bindImagesUploads = function () {};
+
+/* ══════════════════════════════════════════════ */
+/* updateIdentityField                             */
+/* ══════════════════════════════════════════════ */
+async function updateIdentityField(field, value) {
+    const subj = ProfileState.subject;
+    if (!subj || !subj.uid) return;
+
+    const now = Date.now();
+    subj[field] = value;
+    subj.identityUpdatedAt = now;
+
+    ProfileState.localLockUntil = now + 5000;
+
+    if (typeof db !== 'undefined' && db) {
+        try {
+            const patch = {};
+            patch[field] = value;
+            patch.identityUpdatedAt = now;
+            await db.ref('users/' + subj.uid).update(patch);
+        } catch (e) {
+            console.warn('Firebase update failed:', e);
+            _toast('⚠️ فشل الحفظ');
+            return;
+        }
+    }
+
+    if (_isOwner()) {
+        try {
+            const json = JSON.stringify(subj);
+            localStorage.setItem(QAMAR.STORAGE_KEYS.CURRENT_USER, json);
+            localStorage.setItem(QAMAR.STORAGE_KEYS.USER, json);
+            localStorage.setItem(QAMAR.STORAGE_KEYS.IDENTITY_UPDATED_AT, String(now));
+        } catch (e) {}
+    }
+
+    applyIdentityToDOM();
+
+    try {
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ action: 'userDataUpdated', userData: subj }, '*');
+        }
+    } catch (e) {}
 }
-if (typeof window._bindMusic !== 'function') {
-    window._bindMusic = function () {};
+
+/* ══════════════════════════════════════════════ */
+/* Name — لون                                      */
+/* ══════════════════════════════════════════════ */
+function renderNameColorPicker() {
+    const grid = document.getElementById('name-color-grid');
+    const preview = document.getElementById('name-preview-color');
+    if (!grid) return;
+
+    const subj = ProfileState.subject;
+    const displayName = subj ? (subj.name || 'مستخدم') : 'مستخدم';
+    const currentColor = subj ? subj.nameColor : null;
+    const currentGrad = subj ? subj.nameGradient : null;
+
+    if (preview) {
+        preview.textContent = displayName;
+        preview.setAttribute('data-text', displayName);
+        window.NameEffects.apply(preview, {
+            nameColor: currentColor,
+            nameGradient: currentGrad,
+            color: subj ? subj.color : '#ffd700'
+        });
+    }
+
+    grid.innerHTML = '';
+    const colors = (QAMAR.NAME_BG_COLORS || []).slice();
+    ['#ffd700','#ffffff','#ff69b4','#00f3ff','#39ff14','#a855f7'].forEach(function (c) {
+        if (colors.indexOf(c) === -1) colors.push(c);
+    });
+
+    colors.forEach(function (color) {
+        const item = window.NameEffects.previewTemplate(displayName, {
+            nameColor: color,
+            color: color
+        }, currentColor === color ? 'selected' : '');
+
+        item.onclick = function () {
+            updateIdentityField('nameColor', color);
+            grid.querySelectorAll('.name-grid-item').forEach(function (x) { x.classList.remove('selected'); });
+            item.classList.add('selected');
+            if (preview) {
+                window.NameEffects.apply(preview, {
+                    nameColor: color,
+                    nameGradient: currentGrad,
+                    color: subj ? subj.color : '#ffd700'
+                });
+            }
+        };
+        grid.appendChild(item);
+    });
+
+    const removeBtn = document.getElementById('remove-name-color');
+    if (removeBtn && !removeBtn.__bound) {
+        removeBtn.__bound = true;
+        removeBtn.onclick = function () {
+            updateIdentityField('nameColor', null);
+            renderNameColorPicker();
+        };
+    }
 }
-if (typeof window._bindPoetry !== 'function') {
-    window._bindPoetry = function () {};
+
+/* ══════════════════════════════════════════════ */
+/* Name — تدرج                                     */
+/* ══════════════════════════════════════════════ */
+function renderNameGradientPicker() {
+    const grid = document.getElementById('name-gradient-grid');
+    const preview = document.getElementById('name-preview-gradient');
+    if (!grid) return;
+
+    const subj = ProfileState.subject;
+    const displayName = subj ? (subj.name || 'مستخدم') : 'مستخدم';
+    const currentGrad = subj ? subj.nameGradient : null;
+    const currentColor = subj ? subj.nameColor : null;
+
+    if (preview) {
+        preview.textContent = displayName;
+        preview.setAttribute('data-text', displayName);
+        window.NameEffects.apply(preview, {
+            nameColor: currentColor,
+            nameGradient: currentGrad,
+            color: subj ? subj.color : '#ffd700'
+        });
+    }
+
+    grid.innerHTML = '';
+    NAME_GRADIENTS.forEach(function (grad) {
+        const isSelected = currentGrad &&
+                           currentGrad[0] === grad[0] &&
+                           currentGrad[1] === grad[1];
+        const item = window.NameEffects.previewTemplate(displayName, {
+            nameColor: currentColor,
+            nameGradient: grad,
+            color: subj ? subj.color : '#ffd700'
+        }, isSelected ? 'selected' : '');
+
+        item.onclick = function () {
+            updateIdentityField('nameGradient', grad);
+            grid.querySelectorAll('.name-grid-item').forEach(function (x) { x.classList.remove('selected'); });
+            item.classList.add('selected');
+            if (preview) {
+                window.NameEffects.apply(preview, {
+                    nameColor: currentColor,
+                    nameGradient: grad,
+                    color: subj ? subj.color : '#ffd700'
+                });
+            }
+        };
+        grid.appendChild(item);
+    });
+
+    const removeBtn = document.getElementById('remove-name-gradient');
+    if (removeBtn && !removeBtn.__bound) {
+        removeBtn.__bound = true;
+        removeBtn.onclick = function () {
+            updateIdentityField('nameGradient', null);
+            renderNameGradientPicker();
+        };
+    }
 }
-if (typeof window._bindPrivacy !== 'function') {
-    window._bindPrivacy = function () {};
+
+/* ══════════════════════════════════════════════ */
+/* Name BG — لون                                   */
+/* ══════════════════════════════════════════════ */
+function renderNameBgColorPicker() {
+    const grid = document.getElementById('name-bg-color-grid');
+    const preview = document.getElementById('name-preview-bg-color');
+    if (!grid) return;
+
+    const subj = ProfileState.subject;
+    const displayName = subj ? (subj.name || 'مستخدم') : 'مستخدم';
+    const currentBgColor = subj ? subj.nameBgColor : null;
+    const currentBgGrad = subj ? subj.nameBgGradient : null;
+    const currentColor = subj ? subj.nameColor : null;
+    const currentGrad = subj ? subj.nameGradient : null;
+
+    if (preview) {
+        preview.textContent = displayName;
+        preview.setAttribute('data-text', displayName);
+        window.NameEffects.apply(preview, {
+            nameColor: currentColor,
+            nameGradient: currentGrad,
+            nameBgColor: currentBgColor,
+            nameBgGradient: currentBgGrad,
+            color: subj ? subj.color : '#ffd700'
+        });
+    }
+
+    grid.innerHTML = '';
+    const colors = (QAMAR.NAME_BG_COLORS || []).slice();
+
+    colors.forEach(function (color) {
+        const item = window.NameEffects.previewTemplate(displayName, {
+            nameColor: '#ffffff',
+            nameBgColor: color
+        }, currentBgColor === color && !currentBgGrad ? 'selected' : '');
+
+        item.onclick = function () {
+            updateIdentityField('nameBgColor', color);
+            updateIdentityField('nameBgGradient', null);
+            grid.querySelectorAll('.name-grid-item').forEach(function (x) { x.classList.remove('selected'); });
+            item.classList.add('selected');
+            if (preview) {
+                window.NameEffects.apply(preview, {
+                    nameColor: currentColor,
+                    nameGradient: currentGrad,
+                    nameBgColor: color,
+                    nameBgGradient: null,
+                    color: subj ? subj.color : '#ffd700'
+                });
+            }
+        };
+        grid.appendChild(item);
+    });
+
+    const removeBtn = document.getElementById('remove-name-bg-color');
+    if (removeBtn && !removeBtn.__bound) {
+        removeBtn.__bound = true;
+        removeBtn.onclick = function () {
+            updateIdentityField('nameBgColor', null);
+            renderNameBgColorPicker();
+        };
+    }
 }
-if (typeof window._bindDangerActions !== 'function') {
-    window._bindDangerActions = function () {};
+
+/* ══════════════════════════════════════════════ */
+/* Name BG — تدرج                                  */
+/* ══════════════════════════════════════════════ */
+function renderNameBgGradientPicker() {
+    const grid = document.getElementById('name-bg-gradient-grid');
+    const preview = document.getElementById('name-preview-bg-gradient');
+    if (!grid) return;
+
+    const subj = ProfileState.subject;
+    const displayName = subj ? (subj.name || 'مستخدم') : 'مستخدم';
+    const currentBgGrad = subj ? subj.nameBgGradient : null;
+    const currentColor = subj ? subj.nameColor : null;
+    const currentGrad = subj ? subj.nameGradient : null;
+
+    if (preview) {
+        preview.textContent = displayName;
+        preview.setAttribute('data-text', displayName);
+        window.NameEffects.apply(preview, {
+            nameColor: currentColor,
+            nameGradient: currentGrad,
+            nameBgColor: null,
+            nameBgGradient: currentBgGrad,
+            color: subj ? subj.color : '#ffd700'
+        });
+    }
+
+    grid.innerHTML = '';
+    NAME_GRADIENTS.forEach(function (grad) {
+        const isSelected = currentBgGrad &&
+                           currentBgGrad[0] === grad[0] &&
+                           currentBgGrad[1] === grad[1];
+        const item = window.NameEffects.previewTemplate(displayName, {
+            nameColor: '#ffffff',
+            nameBgGradient: grad
+        }, isSelected ? 'selected' : '');
+
+        item.onclick = function () {
+            updateIdentityField('nameBgColor', null);
+            updateIdentityField('nameBgGradient', grad);
+            grid.querySelectorAll('.name-grid-item').forEach(function (x) { x.classList.remove('selected'); });
+            item.classList.add('selected');
+            if (preview) {
+                window.NameEffects.apply(preview, {
+                    nameColor: currentColor,
+                    nameGradient: currentGrad,
+                    nameBgColor: null,
+                    nameBgGradient: grad,
+                    color: subj ? subj.color : '#ffd700'
+                });
+            }
+        };
+        grid.appendChild(item);
+    });
+
+    const removeBtn = document.getElementById('remove-name-bg-gradient');
+    if (removeBtn && !removeBtn.__bound) {
+        removeBtn.__bound = true;
+        removeBtn.onclick = function () {
+            updateIdentityField('nameBgGradient', null);
+            renderNameBgGradientPicker();
+        };
+    }
+}
+
+/* ══════════════════════════════════════════════ */
+/* Avatar Page                                     */
+/* ══════════════════════════════════════════════ */
+function renderAvatarPage() {
+    const subj = ProfileState.subject;
+    const img = document.getElementById('avatar-preview-img');
+    if (img && subj) {
+        img.src = subj.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(subj.name || 'U') + '&background=555&color=fff';
+    }
+}
+
+function _bindImagesUploads() {
+    const upAvatar = document.getElementById('btn-upload-avatar');
+    if (upAvatar && !upAvatar.__bound) {
+        upAvatar.__bound = true;
+        upAvatar.onclick = function () {
+            pickImageFile('avatar-file-input', async function (file) {
+                _toast('⏳ جاري الرفع...');
+                try {
+                    const url = await uploadToImgBB(file);
+                    await updateIdentityField('avatar', url);
+                    renderAvatarPage();
+                    _toast('✅ تم');
+                } catch (e) { _toast('⚠️ فشل الرفع'); }
+            }, { maxMb: 5 });
+        };
+    }
+
+    const removeAvatar = document.getElementById('btn-remove-avatar');
+    if (removeAvatar && !removeAvatar.__bound) {
+        removeAvatar.__bound = true;
+        removeAvatar.onclick = function () {
+            if (!confirm('إزالة الصورة الشخصية؟')) return;
+            updateIdentityField('avatar', null);
+            renderAvatarPage();
+            _toast('✅ تم');
+        };
+    }
+
+    const upCover = document.getElementById('btn-upload-cover');
+    if (upCover && !upCover.__bound) {
+        upCover.__bound = true;
+        upCover.onclick = function () {
+            pickImageFile('cover-file-input', async function (file) {
+                _toast('⏳ جاري الرفع...');
+                try {
+                    const url = await uploadToImgBB(file);
+                    const isVideo = file.type.indexOf('video/') === 0;
+                    await updateIdentityField('cover', url);
+                    await updateIdentityField('coverType', isVideo ? 'video' : 'image');
+                    renderCoverPage();
+                    _toast('✅ تم');
+                } catch (e) { _toast('⚠️ فشل الرفع'); }
+            }, { maxMb: 20 });
+        };
+    }
+
+    const removeCover = document.getElementById('btn-remove-cover');
+    if (removeCover && !removeCover.__bound) {
+        removeCover.__bound = true;
+        removeCover.onclick = function () {
+            if (!confirm('إزالة الغلاف؟')) return;
+            updateIdentityField('cover', null);
+            updateIdentityField('coverType', null);
+            renderCoverPage();
+            _toast('✅ تم');
+        };
+    }
+
+    document.querySelectorAll('[data-bg-type]').forEach(function (btn) {
+        if (btn.__bound) return;
+        btn.__bound = true;
+        btn.onclick = function () {
+            _switchBgTypeUI(btn.getAttribute('data-bg-type'));
+        };
+    });
+
+    const bgColor = document.getElementById('profile-bg-color-picker');
+    if (bgColor && !bgColor.__bound) {
+        bgColor.__bound = true;
+        let _t = null;
+        bgColor.oninput = function () {
+            clearTimeout(_t);
+            _t = setTimeout(function () {
+                updateIdentityField('profileBgType', 'color');
+                updateIdentityField('profileBgValue', bgColor.value);
+            }, 400);
+        };
+    }
+
+    const upBg = document.getElementById('btn-upload-bg');
+    if (upBg && !upBg.__bound) {
+        upBg.__bound = true;
+        upBg.onclick = function () {
+            pickImageFile('profile-bg-input', async function (file) {
+                _toast('⏳ جاري الرفع...');
+                try {
+                    const url = await uploadToImgBB(file);
+                    const isVideo = file.type.indexOf('video/') === 0;
+                    await updateIdentityField('profileBgType', isVideo ? 'video' : 'image');
+                    await updateIdentityField('profileBgValue', url);
+                    renderProfileBgPage();
+                    _toast('✅ تم');
+                } catch (e) { _toast('⚠️ فشل الرفع'); }
+            }, { maxMb: 20 });
+        };
+    }
+
+    const removeBg = document.getElementById('btn-remove-profile-bg');
+    if (removeBg && !removeBg.__bound) {
+        removeBg.__bound = true;
+        removeBg.onclick = function () {
+            if (!confirm('إزالة الخلفية؟')) return;
+            updateIdentityField('profileBgType', null);
+            updateIdentityField('profileBgValue', null);
+            renderProfileBgPage();
+            _toast('✅ تم');
+        };
+    }
+}
+
+function _switchBgTypeUI(type) {
+    const colorSec = document.getElementById('bg-color-section');
+    const mediaSec = document.getElementById('bg-media-section');
+    if (!colorSec || !mediaSec) return;
+
+    colorSec.style.display = (type === 'color') ? 'block' : 'none';
+    mediaSec.style.display = (type === 'image' || type === 'video') ? 'block' : 'none';
+
+    const lbl = document.getElementById('bg-upload-label');
+    if (lbl) lbl.textContent = type === 'video' ? 'رفع فيديو' : 'رفع صورة';
+
+    document.querySelectorAll('[data-bg-type]').forEach(function (b) {
+        b.style.opacity = (b.getAttribute('data-bg-type') === type) ? '1' : '0.5';
+    });
+}
+
+/* ══════════════════════════════════════════════ */
+/* Cover Page                                      */
+/* ══════════════════════════════════════════════ */
+function renderCoverPage() {
+    const subj = ProfileState.subject;
+    const img = document.getElementById('cover-preview-img');
+    if (!img) return;
+
+    if (subj && subj.cover) {
+        img.style.display = 'block';
+        img.src = subj.cover;
+    } else {
+        img.style.display = 'none';
+    }
+}
+
+/* ══════════════════════════════════════════════ */
+/* Frame Page                                      */
+/* ══════════════════════════════════════════════ */
+function renderFramePage() {
+    const container = document.getElementById('frames-grid-container');
+    if (!container) return;
+
+    const subj = ProfileState.subject;
+    const avatarSrc = subj ? subj.avatar : null;
+    const currentFrame = subj ? subj.avatarFrame : null;
+
+    if (typeof renderFramesGrid === 'function') {
+        renderFramesGrid(container, avatarSrc, currentFrame);
+    }
+}
+
+/* ══════════════════════════════════════════════ */
+/* Glow Page                                       */
+/* ══════════════════════════════════════════════ */
+function renderGlowPage() {
+    const container = document.getElementById('glow-grid-container');
+    if (!container) return;
+
+    const subj = ProfileState.subject;
+    const current = subj ? subj.profileGlow : null;
+
+    container.innerHTML = '';
+    (QAMAR.PROFILE_GLOWS || []).forEach(function (color) {
+        const tile = document.createElement('div');
+        tile.className = 'glow-tile' + (current === color ? ' selected' : '');
+
+        const circle = document.createElement('div');
+        circle.className = 'glow-circle';
+        circle.style.boxShadow = '0 0 20px ' + color + ', 0 0 40px ' + color;
+        tile.appendChild(circle);
+
+        tile.onclick = function () {
+            updateIdentityField('profileGlow', color);
+            container.querySelectorAll('.glow-tile').forEach(function (x) { x.classList.remove('selected'); });
+            tile.classList.add('selected');
+        };
+        container.appendChild(tile);
+    });
+
+    const removeBtn = document.getElementById('btn-remove-glow');
+    if (removeBtn && !removeBtn.__bound) {
+        removeBtn.__bound = true;
+        removeBtn.onclick = function () {
+            updateIdentityField('profileGlow', null);
+            renderGlowPage();
+        };
+    }
+}
+
+/* ══════════════════════════════════════════════ */
+/* Profile BG Page                                 */
+/* ══════════════════════════════════════════════ */
+function renderProfileBgPage() {
+    const subj = ProfileState.subject;
+    if (!subj) return;
+
+    const type = subj.profileBgType;
+    _switchBgTypeUI(type || 'color');
+
+    const colorPicker = document.getElementById('profile-bg-color-picker');
+    if (colorPicker && type === 'color' && subj.profileBgValue) {
+        colorPicker.value = subj.profileBgValue;
+    }
+}
+
+/* ══════════════════════════════════════════════ */
+/* Music Page                                      */
+/* ══════════════════════════════════════════════ */
+function renderMusicPage() {
+    const subj = ProfileState.subject;
+    const status = document.getElementById('music-status');
+    if (status) {
+        status.textContent = (subj && subj.musicURL) ? 'يوجد موسيقى ✅' : 'لا يوجد موسيقى';
+    }
+}
+
+function _bindMusic() {
+    const upMusic = document.getElementById('btn-upload-music');
+    if (upMusic && !upMusic.__bound) {
+        upMusic.__bound = true;
+        upMusic.onclick = function () {
+            pickImageFile('music-file-input', async function (file) {
+                _toast('⏳ جاري الرفع...');
+                try {
+                    const url = await uploadToImgBB(file);
+                    await updateIdentityField('musicURL', url);
+                    renderMusicPage();
+                    _toast('✅ تم');
+                } catch (e) { _toast('⚠️ فشل الرفع'); }
+            }, { maxMb: 10 });
+        };
+    }
+
+    const removeMusic = document.getElementById('btn-remove-music');
+    if (removeMusic && !removeMusic.__bound) {
+        removeMusic.__bound = true;
+        removeMusic.onclick = function () {
+            if (!confirm('إزالة الموسيقى؟')) return;
+            updateIdentityField('musicURL', null);
+            renderMusicPage();
+            _toast('✅ تم');
+        };
+    }
+}
+
+/* ══════════════════════════════════════════════ */
+/* Poetry                                          */
+/* ══════════════════════════════════════════════ */
+function renderPoetryPage() {
+    const subj = ProfileState.subject;
+    if (!subj) return;
+
+    ProfileState.poetry.text = subj.poetry || '';
+    ProfileState.poetry.bg = subj.poetryBg || null;
+    ProfileState.poetry.attachment = subj.poetryAttachment || null;
+
+    const inp = document.getElementById('poetry-input');
+    if (inp) {
+        inp.value = ProfileState.poetry.text;
+        _updatePoetryCharCount();
+    }
+
+    _renderPoetryBgPreview();
+    _renderPoetryAttachPreview();
+}
+
+function _updatePoetryCharCount() {
+    const inp = document.getElementById('poetry-input');
+    const cnt = document.getElementById('poetry-char-count');
+    if (inp && cnt) cnt.textContent = inp.value.length;
+}
+
+function _renderPoetryBgPreview() {
+    const box = document.getElementById('poetry-bg-preview');
+    if (!box) return;
+    box.innerHTML = '';
+    if (ProfileState.poetry.bg) {
+        const img = document.createElement('img');
+        img.src = ProfileState.poetry.bg;
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+        box.appendChild(img);
+    } else {
+        const ph = document.createElement('div');
+        ph.style.cssText = 'color:#555;font-size:12px;';
+        ph.textContent = 'لا يوجد';
+        box.appendChild(ph);
+    }
+}
+
+function _renderPoetryAttachPreview() {
+    const box = document.getElementById('poetry-attach-preview');
+    if (!box) return;
+    box.innerHTML = '';
+    if (ProfileState.poetry.attachment) {
+        const img = document.createElement('img');
+        img.src = ProfileState.poetry.attachment;
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+        box.appendChild(img);
+    } else {
+        const ph = document.createElement('div');
+        ph.style.cssText = 'color:#555;font-size:12px;';
+        ph.textContent = 'لا يوجد';
+        box.appendChild(ph);
+    }
+}
+
+function renderPoetry() {
+    const section = document.getElementById('poetry-section');
+    if (!section) return;
+
+    const subj = ProfileState.subject;
+    if (!subj) { section.classList.add('empty'); return; }
+
+    const text = subj.poetry || '';
+    const bg = subj.poetryBg || null;
+    const attach = subj.poetryAttachment || null;
+
+    if (!text && !attach) {
+        section.classList.add('empty');
+        return;
+    }
+
+    section.classList.remove('empty');
+
+    if (bg) {
+        section.style.backgroundImage = 'url("' + bg + '")';
+        section.style.backgroundSize = 'cover';
+        section.style.backgroundPosition = 'center';
+    } else {
+        section.style.backgroundImage = '';
+    }
+
+    const textEl = document.getElementById('poetry-display');
+    if (textEl) textEl.textContent = text || '';
+
+    const authorEl = document.getElementById('poetry-author');
+    if (authorEl) authorEl.textContent = text ? ('— ' + (subj.name || '')) : '';
+
+    const attEl = document.getElementById('poetry-attachment');
+    if (attEl) {
+        if (attach) {
+            attEl.style.display = 'block';
+            attEl.src = attach;
+            attEl.onclick = function () { window.open(attach, '_blank'); };
+        } else {
+            attEl.style.display = 'none';
+            attEl.removeAttribute('src');
+        }
+    }
+}
+
+function _bindPoetry() {
+    const inp = document.getElementById('poetry-input');
+    if (inp && !inp.__bound) {
+        inp.__bound = true;
+        inp.addEventListener('input', function () {
+            ProfileState.poetry.text = this.value;
+            _updatePoetryCharCount();
+        });
+    }
+
+    const upBg = document.getElementById('btn-upload-poetry-bg');
+    if (upBg && !upBg.__bound) {
+        upBg.__bound = true;
+        upBg.onclick = function () {
+            pickImageFile('poetry-bg-input', async function (file) {
+                _toast('⏳ جاري الرفع...');
+                try {
+                    const url = await uploadToImgBB(file);
+                    ProfileState.poetry.bg = url;
+                    _renderPoetryBgPreview();
+                    _toast('✅ تم (لا تنسَ الحفظ)');
+                } catch (e) { _toast('⚠️ فشل الرفع'); }
+            }, { maxMb: 5 });
+        };
+    }
+
+    const removeBg = document.getElementById('btn-remove-poetry-bg');
+    if (removeBg && !removeBg.__bound) {
+        removeBg.__bound = true;
+        removeBg.onclick = function () {
+            ProfileState.poetry.bg = null;
+            _renderPoetryBgPreview();
+        };
+    }
+
+    const upAtt = document.getElementById('btn-upload-poetry-attach');
+    if (upAtt && !upAtt.__bound) {
+        upAtt.__bound = true;
+        upAtt.onclick = function () {
+            pickImageFile('poetry-attach-input', async function (file) {
+                _toast('⏳ جاري الرفع...');
+                try {
+                    const url = await uploadToImgBB(file);
+                    ProfileState.poetry.attachment = url;
+                    _renderPoetryAttachPreview();
+                    _toast('✅ تم (لا تنسَ الحفظ)');
+                } catch (e) { _toast('⚠️ فشل الرفع'); }
+            }, { maxMb: 5 });
+        };
+    }
+
+    const removeAtt = document.getElementById('btn-remove-poetry-attach');
+    if (removeAtt && !removeAtt.__bound) {
+        removeAtt.__bound = true;
+        removeAtt.onclick = function () {
+            ProfileState.poetry.attachment = null;
+            _renderPoetryAttachPreview();
+        };
+    }
+
+    const saveBtn = document.getElementById('btn-save-poetry');
+    if (saveBtn && !saveBtn.__bound) {
+        saveBtn.__bound = true;
+        saveBtn.onclick = async function () {
+            const text = (ProfileState.poetry.text || '').trim();
+            if (text.length > 700) {
+                _toast('⚠️ الحد 700 حرف');
+                return;
+            }
+            _toast('⏳ جاري الحفظ...');
+            try {
+                await updateIdentityField('poetry', text);
+                await updateIdentityField('poetryBg', ProfileState.poetry.bg);
+                await updateIdentityField('poetryAttachment', ProfileState.poetry.attachment);
+                renderPoetry();
+                _toast('✅ تم الحفظ');
+            } catch (e) {
+                _toast('⚠️ فشل');
+            }
+        };
+    }
+
+    const removePoetry = document.getElementById('btn-remove-poetry');
+    if (removePoetry && !removePoetry.__bound) {
+        removePoetry.__bound = true;
+        removePoetry.onclick = function () {
+            if (!confirm('حذف الشعر بالكامل؟')) return;
+            ProfileState.poetry.text = '';
+            ProfileState.poetry.bg = null;
+            ProfileState.poetry.attachment = null;
+            updateIdentityField('poetry', '');
+            updateIdentityField('poetryBg', null);
+            updateIdentityField('poetryAttachment', null);
+            renderPoetryPage();
+            renderPoetry();
+            _toast('✅ تم');
+        };
+    }
+}
+
+/* ══════════════════════════════════════════════ */
+/* Privacy Page                                    */
+/* ══════════════════════════════════════════════ */
+const PRIVACY_FIELDS = [
+    { key: 'uid',      label: 'المعرّف (UID)' },
+    { key: 'country',  label: 'الدولة' },
+    { key: 'age',      label: 'العمر' },
+    { key: 'family',   label: 'العائلة' },
+    { key: 'gender',   label: 'الجنس' },
+    { key: 'joinedAt', label: 'تاريخ الانضمام' },
+    { key: 'lastSeen', label: 'آخر تواجد' },
+    { key: 'points',   label: 'نقاط التفاعل' }
+];
+
+function renderPrivacyPage() {
+    const container = document.getElementById('privacy-container');
+    if (!container) return;
+
+    const subj = ProfileState.subject;
+    if (!subj) return;
+
+    const privacy = subj.privacy || {};
+
+    container.innerHTML = '';
+    PRIVACY_FIELDS.forEach(function (f) {
+        const row = document.createElement('div');
+        row.className = 'settings-row';
+
+        const lbl = document.createElement('span');
+        lbl.className = 'sr-label';
+        lbl.textContent = f.label;
+
+        const sel = document.createElement('select');
+        sel.className = 'setting-select';
+        ['public', 'friends', 'private'].forEach(function (v) {
+            const op = document.createElement('option');
+            op.value = v;
+            op.textContent = v === 'public' ? '🌍 الجميع' : v === 'friends' ? '👥 الأصدقاء' : '🔒 أنا فقط';
+            if ((privacy[f.key] || 'public') === v) op.selected = true;
+            sel.appendChild(op);
+        });
+        sel.onchange = function () {
+            const newPrivacy = Object.assign({}, subj.privacy || {});
+            newPrivacy[f.key] = sel.value;
+            updateIdentityField('privacy', newPrivacy);
+        };
+
+        row.appendChild(lbl);
+        row.appendChild(sel);
+        container.appendChild(row);
+    });
+}
+
+function _bindPrivacy() {}
+
+/* ══════════════════════════════════════════════ */
+/* Room Page                                       */
+/* ══════════════════════════════════════════════ */
+function renderRoomPage() {
+    const el = document.getElementById('current-room-name');
+    if (!el) return;
+    const roomId = (typeof ChatState !== 'undefined' && ChatState.currentRoom) || 'general';
+    const room = QAMAR.ROOMS[roomId];
+    el.textContent = room ? (room.icon + ' ' + room.name) : roomId;
+}
+
+/* ══════════════════════════════════════════════ */
+/* Danger Actions                                  */
+/* ══════════════════════════════════════════════ */
+function _bindDangerActions() {
+    const leaveBtn = document.getElementById('btn-leave-room');
+    if (leaveBtn && !leaveBtn.__bound) {
+        leaveBtn.__bound = true;
+        leaveBtn.onclick = function () {
+            if (!confirm('مغادرة الغرفة؟')) return;
+            try {
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({ action: 'leaveRoom' }, '*');
+                }
+            } catch (e) {}
+        };
+    }
+
+    const logoutBtn = document.getElementById('btn-logout');
+    if (logoutBtn && !logoutBtn.__bound) {
+        logoutBtn.__bound = true;
+        logoutBtn.onclick = function () {
+            if (!confirm('تسجيل الخروج؟')) return;
+            try {
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({ action: 'logout' }, '*');
+                }
+            } catch (e) {}
+        };
+    }
+
+    const delBtn = document.getElementById('btn-delete-account');
+    if (delBtn && !delBtn.__bound) {
+        delBtn.__bound = true;
+        delBtn.onclick = function () {
+            _confirmDeleteAccount();
+        };
+    }
+}
+
+function _confirmDeleteAccount() {
+    openAppModal({
+        title: '🗑️ حذف الحساب',
+        html:
+            '<div style="color:#ff8888;font-size:13px;text-align:center;line-height:1.6;padding:8px;background:rgba(255,68,68,0.15);border-radius:8px;">' +
+                '⚠️ سيتم حذف حسابك نهائياً — لا يمكن التراجع.<br>' +
+                'اكتب كلمة <b style="color:#ff4444;">حذف</b> للتأكيد:' +
+            '</div>' +
+            '<input type="text" id="delete-confirm-input" placeholder="حذف" style="width:100%;margin-top:10px;padding:12px;background:rgba(255,255,255,0.08);border:1px solid #ff4444;border-radius:10px;color:#fff;font-family:inherit;text-align:center;box-sizing:border-box;">',
+        okLabel: 'حذف',
+        cancelLabel: 'إلغاء',
+        onSave: async function () {
+            const inp = document.getElementById('delete-confirm-input');
+            const v = (inp ? inp.value : '').trim();
+            if (v !== 'حذف') {
+                _toast('⚠️ الكلمة غير صحيحة');
+                return;
+            }
+            await _executeDeleteAccount();
+        }
+    });
+}
+
+async function _executeDeleteAccount() {
+    const subj = ProfileState.subject;
+    if (!subj || !subj.uid) return;
+    if (typeof db === 'undefined' || !db) return;
+
+    _toast('⏳ جاري الحذف...');
+    try {
+        const uid = subj.uid;
+        const name = subj.name;
+        const code = subj.code;
+
+        await Promise.all([
+            db.ref('users/' + uid).remove(),
+            db.ref('user_presence/' + uid).remove(),
+            name ? db.ref('user_names/' + name).remove().catch(function () {}) : Promise.resolve(),
+            code ? db.ref('user_codes/' + code).remove().catch(function () {}) : Promise.resolve()
+        ]);
+
+        try {
+            if (typeof auth !== 'undefined' && auth && auth.currentUser) {
+                await auth.currentUser.delete();
+            }
+        } catch (e) {
+            console.warn('Firebase Auth delete failed:', e);
+        }
+
+        try {
+            ['qamar_user', 'qamar_current_user', 'qamar_guest'].forEach(function (k) {
+                localStorage.removeItem(k);
+            });
+        } catch (e) {}
+
+        _toast('✅ تم الحذف');
+        setTimeout(function () {
+            try {
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({ action: 'closeProfile' }, '*');
+                }
+                location.reload();
+            } catch (e) {}
+        }, 1200);
+    } catch (e) {
+        console.warn('delete account failed:', e);
+        _toast('⚠️ فشل الحذف');
+    }
+}
+
+/* ══════════════════════════════════════════════ */
+/* Visitor Buttons                                 */
+/* ══════════════════════════════════════════════ */
+async function checkVisitorStatus() {
+    if (!_isVisitor()) return;
+    const subj = ProfileState.subject;
+    const me = ProfileState.me;
+    if (!subj || !me || !me.uid || !subj.uid) return;
+
+    try {
+        const likeSnap = await db.ref('users/' + subj.uid + '/likes/' + me.uid).once('value');
+        ProfileState.likes.isLiked = likeSnap.exists();
+    } catch (e) {}
+
+    try {
+        const fSnap = await db.ref('users/' + subj.uid + '/friends/' + me.uid).once('value');
+        const f = fSnap.val();
+        if (f && f.status === 'accepted') ProfileState.friends.state = 'accepted';
+        else {
+            const reqSnap = await db.ref('users/' + me.uid + '/friend_requests/' + subj.uid).once('value');
+            ProfileState.friends.state = reqSnap.exists() ? 'pending' : 'off';
+        }
+    } catch (e) {}
+
+    try {
+        const bSnap = await db.ref('users/' + me.uid + '/blocked/' + subj.uid).once('value');
+        ProfileState.blocked.isBlocked = bSnap.exists();
+    } catch (e) {}
+
+    updateVisitorButtons();
+}
+
+function updateVisitorButtons() {
+    const heart = document.getElementById('btn-heart');
+    if (heart) {
+        heart.textContent = ProfileState.likes.isLiked ? '💔' : '❤️';
+        heart.classList.toggle('active', ProfileState.likes.isLiked);
+        heart.setAttribute('data-state', ProfileState.likes.isLiked ? 'on' : 'off');
+    }
+
+    const friend = document.getElementById('btn-friend');
+    if (friend) {
+        const st = ProfileState.friends.state;
+        if (st === 'accepted') {
+            friend.textContent = '✅';
+            friend.setAttribute('data-state', 'accepted');
+            friend.classList.add('active');
+        } else if (st === 'pending') {
+            friend.textContent = '⏳';
+            friend.setAttribute('data-state', 'pending');
+            friend.classList.remove('active');
+        } else {
+            friend.textContent = '➕';
+            friend.setAttribute('data-state', 'off');
+            friend.classList.remove('active');
+        }
+    }
+
+    const block = document.getElementById('btn-block');
+    if (block) {
+        block.textContent = ProfileState.blocked.isBlocked ? '🔓' : '🚫';
+        block.classList.toggle('active', ProfileState.blocked.isBlocked);
+    }
+}
+
+function _bindLikesFriendsBlocked() {
+    const heart = document.getElementById('btn-heart');
+    if (heart && !heart.__bound) {
+        heart.__bound = true;
+        heart.onclick = async function () {
+            const subj = ProfileState.subject;
+            const me = ProfileState.me;
+            if (!subj || !me || !me.uid) return;
+            try {
+                if (ProfileState.likes.isLiked) {
+                    await db.ref('users/' + subj.uid + '/likes/' + me.uid).remove();
+                    ProfileState.likes.isLiked = false;
+                    _toast('💔 ألغي الإعجاب');
+                } else {
+                    await db.ref('users/' + subj.uid + '/likes/' + me.uid).set({
+                        time: Date.now(),
+                        name: me.name || 'زائر',
+                        avatar: me.avatar || ''
+                    });
+                    ProfileState.likes.isLiked = true;
+                    _toast('❤️ تم الإعجاب');
+                    db.ref('user_notifications/' + subj.uid).push({
+                        fromUid: me.uid,
+                        fromName: me.name || 'زائر',
+                        fromAvatar: me.avatar || '',
+                        type: 'like',
+                        preview: 'أعجب بك',
+                        time: Date.now(),
+                        read: false
+                    }).catch(function () {});
+                }
+                updateVisitorButtons();
+            } catch (e) { _toast('⚠️ فشل'); }
+        };
+    }
+
+    const mail = document.getElementById('btn-mail');
+    if (mail && !mail.__bound) {
+        mail.__bound = true;
+        mail.onclick = function () {
+            const subj = ProfileState.subject;
+            if (!subj) return;
+            try {
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({
+                        action: 'openPrivateChat',
+                        uid: subj.uid,
+                        name: subj.name
+                    }, '*');
+                }
+            } catch (e) {}
+        };
+    }
+
+    const friend = document.getElementById('btn-friend');
+    if (friend && !friend.__bound) {
+        friend.__bound = true;
+        friend.onclick = async function () {
+            const subj = ProfileState.subject;
+            const me = ProfileState.me;
+            if (!subj || !me || !me.uid) return;
+            const st = ProfileState.friends.state;
+
+            if (st === 'accepted') {
+                if (!confirm('إزالة الصداقة؟')) return;
+                try {
+                    await Promise.all([
+                        db.ref('users/' + subj.uid + '/friends/' + me.uid).remove(),
+                        db.ref('users/' + me.uid + '/friends/' + subj.uid).remove()
+                    ]);
+                    ProfileState.friends.state = 'off';
+                    updateVisitorButtons();
+                    _toast('✅ تمت الإزالة');
+                } catch (e) { _toast('⚠️ فشل'); }
+            } else if (st === 'pending') {
+                if (!confirm('إلغاء الطلب؟')) return;
+                try {
+                    await db.ref('users/' + me.uid + '/friend_requests/' + subj.uid).remove();
+                    ProfileState.friends.state = 'off';
+                    updateVisitorButtons();
+                } catch (e) { _toast('⚠️ فشل'); }
+            } else {
+                try {
+                    await db.ref('users/' + me.uid + '/friend_requests/' + subj.uid).set({
+                        time: Date.now(),
+                        name: me.name,
+                        avatar: me.avatar || ''
+                    });
+                    await db.ref('user_notifications/' + subj.uid).push({
+                        fromUid: me.uid,
+                        fromName: me.name || 'زائر',
+                        fromAvatar: me.avatar || '',
+                        type: 'friend_request',
+                        preview: 'طلب صداقة',
+                        time: Date.now(),
+                        read: false
+                    });
+                    ProfileState.friends.state = 'pending';
+                    updateVisitorButtons();
+                    _toast('➕ أُرسل الطلب');
+                } catch (e) { _toast('⚠️ فشل'); }
+            }
+        };
+    }
+
+    const block = document.getElementById('btn-block');
+    if (block && !block.__bound) {
+        block.__bound = true;
+        block.onclick = async function () {
+            const subj = ProfileState.subject;
+            const me = ProfileState.me;
+            if (!subj || !me || !me.uid) return;
+
+            if (ProfileState.blocked.isBlocked) {
+                if (!confirm('إلغاء الحظر؟')) return;
+                try {
+                    await db.ref('users/' + me.uid + '/blocked/' + subj.uid).remove();
+                    ProfileState.blocked.isBlocked = false;
+                    updateVisitorButtons();
+                    _toast('✅ تم');
+                } catch (e) { _toast('⚠️ فشل'); }
+            } else {
+                if (!confirm('حظر ' + (subj.name || '') + '؟')) return;
+                try {
+                    await db.ref('users/' + me.uid + '/blocked/' + subj.uid).set({
+                        time: Date.now(),
+                        name: subj.name,
+                        avatar: subj.avatar || ''
+                    });
+                    ProfileState.blocked.isBlocked = true;
+                    updateVisitorButtons();
+                    _toast('🚫 تم الحظر');
+                } catch (e) { _toast('⚠️ فشل'); }
+            }
+        };
+    }
+
+    const adm = document.getElementById('btn-admin-actions');
+    if (adm && !adm.__bound) {
+        adm.__bound = true;
+        adm.onclick = function () { switchTab('admin'); };
+    }
+}
+
+/* ══════════════════════════════════════════════ */
+/* Home Stats                                      */
+/* ══════════════════════════════════════════════ */
+async function renderHomeStats() {
+    const subj = ProfileState.subject;
+    if (!subj || !subj.uid) return;
+    if (typeof db === 'undefined' || !db) return;
+
+    try {
+        const s = await db.ref('users/' + subj.uid + '/likes').once('value');
+        const likes = s.val() || {};
+        const el = document.getElementById('stat-likes');
+        if (el) el.textContent = Object.keys(likes).length;
+    } catch (e) {}
+
+    try {
+        const s = await db.ref('users/' + subj.uid + '/friends').once('value');
+        const f = s.val() || {};
+        const el = document.getElementById('stat-friends');
+        if (el) el.textContent = Object.keys(f).length;
+    } catch (e) {}
+
+    try {
+        const s = await db.ref('bot_data/quiz/scores/' + subj.uid).once('value');
+        const pts = s.val() || 0;
+        const el = document.getElementById('stat-achievements');
+        if (el) el.textContent = Math.floor(pts / 100);
+    } catch (e) {}
+
+    const el4 = document.getElementById('stat-gifts');
+    if (el4) el4.textContent = '0';
+
+    if (_isOwner()) renderVisitors();
+}
+
+async function renderVisitors() {
+    const subj = ProfileState.subject;
+    if (!subj || !subj.uid) return;
+    const container = document.getElementById('visitors-container');
+    if (!container) return;
+
+    try {
+        const s = await db.ref('users/' + subj.uid + '/visitors').limitToLast(20).once('value');
+        const data = s.val() || {};
+        const list = Object.keys(data).map(function (uid) {
+            const v = data[uid];
+            v.uid = uid;
+            return v;
+        }).sort(function (a, b) { return (b.time || 0) - (a.time || 0); });
+
+        container.innerHTML = '';
+        if (!list.length) {
+            container.innerHTML = '<div style="color:#666;font-size:11px;padding:8px;">لا يوجد زوار</div>';
+            return;
+        }
+        list.slice(0, 15).forEach(function (v) {
+            const chip = document.createElement('div');
+            chip.className = 'visitor-chip';
+            const initial = (v.name || 'U').substring(0, 1);
+            chip.innerHTML =
+                '<div class="visitor-avatar">' + initial + '</div>' +
+                '<span class="visitor-name">' + (v.name || 'زائر') + '</span>';
+            chip.onclick = function () {
+                if (typeof openUserProfile === 'function') openUserProfile(v.uid, v.name);
+            };
+            container.appendChild(chip);
+        });
+    } catch (e) {
+        container.innerHTML = '<div style="color:#666;font-size:11px;padding:8px;">—</div>';
+    }
+}
+
+/* ══════════════════════════════════════════════ */
+/* Moments Tab                                     */
+/* ══════════════════════════════════════════════ */
+async function renderMomentsTab() {
+    const grid = document.getElementById('moments-grid');
+    if (!grid) return;
+    const subj = ProfileState.subject;
+    if (!subj || !subj.uid) return;
+
+    const addBtn = document.getElementById('add-moment-btn');
+    grid.innerHTML = '';
+    if (_isOwner() && addBtn) grid.appendChild(addBtn);
+
+    try {
+        const s = await db.ref('stories/' + subj.uid).once('value');
+        const data = s.val() || {};
+        const now = Date.now();
+        const stories = Object.keys(data).map(function (k) { var x = data[k]; x._id = k; return x; })
+            .filter(function (st) { return (st.expiresAt || 0) > now; })
+            .sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+
+        if (!stories.length) {
+            const e = document.createElement('div');
+            e.style.cssText = 'grid-column:1/-1;text-align:center;color:#888;padding:20px;font-size:12px;';
+            e.textContent = 'لا توجد لحظات';
+            grid.appendChild(e);
+            return;
+        }
+
+        stories.forEach(function (st) {
+            const tile = document.createElement('div');
+            tile.className = 'moment-tile';
+            const icon = st.type === 'image' && st.imageUrl ? '🖼️' : '📝';
+            const preview = st.text ? st.text.substring(0, 20) : (st.type === 'image' ? 'صورة' : '');
+            tile.innerHTML =
+                '<div class="moment-tile-icon">' + icon + '</div>' +
+                '<div class="moment-tile-name">' + preview + '</div>';
+            tile.onclick = function () {
+                if (typeof openStoryViewer === 'function') {
+                    openStoryViewer(subj.uid, st._id);
+                } else {
+                    try {
+                        window.parent.postMessage({ action: 'openStory', uid: subj.uid }, '*');
+                    } catch (e) {}
+                }
+            };
+            grid.appendChild(tile);
+        });
+    } catch (e) {
+        console.warn('renderMomentsTab:', e);
+    }
+}
+
+/* ══════════════════════════════════════════════ */
+/* Friends Tab                                     */
+/* ══════════════════════════════════════════════ */
+async function renderFriendsTab() {
+    const grid = document.getElementById('friends-grid-container');
+    if (!grid) return;
+    const subj = ProfileState.subject;
+    if (!subj || !subj.uid) return;
+
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#888;padding:20px;font-size:12px;">⏳ جاري التحميل...</div>';
+
+    try {
+        const s = await db.ref('users/' + subj.uid + '/friends').once('value');
+        const f = s.val() || {};
+        const list = [];
+        Object.keys(f).forEach(function (uid) {
+            const fr = f[uid] || {};
+            if (fr.status && fr.status !== 'accepted') return;
+            list.push({ uid: uid, name: fr.name || 'مجهول', avatar: fr.avatar || '' });
+        });
+
+        if (!list.length) {
+            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#888;padding:20px;font-size:12px;">لا يوجد أصدقاء</div>';
+            return;
+        }
+
+        grid.innerHTML = '';
+        list.forEach(function (fr) {
+            const card = document.createElement('div');
+            card.className = 'friend-card';
+            const initial = (fr.name || 'U').substring(0, 1);
+            card.innerHTML =
+                '<div class="friend-avatar">' + initial + '</div>' +
+                '<span class="friend-name">' + fr.name + '</span>';
+            card.onclick = function () {
+                if (typeof openUserProfile === 'function') openUserProfile(fr.uid, fr.name);
+            };
+            grid.appendChild(card);
+        });
+    } catch (e) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#ff6666;padding:20px;font-size:12px;">⚠️ فشل</div>';
+    }
+}
+
+/* ══════════════════════════════════════════════ */
+/* Admin Tab                                       */
+/* ══════════════════════════════════════════════ */
+function renderAdminTab() {
+    const container = document.getElementById('admin-actions-container');
+    if (!container) return;
+
+    if (!ProfileState.isAdminVisitor) {
+        container.innerHTML = '<div class="empty" style="text-align:center;padding:30px;color:#666;">لا صلاحيات</div>';
+        return;
+    }
+
+    const me = ProfileState.me;
+    const subj = ProfileState.subject;
+    if (!me || !subj) return;
+
+    if (me.uid === subj.uid) {
+        container.innerHTML = '<div class="empty" style="text-align:center;padding:30px;color:#666;">لا يمكن تنفيذ أوامر على نفسك</div>';
+        return;
+    }
+
+    const meLvl = me.rankLevel || _getRankLevel(me.rank);
+    const tgLvl = subj.rankLevel || _getRankLevel(subj.rank);
+
+    const canWarn = meLvl >= 65;
+    const canJail = meLvl >= 75 && meLvl > tgLvl;
+    const canKick = meLvl >= 80 && meLvl > tgLvl;
+    const canBan = meLvl >= 90 && meLvl > tgLvl;
+    const canPoints = meLvl >= 75;
+
+    let h = '';
+
+    h += '<div class="action-category">';
+    h += '<div class="action-category-title">💬 التواصل</div>';
+    h += '<button class="action-btn" data-action="message"><i class="fas fa-comment"></i> إرسال رسالة</button>';
+    h += '</div>';
+
+    if (canPoints) {
+        h += '<div class="action-category">';
+        h += '<div class="action-category-title">🎖️ المكافآت</div>';
+        h += '<button class="action-btn" data-action="points"><i class="fas fa-star"></i> إهداء نقاط</button>';
+        h += '</div>';
+    }
+
+    if (canWarn || canJail || canKick) {
+        h += '<div class="action-category">';
+        h += '<div class="action-category-title">🛡️ العقوبات</div>';
+        if (canWarn) h += '<button class="action-btn warning" data-action="warn"><i class="fas fa-exclamation-triangle"></i> تحذير</button>';
+        if (canKick) h += '<button class="action-btn warning" data-action="kick"><i class="fas fa-door-closed"></i> طرد</button>';
+        if (canJail) h += '<button class="action-btn danger" data-action="jail"><i class="fas fa-lock"></i> سجن</button>';
+        h += '</div>';
+    }
+
+    if (canBan) {
+        h += '<div class="action-category">';
+        h += '<div class="action-category-title">⛔ الحظر</div>';
+        h += '<button class="action-btn danger" data-action="ban"><i class="fas fa-ban"></i> حظر</button>';
+        h += '</div>';
+    }
+
+    container.innerHTML = h;
+
+    container.querySelectorAll('[data-action]').forEach(function (btn) {
+        btn.onclick = function () {
+            _executeAdminAction(btn.getAttribute('data-action'));
+        };
+    });
+}
+
+function _executeAdminAction(action) {
+    const subj = ProfileState.subject;
+    if (!subj) return;
+
+    if (action === 'message') {
+        try {
+            window.parent.postMessage({
+                action: 'openPrivateChat',
+                uid: subj.uid,
+                name: subj.name
+            }, '*');
+        } catch (e) {}
+        return;
+    }
+
+    if (action === 'points') {
+        openAppModal({
+            title: '⭐ إهداء نقاط',
+            html: '<input type="number" id="cmd-pts" min="1" max="10000" value="100" style="width:100%;padding:12px;background:rgba(255,255,255,0.08);border:1px solid #ffd700;border-radius:10px;color:#fff;font-family:inherit;text-align:center;box-sizing:border-box;">',
+            onSave: async function () {
+                const amt = parseInt((document.getElementById('cmd-pts') || {}).value);
+                if (!amt || amt < 1) return;
+                try {
+                    await db.ref('bot_data/quiz/scores/' + subj.uid).transaction(function (c) { return (c || 0) + amt; });
+                    _toast('⭐ تم');
+                } catch (e) { _toast('⚠️ فشل'); }
+            }
+        });
+        return;
+    }
+
+    if (action === 'warn') {
+        openAppModal({
+            title: '⚠️ تحذير',
+            text: 'تحذير ' + subj.name + '؟',
+            onSave: async function () {
+                try {
+                    await db.ref('users/' + subj.uid + '/warnings').transaction(function (c) { return (c || 0) + 1; });
+                    _toast('✅ تم');
+                } catch (e) { _toast('⚠️ فشل'); }
+            }
+        });
+        return;
+    }
+
+    if (action === 'kick') {
+        openAppModal({
+            title: '🚪 طرد',
+            text: 'طرد ' + subj.name + ' من الغرفة الحالية؟',
+            onSave: async function () {
+                const roomId = (typeof ChatState !== 'undefined' && ChatState.currentRoom) || 'general';
+                try {
+                    await db.ref('room_kicks/' + roomId + '/' + subj.uid).set({
+                        by: ProfileState.me.uid, byName: ProfileState.me.name, at: Date.now()
+                    });
+                    _toast('🚪 تم');
+                } catch (e) { _toast('⚠️ فشل'); }
+            }
+        });
+        return;
+    }
+
+    if (action === 'jail') {
+        openAppModal({
+            title: '⛓️ سجن',
+            html: '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:6px;">المدة (دقائق):</label><input type="number" id="cmd-jm" min="1" max="120" value="5" style="width:100%;padding:12px;background:rgba(255,255,255,0.08);border:1px solid #ffd700;border-radius:10px;color:#fff;font-family:inherit;text-align:center;box-sizing:border-box;">',
+            onSave: async function () {
+                const m = parseInt((document.getElementById('cmd-jm') || {}).value);
+                if (!m || m < 1) return;
+                try {
+                    await db.ref('users/' + subj.uid).update({
+                        isJailed: true,
+                        jailUntil: Date.now() + m * 60000,
+                        jailReason: 'إجراء إداري'
+                    });
+                    _toast('⛓️ تم');
+                } catch (e) { _toast('⚠️ فشل'); }
+            }
+        });
+        return;
+    }
+
+    if (action === 'ban') {
+        openAppModal({
+            title: '🚫 حظر',
+            html:
+                '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:6px;">المدة:</label>' +
+                '<select id="cmd-bd" style="width:100%;padding:12px;background:rgba(255,255,255,0.08);border:1px solid #ffd700;border-radius:10px;color:#fff;font-family:inherit;box-sizing:border-box;">' +
+                    '<option value="60">ساعة</option>' +
+                    '<option value="360">6 ساعات</option>' +
+                    '<option value="1440" selected>يوم</option>' +
+                    '<option value="10080">أسبوع</option>' +
+                '</select>',
+            onSave: async function () {
+                const d = parseInt((document.getElementById('cmd-bd') || {}).value);
+                try {
+                    await db.ref('users/' + subj.uid).update({
+                        isBanned: true,
+                        bannedUntil: Date.now() + d * 60000,
+                        banReason: 'إجراء إداري'
+                    });
+                    _toast('🚫 تم');
+                } catch (e) { _toast('⚠️ فشل'); }
+            }
+        });
+    }
 }
 
 /* ══════════════════════════════════════════════ */
@@ -925,6 +2310,8 @@ if (typeof window._bindDangerActions !== 'function') {
 /* ══════════════════════════════════════════════ */
 window.ProfileState = ProfileState;
 window.applyIdentityToDOM = applyIdentityToDOM;
-window.openAppModal = openAppModal;
+window.updateIdentityField = updateIdentityField;
+window.checkVisitorStatus = checkVisitorStatus;
+window.updateVisitorButtons = updateVisitorButtons;
 
-console.log('✅ profile-core.js v5 [part 1/3] loaded — bootstrap + drill-down + identity ready');
+console.log('✅ profile-core.js v5 loaded — full unified version');
