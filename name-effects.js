@@ -1,23 +1,11 @@
 // ==============================================
-// name-effects.js v6 — 9 أنماط سينمائية
+// name-effects.js v7 — تصحيح تقسيم الحروف
 // ==============================================
-// ✅ v6:
-//   1. applyCinemaStyle(el, styleId, target) — جديد
-//   2. splitToChars / unsplit — تلقائي
-//   3. multicolor + sugar: تقسيم حروف + ألوان
-//   4. باقي الأنماط: CSS فقط
-//   5. النص والخلفية مستقلان
-//   6. الأنماط القديمة (nameColor/nameGradient...) كما هي
-// ==============================================
-
 (function () {
     'use strict';
-    if (window.__nameEffectsV6) return;
-    window.__nameEffectsV6 = true;
+    if (window.__nameEffectsV7) return;
+    window.__nameEffectsV7 = true;
 
-    /* ══════════════════════════════════════════════ */
-    /* Colors لـ sugar                                */
-    /* ══════════════════════════════════════════════ */
     const SUGAR_COLORS = [
         '#ff0000', '#ffd700', '#00ff88', '#00f3ff', '#a855f7',
         '#ff0080', '#ff8c00', '#39ff14', '#00bfff', '#ff69b4'
@@ -30,9 +18,6 @@
 
     const SPLIT_STYLES = ['multicolor', 'sugar'];
 
-    /* ══════════════════════════════════════════════ */
-    /* Helpers                                        */
-    /* ══════════════════════════════════════════════ */
     function _isValidColor(c) {
         if (!c || typeof c !== 'string') return false;
         return /^#[0-9a-fA-F]{3,8}$|^rgb\(|^rgba\(|^hsl\(|^hsla\(/.test(c.trim());
@@ -96,20 +81,15 @@
         return '#ffd700';
     }
 
-    /* ══════════════════════════════════════════════ */
-    /* Split / Unsplit                                */
-    /* ══════════════════════════════════════════════ */
-    function _isSplit(el) {
-        return el.classList.contains('cinema-split') ||
-               el.classList.contains('cinema-split-bg');
+    /* ⭐ v7: تحديد وجود حروف مقسّمة */
+    function _hasChars(el) {
+        return el.querySelector('.nc') !== null;
     }
 
     function _splitToChars(el, styleId, target) {
-        // احفظ النص الأصلي
-        const originalText = el.dataset.name || el.textContent || '';
+        const originalText = el.dataset.originalText || el.dataset.name || el.textContent || '';
         el.dataset.originalText = originalText;
 
-        // امسح ثم أعد البناء
         el.innerHTML = '';
 
         for (let i = 0; i < originalText.length; i++) {
@@ -117,19 +97,14 @@
             const span = document.createElement('span');
             span.className = 'nc';
             span.setAttribute('data-ci', i);
-
-            // النص (space → nbsp)
             span.textContent = (ch === ' ') ? '\u00A0' : ch;
 
-            // ⭐ لون خاص لكل حرف (sugar)
             if (styleId === 'sugar') {
                 const color = SUGAR_COLORS[i % SUGAR_COLORS.length];
                 if (target === 'text') {
                     span.style.setProperty('--sugar-color', color);
                 } else {
-                    // خلفية: نفس اللون بـ alpha
-                    const rgba = _hexToRgba(color, 0.4);
-                    span.style.setProperty('--sugar-bg-color', rgba);
+                    span.style.setProperty('--sugar-bg-color', _hexToRgba(color, 0.4));
                 }
             }
 
@@ -148,16 +123,14 @@
     }
 
     function _maybeUnsplit(el) {
-        // لو لا نص ولا خلفية تحتاج تقسيم — أعد النص الأصلي
         const textStyle = el.getAttribute('data-cinema-text');
         const bgStyle = el.getAttribute('data-cinema-bg');
 
         const textNeedsSplit = SPLIT_STYLES.indexOf(textStyle) !== -1;
         const bgNeedsSplit = SPLIT_STYLES.indexOf(bgStyle) !== -1;
 
-        if (textNeedsSplit || bgNeedsSplit) return; // لا تزل
+        if (textNeedsSplit || bgNeedsSplit) return;
 
-        // أرجع النص الأصلي
         if (el.dataset.originalText !== undefined) {
             const original = el.dataset.originalText;
             el.innerHTML = '';
@@ -166,14 +139,7 @@
         }
     }
 
-    /* ══════════════════════════════════════════════ */
-    /* applyCinemaStyle — النمط السينمائي             */
-    /* ══════════════════════════════════════════════ */
-    /**
-     * @param {HTMLElement} el
-     * @param {string} styleId — اسم النمط أو '' للإزالة
-     * @param {string} target — 'text' أو 'bg'
-     */
+    /* ⭐ v7: applyCinemaStyle */
     function applyCinemaStyle(el, styleId, target) {
         if (!el) return;
         target = target || 'text';
@@ -181,11 +147,9 @@
         const attrName = (target === 'text') ? 'data-cinema-text' : 'data-cinema-bg';
         const splitClass = (target === 'text') ? 'cinema-split' : 'cinema-split-bg';
 
-        // 1. احذف النمط الحالي
         el.removeAttribute(attrName);
         el.classList.remove(splitClass);
 
-        // 2. احذف الأنماط المتعارضة من النظام القديم
         if (target === 'text') {
             el.classList.remove('has-gradient');
             el.style.removeProperty('--name-gradient');
@@ -195,34 +159,28 @@
             el.style.removeProperty('--name-bg-glow');
         }
 
-        // 3. لو styleId فارغ — نظّف وأعد
         if (!styleId) {
             _maybeUnsplit(el);
             return;
         }
 
-        // 4. تحقق من صحة styleId
         if (CINEMA_TEXT_STYLES.indexOf(styleId) === -1) {
             console.warn('Unknown cinema style:', styleId);
             return;
         }
 
-        // 5. طبّق النمط
         el.setAttribute(attrName, styleId);
 
-        // 6. لو يحتاج تقسيم — قسّم
         const needsSplit = SPLIT_STYLES.indexOf(styleId) !== -1;
         if (needsSplit) {
-            // لو ما كان مقسّماً — قسّم
-            if (!_isSplit(el)) {
+            // ⭐ v7: نتحقق من وجود الحروف فعلياً
+            if (!_hasChars(el)) {
                 _splitToChars(el, styleId, target);
             } else {
-                // مقسّم مسبقاً — طبّق الألوان فقط
                 _applyColorsToExistingChars(el, styleId, target);
             }
             el.classList.add(splitClass);
         } else {
-            // لا يحتاج تقسيم
             _maybeUnsplit(el);
         }
     }
@@ -241,15 +199,9 @@
         });
     }
 
-    /* ══════════════════════════════════════════════ */
-    /* apply — النمط القديم                           */
-    /* ══════════════════════════════════════════════ */
     function apply(el, params) {
         if (!el) return;
         params = params || {};
-
-        // لو في نمط سينمائي — لا نلمس
-        // (النمطان مستقلان — يمكن الجمع)
 
         _cleanClasses(el);
         _cleanVars(el);
@@ -270,10 +222,7 @@
 
         const hasColor = !!nameColor && _isValidColor(nameColor);
 
-        // ⭐ لو في نمط سينمائي على النص — لا تطبق gradient
         const hasCinemaText = !!el.getAttribute('data-cinema-text');
-
-        // ⭐ لو في نمط سينمائي على الخلفية — لا تطبق bg عادي
         const hasCinemaBg = !!el.getAttribute('data-cinema-bg');
 
         if (!hasBg && !hasGradient && !hasColor) {
@@ -355,7 +304,6 @@
         el.style.removeProperty('--name-bg-glow');
         el.style.removeProperty('--name-gradient');
         el.style.removeProperty('--name-gradient-opacity');
-        // لا نمسح data-cinema-* هنا (النمط السينمائي مسؤول)
         if (!el.getAttribute('data-cinema-text') && !el.getAttribute('data-cinema-bg')) {
             el.style.color = '';
         }
@@ -371,16 +319,11 @@
         _maybeUnsplit(el);
     }
 
-    /* ══════════════════════════════════════════════ */
-    /* الإطار الافتراضي للأفاتار                      */
-    /* ══════════════════════════════════════════════ */
     function applyDefaultAvatarFrame(box, rank, level) {
         if (!box) return;
         box.classList.remove(
-            'default-frame-gold',
-            'default-frame-pink',
-            'default-frame-silver',
-            'default-frame-gray'
+            'default-frame-gold', 'default-frame-pink',
+            'default-frame-silver', 'default-frame-gray'
         );
         if (box.querySelector('.qf')) return;
         const map = (typeof QAMAR !== 'undefined' && QAMAR.DEFAULT_AVATAR_FRAMES)
@@ -395,16 +338,11 @@
     function clearDefaultAvatarFrame(box) {
         if (!box) return;
         box.classList.remove(
-            'default-frame-gold',
-            'default-frame-pink',
-            'default-frame-silver',
-            'default-frame-gray'
+            'default-frame-gold', 'default-frame-pink',
+            'default-frame-silver', 'default-frame-gray'
         );
     }
 
-    /* ══════════════════════════════════════════════ */
-    /* Preview Template                                */
-    /* ══════════════════════════════════════════════ */
     function previewTemplate(text, params, extraClass) {
         const el = document.createElement('div');
         el.className = 'name-grid-item' + (extraClass ? ' ' + extraClass : '');
@@ -419,9 +357,6 @@
         return el;
     }
 
-    /* ══════════════════════════════════════════════ */
-    /* تصدير                                          */
-    /* ══════════════════════════════════════════════ */
     window.NameEffects = {
         apply: apply,
         applyCinemaStyle: applyCinemaStyle,
@@ -436,5 +371,5 @@
         SUGAR_COLORS: SUGAR_COLORS
     };
 
-    console.log('✅ name-effects.js v6 loaded — 9 cinema styles');
+    console.log('✅ name-effects.js v7 loaded — split-fix applied');
 })();
