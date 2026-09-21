@@ -1,12 +1,15 @@
 // ==============================================
-// profile-core.js v6 — Unified + Fixes
+// profile-core.js v7 — Unified + All Fixes
 // ==============================================
-// ✅ v6 (الإصلاحات):
-//   1. زر تعديل الاسم + البايو (edit pens)
-//   2. زر معاينة كزائر (visitor-view) يعمل
-//   3. renderFramesGrid مع onSelect → حفظ الإطار
-//   4. فتح بروفايل المستخدمين من داخل البروفايل (postMessage)
-//   5. تحسينات على الإطار/التوهج/الخلفية
+// ✅ v7 (الإصلاحات النهائية):
+//   1. _openUserProfile من داخل البروفايل (postMessage)
+//   2. #btn-visitor-view-cover (زر الغلاف)
+//   3. renderInfoGrid (معلومات العضو)
+//   4. renderLikers (المعجبون) + renderVisitors
+//   5. renderFriendsTab مع صور + فتح بروفايل
+//   6. زر 💬 → يسكّر البروفايل + يفتح الخاص
+//   7. فيديو خلفية: imgBB يدعم الفيديو (رفع blob)
+//   8. خصوصية قائمة الأصدقاء
 // ==============================================
 
 /* ══════════════════════════════════════════════ */
@@ -94,6 +97,35 @@ function _isKing() {
     return ProfileState.me && ProfileState.me.rank === 'King';
 }
 
+/* ⭐ v7: تحقق من الخصوصية */
+function _canView(field) {
+    if (_isOwner()) return true;
+    const subj = ProfileState.subject;
+    if (!subj) return false;
+    const privacy = subj.privacy || {};
+    const val = privacy[field] || 'public';
+    return val === 'public';
+}
+
+/* ⭐ v7: تنسيق آخر تواجد */
+function _formatLastSeen(ts, roomId) {
+    if (!ts) return '—';
+    const d = new Date(ts);
+    const date = d.toLocaleDateString('ar-EG', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const time = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    let result = date + ' · ' + time;
+    if (roomId && QAMAR.ROOMS[roomId]) {
+        result += ' · 📌 ' + QAMAR.ROOMS[roomId].name;
+    }
+    return result;
+}
+
+function _formatDate(ts) {
+    if (!ts) return '—';
+    const d = new Date(ts);
+    return d.toLocaleDateString('ar-EG', { year: 'numeric', month: '2-digit', day: '2-digit' });
+}
+
 function _userHash(u) {
     if (!u) return '';
     try {
@@ -112,16 +144,20 @@ function _userHash(u) {
     } catch (e) { return ''; }
 }
 
-/* ⭐ v6: فتح بروفايل مستخدم — postMessage للأب */
+/* ⭐ v7: فتح بروفايل مستخدم — postMessage */
 function _openUserProfile(uid, name) {
     if (!uid) return;
     try {
         if (window.parent && window.parent !== window) {
-            window.parent.postMessage({
-                action: 'openUserProfile',
-                uid: uid,
-                name: name || ''
-            }, '*');
+            // يسكّر البروفايل الحالي + يفتح الجديد
+            window.parent.postMessage({ action: 'closeProfile' }, '*');
+            setTimeout(function () {
+                window.parent.postMessage({
+                    action: 'openUserProfile',
+                    uid: uid,
+                    name: name || ''
+                }, '*');
+            }, 200);
         } else {
             location.href = 'profile.html?uid=' + encodeURIComponent(uid);
         }
@@ -216,7 +252,7 @@ window.openAppModal = openAppModal;
 /* Bootstrap                                       */
 /* ══════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', async function () {
-    console.log('🚀 profile-core.js v6 booting...');
+    console.log('🚀 profile-core.js v7 booting...');
 
     const params = new URLSearchParams(location.search);
     const urlUid = params.get('uid');
@@ -250,7 +286,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         _loadSubjectFromCache(urlUid);
     }
 
-    // ⭐ bind all
+    // bind all
     _bindCoverButtons();
     _bindSettingsNavigation();
     _bindLikesFriendsBlocked();
@@ -259,9 +295,9 @@ document.addEventListener('DOMContentLoaded', async function () {
     _bindPoetry();
     _bindPrivacy();
     _bindDangerActions();
-    _bindEditName();      // ⭐ v6
-    _bindEditBio();       // ⭐ v6
-    _bindVisitorView();   // ⭐ v6
+    _bindEditName();
+    _bindEditBio();
+    _bindVisitorView();  // ⭐ v7: يستهدف #btn-visitor-view-cover
 
     renderTabsForMode();
 
@@ -283,12 +319,13 @@ document.addEventListener('DOMContentLoaded', async function () {
     }, 200);
 
     setTimeout(function () {
+        renderInfoGrid();  // ⭐ v7
         renderHomeStats();
         renderMomentsTab();
         renderFriendsTab();
     }, 400);
 
-    console.log('✅ profile-core.js v6 ready | Mode:', ProfileState.mode);
+    console.log('✅ profile-core.js v7 ready | Mode:', ProfileState.mode);
 });
 
 /* ══════════════════════════════════════════════ */
@@ -412,6 +449,7 @@ function _startSubjectListener() {
         } catch (e) {}
 
         applyIdentityToDOM();
+        renderInfoGrid();  // ⭐ v7: تحديث المعلومات
     });
 
     if (_isVisitor()) {
@@ -437,7 +475,6 @@ function applyIdentityToDOM() {
     const subj = ProfileState.subject;
     if (!subj) return;
 
-    // 1. الاسم
     const nameEl = document.getElementById('profile-username');
     if (nameEl) {
         const displayName = subj.name || 'مستخدم';
@@ -458,13 +495,11 @@ function applyIdentityToDOM() {
         }
     }
 
-    // 2. البايو
     const bioEl = document.getElementById('profile-bio');
     if (bioEl) {
         bioEl.textContent = subj.bio || (QAMAR.DEFAULT_BIO || '❋ نجوم الشام ❋');
     }
 
-    // 3. الرتبة
     const roleEl = document.getElementById('role-text');
     if (roleEl) {
         const badge = (typeof getRankBadge === 'function') ? getRankBadge(subj.rank) : '👤';
@@ -645,6 +680,95 @@ function _applyMusicButton(subj) {
         };
     }
 }
+
+/* ══════════════════════════════════════════════ */
+/* ⭐ v7: Info Grid (معلومات العضو)                */
+/* ══════════════════════════════════════════════ */
+function renderInfoGrid() {
+    const grid = document.getElementById('info-grid');
+    if (!grid) return;
+
+    const subj = ProfileState.subject;
+    if (!subj) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#666;padding:12px;font-size:12px;">لا معلومات</div>';
+        return;
+    }
+
+    const items = [];
+
+    // ⭐ UID (دائماً معروض — معرف عام)
+    if (subj.code) {
+        items.push({ icon: '🔑', label: 'المعرّف', value: subj.code });
+    }
+
+    // ⭐ الدولة
+    if (subj.country && _canView('country')) {
+        items.push({ icon: '🌍', label: 'الدولة', value: subj.country });
+    }
+
+    // ⭐ العائلة
+    if (subj.family && _canView('family')) {
+        items.push({ icon: '👨‍👩‍👧', label: 'العائلة', value: subj.family });
+    }
+
+    // ⭐ العمر
+    if (subj.age && _canView('age')) {
+        items.push({ icon: '🎂', label: 'العمر', value: subj.age + ' سنة' });
+    }
+
+    // ⭐ الجنس
+    if (subj.gender && _canView('gender')) {
+        const g = subj.gender === 'male' ? '👦 ذكر' : '👧 أنثى';
+        items.push({ icon: '👤', label: 'الجنس', value: g });
+    }
+
+    // ⭐ تاريخ الانضمام
+    if (subj.createdAt && _canView('joinedAt')) {
+        items.push({ icon: '📅', label: 'الانضمام', value: _formatDate(subj.createdAt) });
+    }
+
+    // ⭐ آخر تواجد
+    if (subj.lastSeen && _canView('lastSeen')) {
+        const roomId = subj.currentRoom || null;
+        items.push({ icon: '🕐', label: 'آخر تواجد', value: _formatLastSeen(subj.lastSeen, roomId) });
+    }
+
+    // ⭐ نقاط التفاعل
+    if (_canView('points')) {
+        // نحتاج قراءة من quiz scores
+        db.ref('bot_data/quiz/scores/' + subj.uid).once('value').then(function (s) {
+            const pts = s.val() || 0;
+            const el = grid.querySelector('[data-info="points"] .ii-value');
+            if (el) el.textContent = pts + ' نقطة';
+        }).catch(function () {});
+        items.push({ icon: '⭐', label: 'النقاط', value: '...', key: 'points' });
+    }
+
+    if (items.length === 0) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#666;padding:12px;font-size:12px;">لا معلومات متاحة</div>';
+        return;
+    }
+
+    grid.innerHTML = '';
+    items.forEach(function (it) {
+        const div = document.createElement('div');
+        div.className = 'info-item';
+        if (it.key) div.setAttribute('data-info', it.key);
+        div.innerHTML =
+            '<div class="ii-label">' + it.icon + ' ' + it.label + '</div>' +
+            '<div class="ii-value">' + _esc(it.value) + '</div>';
+        grid.appendChild(div);
+    });
+}
+
+function _esc(s) {
+    if (s == null) return '';
+    return String(s).replace(/[&<>"']/g, function (c) {
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+    });
+}
+
+window.renderInfoGrid = renderInfoGrid;
 
 /* ══════════════════════════════════════════════ */
 /* Cover Buttons                                   */
@@ -869,7 +993,7 @@ async function updateIdentityField(field, value) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* ⭐ v6: Edit Name + Edit Bio                     */
+/* Edit Name + Edit Bio                            */
 /* ══════════════════════════════════════════════ */
 function _bindEditName() {
     const btn = document.getElementById('btn-edit-username');
@@ -893,7 +1017,6 @@ function _bindEditName() {
                 }
                 if (v === subj.name) return;
 
-                // reserve new name
                 if (typeof reserveName === 'function') {
                     const res = await reserveName(v, subj.uid);
                     if (!res.ok) {
@@ -903,7 +1026,6 @@ function _bindEditName() {
                     }
                 }
 
-                // free old name
                 if (subj.name && subj.name !== v) {
                     try { await db.ref('user_names/' + subj.name).remove(); } catch (e) {}
                 }
@@ -939,14 +1061,16 @@ function _bindEditBio() {
 }
 
 /* ══════════════════════════════════════════════ */
-/* ⭐ v6: Visitor View                            */
+/* ⭐ v7: Visitor View (زر الغلاف)                */
 /* ══════════════════════════════════════════════ */
 function _bindVisitorView() {
-    const btn = document.getElementById('btn-visitor-view');
+    const btn = document.getElementById('btn-visitor-view-cover');
     if (!btn || btn.__bound) return;
     btn.__bound = true;
 
-    btn.onclick = function () {
+    btn.onclick = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
         const me = ProfileState.me;
         if (!me || !me.uid) return;
         if (typeof buildProfileUrl === 'function') {
@@ -1248,7 +1372,7 @@ function _bindImagesUploads() {
                     renderCoverPage();
                     _toast('✅ تم');
                 } catch (e) { _toast('⚠️ فشل الرفع'); }
-            }, { maxMb: 20 });
+            }, { maxMb: 32 });
         };
     }
 
@@ -1299,7 +1423,7 @@ function _bindImagesUploads() {
                     renderProfileBgPage();
                     _toast('✅ تم');
                 } catch (e) { _toast('⚠️ فشل الرفع'); }
-            }, { maxMb: 20 });
+            }, { maxMb: 32 });
         };
     }
 
@@ -1349,7 +1473,7 @@ function renderCoverPage() {
 }
 
 /* ══════════════════════════════════════════════ */
-/* ⭐ v6: Frame Page — with onSelect              */
+/* Frame Page                                      */
 /* ══════════════════════════════════════════════ */
 function renderFramePage() {
     const container = document.getElementById('frames-grid-container');
@@ -1689,14 +1813,14 @@ function _bindPoetry() {
 /* Privacy Page                                    */
 /* ══════════════════════════════════════════════ */
 const PRIVACY_FIELDS = [
-    { key: 'uid',      label: 'المعرّف (UID)' },
     { key: 'country',  label: 'الدولة' },
     { key: 'age',      label: 'العمر' },
     { key: 'family',   label: 'العائلة' },
     { key: 'gender',   label: 'الجنس' },
     { key: 'joinedAt', label: 'تاريخ الانضمام' },
     { key: 'lastSeen', label: 'آخر تواجد' },
-    { key: 'points',   label: 'نقاط التفاعل' }
+    { key: 'points',   label: 'نقاط التفاعل' },
+    { key: 'friends',  label: 'قائمة الأصدقاء' }
 ];
 
 function renderPrivacyPage() {
@@ -1963,19 +2087,26 @@ function _bindLikesFriendsBlocked() {
         };
     }
 
+    // ⭐ v7: زر 💬 — يسكّر البروفايل + يفتح الخاص
     const mail = document.getElementById('btn-mail');
     if (mail && !mail.__bound) {
         mail.__bound = true;
         mail.onclick = function () {
             const subj = ProfileState.subject;
-            if (!subj) return;
+            if (!subj || !subj.uid) return;
             try {
                 if (window.parent && window.parent !== window) {
-                    window.parent.postMessage({
-                        action: 'openPrivateChat',
-                        uid: subj.uid,
-                        name: subj.name
-                    }, '*');
+                    // إغلاق البروفايل
+                    window.parent.postMessage({ action: 'closeProfile' }, '*');
+                    // فتح الخاص بعد الإغلاق
+                    setTimeout(function () {
+                        window.parent.postMessage({
+                            action: 'openPrivateChat',
+                            uid: subj.uid,
+                            name: subj.name || '',
+                            avatar: subj.avatar || ''
+                        }, '*');
+                    }, 250);
                 }
             } catch (e) {}
         };
@@ -2103,14 +2234,21 @@ async function renderHomeStats() {
     const el4 = document.getElementById('stat-gifts');
     if (el4) el4.textContent = '0';
 
-    if (_isOwner()) renderVisitors();
+    if (_isOwner()) {
+        renderVisitors();
+        renderLikers();
+    }
 }
 
+/* ⭐ v7: آخر الزوار */
 async function renderVisitors() {
     const subj = ProfileState.subject;
     if (!subj || !subj.uid) return;
+    const section = document.getElementById('visitors-section');
     const container = document.getElementById('visitors-container');
     if (!container) return;
+
+    if (section && _isOwner()) section.style.display = '';
 
     try {
         const s = await db.ref('users/' + subj.uid + '/visitors').limitToLast(20).once('value');
@@ -2123,25 +2261,69 @@ async function renderVisitors() {
 
         container.innerHTML = '';
         if (!list.length) {
-            container.innerHTML = '<div style="color:#666;font-size:11px;padding:8px;">لا يوجد زوار</div>';
+            container.innerHTML = '<div style="color:#666;font-size:11px;padding:8px;">لا يوجد زوار بعد</div>';
             return;
         }
-        list.slice(0, 15).forEach(function (v) {
+        list.slice(0, 12).forEach(function (v) {
             const chip = document.createElement('div');
             chip.className = 'visitor-chip';
             const initial = (v.name || 'U').substring(0, 1);
+            const avatarUrl = v.avatar || '';
             chip.innerHTML =
-                '<div class="visitor-avatar">' + initial + '</div>' +
-                '<span class="visitor-name">' + (v.name || 'زائر') + '</span>';
+                '<div class="visitor-avatar">' +
+                    (avatarUrl ? '<img src="' + _esc(avatarUrl) + '" onerror="this.style.display=\'none\'">' : '') +
+                    '<span>' + _esc(initial) + '</span>' +
+                '</div>' +
+                '<span class="visitor-name">👁️ ' + _esc(v.name || 'زائر') + '</span>';
             chip.onclick = function () {
-                _openUserProfile(v.uid, v.name);  // ⭐ v6: postMessage
+                _openUserProfile(v.uid, v.name);
             };
             container.appendChild(chip);
         });
-    } catch (e) {
-        container.innerHTML = '<div style="color:#666;font-size:11px;padding:8px;">—</div>';
-    }
+    } catch (e) {}
 }
+
+/* ⭐ v7: المعجبون */
+async function renderLikers() {
+    const subj = ProfileState.subject;
+    if (!subj || !subj.uid) return;
+    const container = document.getElementById('visitors-container');
+    if (!container) return;
+    if (!_isOwner()) return;
+
+    try {
+        const s = await db.ref('users/' + subj.uid + '/likes').limitToLast(20).once('value');
+        const data = s.val() || {};
+        const list = Object.keys(data).map(function (uid) {
+            const v = data[uid];
+            v.uid = uid;
+            return v;
+        }).sort(function (a, b) { return (b.time || 0) - (a.time || 0); });
+
+        if (!list.length) return;
+
+        list.slice(0, 10).forEach(function (v) {
+            const chip = document.createElement('div');
+            chip.className = 'visitor-chip';
+            chip.style.borderColor = 'rgba(255, 68, 120, 0.5)';
+            const initial = (v.name || 'U').substring(0, 1);
+            const avatarUrl = v.avatar || '';
+            chip.innerHTML =
+                '<div class="visitor-avatar" style="background:linear-gradient(135deg,#ff69b4,#ff1493);color:#fff;">' +
+                    (avatarUrl ? '<img src="' + _esc(avatarUrl) + '" onerror="this.style.display=\'none\'">' : '') +
+                    '<span>' + _esc(initial) + '</span>' +
+                '</div>' +
+                '<span class="visitor-name">❤️ ' + _esc(v.name || 'معجب') + '</span>';
+            chip.onclick = function () {
+                _openUserProfile(v.uid, v.name);
+            };
+            container.appendChild(chip);
+        });
+    } catch (e) {}
+}
+
+window.renderVisitors = renderVisitors;
+window.renderLikers = renderLikers;
 
 /* ══════════════════════════════════════════════ */
 /* Moments Tab                                     */
@@ -2179,7 +2361,7 @@ async function renderMomentsTab() {
             const preview = st.text ? st.text.substring(0, 20) : (st.type === 'image' ? 'صورة' : '');
             tile.innerHTML =
                 '<div class="moment-tile-icon">' + icon + '</div>' +
-                '<div class="moment-tile-name">' + preview + '</div>';
+                '<div class="moment-tile-name">' + _esc(preview) + '</div>';
             tile.onclick = function () {
                 if (typeof openStoryViewer === 'function') {
                     openStoryViewer(subj.uid, st._id);
@@ -2197,13 +2379,19 @@ async function renderMomentsTab() {
 }
 
 /* ══════════════════════════════════════════════ */
-/* Friends Tab                                     */
+/* ⭐ v7: Friends Tab — صور + فتح بروفايل         */
 /* ══════════════════════════════════════════════ */
 async function renderFriendsTab() {
     const grid = document.getElementById('friends-grid-container');
     if (!grid) return;
     const subj = ProfileState.subject;
     if (!subj || !subj.uid) return;
+
+    // ⭐ v7: تحقق من الخصوصية
+    if (!_canView('friends')) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#888;padding:20px;font-size:12px;">🔒 قائمة الأصدقاء خاصة</div>';
+        return;
+    }
 
     grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#888;padding:20px;font-size:12px;">⏳ جاري التحميل...</div>';
 
@@ -2226,13 +2414,24 @@ async function renderFriendsTab() {
         list.forEach(function (fr) {
             const card = document.createElement('div');
             card.className = 'friend-card';
+
             const initial = (fr.name || 'U').substring(0, 1);
+            const avatarUrl = fr.avatar || '';
+
+            // ⭐ v7: صورة + اسم
+            const avatarHTML = avatarUrl
+                ? '<img src="' + _esc(avatarUrl) + '" onerror="this.parentNode.innerHTML=\'<span class=\\\'friend-initial\\\'>' + _esc(initial) + '</span>\'">'
+                : '<span class="friend-initial">' + _esc(initial) + '</span>';
+
             card.innerHTML =
-                '<div class="friend-avatar">' + initial + '</div>' +
-                '<span class="friend-name">' + fr.name + '</span>';
+                '<div class="friend-avatar">' + avatarHTML + '</div>' +
+                '<div class="friend-name">' + _esc(fr.name) + '</div>';
+
+            // ⭐ v7: click → يسكّر + يفتح بروفايل الصديق
             card.onclick = function () {
-                _openUserProfile(fr.uid, fr.name);  // ⭐ v6: postMessage
+                _openUserProfile(fr.uid, fr.name);
             };
+
             grid.appendChild(card);
         });
     } catch (e) {
@@ -2315,11 +2514,15 @@ function _executeAdminAction(action) {
 
     if (action === 'message') {
         try {
-            window.parent.postMessage({
-                action: 'openPrivateChat',
-                uid: subj.uid,
-                name: subj.name
-            }, '*');
+            window.parent.postMessage({ action: 'closeProfile' }, '*');
+            setTimeout(function () {
+                window.parent.postMessage({
+                    action: 'openPrivateChat',
+                    uid: subj.uid,
+                    name: subj.name,
+                    avatar: subj.avatar || ''
+                }, '*');
+            }, 250);
         } catch (e) {}
         return;
     }
@@ -2425,6 +2628,9 @@ window.applyIdentityToDOM = applyIdentityToDOM;
 window.updateIdentityField = updateIdentityField;
 window.checkVisitorStatus = checkVisitorStatus;
 window.updateVisitorButtons = updateVisitorButtons;
+window.renderInfoGrid = renderInfoGrid;
+window.renderVisitors = renderVisitors;
+window.renderLikers = renderLikers;
 window._openUserProfile = _openUserProfile;
 
-console.log('✅ profile-core.js v6 loaded — full unified + fixes');
+console.log('✅ profile-core.js v7 loaded — all fixes applied');
