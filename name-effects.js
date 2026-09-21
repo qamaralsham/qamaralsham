@@ -1,16 +1,16 @@
 // ==============================================
-// name-effects.js v4 — gradient متكرر + خلفية متحركة
+// name-effects.js v5 — تدرجات متنوعة
 // ==============================================
-// ✅ v4:
-//   1. gradient متكرر (الحركة تظهر موجة)
-//   2. خلفية التدرج تتحرك (has-bg-gradient)
-//   3. دعم كامل للوضع الشفاف
+// ✅ v5:
+//   1. كل تدرج بزاوية مختلفة (90°/135°/45°/...)
+//   2. يعتمد على hash محتوى التدرج (ثابت لكل تدرج)
+//   3. باقي الوظائف كما هي
 // ==============================================
 
 (function () {
     'use strict';
-    if (window.__nameEffectsV4) return;
-    window.__nameEffectsV4 = true;
+    if (window.__nameEffectsV5) return;
+    window.__nameEffectsV5 = true;
 
     function _isValidColor(c) {
         if (!c || typeof c !== 'string') return false;
@@ -22,11 +22,30 @@
         return _isValidColor(g[0]) && _isValidColor(g[1]);
     }
 
-    // ⭐ v4: تدرج متكرر — الحركة تظهر موجة واضحة
-    function _buildGradient(colors) {
+    // ⭐ v5: hash ثابت لكل تدرج — يحدد زاويته
+    function _gradientHash(grad) {
+        if (!Array.isArray(grad)) return 0;
+        let h = 0;
+        for (let i = 0; i < grad.length; i++) {
+            const c = grad[i];
+            for (let k = 0; k < c.length; k++) {
+                h = ((h * 31) + c.charCodeAt(k)) >>> 0;
+            }
+        }
+        return h;
+    }
+
+    // ⭐ v5: زوايا متنوعة حسب المحتوى
+    function _buildGradient(colors, hashSeed) {
         if (!_isValidGradient(colors)) return '';
+
+        const ANGLES = [90, 135, 45, 120, 60, 150, 30, 180, 75, 105, 15, 165];
+        const seed = (typeof hashSeed === 'number') ? hashSeed : 0;
+        const angle = ANGLES[seed % ANGLES.length];
+        const dir = angle + 'deg';
+
         if (colors.length === 2) {
-            return 'repeating-linear-gradient(90deg, ' +
+            return 'repeating-linear-gradient(' + dir + ', ' +
                 colors[0] + ' 0%, ' +
                 colors[1] + ' 50%, ' +
                 colors[0] + ' 100%)';
@@ -35,12 +54,12 @@
             const pct = (i / (colors.length - 1)) * 100;
             return c + ' ' + pct.toFixed(1) + '%';
         });
-        return 'linear-gradient(90deg, ' + stops.join(', ') + ')';
+        return 'linear-gradient(' + dir + ', ' + stops.join(', ') + ')';
     }
 
     function _buildNameBg(bgColor, bgGradient) {
         if (Array.isArray(bgGradient) && bgGradient.length >= 2) {
-            return _buildGradient(bgGradient);
+            return _buildGradient(bgGradient, _gradientHash(bgGradient));
         }
         if (_isValidColor(bgColor)) return bgColor;
         return '';
@@ -116,7 +135,7 @@
                 el.setAttribute('data-text', '');
             }
 
-            const gradStr = _buildGradient(nameGradient);
+            const gradStr = _buildGradient(nameGradient, _gradientHash(nameGradient));
             if (gradStr) {
                 el.style.setProperty('--name-gradient', gradStr);
             }
@@ -221,5 +240,5 @@
         isValidGradient: _isValidGradient
     };
 
-    console.log('✅ name-effects.js v4 loaded — repeating gradient + animated bg');
+    console.log('✅ name-effects.js v5 loaded — varied gradient angles');
 })();
