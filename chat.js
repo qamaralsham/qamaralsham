@@ -1,9 +1,9 @@
 // ==============================================
-// chat.js v3.15 — chat-fixes merged + NameEffects + pm-enhanced
+// chat.js v3.16 — Cinema Styles in Chat
 // ==============================================
-// ✅ v3.15:
-//   1. setTimeout في postMessage (openPrivateChat + openUserProfile)
-//   2. باقي السلوك كما هو v3.14
+// ✅ v3.16:
+//   _applyNameEffectsToUsername: يستدعي applyCinemaStyle + apply
+//   sendMessage: يُرسل cinemaTextStyle/cinemaBgStyle
 // ==============================================
 
 const ChatState = {
@@ -23,7 +23,6 @@ const ChatState = {
     _friendRequestsCache: {}
 };
 
-/* ═══ أدوات ═══ */
 function safeColor(c) {
     if (!c || typeof c !== 'string') return null;
     const s = c.trim();
@@ -36,7 +35,6 @@ function safeGradient(g) {
     return (a && b) ? [a, b] : null;
 }
 
-/* ═══ الأصوات ═══ */
 var _audioCtx = null;
 function getAudioCtx() {
     if (!_audioCtx) {
@@ -96,7 +94,6 @@ function playPrivateMsgSound() {
     } catch (e) {}
 }
 
-/* ═══ تنظيف ═══ */
 function cleanupAllListeners() {
     try {
         Object.values(ChatState.listeners).forEach(ref => {
@@ -105,13 +102,11 @@ function cleanupAllListeners() {
             }
         });
         ChatState.listeners = {};
-
         if (ChatState.messagesListener) { try { ChatState.messagesListener.off(); } catch(e){} ChatState.messagesListener = null; }
         if (ChatState.privateMessagesListener) { try { ChatState.privateMessagesListener.off(); } catch(e){} ChatState.privateMessagesListener = null; }
         if (ChatState.notificationsListener) { try { ChatState.notificationsListener.off(); } catch(e){} ChatState.notificationsListener = null; }
         if (ChatState.privateChatsListener) { try { ChatState.privateChatsListener.off(); } catch(e){} ChatState.privateChatsListener = null; }
         if (ChatState.presenceListener) { try { ChatState.presenceListener.off(); } catch(e){} ChatState.presenceListener = null; }
-
         if (ChatState.presenceInterval) {
             clearInterval(ChatState.presenceInterval);
             ChatState.presenceInterval = null;
@@ -123,13 +118,11 @@ function cleanupAllListeners() {
         if (typeof RoomAlerts !== 'undefined' && RoomAlerts.close) {
             try { RoomAlerts.close(); } catch(e) {}
         }
-        console.log('🧹 All listeners cleaned up');
     } catch (e) {
         console.warn('cleanupAllListeners error:', e);
     }
 }
 
-/* ═══ applyRoomBackground ═══ */
 function applyRoomBackground(roomId) {
     var container = document.getElementById('messages');
     if (!container) return;
@@ -617,18 +610,6 @@ function extractCodeFromText(text) {
     return m ? m[0] : null;
 }
 
-function buildUserCodeBadge(code) {
-    const badge = document.createElement('span');
-    badge.className = 'user-code-badge';
-    badge.innerHTML = '🔑 ' + code;
-    badge.title = 'اضغط لعرض البروفايل';
-    badge.onclick = async (e) => {
-        e.stopPropagation();
-        await openProfileByCode(code);
-    };
-    return badge;
-}
-
 async function openProfileByCode(code) {
     if (!code) return;
     const now = Date.now();
@@ -687,10 +668,23 @@ function _buildHiddenMessageEl(msg, msgId) {
     container.scrollTop = container.scrollHeight;
 }
 
+/* ⭐ v3.16: يستدعي applyCinemaStyle + apply */
 function _applyNameEffectsToUsername(usernameEl, msg) {
     if (!usernameEl) return;
 
-    if (window.NameEffects && typeof window.NameEffects.apply === 'function') {
+    if (!window.NameEffects) {
+        usernameEl.style.color = safeColor(msg.senderColor) || '#ffd700';
+        return;
+    }
+
+    // 1. طبّق الأنماط السينمائية (إن وُجدت)
+    if (typeof window.NameEffects.applyCinemaStyle === 'function') {
+        window.NameEffects.applyCinemaStyle(usernameEl, msg.senderCinemaText || '', 'text');
+        window.NameEffects.applyCinemaStyle(usernameEl, msg.senderCinemaBg || '', 'bg');
+    }
+
+    // 2. طبّق الأنماط التقليدية
+    if (typeof window.NameEffects.apply === 'function') {
         window.NameEffects.apply(usernameEl, {
             nameColor: msg.senderNameColor || null,
             nameGradient: msg.senderNameGradient || null,
@@ -698,9 +692,7 @@ function _applyNameEffectsToUsername(usernameEl, msg) {
             nameBgGradient: msg.senderNameBgGradient || null,
             color: msg.senderColor
         });
-        return;
     }
-    usernameEl.style.color = safeColor(msg.senderColor) || '#ffd700';
 }
 
 function displayMessage(msg, msgId) {
@@ -883,6 +875,7 @@ function buildAttachmentElement(att) {
     return w;
 }
 
+/* ⭐ v3.16: sendMessage — يُرسل cinema */
 async function sendMessage() {
     const input = document.getElementById('message-input'); if (!input) return;
     const text = input.value.trim();
@@ -1718,7 +1711,6 @@ function restorePrivateChat() {
     openPrivateChatWith(c.otherUid, c.otherName, c.otherAvatar);
 }
 
-/* ⭐ v3.15: مستمع postMessage — مع تأخير */
 window.addEventListener('message', e => {
     if (!e.data) return;
     if (e.data.action === 'openPrivateChat') {
@@ -1764,6 +1756,7 @@ function refreshAvatarsInMessages(newFrame) {
     });
 }
 
+/* ⭐ v3.16: refreshNameStyles — مع cinema */
 function refreshNameStylesInMessages(userData) {
     const u = getCurrentUser(); if (!u || !u.uid) return;
     document.querySelectorAll('[data-sender-uid="' + u.uid + '"]').forEach(msgEl => {
@@ -1771,12 +1764,20 @@ function refreshNameStylesInMessages(userData) {
         if (!un) return;
         un.textContent = userData.name || u.name || 'مجهول';
         un.setAttribute('data-name', userData.name || u.name || '');
+
+        // إعادة تعيين
+        if (window.NameEffects && typeof window.NameEffects.clear === 'function') {
+            window.NameEffects.clear(un);
+        }
+
         _applyNameEffectsToUsername(un, {
             senderColor: userData.color || '#ffd700',
             senderNameColor: userData.nameColor || null,
             senderNameGradient: userData.nameGradient || null,
             senderNameBgColor: userData.nameBgColor || null,
-            senderNameBgGradient: userData.nameBgGradient || null
+            senderNameBgGradient: userData.nameBgGradient || null,
+            senderCinemaText: userData.cinemaTextStyle || null,
+            senderCinemaBg: userData.cinemaBgStyle || null
         });
     });
 }
@@ -1856,4 +1857,4 @@ window.buildRoomsList = buildRoomsList;
 window.clearPrivateNotifsFrom = _clearPrivateNotifsFrom;
 window.applySidebarStyle = applySidebarStyle;
 
-console.log('✅ chat.js v3.15 loaded — postMessage with delays');
+console.log('✅ chat.js v3.16 loaded — cinema styles in chat');
