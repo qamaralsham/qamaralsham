@@ -1,23 +1,67 @@
 // ==============================================
-// name-effects.js v7 — تصحيح تقسيم الحروف
+// name-effects.js v8 — 20 نمط سينمائي
 // ==============================================
+// ✅ v8:
+//   1. CINEMA_STYLES موحّد مع targets
+//   2. CINEMA_TEXT_STYLES + CINEMA_BG_STYLES
+//   3. 20 نمط للخلفية (11 جديد)
+//   4. باقي المنطق كما v7
+// ==============================================
+
 (function () {
     'use strict';
-    if (window.__nameEffectsV7) return;
-    window.__nameEffectsV7 = true;
+    if (window.__nameEffectsV8) return;
+    window.__nameEffectsV8 = true;
 
     const SUGAR_COLORS = [
         '#ff0000', '#ffd700', '#00ff88', '#00f3ff', '#a855f7',
         '#ff0080', '#ff8c00', '#39ff14', '#00bfff', '#ff69b4'
     ];
 
-    const CINEMA_TEXT_STYLES = [
-        'multicolor', 'spiral', 'nebula', 'storm',
-        'fireworks', 'sugar', 'snow', 'volcano', 'waves'
+    // ⭐ v8: قائمة موحّدة مع targets
+    const CINEMA_STYLES = [
+        { id: '',             label: 'بدون',             icon: '❌', targets: ['text','bg'] },
+        // ══ الأنماط المشتركة (نص + خلفية) ══
+        { id: 'multicolor',   label: 'ألوان متعددة',     icon: '🌈', targets: ['text','bg'] },
+        { id: 'spiral',       label: 'حلزون',             icon: '🌀', targets: ['text','bg'] },
+        { id: 'nebula',       label: 'سديم',              icon: '🌌', targets: ['text','bg'] },
+        { id: 'storm',        label: 'عاصفة رعدية',       icon: '⚡', targets: ['text','bg'] },
+        { id: 'fireworks',    label: 'أضواء العيد',       icon: '🎆', targets: ['text','bg'] },
+        { id: 'sugar',        label: 'حبات السكر',        icon: '✨', targets: ['text','bg'] },
+        { id: 'snow',         label: 'ثلج',               icon: '❄️', targets: ['text','bg'] },
+        { id: 'volcano',      label: 'براكين',            icon: '🌋', targets: ['text','bg'] },
+        { id: 'waves',        label: 'أمواج',             icon: '🌊', targets: ['text','bg'] },
+        // ══ خلفيات إضافية (bg فقط) ══
+        { id: 'gold',         label: 'ذهبي فاخر',         icon: '👑', targets: ['bg'] },
+        { id: 'sunset',       label: 'غروب',              icon: '🌅', targets: ['bg'] },
+        { id: 'aurora',       label: 'شفق قطبي',          icon: '🌠', targets: ['bg'] },
+        { id: 'ocean',        label: 'محيط',              icon: '💧', targets: ['bg'] },
+        { id: 'galaxy',       label: 'مجرة',              icon: '🌌', targets: ['bg'] },
+        { id: 'fire',         label: 'نار',               icon: '🔥', targets: ['bg'] },
+        { id: 'neon',         label: 'نيون',              icon: '💜', targets: ['bg'] },
+        { id: 'emerald',      label: 'زمرد',              icon: '💚', targets: ['bg'] },
+        { id: 'diamond',      label: 'ماسي',              icon: '💎', targets: ['bg'] },
+        { id: 'blood',        label: 'دماء',              icon: '🩸', targets: ['bg'] },
+        { id: 'cyber',        label: 'سايبر',             icon: '🤖', targets: ['bg'] },
+        { id: 'rainbowtext',  label: 'قوس قزح متحرك',     icon: '🌈', targets: ['bg'] },
+        { id: 'royal',        label: 'ملكي',              icon: '⚜️', targets: ['bg'] }
     ];
 
+    // مشتقة من القائمة الموحّدة
+    const CINEMA_TEXT_STYLES = CINEMA_STYLES
+        .filter(function (s) { return s.targets.indexOf('text') !== -1; })
+        .map(function (s) { return s.id; });
+
+    const CINEMA_BG_STYLES = CINEMA_STYLES
+        .filter(function (s) { return s.targets.indexOf('bg') !== -1; })
+        .map(function (s) { return s.id; });
+
+    // الأنماط التي تحتاج تقسيم حروف
     const SPLIT_STYLES = ['multicolor', 'sugar'];
 
+    /* ══════════════════════════════════════════════ */
+    /* Helpers                                        */
+    /* ══════════════════════════════════════════════ */
     function _isValidColor(c) {
         if (!c || typeof c !== 'string') return false;
         return /^#[0-9a-fA-F]{3,8}$|^rgb\(|^rgba\(|^hsl\(|^hsla\(/.test(c.trim());
@@ -81,7 +125,6 @@
         return '#ffd700';
     }
 
-    /* ⭐ v7: تحديد وجود حروف مقسّمة */
     function _hasChars(el) {
         return el.querySelector('.nc') !== null;
     }
@@ -139,7 +182,7 @@
         }
     }
 
-    /* ⭐ v7: applyCinemaStyle */
+    /* ⭐ v8: applyCinemaStyle مع قائمتين */
     function applyCinemaStyle(el, styleId, target) {
         if (!el) return;
         target = target || 'text';
@@ -164,8 +207,10 @@
             return;
         }
 
-        if (CINEMA_TEXT_STYLES.indexOf(styleId) === -1) {
-            console.warn('Unknown cinema style:', styleId);
+        // ⭐ v8: تحقق حسب target
+        const validList = (target === 'text') ? CINEMA_TEXT_STYLES : CINEMA_BG_STYLES;
+        if (validList.indexOf(styleId) === -1) {
+            console.warn('Unknown cinema style:', styleId, 'for target:', target);
             return;
         }
 
@@ -173,7 +218,6 @@
 
         const needsSplit = SPLIT_STYLES.indexOf(styleId) !== -1;
         if (needsSplit) {
-            // ⭐ v7: نتحقق من وجود الحروف فعلياً
             if (!_hasChars(el)) {
                 _splitToChars(el, styleId, target);
             } else {
@@ -367,9 +411,11 @@
         buildGradient: _buildGradient,
         isValidColor: _isValidColor,
         isValidGradient: _isValidGradient,
+        CINEMA_STYLES: CINEMA_STYLES,
         CINEMA_TEXT_STYLES: CINEMA_TEXT_STYLES,
+        CINEMA_BG_STYLES: CINEMA_BG_STYLES,
         SUGAR_COLORS: SUGAR_COLORS
     };
 
-    console.log('✅ name-effects.js v7 loaded — split-fix applied');
+    console.log('✅ name-effects.js v8 loaded — 20 cinema bg styles');
 })();
