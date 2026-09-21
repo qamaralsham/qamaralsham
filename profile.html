@@ -45,8 +45,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
-<link rel="stylesheet" href="profile-styles.css?v=7">
-<link rel="stylesheet" href="frames-engine.css?v=7">
+<link rel="stylesheet" href="profile-styles.css?v=8">
+<link rel="stylesheet" href="frames-engine.css?v=8">
 <link rel="stylesheet" href="name-effects.css?v=5">
 </head>
 <body>
@@ -67,7 +67,13 @@
         <img src="" class="cover-img" id="profile-cover-img" style="display:none">
         <video class="cover-video" id="profile-cover-video" style="display:none" muted loop playsinline></video>
 
+        <!-- ⭐ v8: زر معاينة كزائر (owner) — أعلى يسار الغلاف -->
+        <button type="button" id="btn-visitor-view-cover" title="معاينة كزائر">👁️</button>
+
+        <!-- زر الطي (visitor) — أعلى يسار الغلاف -->
         <button type="button" id="btn-collapse-info" title="طي المعلومات">👁️</button>
+
+        <!-- زر الإغلاق (✕) — أعلى يمين الغلاف -->
         <button type="button" id="btn-close" title="إغلاق">✕</button>
 
         <div class="avatar-cont">
@@ -101,7 +107,7 @@
         <div class="cover-fade"></div>
     </div>
 
-    <!-- أزرار الزيارة (visitor only) -->
+    <!-- أزرار الزيارة -->
     <div class="interact-btns visitor-only">
         <button type="button" id="btn-heart" title="إعجاب" data-state="off">❤️</button>
         <button type="button" id="btn-mail" title="رسالة">💬</button>
@@ -122,7 +128,6 @@
             <!-- ═══ 🏠 الرئيسية ═══ -->
             <div class="tab-content active" data-content="home">
 
-                <!-- ⭐ v7: معلومات صاحب البروفايل -->
                 <div class="section" id="info-section">
                     <div class="section-title">
                         <h3><i class="fas fa-info-circle"></i> معلومات</h3>
@@ -155,7 +160,6 @@
                     </div>
                 </div>
 
-                <!-- آخر الزوار + المعجبون (owner only) -->
                 <div class="section owner-only" id="visitors-section" style="display:none;">
                     <div class="section-title">
                         <h3><i class="fas fa-eye"></i> آخر الزوار والمعجبون</h3>
@@ -165,7 +169,6 @@
                     </div>
                 </div>
 
-                <!-- الإنجازات -->
                 <div class="section">
                     <div class="section-title">
                         <h3><i class="fas fa-medal"></i> الإنجازات</h3>
@@ -206,15 +209,6 @@
 
                 <!-- الصفحة الرئيسية -->
                 <div class="settings-page active" data-page="main">
-
-                    <!-- ⭐ v7: معاينة كزائر — في الأعلى -->
-                    <div class="settings-group" style="background:linear-gradient(135deg,rgba(59,130,246,0.15),rgba(59,130,246,0.05)) !important;border-color:rgba(59,130,246,0.4) !important;">
-                        <button type="button" class="settings-group-item" id="btn-visitor-view" style="color:#93c5fd;">
-                            <span class="sgi-label"><i class="fas fa-eye" style="color:#3b82f6;"></i> معاينة كزائر</span>
-                            <span class="sgi-arrow" style="color:#3b82f6;">◀</span>
-                        </button>
-                    </div>
-
                     <div class="settings-group">
                         <button type="button" class="settings-group-item" data-open-page="name">
                             <span class="sgi-label"><i class="fas fa-signature"></i> الاسم</span>
@@ -462,7 +456,7 @@
                             <i class="fas fa-upload"></i> <span id="bg-upload-label">رفع صورة</span>
                         </button>
                         <div style="color:#888; font-size:11px; text-align:center; margin-top:6px;">
-                            💡 الحد الأقصى للفيديو: 32MB
+                            💡 الحد الأقصى: 32MB
                         </div>
                     </div>
 
