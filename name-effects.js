@@ -1,21 +1,16 @@
 // ==============================================
-// name-effects.js v2 — نظام 3 طبقات
+// name-effects.js v4 — gradient متكرر + خلفية متحركة
 // ==============================================
-// ✅ v2:
-//   + has-bg-gradient للتدرجات المتحركة في خلفية الاسم
+// ✅ v4:
+//   1. gradient متكرر (الحركة تظهر موجة)
+//   2. خلفية التدرج تتحرك (has-bg-gradient)
+//   3. دعم كامل للوضع الشفاف
 // ==============================================
 
 (function () {
     'use strict';
-    if (window.__nameEffectsV2) return;
-    window.__nameEffectsV2 = true;
-
-    function _escapeHtml(s) {
-        if (s == null) return '';
-        return String(s).replace(/[&<>"']/g, function (c) {
-            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
-        });
-    }
+    if (window.__nameEffectsV4) return;
+    window.__nameEffectsV4 = true;
 
     function _isValidColor(c) {
         if (!c || typeof c !== 'string') return false;
@@ -27,8 +22,15 @@
         return _isValidColor(g[0]) && _isValidColor(g[1]);
     }
 
+    // ⭐ v4: تدرج متكرر — الحركة تظهر موجة واضحة
     function _buildGradient(colors) {
         if (!_isValidGradient(colors)) return '';
+        if (colors.length === 2) {
+            return 'repeating-linear-gradient(90deg, ' +
+                colors[0] + ' 0%, ' +
+                colors[1] + ' 50%, ' +
+                colors[0] + ' 100%)';
+        }
         const stops = colors.map(function (c, i) {
             const pct = (i / (colors.length - 1)) * 100;
             return c + ' ' + pct.toFixed(1) + '%';
@@ -40,9 +42,7 @@
         if (Array.isArray(bgGradient) && bgGradient.length >= 2) {
             return _buildGradient(bgGradient);
         }
-        if (_isValidColor(bgColor)) {
-            return bgColor;
-        }
+        if (_isValidColor(bgColor)) return bgColor;
         return '';
     }
 
@@ -82,20 +82,17 @@
 
         const hasColor = !!nameColor && _isValidColor(nameColor);
 
-        // الحالة 1: لا شي
         if (!hasBg && !hasGradient && !hasColor) {
             el.style.color = fallbackColor;
             return;
         }
 
-        // الحالة 2: خلفية فقط
         if (hasBg && !hasGradient && !hasColor) {
             _applyBg(el, nameBgColor, nameBgGrad);
             el.style.color = fallbackColor;
             return;
         }
 
-        // الحالة 3: لون نص فقط
         if (hasColor && !hasGradient) {
             if (hasBg) _applyBg(el, nameBgColor, nameBgGrad);
             el.style.setProperty('--name-color', nameColor);
@@ -103,7 +100,6 @@
             return;
         }
 
-        // الحالة 4: تدرج نص
         if (hasGradient) {
             if (hasBg) _applyBg(el, nameBgColor, nameBgGrad);
 
@@ -134,7 +130,6 @@
 
         el.classList.add('has-bg');
 
-        // ⭐ v2: ميّز التدرج (للحركة)
         if (Array.isArray(bgGrad) && bgGrad.length >= 2) {
             el.classList.add('has-bg-gradient');
         }
@@ -176,22 +171,16 @@
 
     function applyDefaultAvatarFrame(box, rank, level) {
         if (!box) return;
-
         box.classList.remove(
             'default-frame-gold',
             'default-frame-pink',
             'default-frame-silver',
             'default-frame-gray'
         );
-
         if (box.querySelector('.qf')) return;
-
         const map = (typeof QAMAR !== 'undefined' && QAMAR.DEFAULT_AVATAR_FRAMES)
-            ? QAMAR.DEFAULT_AVATAR_FRAMES
-            : null;
-
+            ? QAMAR.DEFAULT_AVATAR_FRAMES : null;
         if (!map) return;
-
         const frameType = map[rank] || 'gray';
         if (frameType && frameType !== 'none') {
             box.classList.add('default-frame-' + frameType);
@@ -212,15 +201,12 @@
         const el = document.createElement('div');
         el.className = 'name-grid-item' + (extraClass ? ' ' + extraClass : '');
         el.dataset.previewName = text || '';
-
         const inner = document.createElement('span');
         inner.className = 'name-styled';
         inner.textContent = text || '';
         inner.setAttribute('data-text', text || '');
         el.appendChild(inner);
-
         apply(inner, params);
-
         return el;
     }
 
@@ -235,5 +221,5 @@
         isValidGradient: _isValidGradient
     };
 
-    console.log('✅ name-effects.js v2 loaded — 3-layer + animated bg-gradient');
+    console.log('✅ name-effects.js v4 loaded — repeating gradient + animated bg');
 })();
