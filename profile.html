@@ -38,15 +38,15 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
-<link rel="stylesheet" href="profile-styles.css?v=9">
-<link rel="stylesheet" href="frames-engine.css?v=9">
-<link rel="stylesheet" href="name-effects.css?v=8">
+<link rel="stylesheet" href="profile-styles.css?v=10">
+<link rel="stylesheet" href="frames-engine.css?v=10">
+<link rel="stylesheet" href="name-effects.css?v=37">
 </head>
 <body>
 
 <input type="file" id="avatar-file-input" accept="image/*" style="display:none">
-<input type="file" id="cover-file-input" accept="image/*,video/*" style="display:none">
-<input type="file" id="profile-bg-input" accept="image/*,video/*" style="display:none">
+<input type="file" id="cover-file-input" accept="image/*" style="display:none">
+<input type="file" id="profile-bg-input" accept="image/*" style="display:none">
 <input type="file" id="music-file-input" accept="audio/*" style="display:none">
 <input type="file" id="poetry-bg-input" accept="image/*" style="display:none">
 <input type="file" id="poetry-attach-input" accept="image/*" style="display:none">
@@ -56,7 +56,6 @@
     <div class="cover" id="profile-cover-box">
         <div class="cover-moon"></div>
         <img src="" class="cover-img" id="profile-cover-img" style="display:none">
-        <video class="cover-video" id="profile-cover-video" style="display:none" muted loop playsinline></video>
         <button type="button" id="btn-visitor-view-cover" title="معاينة كزائر">👁️</button>
         <button type="button" id="btn-collapse-info" title="طي المعلومات">👁️</button>
         <button type="button" id="btn-close" title="إغلاق">✕</button>
@@ -101,7 +100,6 @@
         <div class="tabs" id="tabsBar"></div>
         <div class="scroll-box" id="scroll-box">
 
-            <!-- 🏠 الرئيسية -->
             <div class="tab-content active" data-content="home">
                 <div class="section" id="info-section">
                     <div class="section-title">
@@ -133,7 +131,6 @@
                 </div>
             </div>
 
-            <!-- 📸 اللحظات -->
             <div class="tab-content" data-content="moments">
                 <div class="section">
                     <div class="section-title"><h3><i class="fas fa-circle-notch"></i> اللحظات</h3></div>
@@ -146,7 +143,6 @@
                 </div>
             </div>
 
-            <!-- 👥 الأصدقاء -->
             <div class="tab-content" data-content="friends">
                 <div class="section">
                     <div class="section-title"><h3><i class="fas fa-user-friends"></i> الأصدقاء</h3></div>
@@ -156,7 +152,6 @@
                 </div>
             </div>
 
-            <!-- ⚙️ الإعدادات -->
             <div class="tab-content" data-content="settings">
 
                 <div class="settings-page active" data-page="main">
@@ -211,10 +206,7 @@
                         <button type="button" class="settings-group-item" data-open-page="name-bg-gradient">
                             <span class="sgi-label">خلفية الاسم (تدرج)</span><span class="sgi-arrow">◀</span>
                         </button>
-                        <!-- ⭐ v9: الأنماط السينمائية -->
-                        <button type="button" class="settings-group-item" data-open-page="name-cinema-text">
-                            <span class="sgi-label">🎬 نمط النص السينمائي</span><span class="sgi-arrow">◀</span>
-                        </button>
+                        <!-- ⭐ v10: زر النص السينمائي أُخفي -->
                         <button type="button" class="settings-group-item" data-open-page="name-cinema-bg">
                             <span class="sgi-label">🎬 نمط الخلفية السينمائي</span><span class="sgi-arrow">◀</span>
                         </button>
@@ -269,8 +261,8 @@
                     </div>
                 </div>
 
-                <!-- ⭐ v9: نمط النص السينمائي -->
-                <div class="settings-page" data-page="name-cinema-text">
+                <!-- ⭐ v10: صفحة النص السينمائي محفوظة لكن مخفية -->
+                <div class="settings-page" data-page="name-cinema-text" style="display:none;">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
                         <div class="settings-subpage-title">🎬 نمط النص السينمائي</div>
@@ -279,14 +271,9 @@
                         <span class="name-styled" id="name-preview-cinema-text" data-text="">—</span>
                     </div>
                     <div class="name-grid" id="name-cinema-text-grid"></div>
-                    <div style="padding:20px 12px 0;">
-                        <button type="button" class="danger-btn" id="remove-name-cinema-text">
-                            <i class="fas fa-trash"></i> إزالة النمط السينمائي
-                        </button>
-                    </div>
                 </div>
 
-                <!-- ⭐ v9: نمط الخلفية السينمائي -->
+                <!-- نمط الخلفية السينمائي -->
                 <div class="settings-page" data-page="name-cinema-bg">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
@@ -402,9 +389,6 @@
                             <button type="button" class="upload-btn" data-bg-type="image" id="bg-type-image" style="margin-bottom:0;">
                                 <i class="fas fa-image"></i> صورة
                             </button>
-                            <button type="button" class="upload-btn" data-bg-type="video" id="bg-type-video" style="margin-bottom:0;">
-                                <i class="fas fa-video"></i> فيديو
-                            </button>
                         </div>
                     </div>
                     <div id="bg-color-section" style="padding:0 12px 12px; display:none;">
@@ -414,10 +398,10 @@
                     </div>
                     <div id="bg-media-section" style="padding:0 12px 12px; display:none;">
                         <button type="button" class="upload-btn" id="btn-upload-bg">
-                            <i class="fas fa-upload"></i> <span id="bg-upload-label">رفع صورة</span>
+                            <i class="fas fa-upload"></i> رفع صورة
                         </button>
                         <div style="color:#888; font-size:11px; text-align:center; margin-top:6px;">
-                            💡 الصور: حتى 32MB | الفيديو: حتى 200MB
+                            💡 الحد الأقصى للصورة: 32MB
                         </div>
                     </div>
                     <div style="padding:0 12px;">
