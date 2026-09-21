@@ -1,17 +1,12 @@
 // ==============================================
-// profile-core.js v5 — Unified
-// ProfileState + Bootstrap + Settings + Buttons + Stats
+// profile-core.js v6 — Unified + Fixes
 // ==============================================
-// ✅ v5:
-//   1. ProfileState موحّد (me / subject / mode)
-//   2. identityUpdatedAt reconciliation
-//   3. Drill-down navigation (stack)
-//   4. 12 صفحة إعدادات
-//   5. NameEffects + Frames integration
-//   6. أزرار ديناميكية (إعجاب/صديق/حظر)
-//   7. الإحصائيات + آخر الزوار
-//   8. الشعر (نص + خلفية + مرفقة)
-//   9. الإجراءات الحساسة (logout + delete)
+// ✅ v6 (الإصلاحات):
+//   1. زر تعديل الاسم + البايو (edit pens)
+//   2. زر معاينة كزائر (visitor-view) يعمل
+//   3. renderFramesGrid مع onSelect → حفظ الإطار
+//   4. فتح بروفايل المستخدمين من داخل البروفايل (postMessage)
+//   5. تحسينات على الإطار/التوهج/الخلفية
 // ==============================================
 
 /* ══════════════════════════════════════════════ */
@@ -38,34 +33,25 @@ const ProfileState = {
 const IMGBB_KEY = '80fd32c4ef79b5f25fbcf0893547de4f';
 
 const NAME_GRADIENTS = [
-    // ذهبي / فاخر
     ['#d4af37','#ffec8b'], ['#b8860b','#ffd700'], ['#ffd700','#ff8c00'],
     ['#f4c430','#fff8dc'], ['#ffd700','#b8860b'], ['#e6b800','#ffeeaa'],
-    // وردي / بنفسجي
     ['#ff69b4','#ff1493'], ['#e84393','#fd79a8'], ['#a855f7','#7c3aed'],
     ['#8b00ff','#ff006e'], ['#ff00ff','#da70d6'], ['#c084fc','#f0abfc'],
     ['#d946ef','#a21caf'], ['#ec4899','#f43f5e'],
-    // أزرق / سماوي
     ['#00f3ff','#0066ff'], ['#00bfff','#1e90ff'], ['#0ea5e9','#06b6d4'],
     ['#3b82f6','#8b5cf6'], ['#1e40af','#3b82f6'], ['#00d4ff','#0080ff'],
     ['#74b9ff','#0984e3'],
-    // أخضر
     ['#39ff14','#00cc00'], ['#00b894','#0984e3'], ['#55efc4','#00b894'],
     ['#10b981','#059669'], ['#84cc16','#65a30d'], ['#a3e635','#4ade80'],
-    // أحمر / نار
     ['#ff0000','#ff4500'], ['#ff4500','#ff8c00'], ['#dc143c','#ff0066'],
     ['#b91c1c','#ef4444'], ['#ff0040','#ff3366'], ['#e0115f','#ff4757'],
     ['#ff8c00','#ff1493'], ['#d35400','#e17055'],
-    // قوس قزح
     ['#ff0000','#ffd700'], ['#ff0000','#00ff00'], ['#00ff00','#0000ff'],
     ['#ff00ff','#00ffff'], ['#ff006e','#8338ec'], ['#3a86ff','#ff006e'],
-    // فاتح
     ['#ffffff','#cccccc'], ['#fef9e7','#f9e79f'], ['#fdebd0','#f5b7b1'],
     ['#ffeaa7','#fdcb6e'], ['#fab1a0','#e17055'],
-    // داكن
     ['#000000','#333333'], ['#1a1a2e','#16213e'], ['#2c3e50','#4ca1af'],
     ['#434343','#000000'],
-    // مركبات
     ['#ffd700','#ff006e'], ['#00ff88','#0066ff'], ['#ff0055','#ffd700'],
     ['#8b00ff','#ff006e'], ['#00f3ff','#ff00ff'], ['#ffcc00','#ff6699'],
     ['#00ffcc','#0066ff'], ['#ff66cc','#9900ff'], ['#ffaa00','#ff0000'],
@@ -126,8 +112,26 @@ function _userHash(u) {
     } catch (e) { return ''; }
 }
 
+/* ⭐ v6: فتح بروفايل مستخدم — postMessage للأب */
+function _openUserProfile(uid, name) {
+    if (!uid) return;
+    try {
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage({
+                action: 'openUserProfile',
+                uid: uid,
+                name: name || ''
+            }, '*');
+        } else {
+            location.href = 'profile.html?uid=' + encodeURIComponent(uid);
+        }
+    } catch (e) {
+        console.warn('_openUserProfile failed:', e);
+    }
+}
+
 /* ══════════════════════════════════════════════ */
-/* Open App Modal (v5 — signature جديدة)          */
+/* Open App Modal                                  */
 /* ══════════════════════════════════════════════ */
 function openAppModal(opts) {
     opts = opts || {};
@@ -154,7 +158,15 @@ function openAppModal(opts) {
         i.type = 'text';
         i.id = 'modal-input-val';
         i.value = opts.value || '';
+        if (opts.maxLength) i.maxLength = opts.maxLength;
         dyn.appendChild(i);
+    } else if (opts.type === 'textarea' && dyn) {
+        const ta = document.createElement('textarea');
+        ta.id = 'modal-input-val';
+        ta.value = opts.value || '';
+        ta.style.minHeight = '80px';
+        if (opts.maxLength) ta.maxLength = opts.maxLength;
+        dyn.appendChild(ta);
     } else if (opts.type === 'select' && dyn) {
         const s = document.createElement('select');
         s.id = 'modal-select-val';
@@ -182,7 +194,7 @@ function openAppModal(opts) {
 
         okBtn.onclick = function () {
             let v = '';
-            if (opts.type === 'input') {
+            if (opts.type === 'input' || opts.type === 'textarea') {
                 const i = document.getElementById('modal-input-val');
                 if (i) v = i.value;
             } else if (opts.type === 'select') {
@@ -204,7 +216,7 @@ window.openAppModal = openAppModal;
 /* Bootstrap                                       */
 /* ══════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', async function () {
-    console.log('🚀 profile-core.js v5 booting...');
+    console.log('🚀 profile-core.js v6 booting...');
 
     const params = new URLSearchParams(location.search);
     const urlUid = params.get('uid');
@@ -238,6 +250,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         _loadSubjectFromCache(urlUid);
     }
 
+    // ⭐ bind all
     _bindCoverButtons();
     _bindSettingsNavigation();
     _bindLikesFriendsBlocked();
@@ -246,6 +259,9 @@ document.addEventListener('DOMContentLoaded', async function () {
     _bindPoetry();
     _bindPrivacy();
     _bindDangerActions();
+    _bindEditName();      // ⭐ v6
+    _bindEditBio();       // ⭐ v6
+    _bindVisitorView();   // ⭐ v6
 
     renderTabsForMode();
 
@@ -272,7 +288,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         renderFriendsTab();
     }, 400);
 
-    console.log('✅ profile-core.js v5 ready | Mode:', ProfileState.mode);
+    console.log('✅ profile-core.js v6 ready | Mode:', ProfileState.mode);
 });
 
 /* ══════════════════════════════════════════════ */
@@ -284,11 +300,8 @@ function _loadSubjectFromCache(uid) {
         const raw = localStorage.getItem(key);
         if (raw) {
             ProfileState.subject = JSON.parse(raw);
-            console.log('📦 subject loaded from cache');
         }
-    } catch (e) {
-        console.warn('cache load failed:', e);
-    }
+    } catch (e) {}
 }
 
 async function _loadOwnerSubject() {
@@ -458,20 +471,16 @@ function applyIdentityToDOM() {
         roleEl.textContent = badge + ' ' + (subj.rank || 'User');
     }
 
-    // 4-8
     _applyCover(subj);
     _applyAvatar(subj);
     _applyProfileBackground(subj);
     _applyProfileGlow(subj);
     _applyMusicButton(subj);
 
-    // 9. الشعر
     renderPoetry();
 
-    // 10. أزرار الزيارة
     if (_isVisitor()) updateVisitorButtons();
 
-    // 11. admin button
     const adminBtn = document.getElementById('btn-admin-actions');
     if (adminBtn) {
         adminBtn.style.display = ProfileState.isAdminVisitor ? 'flex' : 'none';
@@ -860,6 +869,95 @@ async function updateIdentityField(field, value) {
 }
 
 /* ══════════════════════════════════════════════ */
+/* ⭐ v6: Edit Name + Edit Bio                     */
+/* ══════════════════════════════════════════════ */
+function _bindEditName() {
+    const btn = document.getElementById('btn-edit-username');
+    if (!btn || btn.__bound) return;
+    btn.__bound = true;
+
+    btn.onclick = function () {
+        const subj = ProfileState.subject;
+        if (!subj) return;
+
+        openAppModal({
+            title: '✏️ تعديل الاسم',
+            type: 'input',
+            value: subj.name || '',
+            maxLength: 20,
+            onSave: async function (v) {
+                v = (v || '').trim();
+                if (!v || v.length < 2) {
+                    _toast('⚠️ اسم قصير');
+                    return;
+                }
+                if (v === subj.name) return;
+
+                // reserve new name
+                if (typeof reserveName === 'function') {
+                    const res = await reserveName(v, subj.uid);
+                    if (!res.ok) {
+                        if (res.reason === 'taken') _toast('⚠️ الاسم محجوز');
+                        else _toast('⚠️ فشل الاتصال');
+                        return;
+                    }
+                }
+
+                // free old name
+                if (subj.name && subj.name !== v) {
+                    try { await db.ref('user_names/' + subj.name).remove(); } catch (e) {}
+                }
+
+                await updateIdentityField('name', v);
+                _toast('✅ تم');
+            }
+        });
+    };
+}
+
+function _bindEditBio() {
+    const btn = document.getElementById('btn-edit-bio');
+    if (!btn || btn.__bound) return;
+    btn.__bound = true;
+
+    btn.onclick = function () {
+        const subj = ProfileState.subject;
+        if (!subj) return;
+
+        openAppModal({
+            title: '✏️ تعديل البايو',
+            type: 'input',
+            value: subj.bio || '',
+            maxLength: 120,
+            onSave: async function (v) {
+                v = (v || '').trim();
+                await updateIdentityField('bio', v || (QAMAR.DEFAULT_BIO || '❋ نجوم الشام ❋'));
+                _toast('✅ تم');
+            }
+        });
+    };
+}
+
+/* ══════════════════════════════════════════════ */
+/* ⭐ v6: Visitor View                            */
+/* ══════════════════════════════════════════════ */
+function _bindVisitorView() {
+    const btn = document.getElementById('btn-visitor-view');
+    if (!btn || btn.__bound) return;
+    btn.__bound = true;
+
+    btn.onclick = function () {
+        const me = ProfileState.me;
+        if (!me || !me.uid) return;
+        if (typeof buildProfileUrl === 'function') {
+            location.href = buildProfileUrl(me.uid);
+        } else {
+            location.href = 'profile.html?uid=' + encodeURIComponent(me.uid);
+        }
+    };
+}
+
+/* ══════════════════════════════════════════════ */
 /* Name — لون                                      */
 /* ══════════════════════════════════════════════ */
 function renderNameColorPicker() {
@@ -919,9 +1017,6 @@ function renderNameColorPicker() {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* Name — تدرج                                     */
-/* ══════════════════════════════════════════════ */
 function renderNameGradientPicker() {
     const grid = document.getElementById('name-gradient-grid');
     const preview = document.getElementById('name-preview-gradient');
@@ -978,9 +1073,6 @@ function renderNameGradientPicker() {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* Name BG — لون                                   */
-/* ══════════════════════════════════════════════ */
 function renderNameBgColorPicker() {
     const grid = document.getElementById('name-bg-color-grid');
     const preview = document.getElementById('name-preview-bg-color');
@@ -1042,9 +1134,6 @@ function renderNameBgColorPicker() {
     }
 }
 
-/* ══════════════════════════════════════════════ */
-/* Name BG — تدرج                                  */
-/* ══════════════════════════════════════════════ */
 function renderNameBgGradientPicker() {
     const grid = document.getElementById('name-bg-gradient-grid');
     const preview = document.getElementById('name-preview-bg-gradient');
@@ -1260,7 +1349,7 @@ function renderCoverPage() {
 }
 
 /* ══════════════════════════════════════════════ */
-/* Frame Page                                      */
+/* ⭐ v6: Frame Page — with onSelect              */
 /* ══════════════════════════════════════════════ */
 function renderFramePage() {
     const container = document.getElementById('frames-grid-container');
@@ -1271,7 +1360,24 @@ function renderFramePage() {
     const currentFrame = subj ? subj.avatarFrame : null;
 
     if (typeof renderFramesGrid === 'function') {
-        renderFramesGrid(container, avatarSrc, currentFrame);
+        renderFramesGrid(container, {
+            avatarSrc: avatarSrc,
+            currentFrameId: currentFrame,
+            onSelect: async function (frameId) {
+                await updateIdentityField('avatarFrame', frameId || null);
+                _toast('✅ تم');
+            }
+        });
+    }
+
+    const removeBtn = document.getElementById('btn-remove-frame');
+    if (removeBtn && !removeBtn.__bound) {
+        removeBtn.__bound = true;
+        removeBtn.onclick = function () {
+            updateIdentityField('avatarFrame', null);
+            renderFramePage();
+            _toast('✅ تم');
+        };
     }
 }
 
@@ -1292,13 +1398,16 @@ function renderGlowPage() {
 
         const circle = document.createElement('div');
         circle.className = 'glow-circle';
-        circle.style.boxShadow = '0 0 20px ' + color + ', 0 0 40px ' + color;
+        circle.style.boxShadow = '0 0 20px 5px ' + color + ', 0 0 40px 10px ' + color;
+        circle.style.background = color;
+        circle.style.opacity = '0.6';
         tile.appendChild(circle);
 
         tile.onclick = function () {
             updateIdentityField('profileGlow', color);
             container.querySelectorAll('.glow-tile').forEach(function (x) { x.classList.remove('selected'); });
             tile.classList.add('selected');
+            _toast('✅ تم');
         };
         container.appendChild(tile);
     });
@@ -1309,6 +1418,7 @@ function renderGlowPage() {
         removeBtn.onclick = function () {
             updateIdentityField('profileGlow', null);
             renderGlowPage();
+            _toast('✅ تم');
         };
     }
 }
@@ -1666,6 +1776,10 @@ function _bindDangerActions() {
             try {
                 if (window.parent && window.parent !== window) {
                     window.parent.postMessage({ action: 'logout' }, '*');
+                } else {
+                    if (typeof logout === 'function') {
+                        logout().then(function () { location.reload(); });
+                    }
                 }
             } catch (e) {}
         };
@@ -1725,9 +1839,7 @@ async function _executeDeleteAccount() {
             if (typeof auth !== 'undefined' && auth && auth.currentUser) {
                 await auth.currentUser.delete();
             }
-        } catch (e) {
-            console.warn('Firebase Auth delete failed:', e);
-        }
+        } catch (e) {}
 
         try {
             ['qamar_user', 'qamar_current_user', 'qamar_guest'].forEach(function (k) {
@@ -2022,7 +2134,7 @@ async function renderVisitors() {
                 '<div class="visitor-avatar">' + initial + '</div>' +
                 '<span class="visitor-name">' + (v.name || 'زائر') + '</span>';
             chip.onclick = function () {
-                if (typeof openUserProfile === 'function') openUserProfile(v.uid, v.name);
+                _openUserProfile(v.uid, v.name);  // ⭐ v6: postMessage
             };
             container.appendChild(chip);
         });
@@ -2119,7 +2231,7 @@ async function renderFriendsTab() {
                 '<div class="friend-avatar">' + initial + '</div>' +
                 '<span class="friend-name">' + fr.name + '</span>';
             card.onclick = function () {
-                if (typeof openUserProfile === 'function') openUserProfile(fr.uid, fr.name);
+                _openUserProfile(fr.uid, fr.name);  // ⭐ v6: postMessage
             };
             grid.appendChild(card);
         });
@@ -2313,5 +2425,6 @@ window.applyIdentityToDOM = applyIdentityToDOM;
 window.updateIdentityField = updateIdentityField;
 window.checkVisitorStatus = checkVisitorStatus;
 window.updateVisitorButtons = updateVisitorButtons;
+window._openUserProfile = _openUserProfile;
 
-console.log('✅ profile-core.js v5 loaded — full unified version');
+console.log('✅ profile-core.js v6 loaded — full unified + fixes');
