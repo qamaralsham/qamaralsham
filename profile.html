@@ -8,7 +8,6 @@
 <meta name="theme-color" content="#050508">
 <title>قمر الشام — البروفايل</title>
 
-<!-- كشف فوري -->
 <script>
 (function() {
     var startTime = Date.now();
@@ -46,13 +45,12 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
-<link rel="stylesheet" href="profile-styles.css?v=6">
-<link rel="stylesheet" href="frames-engine.css?v=6">
-<link rel="stylesheet" href="name-effects.css?v=4">
+<link rel="stylesheet" href="profile-styles.css?v=7">
+<link rel="stylesheet" href="frames-engine.css?v=7">
+<link rel="stylesheet" href="name-effects.css?v=5">
 </head>
 <body>
 
-<!-- ═══ Inputs مخفية (للرفع) ═══ -->
 <input type="file" id="avatar-file-input" accept="image/*" style="display:none">
 <input type="file" id="cover-file-input" accept="image/*,video/*" style="display:none">
 <input type="file" id="profile-bg-input" accept="image/*,video/*" style="display:none">
@@ -90,14 +88,10 @@
                 <span class="status-dot" id="status-dot"></span>
                 <span id="role-text">User 👤</span>
             </div>
-
-            <!-- الاسم + زر التعديل -->
             <div class="user-cont">
                 <div class="username name-styled" id="profile-username" data-name="">مستخدم</div>
                 <span class="edit-pen owner-only" id="btn-edit-username" title="تعديل الاسم">✏️</span>
             </div>
-
-            <!-- البايو + زر التعديل -->
             <div class="user-cont">
                 <div class="bio" id="profile-bio">❋ نجوم الشام ❋</div>
                 <span class="edit-pen owner-only" id="btn-edit-bio" title="تعديل البايو">✏️</span>
@@ -107,7 +101,7 @@
         <div class="cover-fade"></div>
     </div>
 
-    <!-- ═══ أزرار الزيارة (visitor only) — تُظهر من CSS ═══ -->
+    <!-- أزرار الزيارة (visitor only) -->
     <div class="interact-btns visitor-only">
         <button type="button" id="btn-heart" title="إعجاب" data-state="off">❤️</button>
         <button type="button" id="btn-mail" title="رسالة">💬</button>
@@ -116,50 +110,62 @@
         <button type="button" id="btn-admin-actions" style="display:none" title="أوامر إدارية">⚔️</button>
     </div>
 
-    <!-- ═══ منطقة المحتوى الرئيسية ═══ -->
+    <!-- ═══ منطقة المحتوى ═══ -->
     <div class="main-content">
 
-        <!-- ⭐ خلفية البروفايل — داخل main-content (تحت التبويبات للنهاية) -->
         <div id="profile-bg-layer" class="profile-bg-layer"></div>
 
-        <!-- التبويبات -->
         <div class="tabs" id="tabsBar"></div>
 
-        <!-- صندوق التمرير -->
         <div class="scroll-box" id="scroll-box">
 
             <!-- ═══ 🏠 الرئيسية ═══ -->
             <div class="tab-content active" data-content="home">
+
+                <!-- ⭐ v7: معلومات صاحب البروفايل -->
+                <div class="section" id="info-section">
+                    <div class="section-title">
+                        <h3><i class="fas fa-info-circle"></i> معلومات</h3>
+                    </div>
+                    <div class="info-grid" id="info-grid">
+                        <div style="grid-column:1/-1;text-align:center;color:#666;padding:12px;font-size:12px;">⏳</div>
+                    </div>
+                </div>
+
                 <div class="stats">
-                    <div class="stat">
+                    <div class="stat" data-stat="likes">
                         <span class="stat-icon">❤️</span>
                         <span class="stat-value" id="stat-likes">0</span>
                         <span class="stat-label">إعجاب</span>
                     </div>
-                    <div class="stat">
+                    <div class="stat" data-stat="friends">
                         <span class="stat-icon">👥</span>
                         <span class="stat-value" id="stat-friends">0</span>
                         <span class="stat-label">صديق</span>
                     </div>
-                    <div class="stat">
+                    <div class="stat" data-stat="achievements">
                         <span class="stat-icon">🏆</span>
                         <span class="stat-value" id="stat-achievements">0</span>
                         <span class="stat-label">إنجاز</span>
                     </div>
-                    <div class="stat">
+                    <div class="stat" data-stat="gifts">
                         <span class="stat-icon">🎁</span>
                         <span class="stat-value" id="stat-gifts">0</span>
                         <span class="stat-label">هدية</span>
                     </div>
                 </div>
 
-                <div class="section owner-only" id="visitors-section" style="display:none">
+                <!-- آخر الزوار + المعجبون (owner only) -->
+                <div class="section owner-only" id="visitors-section" style="display:none;">
                     <div class="section-title">
-                        <h3><i class="fas fa-eye"></i> آخر الزوار</h3>
+                        <h3><i class="fas fa-eye"></i> آخر الزوار والمعجبون</h3>
                     </div>
-                    <div class="visitors-row" id="visitors-container"></div>
+                    <div class="visitors-row" id="visitors-container">
+                        <div style="color:#666;font-size:11px;padding:8px;">لا يوجد بعد</div>
+                    </div>
                 </div>
 
+                <!-- الإنجازات -->
                 <div class="section">
                     <div class="section-title">
                         <h3><i class="fas fa-medal"></i> الإنجازات</h3>
@@ -200,6 +206,15 @@
 
                 <!-- الصفحة الرئيسية -->
                 <div class="settings-page active" data-page="main">
+
+                    <!-- ⭐ v7: معاينة كزائر — في الأعلى -->
+                    <div class="settings-group" style="background:linear-gradient(135deg,rgba(59,130,246,0.15),rgba(59,130,246,0.05)) !important;border-color:rgba(59,130,246,0.4) !important;">
+                        <button type="button" class="settings-group-item" id="btn-visitor-view" style="color:#93c5fd;">
+                            <span class="sgi-label"><i class="fas fa-eye" style="color:#3b82f6;"></i> معاينة كزائر</span>
+                            <span class="sgi-arrow" style="color:#3b82f6;">◀</span>
+                        </button>
+                    </div>
+
                     <div class="settings-group">
                         <button type="button" class="settings-group-item" data-open-page="name">
                             <span class="sgi-label"><i class="fas fa-signature"></i> الاسم</span>
@@ -258,7 +273,6 @@
                     </div>
                 </div>
 
-                <!-- لون الاسم -->
                 <div class="settings-page" data-page="name-color">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
@@ -275,7 +289,6 @@
                     </div>
                 </div>
 
-                <!-- تدرج الاسم -->
                 <div class="settings-page" data-page="name-gradient">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
@@ -292,7 +305,6 @@
                     </div>
                 </div>
 
-                <!-- خلفية الاسم (لون) -->
                 <div class="settings-page" data-page="name-bg-color">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
@@ -309,7 +321,6 @@
                     </div>
                 </div>
 
-                <!-- خلفية الاسم (تدرج) -->
                 <div class="settings-page" data-page="name-bg-gradient">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
@@ -326,7 +337,6 @@
                     </div>
                 </div>
 
-                <!-- الصور والمظهر -->
                 <div class="settings-page" data-page="images">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
@@ -356,7 +366,6 @@
                     </div>
                 </div>
 
-                <!-- الصورة الشخصية -->
                 <div class="settings-page" data-page="avatar-page">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
@@ -375,7 +384,6 @@
                     </div>
                 </div>
 
-                <!-- الغلاف -->
                 <div class="settings-page" data-page="cover-page">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
@@ -394,7 +402,6 @@
                     </div>
                 </div>
 
-                <!-- إطار الأفاتار -->
                 <div class="settings-page" data-page="frame-page">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
@@ -408,7 +415,6 @@
                     </div>
                 </div>
 
-                <!-- توهج البروفايل -->
                 <div class="settings-page" data-page="glow-page">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
@@ -422,7 +428,6 @@
                     </div>
                 </div>
 
-                <!-- خلفية البروفايل -->
                 <div class="settings-page" data-page="profile-bg-page">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
@@ -456,6 +461,9 @@
                         <button type="button" class="upload-btn" id="btn-upload-bg">
                             <i class="fas fa-upload"></i> <span id="bg-upload-label">رفع صورة</span>
                         </button>
+                        <div style="color:#888; font-size:11px; text-align:center; margin-top:6px;">
+                            💡 الحد الأقصى للفيديو: 32MB
+                        </div>
                     </div>
 
                     <div style="padding:0 12px;">
@@ -465,7 +473,6 @@
                     </div>
                 </div>
 
-                <!-- الموسيقى -->
                 <div class="settings-page" data-page="music">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
@@ -487,7 +494,6 @@
                     </div>
                 </div>
 
-                <!-- الشعر -->
                 <div class="settings-page" data-page="poetry">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
@@ -543,7 +549,6 @@
                     </div>
                 </div>
 
-                <!-- الخصوصية -->
                 <div class="settings-page" data-page="privacy">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
@@ -552,7 +557,6 @@
                     <div class="settings-group" id="privacy-container"></div>
                 </div>
 
-                <!-- الغرفة -->
                 <div class="settings-page" data-page="room">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
@@ -571,23 +575,15 @@
                     </div>
                 </div>
 
-                <!-- إجراءات حساسة -->
                 <div class="settings-page" data-page="danger">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
                         <div class="settings-subpage-title">⚠️ إجراءات حساسة</div>
                     </div>
                     <div style="padding:12px;">
-
-                        <!-- ⭐ معاينة كزائر — جديد -->
-                        <button type="button" class="upload-btn" id="btn-visitor-view" style="background:linear-gradient(135deg,rgba(59,130,246,0.25),rgba(59,130,246,0.1)); border-color:#3b82f6; color:#93c5fd;">
-                            <i class="fas fa-eye"></i> معاينة كزائر
-                        </button>
-
                         <button type="button" class="danger-btn warning" id="btn-logout">
                             <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
                         </button>
-
                         <button type="button" class="danger-btn" id="btn-delete-account">
                             <i class="fas fa-trash"></i> حذف الحساب
                         </button>
@@ -596,12 +592,12 @@
 
             </div>
 
-            <!-- ═══ ⚔️ الأوامر (visitor admin+ only) ═══ -->
+            <!-- ═══ ⚔️ الأوامر ═══ -->
             <div class="tab-content" data-content="admin">
                 <div class="section" id="admin-actions-container"></div>
             </div>
 
-            <!-- ═══ 📝 قسم الشعر ═══ -->
+            <!-- ═══ 📝 الشعر ═══ -->
             <div class="poetry-section empty" id="poetry-section">
                 <div class="poetry-text" id="poetry-display"></div>
                 <div class="poetry-author" id="poetry-author"></div>
@@ -612,7 +608,6 @@
     </div>
 </div>
 
-<!-- ═══ Modal عام ═══ -->
 <div class="modal" id="app-modal">
     <div class="modal-c">
         <h3 id="modal-title">عنوان</h3>
@@ -625,10 +620,8 @@
     </div>
 </div>
 
-<!-- مشغّل الموسيقى -->
 <audio id="music-player" loop preload="none"></audio>
 
-<!-- ═══ السكربتات ═══ -->
 <script src="config.js?v=37"></script>
 <script src="ranks.js?v=37"></script>
 <script src="utils.js?v=37"></script>
