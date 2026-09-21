@@ -1,14 +1,12 @@
 // ==============================================
-// قمر الشام - نظام الرتب والصلاحيات (v4)
-// Qamar Al Sham - Ranks & Permissions v4
+// قمر الشام - نظام الرتب والصلاحيات (v5)
+// Qamar Al Sham - Ranks & Permissions v5
 // ==============================================
-// ✅ v4:
-//   1. canGivePoints: true لـ Owner وما فوق
-// ✅ v3:
-//   1. نظام الملكتين (queenOrder: 1 أو 2)
-//   2. الملكة 1 تحظر الملكة 2 (والعكس لا)
-//   3. الملكات لا يطردن بعضهن من الغرف
-//   4. قائمة صلاحيات تفصيلية لكل رتبة
+// ✅ v5:
+//   1. حذف getRankLevel المحلي (موحّد في config.js)
+//   2. window.getRankLevel هو المصدر الوحيد (fallback = 0)
+//   3. getRank() يبقى محلياً (يعيد كائن الرتبة الكامل)
+//   4. باقي السلوك كما هو في v4
 // ==============================================
 
 const RANKS = {
@@ -57,7 +55,7 @@ const RANKS = {
         canEditKickWords: true,
         canTrainBots: true,
         canDeleteBotMemory: true,
-        // ── النقاط ⭐ ──
+        // ── النقاط ──
         canGivePoints: true,
         canGiveSelfPoints: true,
         canClearUserPoints: true,
@@ -80,16 +78,13 @@ const RANKS = {
 
     'Queen': {
         badge: '👸', color: '#ff69b4', level: 95,
-        // ── البروفايل ──
         canEditAllProfiles: true,
         canEditNames: true,
         canSeePrivateInfo: false,
-        // ── الترقية والتخفيض ──
         canPromote: 'below_queen',
         canDemote: 'below_queen',
         canSetQueen1: false,
         canSetQueen2: false,
-        // ── العقوبات ──
         canWarn: true,
         canJail: 'below_self',
         canJailUnlimited: false,
@@ -100,12 +95,10 @@ const RANKS = {
         canDeleteAccount: false,
         canKickFromRoom: 'below_self',
         canKickFromMic: 'below_self',
-        // ── الرسائل ──
         canDeleteAnyMessage: true,
         canSeePrivateMessages: false,
         canSeeDeletedMessages: false,
         canEditOthersMessages: false,
-        // ── الغرف ──
         canAccessRoyal: true,
         canInviteToRoyal: true,
         canAccessStudio: true,
@@ -114,7 +107,6 @@ const RANKS = {
         canDeleteRooms: 'queen1_only',
         canEditRooms: 'queen1_only',
         canMuteRoom: true,
-        // ── البوتات ──
         canOpenKingPanel: true,
         canEditHakawati: true,
         canEditQuiz: true,
@@ -123,19 +115,15 @@ const RANKS = {
         canEditKickWords: 'queen1_only',
         canTrainBots: true,
         canDeleteBotMemory: false,
-        // ── النقاط ⭐ ──
         canGivePoints: true,
         canGiveSelfPoints: false,
         canClearUserPoints: 'queen1_only',
         canResetAllPoints: false,
-        // ── الإعلانات ──
         canAnnounceRoom: true,
         canAnnounceAll: 'queen1_only',
         canPushAnnounce: 'queen1_only',
-        // ── التنبيهات المنبثقة ──
         canSendRoomAlert: true,
         canSendGlobalAlert: 'queen1_only',
-        // ── النظام ──
         canInvisible: true,
         canViewAuditLog: 'queen1_only',
         canEditConfig: false,
@@ -163,7 +151,6 @@ const RANKS = {
         canEditQuiz: false, canEditIslamic: false,
         canEditBadWords: false, canEditKickWords: false,
         canTrainBots: false, canDeleteBotMemory: false,
-        // ── النقاط ⭐ ──
         canGivePoints: true,
         canGiveSelfPoints: false,
         canClearUserPoints: false,
@@ -194,7 +181,6 @@ const RANKS = {
         canEditQuiz: false, canEditIslamic: false,
         canEditBadWords: false, canEditKickWords: false,
         canTrainBots: false, canDeleteBotMemory: false,
-        // ── النقاط ⭐ ──
         canGivePoints: true,
         canGiveSelfPoints: false,
         canClearUserPoints: false,
@@ -225,7 +211,6 @@ const RANKS = {
         canEditQuiz: false, canEditIslamic: false,
         canEditBadWords: false, canEditKickWords: false,
         canTrainBots: false, canDeleteBotMemory: false,
-        // ── النقاط ⭐ ──
         canGivePoints: true,
         canGiveSelfPoints: false,
         canClearUserPoints: false,
@@ -256,7 +241,6 @@ const RANKS = {
         canEditQuiz: false, canEditIslamic: false,
         canEditBadWords: false, canEditKickWords: false,
         canTrainBots: false, canDeleteBotMemory: false,
-        // ── النقاط ⭐ ──
         canGivePoints: true,
         canGiveSelfPoints: false,
         canClearUserPoints: false,
@@ -382,20 +366,37 @@ const RANKS = {
 };
 
 /* ══════════════════════════════════════════════ */
-/* دوال أساسية                                   */
+/* دوال أساسية                                    */
 /* ══════════════════════════════════════════════ */
-function getRank(rankName) { return RANKS[rankName] || RANKS['User']; }
-function getRankBadge(rankName) { return getRank(rankName).badge; }
-function getRankColor(rankName) { return getRank(rankName).color; }
-function getRankLevel(rankName) { return getRank(rankName).level; }
 
-function isHigherRank(rankA, rankB) { return getRankLevel(rankA) > getRankLevel(rankB); }
-function isHigherOrEqualRank(rankA, rankB) { return getRankLevel(rankA) >= getRankLevel(rankB); }
+// ⭐ v5: getRankLevel محذوف — نعتمد على window.getRankLevel
+//       (موحّد في config.js، fallback = 0)
+
+function getRank(rankName) {
+    return RANKS[rankName] || RANKS['User'];
+}
+
+function getRankBadge(rankName) {
+    return getRank(rankName).badge;
+}
+
+function getRankColor(rankName) {
+    return getRank(rankName).color;
+}
+
+function isHigherRank(rankA, rankB) {
+    return getRankLevel(rankA) > getRankLevel(rankB);
+}
+
+function isHigherOrEqualRank(rankA, rankB) {
+    return getRankLevel(rankA) >= getRankLevel(rankB);
+}
 
 function isAdmin(user) {
     if (!user || !user.rank) return false;
     return getRankLevel(user.rank) >= 65;
 }
+
 function isOwner(user) {
     if (!user || !user.rank) return false;
     return getRankLevel(user.rank) >= 80;
@@ -404,16 +405,18 @@ function isOwner(user) {
 /* ══════════════════════════════════════════════ */
 /* دوال الملكات                                  */
 /* ══════════════════════════════════════════════ */
-function isKingRank(user) { return !!(user && user.rank === 'King'); }
+function isKingRank(user)  { return !!(user && user.rank === 'King'); }
 function isQueenRank(user) { return !!(user && user.rank === 'Queen'); }
 function isRoyalRank(user) { return isKingRank(user) || isQueenRank(user); }
 
 function isQueen1(user) {
     return !!(user && user.rank === 'Queen' && (user.queenOrder === 1 || !user.queenOrder));
 }
+
 function isQueen2(user) {
     return !!(user && user.rank === 'Queen' && user.queenOrder === 2);
 }
+
 function isAnyQueen(user) {
     return isQueenRank(user);
 }
@@ -564,10 +567,12 @@ function canManageRank(user, targetRank) {
     if (!user || !user.rank) return false;
     return isHigherRank(user.rank, targetRank);
 }
+
 function canModerateTarget(user, targetRank) {
     if (!user || !user.rank) return false;
     return isHigherRank(user.rank, targetRank);
 }
+
 function canEditTargetProfile(user, targetRank) {
     if (!user || !user.rank) return false;
     const rank = getRank(user.rank);
@@ -592,4 +597,4 @@ function canGivePointsTo(actor, target) {
     return getRankLevel(actor.rank) > getRankLevel(target.rank);
 }
 
-console.log('📦 Ranks v4 loaded:', Object.keys(RANKS).length, 'ranks | canGivePoints desde Owner+');
+console.log('📦 Ranks v5 loaded:', Object.keys(RANKS).length, 'ranks | canGivePoints from Owner+ | getRankLevel unified in config.js');
