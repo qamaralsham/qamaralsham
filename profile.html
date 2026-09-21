@@ -14,7 +14,6 @@
     var startTime = Date.now();
     var revealed = false;
     var interval = null;
-
     function tryReveal() {
         if (revealed) return true;
         var p = document.getElementById('profile-container');
@@ -25,7 +24,6 @@
         if (interval) { clearInterval(interval); interval = null; }
         return true;
     }
-
     interval = setInterval(function() {
         if (tryReveal()) {
             if (interval) { clearInterval(interval); interval = null; }
@@ -48,14 +46,13 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
-<!-- ⭐ v5: تنسيقات (ترتيب مهم) -->
-<link rel="stylesheet" href="profile-styles.css">
-<link rel="stylesheet" href="frames-engine.css">
-<link rel="stylesheet" href="name-effects.css">
+<link rel="stylesheet" href="profile-styles.css?v=6">
+<link rel="stylesheet" href="frames-engine.css?v=6">
+<link rel="stylesheet" href="name-effects.css?v=4">
 </head>
 <body>
 
-<!-- ═══════ Inputs مخفية (للرفع) ═══════ -->
+<!-- ═══ Inputs مخفية (للرفع) ═══ -->
 <input type="file" id="avatar-file-input" accept="image/*" style="display:none">
 <input type="file" id="cover-file-input" accept="image/*,video/*" style="display:none">
 <input type="file" id="profile-bg-input" accept="image/*,video/*" style="display:none">
@@ -65,25 +62,16 @@
 
 <div class="profile" id="profile-container" style="opacity:0;">
 
-    <!-- ═══ خلفية البروفايل (تحت التبويبات للنهاية) ═══ -->
-    <div id="profile-bg-layer" class="profile-bg-layer"></div>
-
     <!-- ═══ الغلاف ═══ -->
     <div class="cover" id="profile-cover-box">
         <div class="cover-moon"></div>
 
-        <!-- صورة الغلاف (إن وُجدت) -->
         <img src="" class="cover-img" id="profile-cover-img" style="display:none">
-        <!-- فيديو الغلاف (إن وُجد) -->
         <video class="cover-video" id="profile-cover-video" style="display:none" muted loop playsinline></video>
 
-        <!-- زر الطي (visitor only) — أعلى الغلاف يسار -->
         <button type="button" id="btn-collapse-info" title="طي المعلومات">👁️</button>
-
-        <!-- زر الإغلاق (✕) — أعلى الغلاف يمين -->
         <button type="button" id="btn-close" title="إغلاق">✕</button>
 
-        <!-- الأفاتار -->
         <div class="avatar-cont">
             <div class="avatar-box" id="avatar-box">
                 <div class="avatar">
@@ -93,30 +81,34 @@
             </div>
         </div>
 
-        <!-- زر الموسيقى (visitor only) -->
         <button class="music-toggle-mini" id="music-btn-mini" style="display:none" title="تشغيل الموسيقى" type="button">
             <i class="fas fa-play"></i>
         </button>
 
-        <!-- الهوية -->
         <div class="header">
             <div class="role">
                 <span class="status-dot" id="status-dot"></span>
                 <span id="role-text">User 👤</span>
             </div>
+
+            <!-- الاسم + زر التعديل -->
             <div class="user-cont">
                 <div class="username name-styled" id="profile-username" data-name="">مستخدم</div>
+                <span class="edit-pen owner-only" id="btn-edit-username" title="تعديل الاسم">✏️</span>
             </div>
+
+            <!-- البايو + زر التعديل -->
             <div class="user-cont">
                 <div class="bio" id="profile-bio">❋ نجوم الشام ❋</div>
+                <span class="edit-pen owner-only" id="btn-edit-bio" title="تعديل البايو">✏️</span>
             </div>
         </div>
 
         <div class="cover-fade"></div>
     </div>
 
-    <!-- ═══ أزرار الزيارة (visitor only) — ديناميكية ═══ -->
-    <div class="interact-btns visitor-only" style="display:none">
+    <!-- ═══ أزرار الزيارة (visitor only) — تُظهر من CSS ═══ -->
+    <div class="interact-btns visitor-only">
         <button type="button" id="btn-heart" title="إعجاب" data-state="off">❤️</button>
         <button type="button" id="btn-mail" title="رسالة">💬</button>
         <button type="button" id="btn-friend" title="صديق" data-state="off">➕</button>
@@ -127,7 +119,10 @@
     <!-- ═══ منطقة المحتوى الرئيسية ═══ -->
     <div class="main-content">
 
-        <!-- التبويبات (تُبنى من profile-core.js) -->
+        <!-- ⭐ خلفية البروفايل — داخل main-content (تحت التبويبات للنهاية) -->
+        <div id="profile-bg-layer" class="profile-bg-layer"></div>
+
+        <!-- التبويبات -->
         <div class="tabs" id="tabsBar"></div>
 
         <!-- صندوق التمرير -->
@@ -135,7 +130,6 @@
 
             <!-- ═══ 🏠 الرئيسية ═══ -->
             <div class="tab-content active" data-content="home">
-                <!-- الإحصائيات -->
                 <div class="stats">
                     <div class="stat">
                         <span class="stat-icon">❤️</span>
@@ -159,7 +153,6 @@
                     </div>
                 </div>
 
-                <!-- آخر الزوار (owner only) -->
                 <div class="section owner-only" id="visitors-section" style="display:none">
                     <div class="section-title">
                         <h3><i class="fas fa-eye"></i> آخر الزوار</h3>
@@ -167,14 +160,11 @@
                     <div class="visitors-row" id="visitors-container"></div>
                 </div>
 
-                <!-- الإنجازات -->
                 <div class="section">
                     <div class="section-title">
                         <h3><i class="fas fa-medal"></i> الإنجازات</h3>
                     </div>
-                    <div class="achievements-row" id="achievements-container">
-                        <!-- تُبنى من JS -->
-                    </div>
+                    <div class="achievements-row" id="achievements-container"></div>
                 </div>
             </div>
 
@@ -185,7 +175,7 @@
                         <h3><i class="fas fa-circle-notch"></i> اللحظات</h3>
                     </div>
                     <div class="moments-grid" id="moments-grid">
-                        <div class="moment-tile add owner-only" id="add-moment-btn" style="display:none">
+                        <div class="moment-tile add owner-only" id="add-moment-btn">
                             <div class="moment-tile-icon">＋</div>
                             <div class="moment-tile-name">أضف لحظة</div>
                         </div>
@@ -205,10 +195,10 @@
                 </div>
             </div>
 
-            <!-- ═══ ⚙️ الإعدادات (owner only) — Drill-down ═══ -->
+            <!-- ═══ ⚙️ الإعدادات ═══ -->
             <div class="tab-content" data-content="settings">
 
-                <!-- ═══ الصفحة الرئيسية للإعدادات ═══ -->
+                <!-- الصفحة الرئيسية -->
                 <div class="settings-page active" data-page="main">
                     <div class="settings-group">
                         <button type="button" class="settings-group-item" data-open-page="name">
@@ -242,7 +232,7 @@
                     </div>
                 </div>
 
-                <!-- ═══ صفحة الاسم ═══ -->
+                <!-- صفحة الاسم -->
                 <div class="settings-page" data-page="name">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
@@ -268,7 +258,7 @@
                     </div>
                 </div>
 
-                <!-- ═══ صفحة لون الاسم ═══ -->
+                <!-- لون الاسم -->
                 <div class="settings-page" data-page="name-color">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
@@ -285,7 +275,7 @@
                     </div>
                 </div>
 
-                <!-- ═══ صفحة تدرج الاسم ═══ -->
+                <!-- تدرج الاسم -->
                 <div class="settings-page" data-page="name-gradient">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
@@ -302,7 +292,7 @@
                     </div>
                 </div>
 
-                <!-- ═══ صفحة خلفية الاسم (لون) ═══ -->
+                <!-- خلفية الاسم (لون) -->
                 <div class="settings-page" data-page="name-bg-color">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
@@ -319,7 +309,7 @@
                     </div>
                 </div>
 
-                <!-- ═══ صفحة خلفية الاسم (تدرج) ═══ -->
+                <!-- خلفية الاسم (تدرج) -->
                 <div class="settings-page" data-page="name-bg-gradient">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
@@ -336,7 +326,7 @@
                     </div>
                 </div>
 
-                <!-- ═══ صفحة الصور والمظهر ═══ -->
+                <!-- الصور والمظهر -->
                 <div class="settings-page" data-page="images">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
@@ -366,7 +356,7 @@
                     </div>
                 </div>
 
-                <!-- ═══ صفحة الصورة الشخصية ═══ -->
+                <!-- الصورة الشخصية -->
                 <div class="settings-page" data-page="avatar-page">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
@@ -385,7 +375,7 @@
                     </div>
                 </div>
 
-                <!-- ═══ صفحة الغلاف ═══ -->
+                <!-- الغلاف -->
                 <div class="settings-page" data-page="cover-page">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
@@ -404,15 +394,13 @@
                     </div>
                 </div>
 
-                <!-- ═══ صفحة إطار الأفاتار ═══ -->
+                <!-- إطار الأفاتار -->
                 <div class="settings-page" data-page="frame-page">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
                         <div class="settings-subpage-title">✨ إطار الأفاتار</div>
                     </div>
-                    <div class="frames-grid" id="frames-grid-container">
-                        <!-- تُبنى من JS -->
-                    </div>
+                    <div class="frames-grid" id="frames-grid-container"></div>
                     <div style="padding:20px 12px 0;">
                         <button type="button" class="danger-btn" id="btn-remove-frame">
                             <i class="fas fa-trash"></i> إزالة الإطار
@@ -420,15 +408,13 @@
                     </div>
                 </div>
 
-                <!-- ═══ صفحة توهج البروفايل ═══ -->
+                <!-- توهج البروفايل -->
                 <div class="settings-page" data-page="glow-page">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
                         <div class="settings-subpage-title">✨ توهج البروفايل</div>
                     </div>
-                    <div class="glow-grid" id="glow-grid-container">
-                        <!-- تُبنى من JS -->
-                    </div>
+                    <div class="glow-grid" id="glow-grid-container"></div>
                     <div style="padding:20px 12px 0;">
                         <button type="button" class="danger-btn" id="btn-remove-glow">
                             <i class="fas fa-trash"></i> إزالة التوهج
@@ -436,14 +422,13 @@
                     </div>
                 </div>
 
-                <!-- ═══ صفحة خلفية البروفايل ═══ -->
+                <!-- خلفية البروفايل -->
                 <div class="settings-page" data-page="profile-bg-page">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
                         <div class="settings-subpage-title">🖼️ خلفية البروفايل</div>
                     </div>
 
-                    <!-- اختيار النوع -->
                     <div style="padding:0 12px 12px;">
                         <div class="section-title" style="border:none; padding:0; margin-bottom:10px;">
                             <h3 style="font-size:12px;">النوع</h3>
@@ -461,23 +446,18 @@
                         </div>
                     </div>
 
-                    <!-- اختيار اللون -->
                     <div id="bg-color-section" style="padding:0 12px 12px; display:none;">
-                        <label style="display:block; color:#ffd700; font-size:12px; font-weight:900; margin-bottom:8px;">
-                            اختر لون:
-                        </label>
+                        <label style="display:block; color:#ffd700; font-size:12px; font-weight:900; margin-bottom:8px;">اختر لون:</label>
                         <input type="color" id="profile-bg-color-picker" value="#050508"
                                style="width:100%; height:60px; border:2px solid #ffd700; border-radius:12px; cursor:pointer; background:transparent;">
                     </div>
 
-                    <!-- رفع صورة/فيديو -->
                     <div id="bg-media-section" style="padding:0 12px 12px; display:none;">
                         <button type="button" class="upload-btn" id="btn-upload-bg">
                             <i class="fas fa-upload"></i> <span id="bg-upload-label">رفع صورة</span>
                         </button>
                     </div>
 
-                    <!-- إزالة -->
                     <div style="padding:0 12px;">
                         <button type="button" class="danger-btn" id="btn-remove-profile-bg">
                             <i class="fas fa-trash"></i> إزالة الخلفية
@@ -485,7 +465,7 @@
                     </div>
                 </div>
 
-                <!-- ═══ صفحة الموسيقى ═══ -->
+                <!-- الموسيقى -->
                 <div class="settings-page" data-page="music">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
@@ -507,14 +487,13 @@
                     </div>
                 </div>
 
-                <!-- ═══ صفحة الشعر ═══ -->
+                <!-- الشعر -->
                 <div class="settings-page" data-page="poetry">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
                         <div class="settings-subpage-title">📝 الشعر</div>
                     </div>
 
-                    <!-- نص الشعر -->
                     <div style="padding:0 12px 12px;">
                         <label style="display:block; color:#ffd700; font-size:12px; font-weight:900; margin-bottom:8px;">
                             نص الشعر (700 حرف كحد أقصى)
@@ -528,7 +507,6 @@
                         </div>
                     </div>
 
-                    <!-- صورة الخلفية للشعر -->
                     <div style="padding:0 12px 12px;">
                         <label style="display:block; color:#ffd700; font-size:12px; font-weight:900; margin-bottom:8px;">
                             صورة خلفية الشعر (اختياري)
@@ -542,7 +520,6 @@
                         </button>
                     </div>
 
-                    <!-- صورة المرفقة -->
                     <div style="padding:0 12px 12px;">
                         <label style="display:block; color:#ffd700; font-size:12px; font-weight:900; margin-bottom:8px;">
                             صورة مرفقة (اختياري)
@@ -556,7 +533,6 @@
                         </button>
                     </div>
 
-                    <!-- حفظ -->
                     <div style="padding:0 12px;">
                         <button type="button" class="upload-btn" id="btn-save-poetry" style="background:linear-gradient(135deg,rgba(255,215,0,0.3),rgba(255,215,0,0.1)); border-color:#ffd700; color:#ffd700;">
                             <i class="fas fa-save"></i> حفظ الشعر
@@ -567,18 +543,16 @@
                     </div>
                 </div>
 
-                <!-- ═══ صفحة الخصوصية ═══ -->
+                <!-- الخصوصية -->
                 <div class="settings-page" data-page="privacy">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
                         <div class="settings-subpage-title">🔒 الخصوصية</div>
                     </div>
-                    <div class="settings-group" id="privacy-container">
-                        <!-- تُبنى من JS -->
-                    </div>
+                    <div class="settings-group" id="privacy-container"></div>
                 </div>
 
-                <!-- ═══ صفحة الغرفة ═══ -->
+                <!-- الغرفة -->
                 <div class="settings-page" data-page="room">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
@@ -597,16 +571,23 @@
                     </div>
                 </div>
 
-                <!-- ═══ صفحة إجراءات حساسة ═══ -->
+                <!-- إجراءات حساسة -->
                 <div class="settings-page" data-page="danger">
                     <div class="settings-subpage-header">
                         <button type="button" class="settings-back-btn" data-back="1">←</button>
                         <div class="settings-subpage-title">⚠️ إجراءات حساسة</div>
                     </div>
                     <div style="padding:12px;">
+
+                        <!-- ⭐ معاينة كزائر — جديد -->
+                        <button type="button" class="upload-btn" id="btn-visitor-view" style="background:linear-gradient(135deg,rgba(59,130,246,0.25),rgba(59,130,246,0.1)); border-color:#3b82f6; color:#93c5fd;">
+                            <i class="fas fa-eye"></i> معاينة كزائر
+                        </button>
+
                         <button type="button" class="danger-btn warning" id="btn-logout">
                             <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
                         </button>
+
                         <button type="button" class="danger-btn" id="btn-delete-account">
                             <i class="fas fa-trash"></i> حذف الحساب
                         </button>
@@ -617,12 +598,10 @@
 
             <!-- ═══ ⚔️ الأوامر (visitor admin+ only) ═══ -->
             <div class="tab-content" data-content="admin">
-                <div class="section" id="admin-actions-container">
-                    <!-- تُبنى من JS -->
-                </div>
+                <div class="section" id="admin-actions-container"></div>
             </div>
 
-            <!-- ═══ 📝 قسم الشعر (أسفل كل تبويب) ═══ -->
+            <!-- ═══ 📝 قسم الشعر ═══ -->
             <div class="poetry-section empty" id="poetry-section">
                 <div class="poetry-text" id="poetry-display"></div>
                 <div class="poetry-author" id="poetry-author"></div>
@@ -633,9 +612,7 @@
     </div>
 </div>
 
-<!-- ═══ Modals ═══ -->
-
-<!-- Modal عام (openAppModal) -->
+<!-- ═══ Modal عام ═══ -->
 <div class="modal" id="app-modal">
     <div class="modal-c">
         <h3 id="modal-title">عنوان</h3>
@@ -648,7 +625,7 @@
     </div>
 </div>
 
-<!-- مشغّل الموسيقى (مخفي) -->
+<!-- مشغّل الموسيقى -->
 <audio id="music-player" loop preload="none"></audio>
 
 <!-- ═══ السكربتات ═══ -->
