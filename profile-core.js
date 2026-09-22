@@ -1,12 +1,8 @@
 // ==============================================
-// profile-core.js v10 — video/audio + fixes
+// profile-core.js v11 — music Blob fix
 // ==============================================
-// ✅ v10:
-//   1. video/audio via FileReader base64 (زي القديم)
-//   2. إصلاح حفظ الإطار (localStorage + Firebase)
-//   3. زر 💬 — parent.openPrivateChatWith مباشرة
-//   4. فتح صديق — parent.openUserProfile مباشرة
-//   5. حذف saved_avatar_frame_motion القديم عند البدء
+// ✅ v11:
+//   _applyMusicButton: base64 → Blob URL (يحل مشكلة التشغيل)
 // ==============================================
 
 const ProfileState = {
@@ -147,16 +143,13 @@ function _userHash(u) {
     } catch (e) { return ''; }
 }
 
-/* ⭐ v10: فتح بروفايل مستخدم — استدعاء مباشر للـ parent */
 function _openUserProfile(uid, name) {
     if (!uid) return;
     try {
         if (window.parent && window.parent !== window) {
-            // اتصال مباشر بدالة الأب (same-origin)
             if (typeof window.parent.openUserProfile === 'function') {
                 window.parent.openUserProfile(uid, name || '');
             } else {
-                // fallback: postMessage
                 window.parent.postMessage({
                     action: 'openUserProfile',
                     uid: uid,
@@ -253,9 +246,8 @@ window.openAppModal = openAppModal;
 
 /* ═══ Bootstrap ═══ */
 document.addEventListener('DOMContentLoaded', async function () {
-    console.log('🚀 profile-core.js v10 booting...');
+    console.log('🚀 profile-core.js v11 booting...');
 
-    // ⭐ v10: امسح saved_avatar_frame_motion القديم
     try {
         localStorage.removeItem('saved_avatar_frame_motion');
     } catch (e) {}
@@ -330,7 +322,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         renderFriendsTab();
     }, 400);
 
-    console.log('✅ profile-core.js v10 ready | Mode:', ProfileState.mode);
+    console.log('✅ profile-core.js v11 ready | Mode:', ProfileState.mode);
 });
 
 /* ═══ Load Subject ═══ */
@@ -494,7 +486,6 @@ function applyIdentityToDOM() {
     }
 }
 
-/* ⭐ v10: Cover — يدعم صورة + فيديو */
 function _applyCover(subj) {
     const img = document.getElementById('profile-cover-img');
     const video = document.getElementById('profile-cover-video');
@@ -542,7 +533,6 @@ function _applyAvatar(subj) {
     }
 }
 
-/* ⭐ v10: Profile BG — يدعم لون + صورة + فيديو */
 function _applyProfileBackground(subj) {
     const layer = document.getElementById('profile-bg-layer');
     if (!layer) return;
@@ -583,35 +573,91 @@ function _applyProfileGlow(subj) {
     }
 }
 
+/* ⭐ v11: Music Button — base64 → Blob URL */
 function _applyMusicButton(subj) {
     const btn = document.getElementById('music-btn-mini');
     const player = document.getElementById('music-player');
     if (!btn || !player) return;
+
     if (!subj.musicURL) {
         btn.style.display = 'none';
         if (player.pause) player.pause();
         player.removeAttribute('src');
         return;
     }
+
     if (!_isVisitor()) { btn.style.display = 'none'; return; }
     btn.style.display = 'flex';
-    if (player.src !== subj.musicURL) { player.src = subj.musicURL; player.load(); }
+
+    // ⭐ v11: تحويل base64 إلى Blob URL (يحل مشكلة فشل التشغيل)
+    var finalSrc = subj.musicURL;
+
+    if (finalSrc.indexOf('data:') === 0) {
+        try {
+            var cachedSrc = player.getAttribute('data-blob-src');
+            var cachedUrl = player.getAttribute('data-blob-url');
+
+            if (cachedSrc === finalSrc && cachedUrl) {
+                finalSrc = cachedUrl;
+            } else {
+                var commaIdx = finalSrc.indexOf(',');
+                if (commaIdx > 0) {
+                    var header = finalSrc.substring(0, commaIdx);
+                    var b64 = finalSrc.substring(commaIdx + 1);
+                    var mimeMatch = header.match(/:(.*?);/);
+                    var mime = mimeMatch ? mimeMatch[1] : 'audio/mpeg';
+
+                    var binary = atob(b64);
+                    var len = binary.length;
+                    var bytes = new Uint8Array(len);
+                    for (var i = 0; i < len; i++) {
+                        bytes[i] = binary.charCodeAt(i);
+                    }
+                    var blob = new Blob([bytes], { type: mime });
+
+                    // revoke القديم
+                    if (cachedUrl) {
+                        try { URL.revokeObjectURL(cachedUrl); } catch (e) {}
+                    }
+
+                    var blobUrl = URL.createObjectURL(blob);
+                    player.setAttribute('data-blob-url', blobUrl);
+                    player.setAttribute('data-blob-src', finalSrc);
+                    finalSrc = blobUrl;
+                }
+            }
+        } catch (e) {
+            console.warn('Base64→Blob failed:', e);
+        }
+    }
+
+    if (player.src !== finalSrc) {
+        player.src = finalSrc;
+        player.load();
+    }
+
     if (!btn.__setup) {
         btn.__setup = true;
         btn.onclick = function (e) {
             e.preventDefault();
             e.stopPropagation();
             if (player.paused) {
-                player.play().then(function () {
-                    btn.classList.add('playing');
-                    const ic = btn.querySelector('i');
-                    if (ic) ic.className = 'fas fa-pause';
-                }).catch(function () { _toast('⚠️ تعذر تشغيل الموسيقى'); });
+                var p = player.play();
+                if (p && p.then) {
+                    p.then(function () {
+                        btn.classList.add('playing');
+                        var ic = btn.querySelector('i');
+                        if (ic) ic.className = 'fas fa-pause';
+                    }).catch(function (err) {
+                        console.warn('Play failed:', err);
+                        _toast('⚠️ تعذر تشغيل الموسيقى');
+                    });
+                }
             } else {
                 player.pause();
                 btn.classList.remove('playing');
-                const ic = btn.querySelector('i');
-                if (ic) ic.className = 'fas fa-play';
+                var ic2 = btn.querySelector('i');
+                if (ic2) ic2.className = 'fas fa-play';
             }
         };
     }
@@ -794,7 +840,6 @@ function _bindSettingsNavigation() {
     });
 }
 
-/* ⭐ v10: FileReader → base64 */
 function _fileToDataURL(file) {
     return new Promise(function (resolve, reject) {
         var reader = new FileReader();
@@ -804,17 +849,14 @@ function _fileToDataURL(file) {
     });
 }
 
-/* ⭐ v10: uploadFile — صور→imgBB | فيديو/صوت→base64 */
 async function uploadFile(file) {
     var isVideo = file.type && file.type.indexOf('video/') === 0;
     var isAudio = file.type && file.type.indexOf('audio/') === 0;
 
-    // ⭐ فيديو أو صوت → base64
     if (isVideo || isAudio) {
         return await _fileToDataURL(file);
     }
 
-    // ⭐ صورة → imgBB
     const fd = new FormData();
     fd.append('key', IMGBB_KEY);
     fd.append('image', file);
@@ -824,7 +866,6 @@ async function uploadFile(file) {
     throw new Error('Image upload failed');
 }
 
-/* للتوافق الخلفي */
 async function uploadToImgBB(file) {
     return await uploadFile(file);
 }
@@ -1348,7 +1389,6 @@ function _bindImagesUploads() {
         };
     }
 
-    /* ⭐ v10: رفع الصورة/الفيديو */
     const upBg = document.getElementById('btn-upload-bg');
     if (upBg && !upBg.__bound) {
         upBg.__bound = true;
@@ -1380,7 +1420,6 @@ function _bindImagesUploads() {
     }
 }
 
-/* ⭐ v10: يدعم video */
 function _switchBgTypeUI(type) {
     const colorSec = document.getElementById('bg-color-section');
     const mediaSec = document.getElementById('bg-media-section');
@@ -1406,7 +1445,6 @@ function renderCoverPage() {
     }
 }
 
-/* ⭐ v10: Frame Page — حفظ localStorage + Firebase */
 function renderFramePage() {
     const container = document.getElementById('frames-grid-container');
     if (!container) return;
@@ -1420,16 +1458,13 @@ function renderFramePage() {
             currentFrameId: currentFrame,
             onSelect: async function (frameId) {
                 try {
-                    // ⭐ 1. localStorage (للتوافق مع الإصدارات القديمة)
                     try {
                         localStorage.setItem('saved_avatar_frame_motion', frameId || '');
                     } catch (e) {}
 
-                    // ⭐ 2. Firebase
                     await updateIdentityField('avatarFrame', frameId || null);
                     _toast(frameId ? '✅ تم حفظ الإطار' : '✅ أُزيل الإطار');
 
-                    // ⭐ 3. إعادة تطبيق مباشرة
                     setTimeout(function () {
                         const box = document.getElementById('avatar-box');
                         if (box) {
@@ -1437,7 +1472,6 @@ function renderFramePage() {
                             if (frameId && typeof applyFrameTo === 'function') {
                                 applyFrameTo(box, frameId);
                             } else {
-                                // ارجع للإطار الافتراضي حسب الرتبة
                                 if (window.NameEffects && typeof window.NameEffects.clearDefaultAvatarFrame === 'function') {
                                     window.NameEffects.clearDefaultAvatarFrame(box);
                                 }
@@ -1459,11 +1493,9 @@ function renderFramePage() {
     if (removeBtn && !removeBtn.__bound) {
         removeBtn.__bound = true;
         removeBtn.onclick = function () {
-            // ⭐ v10: امسح localStorage + Firebase
             try { localStorage.removeItem('saved_avatar_frame_motion'); } catch (e) {}
             updateIdentityField('avatarFrame', null);
 
-            // إعادة تطبيق نظيفة
             setTimeout(function () {
                 const box = document.getElementById('avatar-box');
                 if (box) {
@@ -1528,7 +1560,7 @@ function renderProfileBgPage() {
     }
 }
 
-/* ⭐ v10: Music — رفع عبر base64 */
+/* ═══ Music ═══ */
 function renderMusicPage() {
     const subj = ProfileState.subject;
     const status = document.getElementById('music-status');
@@ -2010,7 +2042,6 @@ function _bindLikesFriendsBlocked() {
         };
     }
 
-    /* ⭐ v10: زر 💬 — استدعاء parent.openPrivateChatWith مباشرة */
     const mail = document.getElementById('btn-mail');
     if (mail && !mail.__bound) {
         mail.__bound = true;
@@ -2019,11 +2050,9 @@ function _bindLikesFriendsBlocked() {
             if (!subj || !subj.uid) return;
             try {
                 if (window.parent && window.parent !== window) {
-                    // ⭐ 1. افتح الخاص أولاً (مباشرة)
                     if (typeof window.parent.openPrivateChatWith === 'function') {
                         window.parent.openPrivateChatWith(subj.uid, subj.name || '', subj.avatar || '');
                     } else {
-                        // fallback: postMessage
                         window.parent.postMessage({
                             action: 'openPrivateChat',
                             uid: subj.uid,
@@ -2031,7 +2060,6 @@ function _bindLikesFriendsBlocked() {
                             avatar: subj.avatar || ''
                         }, '*');
                     }
-                    // ⭐ 2. أغلق البروفايل (بعد لحظة)
                     setTimeout(function () {
                         try {
                             if (typeof window.parent.closeProfileFrame === 'function') {
@@ -2305,7 +2333,6 @@ async function renderMomentsTab() {
     } catch (e) {}
 }
 
-/* ⭐ v10: Friends Tab — location.href */
 async function renderFriendsTab() {
     const grid = document.getElementById('friends-grid-container');
     if (!grid) return;
@@ -2523,4 +2550,4 @@ window.renderVisitors = renderVisitors;
 window.renderLikers = renderLikers;
 window._openUserProfile = _openUserProfile;
 
-console.log('✅ profile-core.js v10 loaded — video/audio + fixes');
+console.log('✅ profile-core.js v11 loaded — music Blob fix');
