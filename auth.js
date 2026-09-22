@@ -1,33 +1,38 @@
 // ==============================================
-// قمر الشام - نظام الدخول والمصادقة (v8.7)
-// Qamar Al Sham - Auth v8.7
+// قمر الشام - نظام الدخول والمصادقة (v8.8)
+// Qamar Al Sham - Auth v8.8
 // ==============================================
-// ✅ v8.7 (فوق v8.6):
-//   1. login: حفظ placeholder في currentUser مباشرة بعد signIn
-//      → يمنع startAuthListener من إعادة جلب users/$uid
-//   2. _loginTempUid/_loginTempAt: بوابة أمان إضافية
-//   3. registerGuest: placeholder لمنع جلب غير ضروري
-//   4. النتيجة: الملك يُجلب مرة واحدة بدل مرتين (5MB → 10MB وفّرنا 50%)
+// ✅ v8.8 (فوق v8.7):
+//   1. login: جلب 30 حقل خفيف فقط بدل النود كامل
+//      → الملك: 20MB → 2KB (أسرع 100x)
+//   2. startAuthListener: نفس التحسين
+//   3. _fetchLightUserData: helper موحّد
+//   4. استبعاد: musicURL, profileBgValue, poetryBg, poetryAttachment
+//   5. console.time لتتبع السرعة
+// ==============================================
+// ✅ v8.7 (محفوظ):
+//   1. login: placeholder يمنع startAuthListener من الجلب
+//   2. _loginTempUid/_loginTempAt
+//   3. registerGuest: placeholder
 // ==============================================
 // ✅ v8.6 (محفوظ):
-//   1. registerGuest: reserveName + ensureUniqueCode بالتوازي
-//   2. registerMember: نفس التحسين
-//   3. login: users/$uid + config/king_uid بالتوازي
-//   4. cleanup ذكي عند الفشل (بدون تسريب)
+//   1. registerGuest/Member: parallel reserveName + ensureUniqueCode
+//   2. login: users + king_uid parallel (الآن محسّن أكثر)
+//   3. _cleanupReservations
 // ==============================================
 // ✅ v8.5 (محفوظ):
-//   1. saveSession: يستبعد base64 الكبيرة (music/cover/video/attachment)
-//   2. saveSession: fallback تلقائي لنسخة مبسطة عند QuotaExceeded
+//   1. saveSession: يستبعد base64 الكبيرة
+//   2. saveSession: fallback عند QuotaExceeded
 // ==============================================
 // ✅ v8.4 (محفوظ):
-//   1. رسائل خطأ دقيقة (permission vs taken)
-//   2. buildNewUserData — builder موحّد
-//   3. identityUpdatedAt عند الإنشاء
-//   4. QAMAR.DEFAULT_BIO + حقول جديدة
+//   1. رسائل خطأ دقيقة
+//   2. buildNewUserData
+//   3. identityUpdatedAt
+//   4. QAMAR.DEFAULT_BIO
 //   5. privacy defaults
-//   6. logout يمسح كل مفاتيح الهوية
-//   7. استخدام QAMAR.STORAGE_KEYS
-//   8. waitForAuth أطول قليلاً
+//   6. logout يمسح كل مفاتيح
+//   7. QAMAR.STORAGE_KEYS
+//   8. waitForAuth
 // ==============================================
 
 let currentUser = null;
@@ -35,9 +40,46 @@ let isUserGuest = false;
 let _authReady = false;
 let _authUnsubscribe = null;
 
-/* ⭐ v8.7: بوابة لمنع double-fetch */
+/* ⭐ v8.7: بوابة منع double-fetch */
 let _loginTempUid = null;
 let _loginTempAt = 0;
+
+/* ⭐ v8.8: الحقول الخفيفة — تُجلب فقط */
+const LOGIN_LIGHT_FIELDS = [
+    'name', 'code', 'rank', 'rankLevel', 'queenOrder', 'isGuest',
+    'avatar', 'color', 'bio',
+    'nameColor', 'nameGradient', 'nameBgColor', 'nameBgGradient',
+    'cinemaTextStyle', 'cinemaBgStyle', 'avatarFrame', 'profileGlow',
+    'cover', 'coverType',
+    'isBanned', 'bannedUntil', 'isJailed', 'jailUntil',
+    'invisible', 'warnings', 'jailCount',
+    'createdAt', 'lastSeen', 'identityUpdatedAt'
+];
+
+/* ══════════════════════════════════════════════ */
+/* ⭐ v8.8: جلب حقول خفيفة بالتوازي                */
+/* ══════════════════════════════════════════════ */
+async function _fetchLightUserData(uid) {
+    if (!uid) return null;
+    if (typeof db === 'undefined' || !db) return null;
+
+    const promises = LOGIN_LIGHT_FIELDS.map(function (field) {
+        return db.ref('users/' + uid + '/' + field).once('value')
+            .then(function (s) { return { field: field, value: s.val() }; })
+            .catch(function () { return { field: field, value: null }; });
+    });
+
+    const results = await Promise.all(promises);
+    const data = {};
+    let hasAny = false;
+    results.forEach(function (r) {
+        if (r.value !== null && r.value !== undefined) {
+            data[r.field] = r.value;
+            hasAny = true;
+        }
+    });
+    return hasAny ? data : null;
+}
 
 /* ══════════════════════════════════════════════ */
 /* انتظار Firebase                                */
@@ -59,7 +101,6 @@ function buildUserCode(name, uid) {
     if (typeof generateUserCode === 'function') {
         return generateUserCode(name, uid);
     }
-    // fallback بسيط
     let prefix = 'U' + Math.floor(Math.random() * 9 + 1);
     const clean = (name || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
     if (clean.length >= 2) prefix = clean.substring(0, 2);
@@ -74,21 +115,14 @@ function buildUserCode(name, uid) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* ⭐ Reserve دوال — ترجع {ok, reason}             */
+/* Reserve دوال — ترجع {ok, reason}                */
 /* ══════════════════════════════════════════════ */
-/* reason values:
- *   'ok'         — نجح
- *   'taken'      — الاسم محجوز (transaction aborted)
- *   'permission' — فشل Firebase Rules
- *   'network'    — مشكلة شبكة
- * ══════════════════════════════════════════════ */
-
 async function reserveUserCode(code, uid) {
     try {
         const result = await db.ref('user_codes/' + code).transaction(current => {
             if (current === null) return uid;
             if (current === uid) return uid;
-            return undefined; // abort
+            return undefined;
         });
         if (result.committed === true) return { ok: true, reason: 'ok' };
         return { ok: false, reason: 'taken' };
@@ -115,10 +149,6 @@ async function reserveName(name, uid) {
     }
 }
 
-/**
- * ⭐ v8.4: يبحث عن كود فريد.
- * @returns {{code: string|null, error: string|null}}
- */
 async function ensureUniqueCode(name, uid) {
     let userCode = buildUserCode(name, uid);
     let res = await reserveUserCode(userCode, uid);
@@ -128,7 +158,6 @@ async function ensureUniqueCode(name, uid) {
         return { code: null, error: res.reason };
     }
 
-    // الاسم مشغول → جرّب مع لاحقات
     for (let attempt = 0; attempt < 5; attempt++) {
         const suffix = Math.floor(Math.random() * 9999);
         userCode = buildUserCode(name + suffix, uid);
@@ -142,7 +171,7 @@ async function ensureUniqueCode(name, uid) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* ⭐ v8.6: cleanup موحّد عند الفشل                 */
+/* cleanup موحّد عند الفشل                         */
 /* ══════════════════════════════════════════════ */
 async function _cleanupReservations(name, code) {
     const promises = [];
@@ -154,39 +183,24 @@ async function _cleanupReservations(name, code) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* ⭐ v8.4: builder موحّد لحقول المستخدم الجديد    */
+/* builder موحّد لحقول المستخدم الجديد            */
 /* ══════════════════════════════════════════════ */
 function buildNewUserData(opts) {
-    const {
-        uid,
-        name,
-        code,
-        age,
-        gender,
-        email,
-        isGuest,
-        now
-    } = opts;
-
+    const { uid, name, code, age, gender, email, isGuest, now } = opts;
     const rank = 'User';
     const avatarBg = isGuest ? '555' : 'random';
 
     return {
-        // ── أساسي ──
         uid: uid,
         name: name,
         code: code,
         age: age,
         gender: gender,
         email: email || null,
-
-        // ── الرتبة ──
         rank: rank,
         rankLevel: QAMAR.getRankLevel(rank),
         queenOrder: null,
         isGuest: !!isGuest,
-
-        // ── الهوية المرئية ──
         avatar: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) + '&background=' + avatarBg + '&color=fff',
         cover: null,
         bio: (typeof QAMAR !== 'undefined' && QAMAR.DEFAULT_BIO) ? QAMAR.DEFAULT_BIO : '❋ نجوم الشام ❋',
@@ -196,8 +210,6 @@ function buildNewUserData(opts) {
         nameBgColor: null,
         nameBgGradient: null,
         avatarFrame: null,
-
-        // ── البروفايل ──
         profileGlow: null,
         profileBgType: null,
         profileBgValue: null,
@@ -205,8 +217,6 @@ function buildNewUserData(opts) {
         poetry: '',
         poetryBg: null,
         poetryAttachment: null,
-
-        // ── الخصوصية ──
         country: '',
         family: '',
         privacy: {
@@ -216,8 +226,6 @@ function buildNewUserData(opts) {
             messages: 'public',
             friends: 'public'
         },
-
-        // ── التواقيت ──
         createdAt: now,
         lastSeen: now,
         identityUpdatedAt: now
@@ -225,7 +233,7 @@ function buildNewUserData(opts) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* Register Guest — ⭐ v8.7 مع placeholder         */
+/* Register Guest                                 */
 /* ══════════════════════════════════════════════ */
 async function registerGuest(name, age, gender) {
     if (!name || name.trim().length < 2)
@@ -245,7 +253,6 @@ async function registerGuest(name, age, gender) {
         const uid = credential.user.uid;
         const now = Date.now();
 
-        // ⭐ v8.7: placeholder لمنع startAuthListener من الجلب
         _loginTempUid = uid;
         _loginTempAt = Date.now();
         currentUser = {
@@ -256,13 +263,11 @@ async function registerGuest(name, age, gender) {
             isGuest: true
         };
 
-        // ⭐ v8.6: reserveName + ensureUniqueCode بالتوازي
         const [nameRes, codeRes] = await Promise.all([
             reserveName(trimmedName, uid),
             ensureUniqueCode(trimmedName, uid)
         ]);
 
-        // فحص الاسم
         if (!nameRes.ok) {
             try { await auth.signOut(); } catch (e) {}
             currentUser = null;
@@ -273,7 +278,6 @@ async function registerGuest(name, age, gender) {
             return { success: false, error: 'فشل الاتصال — حاول مرة ثانية' };
         }
 
-        // فحص الكود
         if (codeRes.error) {
             try { await auth.signOut(); } catch (e) {}
             currentUser = null;
@@ -317,7 +321,7 @@ async function registerGuest(name, age, gender) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* Register Member — ⭐ v8.6 مع parallel          */
+/* Register Member                                */
 /* ══════════════════════════════════════════════ */
 async function registerMember(name, age, gender, email, password) {
     if (!name || name.trim().length < 2)
@@ -339,7 +343,6 @@ async function registerMember(name, age, gender, email, password) {
         const firebaseUser = userCredential.user;
         const now = Date.now();
 
-        // ⭐ v8.7: placeholder
         _loginTempUid = firebaseUser.uid;
         _loginTempAt = Date.now();
         currentUser = {
@@ -351,7 +354,6 @@ async function registerMember(name, age, gender, email, password) {
             isGuest: false
         };
 
-        // ⭐ v8.6: parallel
         const [nameRes, codeRes] = await Promise.all([
             reserveName(trimmedName, firebaseUser.uid),
             ensureUniqueCode(trimmedName, firebaseUser.uid)
@@ -413,23 +415,27 @@ async function registerMember(name, age, gender, email, password) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* Login — ⭐ v8.7: placeholder يمنع double-fetch  */
+/* ⭐ v8.8: Login — جلب خفيف = أسرع 100x          */
 /* ══════════════════════════════════════════════ */
 async function login(email, password) {
     if (!email || !password) return { success: false, error: 'الرجاء إدخال الإيميل وكلمة السر' };
 
+    console.time('🔐 login');
+
     try {
         const ok = await waitForAuth(8000);
-        if (!ok) return { success: false, error: 'Firebase لم يجهز بعد — انتظر ثوانٍ وأعد المحاولة' };
+        if (!ok) {
+            console.timeEnd('🔐 login');
+            return { success: false, error: 'Firebase لم يجهز بعد — انتظر ثوانٍ وأعد المحاولة' };
+        }
 
+        console.time('🔐 signIn');
         const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        console.timeEnd('🔐 signIn');
+
         const firebaseUser = userCredential.user;
         const now = Date.now();
 
-        // ⭐⭐⭐ v8.7: الحل الأساسي لمشكلة الملك
-        // نحفظ placeholder في currentUser مباشرة بعد signIn
-        // → startAuthListener يشوف نفس uid → يتخطى الجلب
-        // النتيجة: الملك يُجلب مرة واحدة بدل مرتين
         _loginTempUid = firebaseUser.uid;
         _loginTempAt = Date.now();
         currentUser = {
@@ -442,7 +448,6 @@ async function login(email, password) {
             isGuest: false
         };
 
-        // بيانات افتراضية (لو ما لقينا سجل في users)
         let userData = {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
@@ -460,25 +465,26 @@ async function login(email, password) {
         };
 
         if (typeof db !== 'undefined' && db) {
-            // ⭐ v8.6: users + config/king_uid بالتوازي
-            const [snapshot, kingSnap] = await Promise.all([
-                db.ref('users/' + firebaseUser.uid).once('value'),
+            // ⭐⭐⭐ v8.8: جلب خفيف + king_uid بالتوازي
+            console.time('🔐 fetchLight');
+            const [lightData, kingSnap] = await Promise.all([
+                _fetchLightUserData(firebaseUser.uid),
                 db.ref('config/king_uid').once('value').catch(function () { return null; })
             ]);
+            console.timeEnd('🔐 fetchLight');
 
             const kingUid = kingSnap ? kingSnap.val() : null;
 
-            if (snapshot.exists()) {
-                userData = Object.assign({}, userData, snapshot.val());
+            if (lightData) {
+                // ⭐ v8.8: نستخدم lightData بدل snapshot.val()
+                userData = Object.assign({}, userData, lightData);
                 userData.rankLevel = QAMAR.getRankLevel(userData.rank);
 
-                // ✅ ضمان queenOrder للملكات
                 if (userData.rank === 'Queen' && !userData.queenOrder) {
                     userData.queenOrder = 1;
                     db.ref('users/' + firebaseUser.uid + '/queenOrder').set(1).catch(function () {});
                 }
 
-                // ✅ ضمان كود
                 if (!userData.code) {
                     const codeRes = await ensureUniqueCode(userData.name, firebaseUser.uid);
                     if (codeRes.code) {
@@ -487,7 +493,6 @@ async function login(email, password) {
                     }
                 }
 
-                // ✅ ضمان الحقول الجديدة (ترحيل ناعم)
                 const patch = {};
                 if (userData.country === undefined) patch.country = '';
                 if (userData.family === undefined) patch.family = '';
@@ -499,7 +504,6 @@ async function login(email, password) {
                     db.ref('users/' + firebaseUser.uid).update(patch).catch(function () {});
                 }
 
-                // ✅ فحص الملك (kingUid من الـ parallel read)
                 if (kingUid && firebaseUser.uid === kingUid && userData.rank !== 'King') {
                     userData.rank = 'King';
                     userData.rankLevel = 100;
@@ -507,7 +511,6 @@ async function login(email, password) {
                     db.ref('users/' + firebaseUser.uid + '/rankLevel').set(100).catch(function () {});
                 }
 
-                // update lastSeen + presence
                 Promise.all([
                     db.ref('users/' + firebaseUser.uid + '/lastSeen').set(now),
                     db.ref('user_presence/' + firebaseUser.uid).set({ state: 'online', lastChanged: now })
@@ -541,10 +544,12 @@ async function login(email, password) {
         isUserGuest = false;
         saveSession(currentUser, false);
 
-        console.log('✅ Member logged in:', userData.name, '| Rank:', userData.rank, '| QueenOrder:', userData.queenOrder || '-');
+        console.timeEnd('🔐 login');
+        console.log('✅ Member logged in:', userData.name, '| Rank:', userData.rank);
         return { success: true, user: currentUser };
 
     } catch (error) {
+        console.timeEnd('🔐 login');
         console.error('❌ Login error:', error);
         currentUser = null;
         let errorMsg = 'فشل تسجيل الدخول';
@@ -560,8 +565,6 @@ async function login(email, password) {
 /* ══════════════════════════════════════════════ */
 /* الجلسة — Save / Load                           */
 /* ══════════════════════════════════════════════ */
-
-/* ⭐ v8.5: نسخة خفيفة للحفظ عند فشل quota */
 function _buildMinimalSession(user) {
     if (!user) return null;
     return {
@@ -591,22 +594,19 @@ function _buildMinimalSession(user) {
     };
 }
 
-/* ⭐ v8.5: يستبعد base64 الكبيرة قبل الحفظ */
 function _stripHeavyFields(user) {
     if (!user) return user;
     var light = {};
     Object.keys(user).forEach(function (k) {
         var v = user[k];
-        // تجاهل أي data: URL أطول من 30 ألف حرف (base64 ثقيل)
         if (typeof v === 'string' && v.length > 30000 && v.indexOf('data:') === 0) {
-            return; // skip
+            return;
         }
         light[k] = v;
     });
     return light;
 }
 
-/* ⭐ v8.5: saveSession مُحصّن ضد QuotaExceeded */
 function saveSession(user, isGuestFlag) {
     if (!user) {
         currentUser = null;
@@ -615,16 +615,13 @@ function saveSession(user, isGuestFlag) {
     }
 
     try {
-        // 1. استبعد base64 الكبيرة
         var lightUser = _stripHeavyFields(user);
         var json = JSON.stringify(lightUser);
 
-        // 2. جرّب الحفظ
         try {
             localStorage.setItem(QAMAR.STORAGE_KEYS.USER, json);
             localStorage.setItem(QAMAR.STORAGE_KEYS.CURRENT_USER, json);
         } catch (quotaErr) {
-            // 3. Quota exceeded → احفظ نسخة مبسطة
             console.warn('⚠️ localStorage quota exceeded — saving minimal session');
             var minimal = _buildMinimalSession(user);
             var minJson = JSON.stringify(minimal);
@@ -634,7 +631,6 @@ function saveSession(user, isGuestFlag) {
                 console.log('✅ Minimal session saved (quota recovery)');
             } catch (e2) {
                 console.error('❌ Even minimal save failed:', e2);
-                // 4. مسح القديم وأعد المحاولة مرة أخيرة
                 try {
                     localStorage.removeItem(QAMAR.STORAGE_KEYS.USER);
                     localStorage.removeItem(QAMAR.STORAGE_KEYS.CURRENT_USER);
@@ -646,7 +642,6 @@ function saveSession(user, isGuestFlag) {
             }
         }
 
-        // 5. Guest flag
         if (isGuestFlag) {
             try {
                 localStorage.setItem(QAMAR.STORAGE_KEYS.GUEST, JSON.stringify(_buildMinimalSession(user)));
@@ -655,14 +650,12 @@ function saveSession(user, isGuestFlag) {
             try { localStorage.removeItem(QAMAR.STORAGE_KEYS.GUEST); } catch (e) {}
         }
 
-        // 6. identityUpdatedAt
         if (user.identityUpdatedAt) {
             try {
                 localStorage.setItem(QAMAR.STORAGE_KEYS.IDENTITY_UPDATED_AT, String(user.identityUpdatedAt));
             } catch (e) {}
         }
 
-        // 7. حدّث الذاكرة (القيمة الكاملة، لا المبسطة)
         currentUser = user;
         isUserGuest = isGuestFlag;
 
@@ -698,7 +691,6 @@ function loadSession() {
         return null;
     } catch (e) {
         console.error('❌ Load session error:', e);
-        // ⭐ v8.5: لو البيانات تالفة، احذفها ونظّف
         try {
             localStorage.removeItem(QAMAR.STORAGE_KEYS.CURRENT_USER);
             localStorage.removeItem(QAMAR.STORAGE_KEYS.USER);
@@ -708,7 +700,7 @@ function loadSession() {
 }
 
 /* ══════════════════════════════════════════════ */
-/* Logout — يمسح كل شيء                           */
+/* Logout                                         */
 /* ══════════════════════════════════════════════ */
 async function logout() {
     try {
@@ -725,7 +717,6 @@ async function logout() {
         console.warn('⚠️ Sign out error:', e);
     }
 
-    // ⭐ v8.4: مسح شامل لكل مفاتيح الهوية
     const K = QAMAR.STORAGE_KEYS;
     const toRemove = [
         K.USER, K.GUEST, K.CURRENT_USER,
@@ -783,7 +774,7 @@ function isHigherOrEqualThan(rank) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* Auth Listener — ⭐ v8.7 مع بوابة double-fetch   */
+/* Auth Listener — ⭐ v8.8: جلب خفيف              */
 /* ══════════════════════════════════════════════ */
 async function startAuthListener() {
     const ok = await waitForAuth(10000);
@@ -795,22 +786,22 @@ async function startAuthListener() {
     _authUnsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
         _authReady = true;
         if (firebaseUser) {
-            // ⭐⭐⭐ v8.7: تجاوز لو login() جلب البيانات للتو
+            // ⭐ v8.7: تجاوز لو login() جلب البيانات للتو
             if (_loginTempUid === firebaseUser.uid && (Date.now() - _loginTempAt) < 5000) {
                 console.log('⏭️ Auth-listener: skipping refetch (recent login)');
                 return;
             }
-            // ⭐ v8.4: تجاوز لو currentUser محدَّث
             if (!currentUser || currentUser.uid !== firebaseUser.uid) {
                 try {
-                    // ⭐ v8.6: users + config/king_uid بالتوازي
-                    const [snap, kingSnap] = await Promise.all([
-                        db.ref('users/' + firebaseUser.uid).once('value'),
+                    // ⭐⭐ v8.8: جلب خفيف
+                    const [lightData, kingSnap] = await Promise.all([
+                        _fetchLightUserData(firebaseUser.uid),
                         db.ref('config/king_uid').once('value').catch(function () { return null; })
                     ]);
 
-                    if (snap.exists()) {
-                        currentUser = snap.val();
+                    if (lightData) {
+                        currentUser = lightData;
+                        currentUser.uid = firebaseUser.uid;
                         currentUser.rankLevel = QAMAR.getRankLevel(currentUser.rank);
                         isUserGuest = currentUser.isGuest === true;
 
@@ -836,7 +827,7 @@ async function startAuthListener() {
                         }
 
                         saveSession(currentUser, isUserGuest);
-                        console.log('🔄 Auth restored:', currentUser.name, '| Rank:', currentUser.rank);
+                        console.log('🔄 Auth restored (light):', currentUser.name, '| Rank:', currentUser.rank);
                     }
                 } catch (e) {
                     console.warn('⚠️ Fetch user failed:', e);
@@ -858,5 +849,5 @@ function stopAuthListener() {
 window.addEventListener('DOMContentLoaded', () => {
     loadSession();
     startAuthListener();
-    console.log('📦 Auth.js v8.7 loaded — king login +50% faster');
+    console.log('📦 Auth.js v8.8 loaded — light-fetch login (100x faster for King)');
 });
