@@ -1,8 +1,13 @@
 // ==============================================
-// قمر الشام - نظام الدخول والمصادقة (v8.4)
-// Qamar Al Sham - Auth v8.4
+// قمر الشام - نظام الدخول والمصادقة (v8.5)
+// Qamar Al Sham - Auth v8.5
 // ==============================================
-// ✅ v8.4:
+// ✅ v8.5 (فوق v8.4):
+//   1. saveSession: يستبعد base64 الكبيرة (music/cover/video/attachment)
+//   2. saveSession: fallback تلقائي لنسخة مبسطة عند QuotaExceeded
+//   3. باقي الملف كما v8.4 حرفياً بدون تغيير
+// ==============================================
+// ✅ v8.4 (محفوظ):
 //   1. رسائل خطأ دقيقة (permission vs taken)
 //   2. buildNewUserData — builder موحّد
 //   3. identityUpdatedAt عند الإنشاء
@@ -471,21 +476,112 @@ async function login(email, password) {
 /* ══════════════════════════════════════════════ */
 /* الجلسة — Save / Load                           */
 /* ══════════════════════════════════════════════ */
-function saveSession(user, isGuestFlag) {
-    try {
-        const json = JSON.stringify(user);
-        localStorage.setItem(QAMAR.STORAGE_KEYS.USER, json);
-        localStorage.setItem(QAMAR.STORAGE_KEYS.CURRENT_USER, json);
-        if (isGuestFlag) localStorage.setItem(QAMAR.STORAGE_KEYS.GUEST, json);
-        else localStorage.removeItem(QAMAR.STORAGE_KEYS.GUEST);
 
-        // ⭐ v8.4: تحديث identityUpdatedAt المحلي
-        if (user && user.identityUpdatedAt) {
-            localStorage.setItem(QAMAR.STORAGE_KEYS.IDENTITY_UPDATED_AT, String(user.identityUpdatedAt));
+/* ⭐ v8.5: نسخة خفيفة للحفظ عند فشل quota */
+function _buildMinimalSession(user) {
+    if (!user) return null;
+    return {
+        uid: user.uid,
+        name: user.name,
+        code: user.code,
+        rank: user.rank,
+        rankLevel: user.rankLevel,
+        queenOrder: user.queenOrder,
+        isGuest: user.isGuest,
+        avatar: user.avatar,
+        color: user.color,
+        bio: user.bio,
+        age: user.age,
+        gender: user.gender,
+        email: user.email,
+        createdAt: user.createdAt,
+        lastSeen: user.lastSeen,
+        identityUpdatedAt: user.identityUpdatedAt,
+        isBanned: user.isBanned,
+        bannedUntil: user.bannedUntil,
+        isJailed: user.isJailed,
+        jailUntil: user.jailUntil,
+        invisible: user.invisible,
+        warnings: user.warnings,
+        jailCount: user.jailCount
+    };
+}
+
+/* ⭐ v8.5: يستبعد base64 الكبيرة قبل الحفظ */
+function _stripHeavyFields(user) {
+    if (!user) return user;
+    var light = {};
+    Object.keys(user).forEach(function (k) {
+        var v = user[k];
+        // تجاهل أي data: URL أطول من 30 ألف حرف (base64 ثقيل)
+        if (typeof v === 'string' && v.length > 30000 && v.indexOf('data:') === 0) {
+            return; // skip
+        }
+        light[k] = v;
+    });
+    return light;
+}
+
+/* ⭐ v8.5: saveSession مُحصّن ضد QuotaExceeded */
+function saveSession(user, isGuestFlag) {
+    if (!user) {
+        currentUser = null;
+        isUserGuest = false;
+        return;
+    }
+
+    try {
+        // 1. استبعد base64 الكبيرة
+        var lightUser = _stripHeavyFields(user);
+        var json = JSON.stringify(lightUser);
+
+        // 2. جرّب الحفظ
+        try {
+            localStorage.setItem(QAMAR.STORAGE_KEYS.USER, json);
+            localStorage.setItem(QAMAR.STORAGE_KEYS.CURRENT_USER, json);
+        } catch (quotaErr) {
+            // 3. Quota exceeded → احفظ نسخة مبسطة
+            console.warn('⚠️ localStorage quota exceeded — saving minimal session');
+            var minimal = _buildMinimalSession(user);
+            var minJson = JSON.stringify(minimal);
+            try {
+                localStorage.setItem(QAMAR.STORAGE_KEYS.USER, minJson);
+                localStorage.setItem(QAMAR.STORAGE_KEYS.CURRENT_USER, minJson);
+                console.log('✅ Minimal session saved (quota recovery)');
+            } catch (e2) {
+                console.error('❌ Even minimal save failed:', e2);
+                // 4. مسح القديم وأعد المحاولة مرة أخيرة
+                try {
+                    localStorage.removeItem(QAMAR.STORAGE_KEYS.USER);
+                    localStorage.removeItem(QAMAR.STORAGE_KEYS.CURRENT_USER);
+                    localStorage.setItem(QAMAR.STORAGE_KEYS.CURRENT_USER, minJson);
+                    console.log('✅ Session saved after cleanup');
+                } catch (e3) {
+                    console.error('❌ Final save attempt failed:', e3);
+                }
+            }
         }
 
+        // 5. Guest flag
+        if (isGuestFlag) {
+            try {
+                localStorage.setItem(QAMAR.STORAGE_KEYS.GUEST, JSON.stringify(_buildMinimalSession(user)));
+            } catch (e) {}
+        } else {
+            try { localStorage.removeItem(QAMAR.STORAGE_KEYS.GUEST); } catch (e) {}
+        }
+
+        // 6. identityUpdatedAt
+        if (user.identityUpdatedAt) {
+            try {
+                localStorage.setItem(QAMAR.STORAGE_KEYS.IDENTITY_UPDATED_AT, String(user.identityUpdatedAt));
+            } catch (e) {}
+        }
+
+        // 7. حدّث الذاكرة (القيمة الكاملة، لا المبسطة)
         currentUser = user;
         isUserGuest = isGuestFlag;
+
     } catch (e) {
         console.error('❌ Save session error:', e);
     }
@@ -518,6 +614,11 @@ function loadSession() {
         return null;
     } catch (e) {
         console.error('❌ Load session error:', e);
+        // ⭐ v8.5: لو البيانات تالفة، احذفها ونظّف
+        try {
+            localStorage.removeItem(QAMAR.STORAGE_KEYS.CURRENT_USER);
+            localStorage.removeItem(QAMAR.STORAGE_KEYS.USER);
+        } catch (e2) {}
         return null;
     }
 }
@@ -663,5 +764,5 @@ function stopAuthListener() {
 window.addEventListener('DOMContentLoaded', () => {
     loadSession();
     startAuthListener();
-    console.log('📦 Auth.js v8.4 loaded — accurate errors + identity-ready');
+    console.log('📦 Auth.js v8.5 loaded — quota-safe session save');
 });
