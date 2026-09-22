@@ -1,11 +1,16 @@
 // ==============================================
-// قمر الشام - نظام الدخول والمصادقة (v8.5)
-// Qamar Al Sham - Auth v8.5
+// قمر الشام - نظام الدخول والمصادقة (v8.6)
+// Qamar Al Sham - Auth v8.6
 // ==============================================
-// ✅ v8.5 (فوق v8.4):
+// ✅ v8.6 (فوق v8.5):
+//   1. registerGuest: reserveName + ensureUniqueCode بالتوازي
+//   2. registerMember: نفس التحسين
+//   3. login: users/$uid + config/king_uid بالتوازي
+//   4. cleanup ذكي عند الفشل (بدون تسريب)
+// ==============================================
+// ✅ v8.5 (محفوظ):
 //   1. saveSession: يستبعد base64 الكبيرة (music/cover/video/attachment)
 //   2. saveSession: fallback تلقائي لنسخة مبسطة عند QuotaExceeded
-//   3. باقي الملف كما v8.4 حرفياً بدون تغيير
 // ==============================================
 // ✅ v8.4 (محفوظ):
 //   1. رسائل خطأ دقيقة (permission vs taken)
@@ -126,6 +131,18 @@ async function ensureUniqueCode(name, uid) {
 }
 
 /* ══════════════════════════════════════════════ */
+/* ⭐ v8.6: cleanup موحّد عند الفشل                 */
+/* ══════════════════════════════════════════════ */
+async function _cleanupReservations(name, code) {
+    const promises = [];
+    if (name) promises.push(db.ref('user_names/' + name).remove().catch(function () {}));
+    if (code) promises.push(db.ref('user_codes/' + code).remove().catch(function () {}));
+    if (promises.length > 0) {
+        try { await Promise.all(promises); } catch (e) {}
+    }
+}
+
+/* ══════════════════════════════════════════════ */
 /* ⭐ v8.4: builder موحّد لحقول المستخدم الجديد    */
 /* ══════════════════════════════════════════════ */
 function buildNewUserData(opts) {
@@ -197,7 +214,7 @@ function buildNewUserData(opts) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* Register Guest                                 */
+/* Register Guest — ⭐ v8.6 مع parallel           */
 /* ══════════════════════════════════════════════ */
 async function registerGuest(name, age, gender) {
     if (!name || name.trim().length < 2)
@@ -217,21 +234,27 @@ async function registerGuest(name, age, gender) {
         const uid = credential.user.uid;
         const now = Date.now();
 
-        // reserve name
-        const nameRes = await reserveName(trimmedName, uid);
+        // ⭐ v8.6: reserveName + ensureUniqueCode بالتوازي
+        const [nameRes, codeRes] = await Promise.all([
+            reserveName(trimmedName, uid),
+            ensureUniqueCode(trimmedName, uid)
+        ]);
+
+        // فحص الاسم
         if (!nameRes.ok) {
             try { await auth.signOut(); } catch (e) {}
+            // نظّف الكود لو انحجز
+            if (codeRes.code) await _cleanupReservations(null, codeRes.code);
             if (nameRes.reason === 'taken') {
                 return { success: false, error: 'الاسم محجوز — اختر اسمًا آخر' };
             }
             return { success: false, error: 'فشل الاتصال — حاول مرة ثانية' };
         }
 
-        // unique code
-        const codeRes = await ensureUniqueCode(trimmedName, uid);
+        // فحص الكود
         if (codeRes.error) {
             try { await auth.signOut(); } catch (e) {}
-            try { await db.ref('user_names/' + trimmedName).remove(); } catch (e) {}
+            await _cleanupReservations(trimmedName, null);
             if (codeRes.error === 'taken') {
                 return { success: false, error: 'تعذّر إنشاء كود فريد — حاول مرة ثانية' };
             }
@@ -249,6 +272,7 @@ async function registerGuest(name, age, gender) {
             now: now
         });
 
+        // ⭐ set user + presence بالتوازي (موجود سابقاً)
         await Promise.all([
             db.ref('users/' + uid).set(userData),
             db.ref('user_presence/' + uid).set({ state: 'online', lastChanged: now })
@@ -270,7 +294,7 @@ async function registerGuest(name, age, gender) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* Register Member                                */
+/* Register Member — ⭐ v8.6 مع parallel          */
 /* ══════════════════════════════════════════════ */
 async function registerMember(name, age, gender, email, password) {
     if (!name || name.trim().length < 2)
@@ -292,21 +316,24 @@ async function registerMember(name, age, gender, email, password) {
         const firebaseUser = userCredential.user;
         const now = Date.now();
 
-        // reserve name
-        const nameRes = await reserveName(trimmedName, firebaseUser.uid);
+        // ⭐ v8.6: parallel
+        const [nameRes, codeRes] = await Promise.all([
+            reserveName(trimmedName, firebaseUser.uid),
+            ensureUniqueCode(trimmedName, firebaseUser.uid)
+        ]);
+
         if (!nameRes.ok) {
             try { await firebaseUser.delete(); } catch (e) {}
+            if (codeRes.code) await _cleanupReservations(null, codeRes.code);
             if (nameRes.reason === 'taken') {
                 return { success: false, error: 'الاسم محجوز — اختر اسمًا آخر' };
             }
             return { success: false, error: 'فشل الاتصال — حاول مرة ثانية' };
         }
 
-        // unique code
-        const codeRes = await ensureUniqueCode(trimmedName, firebaseUser.uid);
         if (codeRes.error) {
             try { await firebaseUser.delete(); } catch (e) {}
-            try { await db.ref('user_names/' + trimmedName).remove(); } catch (e) {}
+            await _cleanupReservations(trimmedName, null);
             if (codeRes.error === 'taken') {
                 return { success: false, error: 'تعذّر إنشاء كود فريد — حاول مرة ثانية' };
             }
@@ -348,7 +375,7 @@ async function registerMember(name, age, gender, email, password) {
 }
 
 /* ══════════════════════════════════════════════ */
-/* Login                                          */
+/* Login — ⭐ v8.6 مع parallel للـ reads           */
 /* ══════════════════════════════════════════════ */
 async function login(email, password) {
     if (!email || !password) return { success: false, error: 'الرجاء إدخال الإيميل وكلمة السر' };
@@ -379,7 +406,13 @@ async function login(email, password) {
         };
 
         if (typeof db !== 'undefined' && db) {
-            const snapshot = await db.ref('users/' + firebaseUser.uid).once('value');
+            // ⭐ v8.6: users + config/king_uid بالتوازي
+            const [snapshot, kingSnap] = await Promise.all([
+                db.ref('users/' + firebaseUser.uid).once('value'),
+                db.ref('config/king_uid').once('value').catch(function () { return null; })
+            ]);
+
+            const kingUid = kingSnap ? kingSnap.val() : null;
 
             if (snapshot.exists()) {
                 userData = Object.assign({}, userData, snapshot.val());
@@ -412,17 +445,13 @@ async function login(email, password) {
                     db.ref('users/' + firebaseUser.uid).update(patch).catch(function () {});
                 }
 
-                // ✅ فحص الملك
-                try {
-                    const kingSnap = await db.ref('config/king_uid').once('value');
-                    const kingUid = kingSnap.val();
-                    if (kingUid && firebaseUser.uid === kingUid && userData.rank !== 'King') {
-                        userData.rank = 'King';
-                        userData.rankLevel = 100;
-                        await db.ref('users/' + firebaseUser.uid + '/rank').set('King');
-                        await db.ref('users/' + firebaseUser.uid + '/rankLevel').set(100);
-                    }
-                } catch (e) { console.warn('King check error:', e); }
+                // ✅ فحص الملك (kingUid من الـ parallel read)
+                if (kingUid && firebaseUser.uid === kingUid && userData.rank !== 'King') {
+                    userData.rank = 'King';
+                    userData.rankLevel = 100;
+                    db.ref('users/' + firebaseUser.uid + '/rank').set('King').catch(function () {});
+                    db.ref('users/' + firebaseUser.uid + '/rankLevel').set(100).catch(function () {});
+                }
 
                 // update lastSeen + presence
                 Promise.all([
@@ -711,7 +740,12 @@ async function startAuthListener() {
         if (firebaseUser) {
             if (!currentUser || currentUser.uid !== firebaseUser.uid) {
                 try {
-                    const snap = await db.ref('users/' + firebaseUser.uid).once('value');
+                    // ⭐ v8.6: users + config/king_uid بالتوازي
+                    const [snap, kingSnap] = await Promise.all([
+                        db.ref('users/' + firebaseUser.uid).once('value'),
+                        db.ref('config/king_uid').once('value').catch(function () { return null; })
+                    ]);
+
                     if (snap.exists()) {
                         currentUser = snap.val();
                         currentUser.rankLevel = QAMAR.getRankLevel(currentUser.rank);
@@ -730,16 +764,13 @@ async function startAuthListener() {
                             }
                         }
 
-                        try {
-                            const kingSnap = await db.ref('config/king_uid').once('value');
-                            const kingUid = kingSnap.val();
-                            if (kingUid && firebaseUser.uid === kingUid && currentUser.rank !== 'King') {
-                                currentUser.rank = 'King';
-                                currentUser.rankLevel = 100;
-                                await db.ref('users/' + firebaseUser.uid + '/rank').set('King');
-                                await db.ref('users/' + firebaseUser.uid + '/rankLevel').set(100);
-                            }
-                        } catch (e) { console.warn('King check failed:', e); }
+                        const kingUid = kingSnap ? kingSnap.val() : null;
+                        if (kingUid && firebaseUser.uid === kingUid && currentUser.rank !== 'King') {
+                            currentUser.rank = 'King';
+                            currentUser.rankLevel = 100;
+                            db.ref('users/' + firebaseUser.uid + '/rank').set('King').catch(function () {});
+                            db.ref('users/' + firebaseUser.uid + '/rankLevel').set(100).catch(function () {});
+                        }
 
                         saveSession(currentUser, isUserGuest);
                         console.log('🔄 Auth restored:', currentUser.name, '| Rank:', currentUser.rank);
@@ -764,5 +795,5 @@ function stopAuthListener() {
 window.addEventListener('DOMContentLoaded', () => {
     loadSession();
     startAuthListener();
-    console.log('📦 Auth.js v8.5 loaded — quota-safe session save');
+    console.log('📦 Auth.js v8.6 loaded — parallel register + login');
 });
