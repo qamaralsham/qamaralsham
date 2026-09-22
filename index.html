@@ -656,6 +656,7 @@ input, textarea, select { font-size: 16px !important; }
 <script src="connection-optimizer.js?v=1"></script>
 <script src="firebase-persistence.js?v=2"></script>
 <script src="chat-optimizer.js?v=1"></script>
+<script src="connection-resilience.js?v=1"></script>
 
 <!-- ═══ inline script — تهيئة سريعة ═══ -->
 <script>
@@ -798,7 +799,7 @@ window._updateHeaderButtons = _updateHeaderButtons;
 <script defer src="invisible-mode.js?v=38"></script>
 <script defer src="room-picker.js?v=37"></script>
 <script defer src="stories.js?v=37"></script>
-<script defer src="user-data-optimizer.js?v=1"></script>
+<script defer src="user-data-optimizer.js?v=2"></script>
 
 <!-- ═══ Login Scripts ═══ -->
 <script>
@@ -844,7 +845,6 @@ function selectRegGender(g) {
     document.getElementById(g === 'male' ? 'reg-gender-male' : 'reg-gender-female').classList.add('active');
 }
 
-/* ⭐ v40: helper للتحكم بحالة الزر */
 function _setBtnLoading(btn, loadingText) {
     if (!btn) return null;
     var orig = btn.innerHTML;
