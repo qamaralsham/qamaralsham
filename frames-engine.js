@@ -1,7 +1,12 @@
 // ==============================================
-// frames-engine.js v11 — WeakSet + Profile-Ready
+// frames-engine.js v12 — WeakSet + Profile-Ready
 // ==============================================
-// ✅ v11:
+// ✅ v12:
+//   1. renderFramesGrid تدعم Object {avatarSrc, currentFrameId, onSelect}
+//   2. تدعم Signature القديم (avatarSrc, currentFrameId) للتوافق
+//   3. onSelect يُستدعى عند اختيار إطار (لحفظ Firebase)
+//   4. باقي المنطق كما v11 بالضبط
+// ✅ v11 (محفوظ):
 //   1. WeakSet بدل global lock (لا يفقد رسائل)
 //   2. applyAvatarFrameFromUser — API موحّد للبروفايل
 //   3. لا localStorage (مسؤولية profile-core.js)
@@ -316,16 +321,35 @@ function ensureRefreshButton() {
 }
 
 /**
- * ⭐ v11: تعرض شبكة الإطارات (3×N).
+ * ⭐ v12: تعرض شبكة الإطارات (3×N).
+ * ✅ تدعم Signature القديم: renderFramesGrid(container, avatarSrc, currentFrameId)
+ * ✅ تدعم Signature الجديد: renderFramesGrid(container, {avatarSrc, currentFrameId, onSelect})
+ *
  * الصورة داخل كل إطار = صورة صاحب البروفايل الفعلية.
  *
  * @param {HTMLElement} container
- * @param {string} [avatarSrc] — صورة الأفاتار الفعلية (اختياري)
- * @param {string} [currentFrameId] — الإطار المختار حالياً (اختياري)
+ * @param {string|Object} arg2 — avatarSrc أو {avatarSrc, currentFrameId, onSelect}
+ * @param {string} [arg3] — currentFrameId (الوضع القديم)
  */
-function renderFramesGrid(container, avatarSrc, currentFrameId) {
+function renderFramesGrid(container, arg2, arg3) {
     if (!container) return;
     container.innerHTML = '';
+
+    // ⭐ v12: كشف الـ signature
+    var avatarSrc = null;
+    var currentFrameId = null;
+    var onSelect = null;
+
+    if (arg2 && typeof arg2 === 'object' && !Array.isArray(arg2)) {
+        // Signature الجديد (Object)
+        avatarSrc = arg2.avatarSrc || null;
+        currentFrameId = arg2.currentFrameId || null;
+        onSelect = (typeof arg2.onSelect === 'function') ? arg2.onSelect : null;
+    } else {
+        // Signature القديم
+        avatarSrc = arg2 || null;
+        currentFrameId = arg3 || null;
+    }
 
     ensureRefreshButton();
 
@@ -337,10 +361,24 @@ function renderFramesGrid(container, avatarSrc, currentFrameId) {
     const currentId = currentFrameId || null;
     const previewAvatar = avatarSrc || 'https://ui-avatars.com/api/?name=U&background=333&color=fff';
 
+    // ⭐ v12: دالة مركزية للاختيار
+    function _selectFrame(id) {
+        if (onSelect) {
+            try {
+                onSelect(id);
+            } catch (e) {
+                console.error('onSelect threw:', e);
+            }
+        } else if (typeof window.applyAvatarFrame === 'function') {
+            // Fallback للواجهات القديمة (بصري فقط)
+            window.applyAvatarFrame(id);
+        }
+    }
+
     // ─── بطاقة "بدون إطار" ───
     const noneCard = document.createElement('div');
     noneCard.className = 'frame-tile';
-    if (!currentId) noneCard.classList.add('selected');
+    if (!currentId || currentId === 'none') noneCard.classList.add('selected');
 
     const noneAvatar = document.createElement('div');
     noneAvatar.className = 'frame-avatar';
@@ -355,10 +393,7 @@ function renderFramesGrid(container, avatarSrc, currentFrameId) {
 
     noneCard.appendChild(noneAvatar);
     noneCard.onclick = function() {
-        // ✅ مسؤولية profile-core.js
-        if (typeof window.applyAvatarFrame === 'function') {
-            window.applyAvatarFrame('none');
-        }
+        _selectFrame('none');
         container.querySelectorAll('.frame-tile').forEach(function(x) { x.classList.remove('selected'); });
         noneCard.classList.add('selected');
     };
@@ -385,10 +420,7 @@ function renderFramesGrid(container, avatarSrc, currentFrameId) {
         tile.appendChild(avatarBox);
 
         tile.onclick = function() {
-            // ✅ مسؤولية profile-core.js
-            if (typeof window.applyAvatarFrame === 'function') {
-                window.applyAvatarFrame(f.id);
-            }
+            _selectFrame(f.id);
             container.querySelectorAll('.frame-tile').forEach(function(x) { x.classList.remove('selected'); });
             tile.classList.add('selected');
         };
@@ -514,4 +546,4 @@ window.renderFrames = function () {
     if (c) renderFramesGrid(c);
 };
 
-console.log('✅ frames-engine.js v11 loaded — WeakSet + profile-ready API');
+console.log('✅ frames-engine.js v12 loaded — WeakSet + profile-ready API + onSelect support');
