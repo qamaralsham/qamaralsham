@@ -1,19 +1,25 @@
 // ==============================================
-// قمر الشام — خاص محسّن (v7)
+// قمر الشام — خاص محسّن (v8)
 // ==============================================
-// ✅ v7 (الجديد):
-//   1. زر 🚨 إبلاغ في قائمة الرسالة (مع Modal تأكيد)
-//   2. زر 🚔 استدعاء السجان (فقط رسائل واردة)
-//   3. حظر ثنائي مؤقت عند استدعاء السجان
-//   4. زر 🗑️ حذف في قائمة المحادثات (مسح من عندي فقط)
-//   5. صوت تحذير جديد للاستدعاء (للهدف فقط)
-//   6. الحفاظ على كل ميزات v6
+// ✅ v8 (فوق v7):
+//   1. _isBlockedBetween: قراءتان بالتوازي (بدل تسلسلي)
+//   2. loadPrivateMessages: deletedAt + blocked بالتوازي
+//   3. mark-as-read: دفعة واحدة (بدل رسالة-رسالة)
+//   4. clearPrivateNotifsFrom: limitToLast(30) بدل الكل
+// ==============================================
+// ✅ v7 (محفوظ):
+//   1. زر 🚨 إبلاغ
+//   2. زر 🚔 استدعاء السجان
+//   3. حظر ثنائي مؤقت
+//   4. زر 🗑️ حذف في قائمة المحادثات
+//   5. صوت تحذير جديد
+//   6. كل ميزات v6
 // ==============================================
 
 (function () {
     'use strict';
-    if (window.__pmEnhancedV7) return;
-    window.__pmEnhancedV7 = true;
+    if (window.__pmEnhancedV8) return;
+    window.__pmEnhancedV8 = true;
 
     var IMGBB_KEY = '80fd32c4ef79b5f25fbcf0893547de4f';
     var PM = { replyingTo: null, lastSendAt: 0, openMenu: null };
@@ -177,7 +183,6 @@
 }
 .pc-emoji-bar span { font-size: 24px !important; cursor: pointer !important; }
 
-/* ⭐ v7: زر حذف في قائمة المحادثات */
 .pm-chat-del-btn {
     width: 30px !important;
     height: 30px !important;
@@ -199,7 +204,6 @@
     transform: scale(0.92) !important;
 }
 
-/* ⭐ v7: حقل الكتابة معطّل */
 .pc-input-blocked {
     background: rgba(255,68,68,0.08) !important;
     border-color: rgba(255,68,68,0.4) !important;
@@ -264,14 +268,18 @@
         return true;
     }
 
-    /* ⭐ v7: فحص الحظر الثنائي */
+    /* ⭐ v8: قراءتان بالتوازي */
     async function _isBlockedBetween(uid1, uid2) {
         try {
-            var s = await db.ref('user_private_blocks/' + uid1 + '/' + uid2).once('value');
-            if (s.exists()) return true;
-            var s2 = await db.ref('user_private_blocks/' + uid2 + '/' + uid1).once('value');
-            if (s2.exists()) return true;
-        } catch(e) {}
+            var results = await Promise.all([
+                db.ref('user_private_blocks/' + uid1 + '/' + uid2).once('value')
+                    .catch(function () { return null; }),
+                db.ref('user_private_blocks/' + uid2 + '/' + uid1).once('value')
+                    .catch(function () { return null; })
+            ]);
+            if (results[0] && results[0].exists()) return true;
+            if (results[1] && results[1].exists()) return true;
+        } catch (e) {}
         return false;
     }
 
@@ -376,7 +384,7 @@
         c.scrollTop = c.scrollHeight;
     };
 
-    /* ⭐ v7: تطبيق فلتر deletedAt */
+    /* ⭐ v8: deletedAt + blocked بالتوازي + batch mark-as-read */
     window.loadPrivateMessages = function () {
         if (!ChatState.currentPrivateChat) return;
         if (ChatState.privateMessagesListener) {
@@ -390,44 +398,50 @@
 
         var o = ChatState.currentPrivateChat.otherUid;
 
-        // ⭐ v7: فحص الحظر الثنائي أولاً + حالة الحقل
-        _isBlockedBetween(user.uid, o).then(function(blocked) {
-            _updateInputState(blocked);
-        });
-
-        // ⭐ v7: جلب deletedAt
-        var deletedAt = 0;
-        db.ref('user_private_chats/' + user.uid + '/' + o + '/deletedAt').once('value').then(function(s) {
-            deletedAt = s.val() || 0;
-            _startMessagesListener(deletedAt);
-        }).catch(function() {
-            _startMessagesListener(0);
+        // ⭐ v8: كل الفحوصات بالتوازي
+        Promise.all([
+            _isBlockedBetween(user.uid, o),
+            db.ref('user_private_chats/' + user.uid + '/' + o + '/deletedAt').once('value')
+                .then(function (s) { return s.val() || 0; })
+                .catch(function () { return 0; })
+        ]).then(function (results) {
+            _updateInputState(results[0]);
+            _startMessagesListener(results[1]);
         });
 
         function _startMessagesListener(deletedAtTs) {
             var ref = db.ref('user_private_messages/' + user.uid + '/' + o).limitToLast(50);
             ChatState.privateMessagesListener = ref;
 
+            // ⭐ v8: قائمة الرسائل غير المقروءة — ستُعلَّم دفعة واحدة
+            var _unreadKeys = [];
+
             ref.on('child_added', function (s) {
                 var msg = s.val();
                 if (!msg) return;
                 msg._key = s.key;
 
-                // ⭐ v7: تجاهل الرسائل الأقدم من deletedAt
                 if (deletedAtTs && typeof msg.time === 'number' && msg.time < deletedAtTs) return;
 
                 if (ChatState.seenPrivateMessages.has(s.key)) return;
                 ChatState.seenPrivateMessages.add(s.key);
                 var isSent = msg.fromUid === user.uid;
                 displayPrivateMsg(msg, isSent);
+
+                // ⭐ v8: اجمع غير المقروءة فقط — لا تكتب لكل رسالة
                 if (!isSent && !msg.read) {
-                    db.ref('user_private_messages/' + user.uid + '/' + o + '/' + s.key + '/read').set(true).catch(function () {});
-                    db.ref('user_private_chats/' + user.uid + '/' + o + '/unread').transaction(function (c) {
-                        if (c === null || c === undefined) return 0;
-                        return Math.max(0, c - 1);
-                    });
+                    _unreadKeys.push(s.key);
                 }
             });
+
+            // ⭐ v8: بعد 500ms، علّم الكل كـ read مرة واحدة
+            setTimeout(function () {
+                if (_unreadKeys.length === 0) return;
+                var updates = {};
+                _unreadKeys.forEach(function (k) { updates[k + '/read'] = true; });
+                db.ref('user_private_messages/' + user.uid + '/' + o).update(updates).catch(function () {});
+                db.ref('user_private_chats/' + user.uid + '/' + o + '/unread').set(0).catch(function () {});
+            }, 500);
 
             ref.on('child_changed', function (s) {
                 var msg = s.val();
@@ -452,7 +466,6 @@
         }
     };
 
-    /* ⭐ v7: تحديث حالة حقل الكتابة */
     function _updateInputState(blocked) {
         var inp = document.getElementById('pc-input');
         var btn = inp ? inp.parentNode.querySelector('button') : null;
@@ -469,6 +482,25 @@
             if (btn) btn.disabled = false;
         }
     }
+
+    /* ⭐ v8: override clearPrivateNotifsFrom — محدود */
+    window.clearPrivateNotifsFrom = function (fromUid) {
+        var user = getCurrentUser();
+        if (!user || !user.uid || !fromUid || !db) return;
+        db.ref('user_notifications/' + user.uid).limitToLast(30).once('value').then(function (s) {
+            var data = s.val() || {};
+            var promises = [];
+            Object.keys(data).forEach(function (k) {
+                var n = data[k] || {};
+                if (n.type === 'private' && n.fromUid === fromUid) {
+                    promises.push(db.ref('user_notifications/' + user.uid + '/' + k).remove().catch(function () {}));
+                }
+            });
+            if (promises.length > 0) {
+                Promise.all(promises).then(function () {});
+            }
+        }).catch(function () {});
+    };
 
     window.pmStartReply = function (msgId, senderName, text) {
         PM.replyingTo = { id: msgId, name: senderName, text: text };
@@ -509,7 +541,6 @@
         popover.style.bottom = 'auto';
     }
 
-    /* ⭐ v7: قائمة الرسالة — إضافة إبلاغ + استدعاء السجان */
     window.pmShowMenu = function (msgEl, msg, isSent) {
         pmCloseAllMenus();
         var menu = document.createElement('div');
@@ -535,7 +566,6 @@
         };
         menu.appendChild(reply);
 
-        // ⭐ v7: زر إبلاغ
         var report = document.createElement('div');
         report.className = 'pc-msg-menu-item';
         report.textContent = '🚨 إبلاغ';
@@ -546,7 +576,6 @@
         };
         menu.appendChild(report);
 
-        // ⭐ v7: زر استدعاء السجان (فقط الرسائل الواردة)
         if (!isSent) {
             var guardian = document.createElement('div');
             guardian.className = 'pc-msg-menu-item';
@@ -748,7 +777,6 @@
         if (!user || !ChatState.currentPrivateChat) return;
         var o = ChatState.currentPrivateChat.otherUid;
 
-        // ⭐ v7: فحص الحظر
         var blocked = await _isBlockedBetween(user.uid, o);
         if (blocked) { if (typeof showToast === 'function') showToast('fa-lock', '⏳ بانتظار مراجعة الإدارة'); return; }
 
@@ -793,7 +821,6 @@
         PM.lastSendAt = now;
         var o = ChatState.currentPrivateChat.otherUid;
 
-        // ⭐ v7: فحص الحظر
         var blocked = await _isBlockedBetween(user.uid, o);
         if (blocked) {
             if (typeof showToast === 'function') showToast('fa-lock', '⏳ بانتظار مراجعة الإدارة');
@@ -824,9 +851,6 @@
         } catch (e) {}
     };
 
-    /* ═══════════════════════════════════════════ */
-    /* ⭐ v7: قائمة المحادثات + زر حذف              */
-    /* ═══════════════════════════════════════════ */
     window.loadPrivateChatsList = function () {
         var list = document.getElementById('pm-list');
         if (!list) return;
@@ -866,7 +890,6 @@
                 i.appendChild(b);
             }
 
-            // ⭐ v7: زر الحذف
             var delBtn = document.createElement('button');
             delBtn.className = 'pm-chat-del-btn';
             delBtn.innerHTML = '🗑️';
@@ -888,7 +911,6 @@
         });
     };
 
-    /* ⭐ v7: حذف المحادثة من عندي فقط */
     async function pmDeleteChatWithConfirm(otherUid, otherName) {
         if (!confirm('حذف المحادثة مع ' + (otherName || 'المستخدم') + '؟\n(ستُحذف عندك فقط)')) return;
         var user = getCurrentUser();
@@ -898,7 +920,6 @@
                 deletedAt: Date.now(),
                 lastMessage: 'لا رسائل'
             });
-            // إغلاق إذا كانت مفتوحة
             if (ChatState.currentPrivateChat && ChatState.currentPrivateChat.otherUid === otherUid) {
                 var c = document.getElementById('pc-messages');
                 if (c) c.innerHTML = '';
@@ -921,9 +942,6 @@
     }
     window.pmCloseAllMenus = pmCloseAllMenus;
 
-    /* ═══════════════════════════════════════════ */
-    /* ⭐ v7: صوت تحذير الاستدعاء                   */
-    /* ═══════════════════════════════════════════ */
     function _playWarningSound() {
         try {
             var ctx = (typeof getAudioCtx === 'function') ? getAudioCtx() : null;
@@ -935,7 +953,6 @@
             }
             if (!ctx) return;
             var now = ctx.currentTime;
-            // 3 نوتات تصاعدية حادة: A4 → C#5 → E5
             var notes = [440, 554.37, 659.25];
             notes.forEach(function(freq, i) {
                 var osc = ctx.createOscillator();
@@ -954,9 +971,6 @@
         } catch(e) {}
     }
 
-    /* ═══════════════════════════════════════════ */
-    /* ⭐ v7: Modal تأكيد الإبلاغ                   */
-    /* ═══════════════════════════════════════════ */
     function _ensurePMDialog() {
         var d = document.getElementById('pm-dialog');
         if (d) return d;
@@ -1028,7 +1042,6 @@
 
         if (!targetUid) { if (typeof showToast === 'function') showToast('fa-times', '⚠️ لا هدف'); return; }
 
-        // فحص بلاغ سابق (نفس المُبلِّغ+الهدف في ساعة)
         try {
             var hourAgo = Date.now() - 3600000;
             var existing = await db.ref('reports').orderByChild('time').startAt(hourAgo).once('value');
@@ -1066,9 +1079,6 @@
         }
     }
 
-    /* ═══════════════════════════════════════════ */
-    /* ⭐ v7: Modal استدعاء السجان                   */
-    /* ═══════════════════════════════════════════ */
     window.pmOpenGuardianCallDialog = function(msg) {
         var user = getCurrentUser();
         if (!user || !ChatState.currentPrivateChat) return;
@@ -1113,7 +1123,6 @@
         var text = msg.text || '';
         var now = Date.now();
 
-        // ⭐ فحص كلمات الطرد
         var hasKickWord = false;
         var kickWord = '';
         if (typeof BotsState !== 'undefined' && BotsState.kickWords) {
@@ -1125,7 +1134,6 @@
             }
         }
 
-        // ⭐ إذا فيه كلمة طرد → طرد فوري
         if (hasKickWord) {
             try {
                 var snap = await db.ref('users/' + targetUid).once('value');
@@ -1140,7 +1148,6 @@
                     permanentBan: true
                 });
                 if (typeof showToast === 'function') showToast('fa-ban', '🚔 تم طرد ' + (targetName || 'المستخدم') + ' نهائياً');
-                // إشعار للإدارة رغم ذلك
                 _notifyAdminsGuardianCall(user, targetUid, targetName, text, 'kick_word');
                 return;
             } catch(e) {
@@ -1148,7 +1155,6 @@
             }
         }
 
-        // ⭐ حظر ثنائي مؤقت (حتى يفك الملك)
         try {
             await Promise.all([
                 db.ref('user_private_blocks/' + user.uid + '/' + targetUid).set({
@@ -1160,17 +1166,13 @@
             ]);
         } catch(e) { console.warn('block set failed:', e); }
 
-        // ⭐ تحديث حقل الكتابة عندي فوراً
         _updateInputState(true);
 
-        // ⭐ إشعار الإدارة في الخاص
         await _notifyAdminsGuardianCall(user, targetUid, targetName, text, 'normal');
 
-        // ⭐ Modal لعلي + صوت
         _showGuardianCallModal(user, targetName, text);
         _playWarningSound();
 
-        // ⭐ تسجيل في الاستدعاءات
         try {
             await db.ref('guardian_calls').push({
                 callerUid: user.uid,
@@ -1185,7 +1187,6 @@
         } catch(e) {}
     }
 
-    /* ⭐ إشعار الملك/الملكة/Master+ */
     async function _notifyAdminsGuardianCall(caller, targetUid, targetName, text, type) {
         try {
             var s = await db.ref('users').limitToLast(500).once('value');
@@ -1206,7 +1207,6 @@
                 var aid = admins[i];
                 if (aid === caller.uid) continue;
 
-                // إرسال رسالة في الخاص من السجان
                 var msgKey = db.ref('user_private_messages/' + aid + '/bot_guardian').push().key;
                 var guardianMessage = 
                     '🚨 استدعاء سجان\n\n' +
@@ -1243,7 +1243,6 @@
                     })
                 ]);
 
-                // إشعار صوتي
                 db.ref('user_notifications/' + aid).push({
                     fromUid: 'bot_guardian',
                     fromName: '🚔 السجان',
@@ -1257,7 +1256,6 @@
         } catch(e) { console.warn('notifyAdmins error:', e); }
     }
 
-    /* ⭐ Modal يظهر للهدف (المُبلَّغ عنه) */
     function _showGuardianCallModal(caller, targetName, text) {
         var me = getCurrentUser();
         if (!me) return;
@@ -1281,7 +1279,6 @@
                 '<button id="pm-guardian-modal-ok" type="button" style="padding:11px 32px;background:#ff4444;color:#fff;border:none;border-radius:12px;font-weight:900;font-size:14px;cursor:pointer;font-family:inherit;box-shadow:0 4px 15px rgba(255,68,68,0.5);">حسناً</button>' +
             '</div>';
 
-        // CSS animation
         if (!document.getElementById('pm-guardian-anim')) {
             var st = document.createElement('style');
             st.id = 'pm-guardian-anim';
@@ -1295,9 +1292,6 @@
         setTimeout(close, 15000);
     }
 
-    /* ═══════════════════════════════════════════ */
-    /* Observer + Init                              */
-    /* ═══════════════════════════════════════════ */
     function installPMObserver() {
         var modal = document.getElementById('private-chat-modal');
         if (!modal) { setTimeout(installPMObserver, 1000); return; }
@@ -1321,5 +1315,5 @@
         installPMObserver();
     }
 
-    console.log('✅ pm-enhanced.js v7 loaded — reports + guardian call + chat delete');
+    console.log('✅ pm-enhanced.js v8 loaded — parallel checks + batch read');
 })();
