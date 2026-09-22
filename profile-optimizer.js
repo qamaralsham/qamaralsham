@@ -1,17 +1,21 @@
 // ==============================================
-// profile-optimizer.js v1
+// profile-optimizer.js v2
 // ==============================================
-// ✅ الهدف:
+// ✅ v2 (تصحيح v1):
+//   1. _loadOwnerSubject: Object.assign بسيط (يحفظ الحقول الثقيلة)
+//   2. إزالة _mergeIdentityLocal (كان يسبب Bug #1)
+//   3. استخدام localStorage مباشر بدل saveSession (غير موجود)
+// ✅ v1:
 //   1. light-fetch في profile.html (20MB → 2KB)
-//   2. heavy fields (musicURL, profileBgValue) تُجلب في الخلفية
-//   3. _startSubjectListener: 43 حقل خفيف بدل النود كامل
+//   2. heavy fields تُجلب في الخلفية
+//   3. _startSubjectListener: 44 حقل خفيف بدل النود كامل
 //   4. لا يلمس profile-core.js — override نظيف
 // ==============================================
 
 (function () {
     'use strict';
-    if (window.__profileOptimizerV1) return;
-    window.__profileOptimizerV1 = true;
+    if (window.__profileOptimizerV2) return;
+    window.__profileOptimizerV2 = true;
 
     /* ══════════════════════════════════════════════ */
     /* الحقول الخفيفة — تُجلب فوراً                    */
@@ -93,24 +97,6 @@
     }
 
     /* ══════════════════════════════════════════════ */
-    /* merge helper (منسوخ من profile-core)           */
-    /* ══════════════════════════════════════════════ */
-    function _mergeIdentityLocal(cachedUser, remoteUser) {
-        if (!cachedUser) return remoteUser;
-        if (!remoteUser) return cachedUser;
-        const cachedAt = cachedUser.identityUpdatedAt || 0;
-        const remoteAt = remoteUser.identityUpdatedAt || 0;
-        if (remoteAt >= cachedAt) return remoteUser;
-        const fields = (QAMAR.IDENTITY_FIELDS || []);
-        const patch = {};
-        fields.forEach(function (k) {
-            if (cachedUser[k] !== undefined) patch[k] = cachedUser[k];
-        });
-        patch.identityUpdatedAt = cachedAt;
-        return Object.assign({}, remoteUser, patch);
-    }
-
-    /* ══════════════════════════════════════════════ */
     /* Override _loadVisitorSubject                   */
     /* ══════════════════════════════════════════════ */
     const _origLoadVisitor = window._loadVisitorSubject;
@@ -161,6 +147,7 @@
 
     /* ══════════════════════════════════════════════ */
     /* Override _loadOwnerSubject                     */
+    /* ✅ v2: Object.assign بسيط — لا يفقد الحقول الثقيلة */
     /* ══════════════════════════════════════════════ */
     const _origLoadOwner = window._loadOwnerSubject;
     window._loadOwnerSubject = async function () {
@@ -178,11 +165,18 @@
                 return;
             }
 
-            ProfileState.subject = _mergeIdentityLocal(ProfileState.me, lightData);
-            ProfileState.me = Object.assign({}, ProfileState.me, lightData);
-            if (typeof saveSession === 'function') {
-                saveSession(ProfileState.me, ProfileState.me.isGuest === true);
-            }
+            // ⭐ v2: Object.assign بسيط — يحفظ الحقول الثقيلة من الكاش
+            const merged = Object.assign({}, ProfileState.me, lightData);
+            ProfileState.subject = merged;
+            ProfileState.me = merged;
+
+            // ⭐ v2: localStorage مباشر (بدل saveSession)
+            try {
+                const json = JSON.stringify(merged);
+                localStorage.setItem(QAMAR.STORAGE_KEYS.CURRENT_USER, json);
+                localStorage.setItem(QAMAR.STORAGE_KEYS.USER, json);
+            } catch (e) {}
+
             console.timeEnd('👑 owner-load');
 
             // ⭐ جلب الحقول الثقيلة في الخلفية
@@ -199,7 +193,7 @@
 
     /* ══════════════════════════════════════════════ */
     /* Override _startSubjectListener                 */
-    /* ⭐ 43 حقل خفيف بدل النود كامل                   */
+    /* ⭐ 44 حقل خفيف + 4 ثقيل = بدل النود كامل      */
     /* ══════════════════════════════════════════════ */
     let _uiUpdateTimer = null;
     function _scheduleUIUpdate() {
@@ -271,5 +265,5 @@
         console.log('📡 profile-optimizer: ' + LIGHT_FIELDS.length + ' light listeners + ' + HEAVY_FIELDS.length + ' heavy listeners');
     };
 
-    console.log('📦 profile-optimizer.js v1 loaded — light-fetch profile (20MB → 2KB)');
+    console.log('📦 profile-optimizer.js v2 loaded — light-fetch profile (20MB → 2KB)');
 })();
