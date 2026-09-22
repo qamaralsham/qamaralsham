@@ -1,16 +1,20 @@
 // ==============================================
-// invisible-mode.js v4 — تحسين قائمة المتواجدين
+// invisible-mode.js v5
 // ==============================================
-// ✅ v4:
+// ✅ v5 (فوق v4):
+//   1. قائمة المتواجدين: جلب 7 حقول خفيفة فقط
+//      → كل مستخدم = 7 requests صغيرة بدل 1 request ضخم (20MB للملك)
+//   2. Cache 15 ثانية لتجنب الطلبات المتكررة
+//   3. باقي المنطق كما v4 بالضبط
+// ✅ v4 (محفوظ):
 //   1. لا تجلب 500 مستخدم — فقط المتصلين
-//   2. تحسين الأداء بنسبة ~90%
-//   3. باقي الوظائف كما هي تماماً
+//   2. الملك يرى الجميع، الملكة لا ترى المخفيين
 // ==============================================
 
 (function () {
     'use strict';
-    if (window.__invisibleModeV4) return;
-    window.__invisibleModeV4 = true;
+    if (window.__invisibleModeV5) return;
+    window.__invisibleModeV5 = true;
 
     function getMe() { return (typeof getCurrentUser === 'function') ? getCurrentUser() : null; }
     function esc(s) { if (s == null) return ''; return String(s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
@@ -109,7 +113,7 @@
         });
     }
 
-    /* ═══ قائمة المتواجدين — v4 محسّنة ═══ */
+    /* ═══ قائمة المتواجدين — v5 ═══ */
     async function buildUsersSidebar() {
         var sb = document.getElementById('users-sidebar');
         if (!sb) {
@@ -127,9 +131,18 @@
         return sb;
     }
 
-    /* ⭐ v4: جلب ذكي — المتصلون فقط */
+    /* ⭐ v5: حقول خفيفة + cache */
+    const USERS_LIGHT_FIELDS = ['name', 'avatar', 'rank', 'rankLevel', 'invisible', 'isGuest', 'lastSeen'];
+    const USERS_CACHE_TTL = 15000; // 15 ثانية
+    var _usersListCache = { data: null, at: 0 };
+
     async function fetchOnlineUsers() {
-        // 1. جلب presence فقط (صغير جداً — مجرد {uid: {state, room, lastChanged}})
+        // Cache check
+        if (_usersListCache.data && (Date.now() - _usersListCache.at) < USERS_CACHE_TTL) {
+            return _usersListCache.data;
+        }
+
+        // 1. جلب presence فقط
         var presenceSnap = await db.ref('user_presence').once('value');
         var presence = presenceSnap.val() || {};
         var now = Date.now();
@@ -144,20 +157,34 @@
         });
 
         if (onlineUids.length === 0) {
-            return { users: {}, presence: presence, onlineUids: [] };
+            var emptyResult = { users: {}, presence: presence, onlineUids: [] };
+            _usersListCache.data = emptyResult;
+            _usersListCache.at = now;
+            return emptyResult;
         }
 
-        // 3. جلب بيانات المتصلين فقط — دفعة واحدة (Promise.all)
+        // ⭐ v5: جلب الحقول الخفيفة فقط — لا musicURL/video/cover
         var users = {};
         await Promise.all(onlineUids.map(async function (uid) {
             try {
-                var uSnap = await db.ref('users/' + uid).once('value');
-                var u = uSnap.val();
-                if (u) users[uid] = u;
+                var fieldPromises = USERS_LIGHT_FIELDS.map(function (field) {
+                    return db.ref('users/' + uid + '/' + field).once('value')
+                        .then(function (s) { return { f: field, v: s.val() }; })
+                        .catch(function () { return { f: field, v: null }; });
+                });
+                var results = await Promise.all(fieldPromises);
+                var u = { uid: uid };
+                results.forEach(function (r) {
+                    if (r.v !== null && r.v !== undefined) u[r.f] = r.v;
+                });
+                users[uid] = u;
             } catch (e) {}
         }));
 
-        return { users: users, presence: presence, onlineUids: onlineUids };
+        var result = { users: users, presence: presence, onlineUids: onlineUids };
+        _usersListCache.data = result;
+        _usersListCache.at = now;
+        return result;
     }
 
     async function openOnlineUsers() {
@@ -172,7 +199,6 @@
         if (content) content.innerHTML = '<div class="uli-loading">⏳ جاري التحميل...</div>';
 
         try {
-            // ⭐ v4: استخدم الدالة المحسّنة
             var result = await fetchOnlineUsers();
             var users = result.users;
             var presence = result.presence;
@@ -193,14 +219,11 @@
             var visible = online.filter(function (item) {
                 var u = item.user;
 
-                // أنا نفسي → دائماً
                 if (item.uid === me.uid) return true;
 
-                // ليس مخفي → الكل يراه
                 var invis = u.invisible === true;
                 if (!invis) return true;
 
-                // مخفي → فقط الملك يرى
                 if (iAmKing) return true;
 
                 return false;
@@ -306,7 +329,7 @@
                 getCurrentUser()) {
                 clearInterval(t);
                 setupInvisibleButton();
-                console.log('✅ invisible-mode.js v4: ready');
+                console.log('✅ invisible-mode.js v5: ready');
             }
             if (attempts >= 25) clearInterval(t);
         }, 400);
@@ -316,5 +339,5 @@
         document.addEventListener('DOMContentLoaded', init);
     } else { init(); }
 
-    console.log('✅ invisible-mode.js v4 loaded — optimized users list');
+    console.log('✅ invisible-mode.js v5 loaded — optimized users list (7 fields + cache)');
 })();
