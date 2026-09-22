@@ -2,6 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
+<meta name="google-site-verification" content="googledef67db6e90c3077">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -33,6 +34,83 @@
 <link rel="stylesheet" href="room-alerts.css?v=37">
 <link rel="stylesheet" href="dice.css?v=37">
 <link rel="stylesheet" href="qamar-glass.css?v=37">
+
+<!-- ⭐ v40: CSS الـ Boot Loader — inline ليظهر فوراً -->
+<style id="qamar-boot-css">
+#qamar-boot-loader {
+    position: fixed;
+    inset: 0;
+    background:
+        radial-gradient(ellipse at top, rgba(212, 175, 55, 0.15) 0%, transparent 55%),
+        radial-gradient(ellipse at bottom, rgba(100, 50, 150, 0.2) 0%, transparent 55%),
+        linear-gradient(to bottom, #050508, #0a0a15);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999999;
+    color: #ffd700;
+    font-family: 'Cairo', system-ui, sans-serif;
+    gap: 22px;
+    transition: opacity 0.4s ease;
+    padding: 20px;
+    text-align: center;
+}
+#qamar-boot-loader.qamar-boot-hide {
+    opacity: 0;
+    pointer-events: none;
+}
+#qamar-boot-moon {
+    font-size: 72px;
+    line-height: 1;
+    filter: drop-shadow(0 0 25px rgba(255, 215, 0, 0.7));
+    animation: qamarBootPulse 1.6s ease-in-out infinite;
+}
+#qamar-boot-title {
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    color: #ffd700;
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+}
+#qamar-boot-status {
+    font-size: 13px;
+    color: #9ca3af;
+    font-weight: 700;
+    min-height: 18px;
+    transition: color 0.2s;
+}
+#qamar-boot-status.ready {
+    color: #84cc16;
+    font-weight: 900;
+}
+#qamar-boot-bar-track {
+    width: 220px;
+    max-width: 70vw;
+    height: 3px;
+    background: rgba(255, 215, 0, 0.12);
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+}
+#qamar-boot-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 35%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, #ffd700, transparent);
+    animation: qamarBootBar 1.6s linear infinite;
+}
+@keyframes qamarBootPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.08); opacity: 0.85; }
+}
+@keyframes qamarBootBar {
+    0%   { transform: translateX(-120%); }
+    100% { transform: translateX(380%); }
+}
+</style>
 
 <style>
 /* ═══════════════════════════════════════════ */
@@ -342,10 +420,29 @@ input, textarea, select { font-size: 16px !important; }
     animation: none !important;
     box-shadow: 0 0 8px rgba(255, 215, 0, 0.35) !important;
 }
+
+/* ⭐ v40: Login button loading state */
+.login-btn:disabled,
+.upgrade-btn:disabled {
+    opacity: 0.75 !important;
+    cursor: wait !important;
+}
+.login-btn:disabled i.fa-spinner,
+.upgrade-btn:disabled i.fa-spinner {
+    margin-left: 6px;
+}
 </style>
 
 </head>
 <body>
+
+<!-- ⭐ v40: Boot Loader — يظهر فوراً قبل تحميل Firebase -->
+<div id="qamar-boot-loader">
+    <div id="qamar-boot-moon">🌙</div>
+    <div id="qamar-boot-title">قمر الشام</div>
+    <div id="qamar-boot-status">جاري التحميل...</div>
+    <div id="qamar-boot-bar-track"><div id="qamar-boot-bar"></div></div>
+</div>
 
 <div class="starfield" id="starfield"></div>
 
@@ -368,12 +465,12 @@ input, textarea, select { font-size: 16px !important; }
 <button type="button" class="gender-btn active" id="gender-male" onclick="selectGender('male')">👦 ذكر</button>
 <button type="button" class="gender-btn" id="gender-female" onclick="selectGender('female')">👧 أنثى</button>
 </div>
-<button type="button" class="login-btn" onclick="handleGuestLogin()"><i class="fas fa-user-secret"></i> دخول كزائر</button>
+<button type="button" class="login-btn" onclick="handleGuestLogin(this)"><i class="fas fa-user-secret"></i> دخول كزائر</button>
 </div>
 <div id="member-form" style="display:none;">
 <input type="email" class="login-input" id="member-email" placeholder="الإيميل..." style="margin-bottom:10px;">
 <input type="password" class="login-input" id="member-password" placeholder="كلمة السر..." style="margin-bottom:10px;">
-<button type="button" class="login-btn" onclick="handleMemberLogin()" style="margin-bottom:10px;"><i class="fas fa-sign-in-alt"></i> تسجيل دخول</button>
+<button type="button" class="login-btn" onclick="handleMemberLogin(this)" style="margin-bottom:10px;"><i class="fas fa-sign-in-alt"></i> تسجيل دخول</button>
 <div class="link-text" onclick="switchToRegister()">ليس لديك حساب؟ سجّل الآن</div>
 </div>
 <div id="register-form" style="display:none;">
@@ -386,7 +483,7 @@ input, textarea, select { font-size: 16px !important; }
 <input type="email" class="login-input" id="register-email" placeholder="الإيميل..." style="margin-bottom:10px;">
 <input type="password" class="login-input" id="register-password" placeholder="كلمة السر..." style="margin-bottom:10px;">
 <input type="password" class="login-input" id="register-password-confirm" placeholder="تأكيد كلمة السر..." style="margin-bottom:10px;">
-<button type="button" class="login-btn" onclick="handleRegister()"><i class="fas fa-user-plus"></i> إنشاء الحساب</button>
+<button type="button" class="login-btn" onclick="handleRegister(this)"><i class="fas fa-user-plus"></i> إنشاء الحساب</button>
 <div class="link-text" onclick="switchToLogin()" style="margin-top:10px;">لديك حساب؟ سجّل دخول</div>
 </div>
 </div>
@@ -510,7 +607,7 @@ input, textarea, select { font-size: 16px !important; }
 <input type="password" id="upgrade-password" placeholder="كلمة السر...">
 <input type="password" id="upgrade-password-confirm" placeholder="تأكيد كلمة السر...">
 <div style="display:flex;gap:10px;">
-<button type="button" class="upgrade-btn" onclick="handleUpgrade()" style="flex:1;">إنشاء الحساب</button>
+<button type="button" class="upgrade-btn" onclick="handleUpgrade(this)" style="flex:1;">إنشاء الحساب</button>
 <button type="button" class="upgrade-btn cancel" onclick="closeUpgradeModal()" style="flex:1;">إلغاء</button>
 </div>
 </div>
@@ -683,7 +780,7 @@ window._updateHeaderButtons = _updateHeaderButtons;
 </script>
 
 <!-- ═══ الأساسي (sync) ═══ -->
-<script src="auth.js?v=37"></script>
+<script src="auth.js?v=38"></script>
 <script src="chat.js?v=38"></script>
 
 <!-- ═══ الثانوي (defer) ═══ -->
@@ -743,27 +840,68 @@ function selectRegGender(g) {
     document.getElementById(g === 'male' ? 'reg-gender-male' : 'reg-gender-female').classList.add('active');
 }
 
-async function handleGuestLogin() {
+/* ⭐ v40: helper للتحكم بحالة الزر */
+function _setBtnLoading(btn, loadingText) {
+    if (!btn) return null;
+    var orig = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + loadingText;
+    return orig;
+}
+function _resetBtn(btn, orig) {
+    if (!btn) return;
+    btn.disabled = false;
+    if (orig !== null && orig !== undefined) btn.innerHTML = orig;
+}
+
+async function handleGuestLogin(btn) {
+    if (btn && btn.disabled) return;
     const name = document.getElementById('guest-name').value.trim();
     const age = document.getElementById('guest-age').value.trim();
     if (!name || name.length < 2) { alert('⚠️ الرجاء إدخال اسم صحيح'); return; }
     const ageNum = parseInt(age, 10);
     if (!age || isNaN(ageNum) || ageNum < 13 || ageNum > 120) { alert('⚠️ الرجاء إدخال عمر صحيح'); return; }
-    const result = await registerGuest(name, ageNum, selectedGender);
-    if (result && result.success) { if (typeof initChat === 'function') await initChat(); }
-    else alert('⚠️ ' + (result?.error || 'حدث خطأ'));
+
+    var orig = _setBtnLoading(btn, 'جاري الدخول...');
+    try {
+        const result = await registerGuest(name, ageNum, selectedGender);
+        if (result && result.success) {
+            if (typeof initChat === 'function') await initChat();
+        } else {
+            alert('⚠️ ' + (result?.error || 'حدث خطأ'));
+        }
+    } catch (e) {
+        console.error(e);
+        alert('⚠️ خطأ: ' + (e.message || 'غير معروف'));
+    } finally {
+        _resetBtn(btn, orig);
+    }
 }
 
-async function handleMemberLogin() {
+async function handleMemberLogin(btn) {
+    if (btn && btn.disabled) return;
     const email = document.getElementById('member-email').value.trim();
     const password = document.getElementById('member-password').value;
     if (!email || !password) { alert('⚠️ الرجاء إدخال البيانات'); return; }
-    const result = await login(email, password);
-    if (result && result.success) { if (typeof initChat === 'function') await initChat(); }
-    else alert('⚠️ ' + (result?.error || 'فشل'));
+
+    var orig = _setBtnLoading(btn, 'جاري الدخول...');
+    try {
+        const result = await login(email, password);
+        if (result && result.success) {
+            if (typeof initChat === 'function') await initChat();
+        } else {
+            alert('⚠️ ' + (result?.error || 'فشل'));
+        }
+    } catch (e) {
+        console.error(e);
+        alert('⚠️ خطأ: ' + (e.message || 'غير معروف'));
+    } finally {
+        _resetBtn(btn, orig);
+    }
 }
 
-async function handleRegister() {
+async function handleRegister(btn) {
+    if (btn && btn.disabled) return;
     const name = document.getElementById('register-name').value.trim();
     const age = document.getElementById('register-age').value.trim();
     const email = document.getElementById('register-email').value.trim();
@@ -775,12 +913,25 @@ async function handleRegister() {
     if (!email) { alert('⚠️ الرجاء إدخال الإيميل'); return; }
     if (!password || password.length < 6) { alert('⚠️ كلمة السر 6 أحرف'); return; }
     if (password !== confirmPassword) { alert('⚠️ كلمات السر غير متطابقة'); return; }
-    const result = await registerMember(name, ageNum, regSelectedGender, email, password);
-    if (result && result.success) { if (typeof initChat === 'function') await initChat(); }
-    else alert('⚠️ ' + (result?.error || 'فشل'));
+
+    var orig = _setBtnLoading(btn, 'جاري التسجيل...');
+    try {
+        const result = await registerMember(name, ageNum, regSelectedGender, email, password);
+        if (result && result.success) {
+            if (typeof initChat === 'function') await initChat();
+        } else {
+            alert('⚠️ ' + (result?.error || 'فشل'));
+        }
+    } catch (e) {
+        console.error(e);
+        alert('⚠️ خطأ: ' + (e.message || 'غير معروف'));
+    } finally {
+        _resetBtn(btn, orig);
+    }
 }
 
-async function handleUpgrade() {
+async function handleUpgrade(btn) {
+    if (btn && btn.disabled) return;
     const email = document.getElementById('upgrade-email').value.trim();
     const password = document.getElementById('upgrade-password').value;
     const confirmPassword = document.getElementById('upgrade-password-confirm').value;
@@ -789,21 +940,103 @@ async function handleUpgrade() {
     if (password !== confirmPassword) { alert('⚠️ غير متطابقة'); return; }
     const user = getCurrentUser();
     if (!user) { alert('⚠️ لا يوجد مستخدم'); return; }
-    const result = await registerMember(user.name, user.age, user.gender, email, password);
-    if (result && result.success) {
-        closeUpgradeModal();
-        document.getElementById('upgrade-email').value = '';
-        document.getElementById('upgrade-password').value = '';
-        document.getElementById('upgrade-password-confirm').value = '';
-        if (typeof showToast === 'function') showToast('fa-crown', '🎉 تم ترقيتك');
-        setTimeout(() => location.reload(), 1500);
-    } else alert('⚠️ ' + (result?.error || 'فشل'));
+
+    var orig = _setBtnLoading(btn, 'جاري الترقية...');
+    try {
+        const result = await registerMember(user.name, user.age, user.gender, email, password);
+        if (result && result.success) {
+            closeUpgradeModal();
+            document.getElementById('upgrade-email').value = '';
+            document.getElementById('upgrade-password').value = '';
+            document.getElementById('upgrade-password-confirm').value = '';
+            if (typeof showToast === 'function') showToast('fa-crown', '🎉 تم ترقيتك');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            alert('⚠️ ' + (result?.error || 'فشل'));
+        }
+    } catch (e) {
+        console.error(e);
+        alert('⚠️ خطأ: ' + (e.message || 'غير معروف'));
+    } finally {
+        _resetBtn(btn, orig);
+    }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
     const user = getCurrentUser();
     if (user) setTimeout(async () => { if (typeof initChat === 'function') await initChat(); }, 150);
 });
+</script>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- ⭐ v40: إخفاء Boot Loader + فحص الحالة       -->
+<!-- ═══════════════════════════════════════════ -->
+<script>
+(function () {
+    var loader = document.getElementById('qamar-boot-loader');
+    var statusEl = document.getElementById('qamar-boot-status');
+    if (!loader) return;
+
+    var startTime = Date.now();
+    var MIN_SHOW = 400;   // الحد الأدنى للعرض (تجنب الوميض)
+    var MAX_WAIT = 8000;  // أقصى انتظار قبل الإخفاء القسري
+    var hidden = false;
+
+    function _updateStatus(text, ready) {
+        if (!statusEl) return;
+        statusEl.textContent = text;
+        if (ready) statusEl.classList.add('ready');
+        else statusEl.classList.remove('ready');
+    }
+
+    function _hide() {
+        if (hidden) return;
+        hidden = true;
+        loader.classList.add('qamar-boot-hide');
+        setTimeout(function () {
+            if (loader && loader.parentNode) loader.parentNode.removeChild(loader);
+        }, 450);
+    }
+
+    // ⭐ راقب جاهزية Firebase
+    var waitCheck = setInterval(function () {
+        var elapsed = Date.now() - startTime;
+
+        if (typeof auth !== 'undefined' && auth && typeof db !== 'undefined' && db) {
+            // Firebase جاهز
+            _updateStatus('جاهز ✨', true);
+            clearInterval(waitCheck);
+            var remain = Math.max(0, MIN_SHOW - elapsed);
+            setTimeout(_hide, remain + 150);
+            return;
+        }
+
+        if (typeof QAMAR !== 'undefined') {
+            // config.js اشتغل — Firebase قيد التهيئة
+            _updateStatus('جاري تهيئة Firebase...', false);
+        } else if (elapsed > 1500) {
+            _updateStatus('جاري تجهيز الواجهة...', false);
+        }
+
+        // Timeout قسري
+        if (elapsed >= MAX_WAIT) {
+            _updateStatus('استمرار بدون Firebase...', false);
+            clearInterval(waitCheck);
+            setTimeout(_hide, 300);
+        }
+    }, 200);
+
+    // ⭐ احتياطي: window.load
+    window.addEventListener('load', function () {
+        var elapsed = Date.now() - startTime;
+        if (elapsed < MIN_SHOW) {
+            setTimeout(function () {
+                if (typeof auth !== 'undefined' && auth) _updateStatus('جاهز ✨', true);
+                _hide();
+            }, MIN_SHOW - elapsed);
+        }
+    });
+})();
 </script>
 
 <!-- ═══ Service Worker ═══ -->
