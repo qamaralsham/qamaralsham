@@ -391,7 +391,7 @@
     margin-top: 0;
 }
 
-/* Dialog (modal صغير للنصوص) */
+/* ⭐ v4: Dialog — إصلاح مشكلة عدم scroll */
 #kr-dialog {
     position: fixed;
     inset: 0;
@@ -404,6 +404,7 @@
     direction: rtl;
 }
 #kr-dialog.active { display: flex; }
+
 #kr-dialog-box {
     background: #110724;
     border: 2px solid #ffd700;
@@ -411,15 +412,35 @@
     padding: 20px;
     width: 100%;
     max-width: 380px;
+    /* ⭐ v4: هذه السطور الثلاثة الجديدة */
+    max-height: 92vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 215, 0, 0.4) transparent;
     display: flex;
     flex-direction: column;
     gap: 12px;
 }
+#kr-dialog-box::-webkit-scrollbar { width: 5px; }
+#kr-dialog-box::-webkit-scrollbar-track { background: transparent; }
+#kr-dialog-box::-webkit-scrollbar-thumb {
+    background: rgba(255, 215, 0, 0.4);
+    border-radius: 5px;
+}
+
 #kr-dialog-title {
     color: #ffd700;
     font-size: 15px;
     font-weight: 900;
     margin: 0;
+    position: sticky;
+    top: 0;
+    background: #110724;
+    padding-bottom: 8px;
+    z-index: 2;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.15);
 }
 #kr-dialog-desc {
     color: #bbb;
@@ -445,9 +466,19 @@
     min-height: 90px;
     resize: vertical;
 }
+
+/* ⭐ v4: الأزرار — sticky في الأسفل (تظهر دائماً) */
 #kr-dialog-actions {
     display: flex;
     gap: 8px;
+    position: sticky;
+    bottom: 0;
+    background: #110724;
+    padding-top: 12px;
+    padding-bottom: 4px;
+    border-top: 1px solid rgba(255, 215, 0, 0.15);
+    z-index: 2;
+    margin-top: 4px;
 }
 #kr-dialog-actions .kr-btn {
     flex: 1;
@@ -461,4 +492,10 @@
     .kr-stat-val { font-size: 20px; }
     .kr-user-avatar { width: 38px; height: 38px; }
     .kr-icon-btn { width: 30px; height: 30px; font-size: 12px; }
+    #kr-dialog { padding: 12px; }
+    #kr-dialog-box {
+        padding: 16px;
+        max-height: 95vh;
+        max-width: 100%;
+    }
 }
