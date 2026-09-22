@@ -1,21 +1,22 @@
 // ==============================================
-// user-data-optimizer.js v1
+// user-data-optimizer.js v2
 // ==============================================
-// ✅ الهدف:
-//   1. يقلل جلب users/$uid من 5-20MB إلى ~2KB
-//   2. يستمع فقط للحقول التي تحتاجها UI
-//   3. يستبعد: musicURL, profileBgValue, cover, poetryBg, poetryAttachment
-//   4. لا يلمس chat.js — override نظيف
+// ✅ v2 (تصحيح v1):
+//   1. تجاهل null/undefined في _handleFieldChange
+//   2. تجاهل التحديثات أثناء الانقطاع
+//   3. لا كتابة إلى localStorage عند عدم وجود تغيير فعلي
+// ✅ v1:
+//   1. يستمع فقط لـ 14 حقل بدل النود كامل
+//   2. يستبعد: musicURL, profileBgValue, cover, poetryBg, poetryAttachment
 // ==============================================
 
 (function () {
     'use strict';
-    if (window.__userDataOptimizerV1) return;
-    window.__userDataOptimizerV1 = true;
+    if (window.__userDataOptimizerV2) return;
+    window.__userDataOptimizerV2 = true;
 
     /* ══════════════════════════════════════════════ */
     /* الحقول التي نحتاجها فقط لتحديث UI              */
-    /* كل ما ليس هنا → لا يُجلب → أداء أفضل بكثير     */
     /* ══════════════════════════════════════════════ */
     const UI_FIELDS = [
         'name',
@@ -35,11 +36,21 @@
     ];
 
     let _fieldState = {};
+    let _lastFlushHash = '';
     let _debounceTimer = null;
     let _myListeners = [];
     let _active = false;
 
     function _handleFieldChange(field, value) {
+        // ⭐ v2: تجاهل null/undefined (خاصة أثناء الانقطاع)
+        if (value === null || value === undefined) return;
+
+        // ⭐ v2: تجاهل أثناء الانقطاع (لا تُلوّث الحالة المؤقتة)
+        if (window.__qamarOffline) {
+            console.log('⏭️ user-data-optimizer: skip field update (offline):', field);
+            return;
+        }
+
         _fieldState[field] = value;
         clearTimeout(_debounceTimer);
         _debounceTimer = setTimeout(_flush, 150);
@@ -50,16 +61,21 @@
         if (!u || !u.uid) return;
 
         try {
-            // 1. حدّث session
-            const raw = localStorage.getItem(QAMAR.STORAGE_KEYS.CURRENT_USER)
-                     || localStorage.getItem(QAMAR.STORAGE_KEYS.USER);
+            // ⭐ v2: تحقق إن كان هناك تغيير فعلي
+            var raw = localStorage.getItem(QAMAR.STORAGE_KEYS.CURRENT_USER)
+                   || localStorage.getItem(QAMAR.STORAGE_KEYS.USER);
             const c = raw ? JSON.parse(raw) : {};
             const up = Object.assign({}, c, _fieldState);
+
+            var newHash = JSON.stringify(_fieldState);
+            if (newHash === _lastFlushHash) return;
+            _lastFlushHash = newHash;
+
             if (typeof saveSession === 'function') {
                 saveSession(up, up.isGuest === true);
             }
 
-            // 2. حدّث UI (نفس دوال chat.js الأصلية)
+            // حدّث UI
             if (typeof window.refreshAvatarsInMessages === 'function') {
                 window.refreshAvatarsInMessages(_fieldState.avatarFrame);
             }
@@ -72,7 +88,6 @@
     }
 
     function _stopOriginalListener() {
-        // إيقاف listener الأصلي من chat.js (لو مشغّل)
         try {
             if (window.ChatState && ChatState.listeners && ChatState.listeners.userDataRef) {
                 ChatState.listeners.userDataRef.off();
@@ -100,13 +115,9 @@
             return false;
         }
 
-        // 1. أوقف الأصلي (يمنع جلب 5-20MB)
         _stopOriginalListener();
-
-        // 2. نظّف listeners قديمة لو موجودة
         _stopMyListeners();
 
-        // 3. ابدأ listeners على 14 حقل فقط
         const basePath = 'users/' + u.uid + '/';
 
         UI_FIELDS.forEach(function (field) {
@@ -114,12 +125,10 @@
             ref.on('value', function (s) {
                 _handleFieldChange(field, s.val());
             }, function (err) {
-                // تجاهل أخطاء الصلاحيات بصمت
                 console.warn('optimizer listener ' + field + ':', err.message);
             });
             _myListeners.push(ref);
 
-            // سجّل في ChatState.listeners للتنظيف العام
             if (window.ChatState && ChatState.listeners) {
                 ChatState.listeners['opt_' + field] = ref;
             }
@@ -132,23 +141,19 @@
     }
 
     /* ══════════════════════════════════════════════ */
-    /* Override نظيف لـ startUserDataListener         */
+    /* Override startUserDataListener                 */
     /* ══════════════════════════════════════════════ */
     const _origStart = window.startUserDataListener;
 
     window.startUserDataListener = function () {
-        // جرّب المحسّن أولاً
-        if (_startFieldListeners()) {
-            return;
-        }
-        // Fallback: شغّل الأصلي فقط إذا فشلنا
+        if (_startFieldListeners()) return;
+
         console.warn('⚠️ optimizer: falling back to original (user/db not ready)');
         if (typeof _origStart === 'function') {
             try { _origStart(); } catch (e) {
                 console.error('Original startUserDataListener failed:', e);
             }
         } else {
-            // أعِد المحاولة بعد لحظة
             setTimeout(function () {
                 if (_startFieldListeners()) return;
                 if (typeof _origStart === 'function') {
@@ -159,12 +164,13 @@
     };
 
     /* ══════════════════════════════════════════════ */
-    /* تنظيف عند cleanupAllListeners                 */
+    /* Cleanup                                        */
     /* ══════════════════════════════════════════════ */
     const _origCleanup = window.cleanupAllListeners;
     window.cleanupAllListeners = function () {
         _stopMyListeners();
         _fieldState = {};
+        _lastFlushHash = '';
         if (typeof _origCleanup === 'function') {
             try { _origCleanup(); } catch (e) {}
         }
@@ -181,7 +187,7 @@
                 getCurrentUser() &&
                 typeof db !== 'undefined' && db) {
                 clearInterval(t);
-                console.log('✅ user-data-optimizer.js ready');
+                console.log('✅ user-data-optimizer.js v2 ready');
             }
             if (attempts >= 40) clearInterval(t);
         }, 500);
@@ -193,5 +199,5 @@
         init();
     }
 
-    console.log('📦 user-data-optimizer.js v1 loaded — 5-20MB → 2KB for King');
+    console.log('📦 user-data-optimizer.js v2 loaded — null-safe + offline-aware');
 })();
