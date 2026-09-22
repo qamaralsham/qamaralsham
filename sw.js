@@ -1,51 +1,63 @@
 // ==============================================
-// sw.js v36 — Network First + Cache Cleanup
+// sw.js v37 — Stale-While-Revalidate + Persistent Cache
+// ==============================================
+// ✅ v37:
+//   1. CACHE_NAME ثابت (بدل Date.now)
+//   2. Stale-While-Revalidate للـ HTML/CSS/JS
+//      → يحمّل من الكاش فوراً + يحدّث في الخلفية
+//   3. Cache-First للصور
+//   4. تحسين تنظيف الكاشات القديمة
 // ==============================================
 
-const CACHE_NAME = 'qamar-v36-' + Date.now();
-const NETWORK_FIRST = ['.html', '.css', '.js', 'manifest.json', '/'];
-const CACHE_FIRST = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.woff', '.woff2', '.ttf'];
+const CACHE_NAME = 'qamar-static-v37';
+const CACHE_VERSION = 37;
 
-self.addEventListener('install', function(e) {
-    console.log('🔧 SW v36 installing...');
+// ⭐ Stale-While-Revalidate
+const SWR_EXTENSIONS = ['.html', '.css', '.js', 'manifest.json'];
+// ⭐ Cache-First
+const CACHE_FIRST_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.woff', '.woff2', '.ttf'];
+
+self.addEventListener('install', function (e) {
+    console.log('🔧 SW v37 installing...');
     self.skipWaiting();
     e.waitUntil(
-        caches.open(CACHE_NAME).then(function(cache) {
-            console.log('✅ Cache opened');
+        caches.open(CACHE_NAME).then(function (cache) {
+            console.log('✅ Cache opened:', CACHE_NAME);
             return Promise.resolve();
         })
     );
 });
 
-self.addEventListener('activate', function(e) {
-    console.log('🚀 SW v36 activating...');
+self.addEventListener('activate', function (e) {
+    console.log('🚀 SW v37 activating...');
     e.waitUntil(
-        caches.keys().then(function(keys) {
+        caches.keys().then(function (keys) {
             return Promise.all(
-                keys.filter(function(k) { return k !== CACHE_NAME; })
-                    .map(function(k) {
-                        console.log('🗑️ Deleting old cache:', k);
-                        return caches.delete(k);
-                    })
+                keys.filter(function (k) {
+                    // احذف كل الكاشات القديمة
+                    return k !== CACHE_NAME && (k.indexOf('qamar') === 0);
+                }).map(function (k) {
+                    console.log('🗑️ Deleting old cache:', k);
+                    return caches.delete(k);
+                })
             );
-        }).then(function() {
+        }).then(function () {
             console.log('✅ Old caches cleared');
             return self.clients.claim();
-        }).then(function() {
-            // إخباري كل التطبيقات المسجلة بالتحديث
-            return self.clients.matchAll({ type: 'window' }).then(function(clients) {
-                clients.forEach(function(client) {
-                    client.postMessage({ type: 'SW_UPDATED', version: 'v36' });
+        }).then(function () {
+            return self.clients.matchAll({ type: 'window' }).then(function (clients) {
+                clients.forEach(function (client) {
+                    client.postMessage({ type: 'SW_UPDATED', version: 'v37' });
                 });
             });
         })
     );
 });
 
-self.addEventListener('fetch', function(e) {
+self.addEventListener('fetch', function (e) {
     var url = e.request.url;
 
-    // تجاهل Firebase و Google APIs
+    // ⭐ تجاهل Firebase و Google APIs و CDNs
     if (url.includes('firebaseio.com') ||
         url.includes('googleapis.com') ||
         url.includes('gstatic.com') ||
@@ -59,36 +71,40 @@ self.addEventListener('fetch', function(e) {
         return;
     }
 
-    // فقط GET requests
+    // فقط GET
     if (e.request.method !== 'GET') return;
 
-    var isHtmlOrJs = NETWORK_FIRST.some(function(ext) { return url.includes(ext); });
+    var urlLower = url.toLowerCase();
+    var isSWR = SWR_EXTENSIONS.some(function (ext) { return urlLower.includes(ext); });
 
-    if (isHtmlOrJs) {
-        // ⭐ Network First — للـ HTML/CSS/JS
+    if (isSWR) {
+        // ⭐⭐⭐ Stale-While-Revalidate
+        // المستخدم يرى النسخة المحفوظة فوراً + يُحدَّث في الخلفية
         e.respondWith(
-            fetch(e.request).then(function(response) {
-                if (response && response.status === 200 && response.type === 'basic') {
-                    var clone = response.clone();
-                    caches.open(CACHE_NAME).then(function(cache) {
-                        cache.put(e.request, clone);
+            caches.open(CACHE_NAME).then(function (cache) {
+                return cache.match(e.request).then(function (cached) {
+                    var fetchPromise = fetch(e.request).then(function (response) {
+                        if (response && response.status === 200 && response.type === 'basic') {
+                            cache.put(e.request, response.clone());
+                        }
+                        return response;
+                    }).catch(function () {
+                        return cached;
                     });
-                }
-                return response;
-            }).catch(function() {
-                // Offline fallback
-                return caches.match(e.request);
+                    // ⭐ أعط الكاش فوراً إن موجود، وإلا انتظر الشبكة
+                    return cached || fetchPromise;
+                });
             })
         );
     } else {
-        // ⭐ Cache First — للصور والخطوط
+        // ⭐ Cache-First للصور والخطوط
         e.respondWith(
-            caches.match(e.request).then(function(cached) {
+            caches.match(e.request).then(function (cached) {
                 if (cached) return cached;
-                return fetch(e.request).then(function(response) {
+                return fetch(e.request).then(function (response) {
                     if (response && response.status === 200 && response.type === 'basic') {
                         var clone = response.clone();
-                        caches.open(CACHE_NAME).then(function(cache) {
+                        caches.open(CACHE_NAME).then(function (cache) {
                             cache.put(e.request, clone);
                         });
                     }
@@ -99,7 +115,7 @@ self.addEventListener('fetch', function(e) {
     }
 });
 
-self.addEventListener('message', function(e) {
+self.addEventListener('message', function (e) {
     if (e.data && e.data.type === 'SKIP_WAITING') {
         self.skipWaiting();
     }
