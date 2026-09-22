@@ -654,6 +654,8 @@ input, textarea, select { font-size: 16px !important; }
 <script src="name-effects.js?v=38"></script>
 <script src="frames-engine.js?v=38"></script>
 <script src="connection-optimizer.js?v=1"></script>
+<script src="firebase-persistence.js?v=2"></script>
+<script src="chat-optimizer.js?v=1"></script>
 
 <!-- ═══ inline script — تهيئة سريعة ═══ -->
 <script>
@@ -980,8 +982,8 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!loader) return;
 
     var startTime = Date.now();
-    var MIN_SHOW = 400;   // الحد الأدنى للعرض (تجنب الوميض)
-    var MAX_WAIT = 8000;  // أقصى انتظار قبل الإخفاء القسري
+    var MIN_SHOW = 400;
+    var MAX_WAIT = 8000;
     var hidden = false;
 
     function _updateStatus(text, ready) {
@@ -1000,12 +1002,10 @@ window.addEventListener('DOMContentLoaded', () => {
         }, 450);
     }
 
-    // ⭐ راقب جاهزية Firebase
     var waitCheck = setInterval(function () {
         var elapsed = Date.now() - startTime;
 
         if (typeof auth !== 'undefined' && auth && typeof db !== 'undefined' && db) {
-            // Firebase جاهز
             _updateStatus('جاهز ✨', true);
             clearInterval(waitCheck);
             var remain = Math.max(0, MIN_SHOW - elapsed);
@@ -1014,13 +1014,11 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         if (typeof QAMAR !== 'undefined') {
-            // config.js اشتغل — Firebase قيد التهيئة
             _updateStatus('جاري تهيئة Firebase...', false);
         } else if (elapsed > 1500) {
             _updateStatus('جاري تجهيز الواجهة...', false);
         }
 
-        // Timeout قسري
         if (elapsed >= MAX_WAIT) {
             _updateStatus('استمرار بدون Firebase...', false);
             clearInterval(waitCheck);
@@ -1028,7 +1026,6 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }, 200);
 
-    // ⭐ احتياطي: window.load
     window.addEventListener('load', function () {
         var elapsed = Date.now() - startTime;
         if (elapsed < MIN_SHOW) {
