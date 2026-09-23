@@ -26,13 +26,13 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
-<link rel="stylesheet" href="styles.css?v=38">
-<link rel="stylesheet" href="frames-engine.css?v=38">
-<link rel="stylesheet" href="name-effects.css?v=38">
-<link rel="stylesheet" href="king-room.css?v=38">
-<link rel="stylesheet" href="room-alerts.css?v=38">
-<link rel="stylesheet" href="dice.css?v=38">
-<link rel="stylesheet" href="qamar-glass.css?v=38">
+<link rel="stylesheet" href="styles.css?v=39">
+<link rel="stylesheet" href="frames-engine.css?v=39">
+<link rel="stylesheet" href="name-effects.css?v=39">
+<link rel="stylesheet" href="king-room.css?v=39">
+<link rel="stylesheet" href="room-alerts.css?v=39">
+<link rel="stylesheet" href="dice.css?v=39">
+<link rel="stylesheet" href="qamar-glass.css?v=39">
 
 <style id="qamar-boot-css">
 #qamar-boot-loader {
@@ -427,7 +427,6 @@ input, textarea, select { font-size: 16px !important; }
 
 <div class="starfield" id="starfield"></div>
 
-<!-- ═══ شاشة الدخول ═══ -->
 <div class="login-screen" id="login-screen">
 <div class="login-card">
 <div class="login-logo">
@@ -470,7 +469,6 @@ input, textarea, select { font-size: 16px !important; }
 </div>
 </div>
 
-<!-- ═══ حاوية الشات ═══ -->
 <div class="container" id="chat-container" style="display:none;">
 
 <div class="header">
@@ -528,8 +526,6 @@ input, textarea, select { font-size: 16px !important; }
 
 </div>
 
-<!-- ═══ السيدبارات ═══ -->
-
 <div class="sidebar right-sidebar" id="rooms-sidebar">
 <div class="sidebar-header"><h3><i class="fas fa-door-open"></i> الغرف</h3><button type="button" class="sidebar-close" onclick="closeAllPanels()"><i class="fas fa-times"></i></button></div>
 <div class="sidebar-content" id="rooms-list"></div>
@@ -560,7 +556,6 @@ input, textarea, select { font-size: 16px !important; }
 
 <div class="overlay" id="overlay" onclick="closeAllPanels()"></div>
 
-<!-- ═══ الخاص ═══ -->
 <div class="private-chat-modal" id="private-chat-modal">
 <div class="private-chat-header">
 <div class="private-chat-user">
@@ -579,7 +574,6 @@ input, textarea, select { font-size: 16px !important; }
 </div>
 </div>
 
-<!-- ═══ نافذة الترقية ═══ -->
 <div class="upgrade-modal" id="upgrade-modal">
 <div class="upgrade-content">
 <h3>🔑 ترقية لعضوية</h3>
@@ -594,7 +588,6 @@ input, textarea, select { font-size: 16px !important; }
 </div>
 </div>
 
-<!-- ═══ نافذة بوت ═══ -->
 <div class="bot-profile-modal" id="bot-profile-modal">
 <div class="bot-profile-content">
 <button type="button" class="bot-profile-close" onclick="closeBotProfile()">✕</button>
@@ -605,7 +598,6 @@ input, textarea, select { font-size: 16px !important; }
 </div>
 </div>
 
-<!-- ═══ iframe البروفايل ═══ -->
 <div id="profile-frame-container" style="
     position: fixed;
     top: 6%;
@@ -625,18 +617,16 @@ input, textarea, select { font-size: 16px !important; }
 </div>
 
 <!-- ═══ الموجة الحرجة (sync) ═══ -->
-<script src="config.js?v=39"></script>
-<script src="ranks.js?v=39"></script>
-<script src="utils.js?v=39"></script>
-<script src="upload-service.js?v=1"></script>
-<script src="name-effects.js?v=39"></script>
-<script src="frames-engine.js?v=39"></script>
-<script src="connection-optimizer.js?v=1"></script>
-<script src="firebase-persistence.js?v=2"></script>
-<script src="chat-optimizer.js?v=1"></script>
-<script src="connection-resilience.js?v=1"></script>
+<script src="config.js?v=40"></script>
+<script src="ranks.js?v=40"></script>
+<script src="utils.js?v=40"></script>
+<script src="name-effects.js?v=40"></script>
+<script src="frames-engine.js?v=40"></script>
+<script src="connection-optimizer.js?v=2"></script>
+<script src="firebase-persistence.js?v=3"></script>
+<script src="chat-optimizer.js?v=2"></script>
+<script src="connection-resilience.js?v=2"></script>
 
-<!-- ═══ inline script — تهيئة سريعة ═══ -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var modal = document.getElementById('private-chat-modal');
@@ -761,25 +751,23 @@ window.openReportsPanel = openReportsPanel;
 window._updateHeaderButtons = _updateHeaderButtons;
 </script>
 
-<!-- ═══ الأساسي (sync) ═══ -->
-<script src="auth.js?v=39"></script>
-<script src="chat.js?v=39"></script>
+<script src="auth.js?v=41"></script>
+<script src="chat.js?v=40"></script>
 
-<!-- ═══ الثانوي (defer) ═══ -->
-<script defer src="islamic-library.js?v=38"></script>
-<script defer src="pm-enhanced.js?v=38"></script>
-<script defer src="media-picker.js?v=38"></script>
-<script defer src="bots.js?v=38"></script>
-<script defer src="guardian-hide.js?v=38"></script>
-<script defer src="king-room.js?v=38"></script>
-<script defer src="room-alerts.js?v=38"></script>
-<script defer src="dice.js?v=38"></script>
-<script defer src="invisible-mode.js?v=38"></script>
-<script defer src="room-picker.js?v=38"></script>
-<script defer src="stories.js?v=39"></script>
-<script defer src="user-data-optimizer.js?v=2"></script>
+<script defer src="islamic-library.js?v=39"></script>
+<script defer src="pm-enhanced.js?v=40"></script>
+<script defer src="media-picker.js?v=39"></script>
+<script defer src="bots.js?v=39"></script>
+<script defer src="guardian-hide.js?v=39"></script>
+<script defer src="king-room.js?v=39"></script>
+<script defer src="room-alerts.js?v=39"></script>
+<script defer src="dice.js?v=39"></script>
+<script defer src="invisible-mode.js?v=40"></script>
+<script defer src="room-picker.js?v=39"></script>
+<script defer src="upload-service.js?v=2"></script>
+<script defer src="stories.js?v=40"></script>
+<script defer src="user-data-optimizer.js?v=3"></script>
 
-<!-- ═══ Login Scripts ═══ -->
 <script>
 let selectedGender = 'male';
 let regSelectedGender = 'male';
@@ -950,7 +938,6 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<!-- ═══ Boot Loader ═══ -->
 <script>
 (function () {
     var loader = document.getElementById('qamar-boot-loader');
@@ -1014,7 +1001,6 @@ window.addEventListener('DOMContentLoaded', () => {
 })();
 </script>
 
-<!-- ═══ Service Worker ═══ -->
 <script>
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
