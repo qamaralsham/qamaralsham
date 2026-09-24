@@ -3,7 +3,7 @@
 // ==============================================
 // ✅ v9 (فوق v8):
 //   1. pmDeleteMessage: يحفظ originalText للنص الأصلي
-//   2. إزالة زر "حذف الكل" من الشريط (يمنع ضياع الأدلة)
+//   2. زر "حذف الكل" أُزيل من الشريط (حماية للمراقبة)
 //   3. باقي المنطق كما v8 بالضبط
 // ==============================================
 // ✅ v8 (محفوظ):
@@ -702,6 +702,7 @@
                 db.ref('user_private_messages/' + user.uid + '/' + o + '/' + msgKey).update(patch),
                 db.ref('user_private_messages/' + o + '/' + user.uid + '/' + msgKey).update(patch)
             ]);
+            console.log('🗑️ pmDeleteMessage: originalText saved:', origText.substring(0, 30));
         } catch (e) { console.warn('pmDeleteMessage error:', e); }
     };
 
