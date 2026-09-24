@@ -1,17 +1,18 @@
 // ==============================================
-// pm-monitor.js v1 — مراقبة الرسائل الخاصة للملك
+// pm-monitor.js v2 — مع زر استرجاع الرسائل
 // ==============================================
 // ✅ يظهر زر 💬 في غرفة الملك — للملك فقط
 // ✅ الملكة لا ترى الزر أبداً
 // ✅ الملك يرى كل الرسائل حتى المحذوفة
+// ✅ زر "استرجاع" للرسائل المحذوفة
 // ✅ يحذف محادثة كاملة
 // ✅ بدون أي إشعار للعضو
 // ==============================================
 
 (function () {
     'use strict';
-    if (window.__pmMonitorV1) return;
-    window.__pmMonitorV1 = true;
+    if (window.__pmMonitorV2) return;
+    window.__pmMonitorV2 = true;
 
     function getMe() {
         try {
@@ -274,6 +275,36 @@
         }
     }
 
+    /* ════════ استرجاع رسالة ════════ */
+    async function restoreMessage(memberUid, otherUid, msgKey) {
+        try {
+            var snap = await db.ref('user_private_messages/' + memberUid + '/' + otherUid + '/' + msgKey).once('value');
+            var msg = snap.val() || {};
+            if (!msg.originalText) {
+                alert('⚠️ لا يمكن الاسترجاع — النص الأصلي غير محفوظ.\n(الرسالة حُذفت قبل تفعيل الحفظ)');
+                return;
+            }
+
+            var patch = {
+                deleted: false,
+                text: msg.originalText,
+                restoredAt: Date.now(),
+                restoredBy: 'king'
+            };
+
+            await Promise.all([
+                db.ref('user_private_messages/' + memberUid + '/' + otherUid + '/' + msgKey).update(patch),
+                db.ref('user_private_messages/' + otherUid + '/' + memberUid + '/' + msgKey).update(patch)
+            ]);
+
+            if (typeof showToast === 'function') showToast('fa-check', '✅ تم استرجاع الرسالة');
+            showConversationMessages(memberUid, PM.currentMember && PM.currentMember.name || '', otherUid, PM.currentOther && PM.currentOther.name || '');
+        } catch(e) {
+            console.error('restoreMessage error:', e);
+            alert('⚠️ فشل الاسترجاع: ' + e.message);
+        }
+    }
+
     /* ════════ رسائل محادثة كاملة ════════ */
     async function showConversationMessages(memberUid, memberName, otherUid, otherName, otherAvatar) {
         PM.currentOther = { uid: otherUid, name: otherName };
@@ -335,27 +366,45 @@
 
             arr.forEach(function(m) {
                 var isDeleted = m.deleted === true;
-                var text = isDeleted ? (m.originalText || m.text || '🗑️ [محتوى محذوف]') : m.text;
+                var hasOriginal = isDeleted && !!m.originalText;
+                var text = isDeleted ? (m.originalText || m.text || '🗑️ [المحتوى الأصلي غير محفوظ]') : m.text;
                 var fromMember = m.fromUid === memberUid;
 
                 var msgEl = document.createElement('div');
-                msgEl.style.cssText = 'padding:10px 12px;border-radius:10px;margin-bottom:8px;max-width:88%;' +
+                msgEl.style.cssText = 'padding:10px 12px;border-radius:10px;margin-bottom:8px;max-width:88%;position:relative;' +
                     (isDeleted 
                         ? 'background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#ffcccc;' 
                         : (fromMember 
                             ? 'background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;margin-left:auto;'
                             : 'background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.1);'));
 
-                msgEl.innerHTML =
+                var innerHTML =
                     '<div style="font-size:9px;opacity:0.75;margin-bottom:4px;font-weight:900;">' +
                         (isDeleted ? '🗑️ ' : '') +
                         esc(fromMember ? memberName : otherName) +
                         ' · ' + new Date(m.time || 0).toLocaleString('ar-EG') +
                     '</div>' +
-                    '<div style="font-size:12px;word-break:break-word;line-height:1.5;">' + esc(text || '') + '</div>' +
-                    (isDeleted ? '<div style="font-size:9px;color:#ff8888;margin-top:4px;font-weight:900;">⚠️ محذوفة</div>' : '');
+                    '<div style="font-size:12px;word-break:break-word;line-height:1.5;">' + esc(text || '') + '</div>';
 
+                if (isDeleted && hasOriginal) {
+                    innerHTML += '<div style="font-size:9px;color:#ff8888;margin-top:4px;font-weight:900;">⚠️ محذوفة</div>';
+                    innerHTML += '<button class="pm-restore-btn" data-member="' + esc(memberUid) + '" data-other="' + esc(otherUid) + '" data-key="' + esc(m._key) + '" style="margin-top:6px;background:rgba(34,197,94,0.25);border:1px solid rgba(34,197,94,0.6);color:#4ade80;padding:5px 12px;border-radius:8px;font-family:inherit;font-size:10px;font-weight:900;cursor:pointer;">♻️ استرجاع</button>';
+                } else if (isDeleted) {
+                    innerHTML += '<div style="font-size:9px;color:#ff8888;margin-top:4px;font-weight:900;">⚠️ محذوفة (لا يمكن الاسترجاع)</div>';
+                }
+
+                msgEl.innerHTML = innerHTML;
                 body.appendChild(msgEl);
+            });
+
+            body.querySelectorAll('.pm-restore-btn').forEach(function(btn) {
+                btn.onclick = function() {
+                    var memberUid2 = this.getAttribute('data-member');
+                    var otherUid2 = this.getAttribute('data-other');
+                    var msgKey2 = this.getAttribute('data-key');
+                    if (!confirm('♻️ استرجاع هذه الرسالة؟\n\nستظهر مرة أخرى للطرفين.')) return;
+                    restoreMessage(memberUid2, otherUid2, msgKey2);
+                };
             });
 
         } catch(e) {
@@ -366,8 +415,9 @@
 
     window.PmMonitor = {
         open: openMonitor,
-        close: closeMonitor
+        close: closeMonitor,
+        version: 2
     };
 
-    console.log('📨 pm-monitor.js v1 loaded — King only, silent');
+    console.log('📨 pm-monitor.js v2 loaded — with restore button');
 })();
