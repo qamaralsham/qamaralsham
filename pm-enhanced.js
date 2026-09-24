@@ -1,25 +1,22 @@
 // ==============================================
-// قمر الشام — خاص محسّن (v8)
+// قمر الشام — خاص محسّن (v9)
 // ==============================================
-// ✅ v8 (فوق v7):
-//   1. _isBlockedBetween: قراءتان بالتوازي (بدل تسلسلي)
+// ✅ v9 (فوق v8):
+//   1. pmDeleteMessage: يحفظ originalText للنص الأصلي
+//   2. إزالة زر "حذف الكل" من الشريط (يمنع ضياع الأدلة)
+//   3. باقي المنطق كما v8 بالضبط
+// ==============================================
+// ✅ v8 (محفوظ):
+//   1. _isBlockedBetween: قراءتان بالتوازي
 //   2. loadPrivateMessages: deletedAt + blocked بالتوازي
-//   3. mark-as-read: دفعة واحدة (بدل رسالة-رسالة)
-//   4. clearPrivateNotifsFrom: limitToLast(30) بدل الكل
-// ==============================================
-// ✅ v7 (محفوظ):
-//   1. زر 🚨 إبلاغ
-//   2. زر 🚔 استدعاء السجان
-//   3. حظر ثنائي مؤقت
-//   4. زر 🗑️ حذف في قائمة المحادثات
-//   5. صوت تحذير جديد
-//   6. كل ميزات v6
+//   3. mark-as-read: دفعة واحدة
+//   4. clearPrivateNotifsFrom: limitToLast(30)
 // ==============================================
 
 (function () {
     'use strict';
-    if (window.__pmEnhancedV8) return;
-    window.__pmEnhancedV8 = true;
+    if (window.__pmEnhancedV9) return;
+    window.__pmEnhancedV9 = true;
 
     var IMGBB_KEY = '80fd32c4ef79b5f25fbcf0893547de4f';
     var PM = { replyingTo: null, lastSendAt: 0, openMenu: null };
@@ -232,6 +229,7 @@
             inputArea.parentNode.insertBefore(prev, inputArea);
         }
 
+        // ⭐ v9: بدون زر "حذف الكل"
         if (!modal.querySelector('.pm-toolbar')) {
             var tb = document.createElement('div');
             tb.className = 'pm-toolbar';
@@ -240,8 +238,7 @@
                 '<button onclick="pmPickImage()" title="صورة"><i class="fas fa-image"></i></button>' +
                 '<button onclick="pmPickVideo()" title="فيديو"><i class="fas fa-video"></i></button>' +
                 '<button onclick="pmPickAudio()" title="صوت"><i class="fas fa-microphone"></i></button>' +
-                '<button onclick="pmInsertEmoji()" title="إيموجي"><i class="fas fa-smile"></i></button>' +
-                '<button onclick="pmDeleteAllMessages()" title="حذف الكل" style="background:rgba(255,68,68,0.2);color:#ff6666;"><i class="fas fa-trash"></i></button>';
+                '<button onclick="pmInsertEmoji()" title="إيموجي"><i class="fas fa-smile"></i></button>';
             inputArea.parentNode.insertBefore(tb, inputArea);
         }
 
@@ -268,7 +265,6 @@
         return true;
     }
 
-    /* ⭐ v8: قراءتان بالتوازي */
     async function _isBlockedBetween(uid1, uid2) {
         try {
             var results = await Promise.all([
@@ -384,7 +380,6 @@
         c.scrollTop = c.scrollHeight;
     };
 
-    /* ⭐ v8: deletedAt + blocked بالتوازي + batch mark-as-read */
     window.loadPrivateMessages = function () {
         if (!ChatState.currentPrivateChat) return;
         if (ChatState.privateMessagesListener) {
@@ -398,7 +393,6 @@
 
         var o = ChatState.currentPrivateChat.otherUid;
 
-        // ⭐ v8: كل الفحوصات بالتوازي
         Promise.all([
             _isBlockedBetween(user.uid, o),
             db.ref('user_private_chats/' + user.uid + '/' + o + '/deletedAt').once('value')
@@ -413,7 +407,6 @@
             var ref = db.ref('user_private_messages/' + user.uid + '/' + o).limitToLast(50);
             ChatState.privateMessagesListener = ref;
 
-            // ⭐ v8: قائمة الرسائل غير المقروءة — ستُعلَّم دفعة واحدة
             var _unreadKeys = [];
 
             ref.on('child_added', function (s) {
@@ -428,13 +421,11 @@
                 var isSent = msg.fromUid === user.uid;
                 displayPrivateMsg(msg, isSent);
 
-                // ⭐ v8: اجمع غير المقروءة فقط — لا تكتب لكل رسالة
                 if (!isSent && !msg.read) {
                     _unreadKeys.push(s.key);
                 }
             });
 
-            // ⭐ v8: بعد 500ms، علّم الكل كـ read مرة واحدة
             setTimeout(function () {
                 if (_unreadKeys.length === 0) return;
                 var updates = {};
@@ -483,7 +474,6 @@
         }
     }
 
-    /* ⭐ v8: override clearPrivateNotifsFrom — محدود */
     window.clearPrivateNotifsFrom = function (fromUid) {
         var user = getCurrentUser();
         if (!user || !user.uid || !fromUid || !db) return;
@@ -687,19 +677,35 @@
         } catch (e) { if (typeof showToast === 'function') showToast('fa-times', '⚠️ فشل'); }
     };
 
+    /* ⭐ v9: يحفظ originalText قبل الحذف */
     window.pmDeleteMessage = async function (msgKey) {
         if (!confirm('🗑️ حذف هذه الرسالة؟')) return;
         var user = getCurrentUser();
         if (!user || !ChatState.currentPrivateChat) return;
         var o = ChatState.currentPrivateChat.otherUid;
         try {
+            // اقرأ الرسالة أولاً لحفظ النص الأصلي
+            var snap = await db.ref('user_private_messages/' + user.uid + '/' + o + '/' + msgKey).once('value');
+            var origData = snap.val() || {};
+            var origText = origData.text || '';
+            var now = Date.now();
+
+            var patch = {
+                deleted: true,
+                text: '',
+                originalText: origText,
+                deletedAt: now,
+                deletedBy: user.uid
+            };
+
             await Promise.all([
-                db.ref('user_private_messages/' + user.uid + '/' + o + '/' + msgKey).update({ deleted: true, text: '' }),
-                db.ref('user_private_messages/' + o + '/' + user.uid + '/' + msgKey).update({ deleted: true, text: '' })
+                db.ref('user_private_messages/' + user.uid + '/' + o + '/' + msgKey).update(patch),
+                db.ref('user_private_messages/' + o + '/' + user.uid + '/' + msgKey).update(patch)
             ]);
-        } catch (e) {}
+        } catch (e) { console.warn('pmDeleteMessage error:', e); }
     };
 
+    /* ⭐ v9: حُذف الزر من الشريط — هذه الدالة تبقى للاستخدام الإداري فقط */
     window.pmDeleteAllMessages = async function () {
         if (!confirm('🗑️ حذف كل رسائل هذه المحادثة؟')) return;
         var user = getCurrentUser();
@@ -1315,5 +1321,5 @@
         installPMObserver();
     }
 
-    console.log('✅ pm-enhanced.js v8 loaded — parallel checks + batch read');
+    console.log('✅ pm-enhanced.js v9 loaded — originalText saved + delete-all removed from toolbar');
 })();
