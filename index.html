@@ -313,6 +313,58 @@ input,textarea,select{font-size:16px!important}
 <script src="connection-resilience.js?v=70"></script>
 <script src="device-guard.js?v=70"></script>
 
+<!-- ⭐⭐ Upload Privacy — إخفاء أسماء خدمات الرفع بـ ⏳ (خصوصية الموقع) ⭐⭐ -->
+<script>
+(function () {
+    'use strict';
+    if (window.__uploadPrivacyV1) return;
+    window.__uploadPrivacyV1 = true;
+
+    function _sanitize(msg) {
+        if (typeof msg !== 'string') return msg;
+        var cleaned = msg;
+
+        // استبدال أسماء خدمات الرفع بـ ⏳
+        cleaned = cleaned.replace(/\b(imgbb|catbox\.moe|catbox|0x0\.st|0x0)\b/gi, '⏳');
+        cleaned = cleaned.replace(/\btelegram\b/gi, '⏳');
+        cleaned = cleaned.replace(/\bTG\s+(doc|audio|video|getFile)\b/gi, '⏳');
+        cleaned = cleaned.replace(/\bTG\b/g, '⏳');
+
+        // تحسين الجمل الشائعة (بعد الاستبدال)
+        cleaned = cleaned.replace(/تم عبر ⏳+/g, '✅ تم الرفع');
+        cleaned = cleaned.replace(/عبر ⏳+\s*\.\.\./g, '⏳ جاري...');
+        cleaned = cleaned.replace(/جرّب ⏳+\s*\(/g, '⏳ جاري المحاولة (');
+        cleaned = cleaned.replace(/جاري الرفع متوازي \(\d+ خدمات\)/g, '⏳ جاري الرفع...');
+
+        // تنظيف الفراغات المتعددة
+        cleaned = cleaned.replace(/⏳\s+⏳/g, '⏳');
+        cleaned = cleaned.replace(/⏳\s+و\s+⏳/g, '⏳');
+        cleaned = cleaned.replace(/\s+/g, ' ').trim();
+
+        return cleaned;
+    }
+
+    // انتظر showToast ثم لُفّه
+    var attempts = 0;
+    var t = setInterval(function () {
+        attempts++;
+        if (typeof window.showToast !== 'function') {
+            if (attempts >= 100) clearInterval(t);
+            return;
+        }
+        if (window.showToast.__uploadPrivacy) { clearInterval(t); return; }
+
+        var _orig = window.showToast;
+        window.showToast = function (icon, msg, duration) {
+            return _orig.call(this, icon, _sanitize(msg), duration);
+        };
+        window.showToast.__uploadPrivacy = true;
+        clearInterval(t);
+        console.log('🔒 upload-privacy v1: service names hidden (⏳)');
+    }, 100);
+})();
+</script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var modal = document.getElementById('private-chat-modal');
@@ -426,6 +478,7 @@ window._updateHeaderButtons = _updateHeaderButtons;
 <script defer src="king-room-patch.js?v=70"></script>
 <script defer src="memory-cleaner.js?v=70"></script>
 <script defer src="bot-messages-cleaner.js?v=70"></script>
+<script defer src="pc-compat-fixes.js?v=70"></script>
 <script defer src="pm-monitor.js?v=70"></script>
 <script defer src="room-alerts.js?v=70"></script>
 <script defer src="dice.js?v=70"></script>
