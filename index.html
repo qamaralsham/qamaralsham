@@ -326,7 +326,6 @@ input,textarea,select{font-size:16px!important}
         if (typeof msg !== 'string') return msg;
         var cleaned = msg;
 
-        // استبدال أسماء خدمات الرفع بـ ⏳
         cleaned = cleaned.replace(/\b(imgbb|catbox\.moe|catbox|0x0\.st|0x0)\b/gi, '⏳');
         cleaned = cleaned.replace(/\btelegram\b/gi, '⏳');
         cleaned = cleaned.replace(/\bTG\s+(doc|audio|video|getFile)\b/gi, '⏳');
@@ -334,13 +333,11 @@ input,textarea,select{font-size:16px!important}
         cleaned = cleaned.replace(/\bimagekit\b/gi, '⏳');
         cleaned = cleaned.replace(/\bImageKit\b/g, '⏳');
 
-        // تحسين الجمل الشائعة (بعد الاستبدال)
         cleaned = cleaned.replace(/تم عبر ⏳+/g, '✅ تم الرفع');
         cleaned = cleaned.replace(/عبر ⏳+\s*\.\.\./g, '⏳ جاري...');
         cleaned = cleaned.replace(/جرّب ⏳+\s*\(/g, '⏳ جاري المحاولة (');
         cleaned = cleaned.replace(/جاري الرفع متوازي \(\d+ خدمات\)/g, '⏳ جاري الرفع...');
 
-        // تنظيف الفراغات المتعددة
         cleaned = cleaned.replace(/⏳\s+⏳/g, '⏳');
         cleaned = cleaned.replace(/⏳\s+و\s+⏳/g, '⏳');
         cleaned = cleaned.replace(/\s+/g, ' ').trim();
@@ -483,6 +480,7 @@ window._updateHeaderButtons = _updateHeaderButtons;
 <script defer src="bot-messages-cleaner.js?v=70"></script>
 <script defer src="pc-compat-fixes.js?v=70"></script>
 <script defer src="imagekit-upload.js?v=1"></script>
+<script defer src="upload-button.js?v=1"></script>
 <script defer src="pm-monitor.js?v=70"></script>
 <script defer src="room-alerts.js?v=70"></script>
 <script defer src="dice.js?v=70"></script>
