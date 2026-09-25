@@ -21,6 +21,8 @@
 <link rel="dns-prefetch" href="https://api.telegram.org">
 <link rel="dns-prefetch" href="https://i.ytimg.com">
 <link rel="dns-prefetch" href="https://www.youtube-nocookie.com">
+<link rel="dns-prefetch" href="https://ik.imagekit.io">
+<link rel="preconnect" href="https://upload.imagekit.io">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -329,6 +331,8 @@ input,textarea,select{font-size:16px!important}
         cleaned = cleaned.replace(/\btelegram\b/gi, '⏳');
         cleaned = cleaned.replace(/\bTG\s+(doc|audio|video|getFile)\b/gi, '⏳');
         cleaned = cleaned.replace(/\bTG\b/g, '⏳');
+        cleaned = cleaned.replace(/\bimagekit\b/gi, '⏳');
+        cleaned = cleaned.replace(/\bImageKit\b/g, '⏳');
 
         // تحسين الجمل الشائعة (بعد الاستبدال)
         cleaned = cleaned.replace(/تم عبر ⏳+/g, '✅ تم الرفع');
@@ -344,7 +348,6 @@ input,textarea,select{font-size:16px!important}
         return cleaned;
     }
 
-    // انتظر showToast ثم لُفّه
     var attempts = 0;
     var t = setInterval(function () {
         attempts++;
@@ -479,6 +482,7 @@ window._updateHeaderButtons = _updateHeaderButtons;
 <script defer src="memory-cleaner.js?v=70"></script>
 <script defer src="bot-messages-cleaner.js?v=70"></script>
 <script defer src="pc-compat-fixes.js?v=70"></script>
+<script defer src="imagekit-upload.js?v=1"></script>
 <script defer src="pm-monitor.js?v=70"></script>
 <script defer src="room-alerts.js?v=70"></script>
 <script defer src="dice.js?v=70"></script>
