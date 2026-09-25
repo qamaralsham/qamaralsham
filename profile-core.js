@@ -1,13 +1,21 @@
 // ==============================================
-// profile-core.js v12 — no-video + catbox upload
+// profile-core.js v16 (TEST)
 // ==============================================
-// ✅ v12:
-//   1. _applyCover: صور فقط (no video)
-//   2. _applyProfileBackground: color/image فقط
-//   3. uploadFile: يستخدم UploadService (catbox/imgbb)
-//   4. _autoCleanupLegacyVideos: يحذف فيديوهات قديمة
-//   5. _switchBgTypeUI: بدون زر video
-//   6. باقي المنطق كما v11 بالضبط
+// ✅ v16 (فوق v15):
+//   1. shuffle لأنماط السينما (عبر NameEffects.getDisplayStyles)
+//   2. زر نقل الأعضاء (Master Owner+ = 90+)
+//   3. زر كتم كامل (دائم حتى يُلغى)
+//   4. زر كتم في غرفة (دائم حتى يُلغى)
+//   5. زر طرد كامل (ban + بصمة + IP)
+//   6. زر طرد من غرفة (دائم)
+//   7. كل عملية → audit_log
+// ✅ v15 (محفوظ بالكامل):
+//   1. presence listener — آخر تواجد حقيقي + مكان تواجد صحيح
+//   2. UID في info-grid + زر نسخ
+//   3. tab "أوامر": + ترقية/تخفيض + زر مراقبة الملك (PmMonitor.openFor)
+//   4. اسم 35 حرف — فحص كامل
+//   5. الاسم/الصورة قابلان للنقر
+//   6. توافق كامل مع profile-optimizer v2 + stories v4
 // ==============================================
 
 const ProfileState = {
@@ -18,12 +26,14 @@ const ProfileState = {
     poetry: { text: '', bg: null, attachment: null },
     likes: { isLiked: false, count: 0 },
     friends: { state: 'off', count: 0 },
-    blocked: { isBlocked: false }
+    blocked: { isBlocked: false },
+    presence: null,
+    presenceInterval: null
 };
 
 const IMGBB_KEY = '80fd32c4ef79b5f25fbcf0893547de4f';
-const MAX_VIDEO_MB = 5;
-const MAX_AUDIO_MB = 5;
+const MAX_AUDIO_MB = 10;
+const MAX_NAME_LENGTH = 35;
 
 const NAME_GRADIENTS = [
     ['#d4af37','#ffec8b'], ['#b8860b','#ffd700'], ['#ffd700','#ff8c00'],
@@ -51,7 +61,21 @@ const NAME_GRADIENTS = [
     ['#00ccff','#6600ff'], ['#c0c0c0','#ffd700']
 ];
 
+/* ⭐ v16: shuffle لأنماط السينما */
 function _getCinemaBgStyles() {
+    if (window.NameEffects && typeof window.NameEffects.getDisplayStyles === 'function') {
+        try {
+            var shuffled = window.NameEffects.getDisplayStyles();
+            if (Array.isArray(shuffled) && shuffled.length > 0) {
+                var bgOnly = shuffled.filter(function (s) {
+                    return s && s.targets && s.targets.indexOf('bg') !== -1;
+                });
+                return [{ id: '', label: 'بدون', icon: '❌' }].concat(bgOnly);
+            }
+        } catch (e) {
+            console.warn('getDisplayStyles failed, fallback:', e);
+        }
+    }
     if (window.NameEffects && Array.isArray(window.NameEffects.CINEMA_BG_STYLES)) {
         const list = window.NameEffects.CINEMA_BG_STYLES.map(function (id) {
             if (window.NameEffects.CINEMA_STYLES) {
@@ -95,6 +119,11 @@ function _isAdminUser() {
     return lvl >= 65;
 }
 
+function _isKingUser() {
+    const u = ProfileState.me;
+    return !!(u && u.rank === 'King');
+}
+
 function _canView(field) {
     if (_isOwner()) return true;
     const subj = ProfileState.subject;
@@ -121,6 +150,19 @@ function _formatLastSeen(ts, roomId) {
         result += ' · 📌 ' + QAMAR.ROOMS[roomId].name;
     }
     return result;
+}
+
+function _relativeLastSeen(ts) {
+    if (!ts) return '—';
+    var diff = Date.now() - ts;
+    if (diff < 60000) return 'الآن';
+    var m = Math.floor(diff / 60000);
+    if (m < 60) return 'قبل ' + m + ' دقيقة';
+    var h = Math.floor(m / 60);
+    if (h < 24) return 'قبل ' + h + ' ساعة';
+    var d = Math.floor(h / 24);
+    if (d < 30) return 'قبل ' + d + ' يوم';
+    return _formatDate(ts);
 }
 
 function _formatDate(ts) {
@@ -167,6 +209,45 @@ function _openUserProfile(uid, name) {
     } catch (e) {
         console.warn('_openUserProfile failed:', e);
     }
+}
+
+function _copyToClipboard(text, label) {
+    if (!text) return;
+    var doFallback = function () {
+        try {
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            _toast('✅ تم نسخ ' + (label || 'النص'));
+        } catch (e) { _toast('⚠️ فشل النسخ'); }
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () {
+            _toast('✅ تم نسخ ' + (label || 'النص'));
+        }).catch(function () {
+            doFallback();
+        });
+    } else {
+        doFallback();
+    }
+}
+
+/* ⭐ v16: audit log helper */
+function _logAudit(type, data) {
+    try {
+        var me = ProfileState.me || {};
+        db.ref('audit_log').push(Object.assign({
+            type: type,
+            byUid: me.uid || null,
+            byName: me.name || 'admin',
+            at: firebase.database.ServerValue.TIMESTAMP
+        }, data || {})).catch(function () {});
+    } catch (e) {}
 }
 
 /* ═══ Modal ═══ */
@@ -249,9 +330,94 @@ function openAppModal(opts) {
 
 window.openAppModal = openAppModal;
 
-/* ═══ Bootstrap ═══ */
+/* ══════════════════════════════════════════════ */
+/* Presence Listener                              */
+/* ══════════════════════════════════════════════ */
+function _startPresenceListener(uid) {
+    if (!uid) return;
+    if (typeof db === 'undefined' || !db) return;
+
+    if (ProfileState.presenceInterval) {
+        clearInterval(ProfileState.presenceInterval);
+        ProfileState.presenceInterval = null;
+    }
+
+    _fetchPresence(uid);
+
+    try {
+        var ref = db.ref('user_presence/' + uid);
+        ref.on('value', function (s) {
+            var p = s.val() || {};
+            ProfileState.presence = p;
+            _applyPresenceToDOM(p);
+        }, function () {});
+    } catch (e) {}
+
+    ProfileState.presenceInterval = setInterval(function () {
+        _fetchPresence(uid);
+    }, 90000);
+}
+
+function _fetchPresence(uid) {
+    if (!uid || typeof db === 'undefined' || !db) return;
+    db.ref('user_presence/' + uid).once('value').then(function (s) {
+        var p = s.val() || {};
+        ProfileState.presence = p;
+        _applyPresenceToDOM(p);
+    }).catch(function () {});
+}
+
+function _applyPresenceToDOM(p) {
+    if (!p) return;
+
+    var dot = document.getElementById('status-dot');
+    if (dot) {
+        if (p.state === 'online' && (Date.now() - (p.lastChanged || 0)) < 120000) {
+            dot.className = 'status-dot online';
+            dot.title = 'متصل';
+        } else {
+            dot.className = 'status-dot offline';
+            dot.title = 'غير متصل';
+        }
+    }
+
+    _updateInfoGridPresence(p);
+}
+
+function _updateInfoGridPresence(p) {
+    var grid = document.getElementById('info-grid');
+    if (!grid) return;
+
+    var lastSeenEl = grid.querySelector('[data-info="lastSeen"] .ii-value');
+    if (lastSeenEl) {
+        var isOnline = (p.state === 'online' && (Date.now() - (p.lastChanged || 0)) < 120000);
+        if (isOnline) {
+            lastSeenEl.textContent = '🟢 متصل الآن';
+        } else {
+            var ts = (typeof p.lastChanged === 'number' && p.lastChanged > 0) ? p.lastChanged : (ProfileState.subject && ProfileState.subject.lastSeen) || 0;
+            lastSeenEl.textContent = ts ? _relativeLastSeen(ts) : '—';
+        }
+    }
+
+    var roomEl = grid.querySelector('[data-info="room"] .ii-value');
+    if (roomEl) {
+        var roomId = p.room;
+        if (roomId && typeof QAMAR !== 'undefined' && QAMAR.ROOMS && QAMAR.ROOMS[roomId]) {
+            var room = QAMAR.ROOMS[roomId];
+            roomEl.textContent = (room.icon || '🚪') + ' ' + (room.name || roomId);
+        } else if (roomId) {
+            roomEl.textContent = '🚪 ' + roomId;
+        } else {
+            roomEl.textContent = '—';
+        }
+    }
+}
+
+/* ══════════════════════════════════════════════ */
+/* Bootstrap                                      */
+/* ══════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', async function () {
-    console.log('🚀 profile-core.js v12 booting...');
+    console.log('🚀 profile-core.js v16 booting...');
 
     try {
         localStorage.removeItem('saved_avatar_frame_motion');
@@ -312,7 +478,10 @@ document.addEventListener('DOMContentLoaded', async function () {
     applyIdentityToDOM();
     _startSubjectListener();
 
-    // ⭐ v12: تنظيف صامت للفيديوهات القديمة (owner فقط)
+    if (ProfileState.subject && ProfileState.subject.uid) {
+        _startPresenceListener(ProfileState.subject.uid);
+    }
+
     if (_isOwner()) {
         _autoCleanupLegacyVideos();
     }
@@ -332,10 +501,10 @@ document.addEventListener('DOMContentLoaded', async function () {
         renderFriendsTab();
     }, 400);
 
-    console.log('✅ profile-core.js v12 ready | Mode:', ProfileState.mode);
+    console.log('✅ profile-core.js v16 ready | Mode:', ProfileState.mode);
 });
 
-/* ⭐ v12: تنظيف فيديوهات قديمة */
+/* ═══ Legacy cleanup ═══ */
 async function _autoCleanupLegacyVideos() {
     const subj = ProfileState.subject;
     if (!subj || !subj.uid) return;
@@ -344,7 +513,6 @@ async function _autoCleanupLegacyVideos() {
     const updates = {};
     let didCleanup = false;
 
-    // غلاف فيديو قديم؟
     const cover = subj.cover;
     if (cover && (
         subj.coverType === 'video' ||
@@ -356,7 +524,6 @@ async function _autoCleanupLegacyVideos() {
         didCleanup = true;
     }
 
-    // خلفية بروفايل فيديو؟
     if (subj.profileBgType === 'video') {
         updates.profileBgType = null;
         updates.profileBgValue = null;
@@ -371,10 +538,7 @@ async function _autoCleanupLegacyVideos() {
         if (updates.coverType === null) ProfileState.subject.coverType = null;
         if (updates.profileBgType === null) ProfileState.subject.profileBgType = null;
         if (updates.profileBgValue === null) ProfileState.subject.profileBgValue = null;
-        console.log('🗑️ v12: removed legacy videos from Firebase');
-    } catch (e) {
-        console.warn('cleanup legacy videos failed:', e);
-    }
+    } catch (e) {}
 }
 
 /* ═══ Load Subject ═══ */
@@ -411,6 +575,7 @@ async function _loadVisitorSubject(uid) {
             return;
         }
         ProfileState.subject = remote;
+        ProfileState.subject.uid = uid;
         try { localStorage.setItem('profile_target_data_' + uid, JSON.stringify(remote)); } catch (e) {}
         if (ProfileState.me && ProfileState.me.uid && ProfileState.me.uid !== uid) {
             db.ref('users/' + uid + '/visitors/' + ProfileState.me.uid).set({
@@ -446,6 +611,11 @@ function _startSubjectListener() {
     const subj = ProfileState.subject;
     if (!subj || !subj.uid) return;
 
+    if (window.__profileOptimizerV2) {
+        console.log('📡 profile-core v16: deferring to profile-optimizer');
+        return;
+    }
+
     db.ref('users/' + subj.uid).on('value', function (snap) {
         const remote = snap.val();
         if (!remote) return;
@@ -454,6 +624,7 @@ function _startSubjectListener() {
         ProfileState.lastUserHash = newHash;
         if (Date.now() > ProfileState.localLockUntil) {
             ProfileState.subject = Object.assign({}, ProfileState.subject, remote);
+            ProfileState.subject.uid = subj.uid;
         }
         try {
             if (_isVisitor()) {
@@ -465,21 +636,6 @@ function _startSubjectListener() {
         applyIdentityToDOM();
         renderInfoGrid();
     });
-
-    if (_isVisitor()) {
-        db.ref('user_presence/' + subj.uid).on('value', function (snap) {
-            const p = snap.val() || {};
-            const dot = document.getElementById('status-dot');
-            if (!dot) return;
-            if (p.state === 'online') {
-                dot.className = 'status-dot online';
-                dot.title = 'متصل';
-            } else {
-                dot.className = 'status-dot offline';
-                dot.title = 'غير متصل';
-            }
-        });
-    }
 }
 
 /* ═══ Apply Identity ═══ */
@@ -538,18 +694,15 @@ function applyIdentityToDOM() {
     }
 }
 
-/* ⭐ v12: cover — صور فقط */
 function _applyCover(subj) {
     const img = document.getElementById('profile-cover-img');
     if (!img) return;
-
     const cover = subj.cover;
     if (!cover) {
         img.style.display = 'none';
         img.removeAttribute('src');
         return;
     }
-
     img.style.display = 'block';
     if (img.src !== cover) img.src = cover;
 }
@@ -571,7 +724,6 @@ function _applyAvatar(subj) {
     }
 }
 
-/* ⭐ v12: profile bg — color/image فقط */
 function _applyProfileBackground(subj) {
     const layer = document.getElementById('profile-bg-layer');
     if (!layer) return;
@@ -602,7 +754,6 @@ function _applyProfileGlow(subj) {
     }
 }
 
-/* ⭐ v12: Music — v11 logic يبقى (base64 legacy + URL جديد) */
 function _applyMusicButton(subj) {
     const btn = document.getElementById('music-btn-mini');
     const player = document.getElementById('music-player');
@@ -620,12 +771,10 @@ function _applyMusicButton(subj) {
 
     var finalSrc = subj.musicURL;
 
-    // ⭐ legacy base64 → Blob
     if (finalSrc.indexOf('data:') === 0) {
         try {
             var cachedSrc = player.getAttribute('data-blob-src');
             var cachedUrl = player.getAttribute('data-blob-url');
-
             if (cachedSrc === finalSrc && cachedUrl) {
                 finalSrc = cachedUrl;
             } else {
@@ -635,28 +784,19 @@ function _applyMusicButton(subj) {
                     var b64 = finalSrc.substring(commaIdx + 1);
                     var mimeMatch = header.match(/:(.*?);/);
                     var mime = mimeMatch ? mimeMatch[1] : 'audio/mpeg';
-
                     var binary = atob(b64);
                     var len = binary.length;
                     var bytes = new Uint8Array(len);
-                    for (var i = 0; i < len; i++) {
-                        bytes[i] = binary.charCodeAt(i);
-                    }
+                    for (var i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
                     var blob = new Blob([bytes], { type: mime });
-
-                    if (cachedUrl) {
-                        try { URL.revokeObjectURL(cachedUrl); } catch (e) {}
-                    }
-
+                    if (cachedUrl) { try { URL.revokeObjectURL(cachedUrl); } catch (e) {} }
                     var blobUrl = URL.createObjectURL(blob);
                     player.setAttribute('data-blob-url', blobUrl);
                     player.setAttribute('data-blob-src', finalSrc);
                     finalSrc = blobUrl;
                 }
             }
-        } catch (e) {
-            console.warn('Base64→Blob failed:', e);
-        }
+        } catch (e) { console.warn('Base64→Blob failed:', e); }
     }
 
     if (player.src !== finalSrc) {
@@ -691,7 +831,7 @@ function _applyMusicButton(subj) {
     }
 }
 
-/* ═══ Info Grid ═══ */
+/* ═══ renderInfoGrid — UID + place + time ═══ */
 function renderInfoGrid() {
     const grid = document.getElementById('info-grid');
     if (!grid) return;
@@ -702,7 +842,14 @@ function renderInfoGrid() {
     }
 
     const items = [];
-    if (subj.code) items.push({ icon: '🔑', label: 'المعرّف', value: subj.code });
+
+    if (subj.uid) {
+        items.push({ icon: '🆔', label: 'UID', value: subj.uid, key: 'uid', copy: true, label_copy: 'UID' });
+    }
+    if (subj.code) {
+        items.push({ icon: '🔑', label: 'المعرّف', value: subj.code, key: 'code', copy: true, label_copy: 'الكود' });
+    }
+
     if (subj.country && _canView('country')) items.push({ icon: '🌍', label: 'الدولة', value: subj.country });
     if (subj.family && _canView('family')) items.push({ icon: '👨‍👩‍👧', label: 'العائلة', value: subj.family });
     if (subj.age && _canView('age')) items.push({ icon: '🎂', label: 'العمر', value: subj.age + ' سنة' });
@@ -711,10 +858,26 @@ function renderInfoGrid() {
         items.push({ icon: '👤', label: 'الجنس', value: g });
     }
     if (subj.createdAt && _canView('joinedAt')) items.push({ icon: '📅', label: 'الانضمام', value: _formatDate(subj.createdAt) });
-    if (subj.lastSeen && _canView('lastSeen')) {
-        const roomId = subj.currentRoom || null;
-        items.push({ icon: '🕐', label: 'آخر تواجد', value: _formatLastSeen(subj.lastSeen, roomId) });
+
+    if (_canView('lastSeen')) {
+        var p = ProfileState.presence || {};
+        var isOnline = (p.state === 'online' && (Date.now() - (p.lastChanged || 0)) < 120000);
+        var lastSeenText = isOnline ? '🟢 متصل الآن' : (subj.lastSeen ? _relativeLastSeen(subj.lastSeen) : '—');
+        items.push({ icon: '🕐', label: 'آخر تواجد', value: lastSeenText, key: 'lastSeen' });
     }
+
+    if (_canView('lastSeen')) {
+        var pRoom = (ProfileState.presence && ProfileState.presence.room) || subj.currentRoom || null;
+        var roomText = '—';
+        if (pRoom && typeof QAMAR !== 'undefined' && QAMAR.ROOMS && QAMAR.ROOMS[pRoom]) {
+            var room = QAMAR.ROOMS[pRoom];
+            roomText = (room.icon || '🚪') + ' ' + (room.name || pRoom);
+        } else if (pRoom) {
+            roomText = '🚪 ' + pRoom;
+        }
+        items.push({ icon: '📍', label: 'مكان التواجد', value: roomText, key: 'room' });
+    }
+
     if (_canView('points')) {
         db.ref('bot_data/quiz/scores/' + subj.uid).once('value').then(function (s) {
             const pts = s.val() || 0;
@@ -734,9 +897,30 @@ function renderInfoGrid() {
         const div = document.createElement('div');
         div.className = 'info-item';
         if (it.key) div.setAttribute('data-info', it.key);
-        div.innerHTML =
-            '<div class="ii-label">' + it.icon + ' ' + it.label + '</div>' +
-            '<div class="ii-value">' + _esc(it.value) + '</div>';
+
+        var html = '<div class="ii-label">' + it.icon + ' ' + it.label + '</div>' +
+                   '<div class="ii-value">' + _esc(it.value) + '</div>';
+
+        if (it.copy && it.value) {
+            html += '<button class="ii-copy-btn" type="button" title="نسخ">📋</button>';
+        }
+
+        div.innerHTML = html;
+
+        if (it.copy && it.value) {
+            var btn = div.querySelector('.ii-copy-btn');
+            if (btn) {
+                btn.style.cssText = 'position:absolute;top:6px;left:6px;background:rgba(255,215,0,0.15);border:1px solid rgba(255,215,0,0.4);color:#ffd700;width:26px;height:26px;border-radius:6px;font-size:12px;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;';
+                btn.onclick = (function (v, l) {
+                    return function (e) {
+                        e.stopPropagation();
+                        _copyToClipboard(v, l);
+                    };
+                })(it.value, it.label_copy || it.label);
+            }
+            div.style.position = 'relative';
+        }
+
         grid.appendChild(div);
     });
 }
@@ -805,7 +989,6 @@ function switchTab(tabName) {
 
 window.switchTab = switchTab;
 
-/* ═══ Drill-down ═══ */
 function _resetSettingsPage() {
     ProfileState.settingsHistory = ['main'];
     _showSettingsPage('main', false);
@@ -868,7 +1051,6 @@ function _bindSettingsNavigation() {
     });
 }
 
-/* ⭐ v12: uploadFile — يستخدم UploadService */
 async function uploadFile(file, options) {
     if (!window.UploadService) {
         throw new Error('UploadService غير محمّل');
@@ -911,7 +1093,6 @@ async function updateIdentityField(field, value) {
     } catch (e) {}
 }
 
-/* ═══ Edit Name / Bio / Visitor View ═══ */
 function _bindEditName() {
     const btn = document.getElementById('btn-edit-username');
     if (!btn || btn.__bound) return;
@@ -923,10 +1104,11 @@ function _bindEditName() {
             title: '✏️ تعديل الاسم',
             type: 'input',
             value: subj.name || '',
-            maxLength: 20,
+            maxLength: MAX_NAME_LENGTH,
             onSave: async function (v) {
                 v = (v || '').trim();
                 if (!v || v.length < 2) { _toast('⚠️ اسم قصير'); return; }
+                if (v.length > MAX_NAME_LENGTH) { _toast('⚠️ الحد ' + MAX_NAME_LENGTH + ' حرف'); return; }
                 if (v === subj.name) return;
                 if (typeof reserveName === 'function') {
                     const res = await reserveName(v, subj.uid);
@@ -1224,6 +1406,7 @@ function renderNameBgGradientPicker() {
     }
 }
 
+/* ⭐ v16: يستخدم shuffle من NameEffects.getDisplayStyles */
 function renderNameCinemaBgPicker() {
     const grid = document.getElementById('name-cinema-bg-grid');
     const preview = document.getElementById('name-preview-cinema-bg');
@@ -1409,7 +1592,6 @@ function _bindImagesUploads() {
     }
 }
 
-/* ⭐ v12: بدون video */
 function _switchBgTypeUI(type) {
     const colorSec = document.getElementById('bg-color-section');
     const mediaSec = document.getElementById('bg-media-section');
@@ -1448,13 +1630,9 @@ function renderFramePage() {
             currentFrameId: currentFrame,
             onSelect: async function (frameId) {
                 try {
-                    try {
-                        localStorage.setItem('saved_avatar_frame_motion', frameId || '');
-                    } catch (e) {}
-
+                    try { localStorage.setItem('saved_avatar_frame_motion', frameId || ''); } catch (e) {}
                     await updateIdentityField('avatarFrame', frameId || null);
                     _toast(frameId ? '✅ تم حفظ الإطار' : '✅ أُزيل الإطار');
-
                     setTimeout(function () {
                         const box = document.getElementById('avatar-box');
                         if (box) {
@@ -1485,7 +1663,6 @@ function renderFramePage() {
         removeBtn.onclick = function () {
             try { localStorage.removeItem('saved_avatar_frame_motion'); } catch (e) {}
             updateIdentityField('avatarFrame', null);
-
             setTimeout(function () {
                 const box = document.getElementById('avatar-box');
                 if (box) {
@@ -1498,7 +1675,6 @@ function renderFramePage() {
                     }
                 }
             }, 100);
-
             renderFramePage();
             _toast('✅ تم');
         };
@@ -1571,7 +1747,10 @@ function _bindMusic() {
                     await updateIdentityField('musicURL', url);
                     renderMusicPage();
                     _toast('✅ تم');
-                } catch (e) { _toast('⚠️ فشل الرفع'); }
+                } catch (e) {
+                    console.error('Music upload error:', e);
+                    _toast('⚠️ فشل: ' + (e.message || 'الرفع'));
+                }
             }, { maxMb: MAX_AUDIO_MB });
         };
     }
@@ -1962,7 +2141,6 @@ function updateVisitorButtons() {
         heart.classList.toggle('active', ProfileState.likes.isLiked);
         heart.setAttribute('data-state', ProfileState.likes.isLiked ? 'on' : 'off');
     }
-
     const friend = document.getElementById('btn-friend');
     if (friend) {
         const st = ProfileState.friends.state;
@@ -1988,7 +2166,6 @@ function updateVisitorButtons() {
             friend.title = 'إضافة صديق';
         }
     }
-
     const block = document.getElementById('btn-block');
     if (block) {
         block.textContent = ProfileState.blocked.isBlocked ? '🔓' : '🚫';
@@ -2084,7 +2261,6 @@ function _bindLikesFriendsBlocked() {
                 } catch (e) { _toast('⚠️ فشل'); }
                 return;
             }
-
             if (st === 'pending') {
                 if (!confirm('إلغاء الطلب؟')) return;
                 try {
@@ -2094,7 +2270,6 @@ function _bindLikesFriendsBlocked() {
                 } catch (e) { _toast('⚠️ فشل'); }
                 return;
             }
-
             if (st === 'incoming') {
                 try {
                     await Promise.all([
@@ -2114,7 +2289,6 @@ function _bindLikesFriendsBlocked() {
                 } catch (e) { _toast('⚠️ فشل'); }
                 return;
             }
-
             try {
                 await db.ref('users/' + me.uid + '/friend_requests/' + subj.uid).set({
                     time: Date.now(),
@@ -2279,14 +2453,40 @@ async function renderLikers() {
 window.renderVisitors = renderVisitors;
 window.renderLikers = renderLikers;
 
+/* ═══ Moments Tab ═══ */
 async function renderMomentsTab() {
     const grid = document.getElementById('moments-grid');
     if (!grid) return;
     const subj = ProfileState.subject;
     if (!subj || !subj.uid) return;
+
+    if (_isOwner() && window.Stories && typeof window.Stories.renderMyTab === 'function') {
+        grid.innerHTML = '';
+        grid.style.display = 'block';
+        grid.style.gridTemplateColumns = 'none';
+
+        var wrapper = document.createElement('div');
+        wrapper.style.cssText = 'width: 100%;';
+        grid.appendChild(wrapper);
+
+        try {
+            window.Stories.renderMyTab(wrapper);
+        } catch (e) {
+            console.error('renderMyTab failed:', e);
+            grid.style.display = 'grid';
+            grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#ff6666;padding:20px;font-size:12px;">⚠️ فشل عرض الحالات</div>';
+        }
+        return;
+    }
+
+    grid.style.display = 'grid';
+    grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+
     const addBtn = document.getElementById('add-moment-btn');
     grid.innerHTML = '';
     if (_isOwner() && addBtn) grid.appendChild(addBtn);
+
     try {
         const s = await db.ref('stories/' + subj.uid).once('value');
         const data = s.val() || {};
@@ -2312,8 +2512,10 @@ async function renderMomentsTab() {
                 '<div class="moment-tile-icon">' + icon + '</div>' +
                 '<div class="moment-tile-name">' + _esc(preview) + '</div>';
             tile.onclick = function () {
-                if (typeof openStoryViewer === 'function') {
-                    openStoryViewer([st], subj.uid, false);
+                if (typeof window.openStoryViewer === 'function') {
+                    window.openStoryViewer([st], subj.uid, false, { mini: true });
+                } else if (window.Stories && typeof window.Stories.openViewer === 'function') {
+                    window.Stories.openViewer([st], subj.uid, false, { mini: true });
                 } else {
                     try {
                         window.parent.postMessage({ action: 'openStory', uid: subj.uid }, '*');
@@ -2325,6 +2527,7 @@ async function renderMomentsTab() {
     } catch (e) {}
 }
 
+/* ═══ Friends Tab ═══ */
 async function renderFriendsTab() {
     const grid = document.getElementById('friends-grid-container');
     if (!grid) return;
@@ -2370,7 +2573,9 @@ async function renderFriendsTab() {
         grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#ff6666;padding:20px;font-size:12px;">⚠️ فشل</div>';
     }
 }
-
+/* ══════════════════════════════════════════════ */
+/* ⭐ v16: renderAdminTab — موسّع               */
+/* ══════════════════════════════════════════════ */
 function renderAdminTab() {
     const container = document.getElementById('admin-actions-container');
     if (!container) return;
@@ -2385,39 +2590,100 @@ function renderAdminTab() {
         container.innerHTML = '<div class="empty" style="text-align:center;padding:30px;color:#666;">لا يمكن تنفيذ أوامر على نفسك</div>';
         return;
     }
+
     const meLvl = me.rankLevel || _getRankLevel(me.rank);
     const tgLvl = subj.rankLevel || _getRankLevel(subj.rank);
+
     const canWarn = meLvl >= 65;
     const canJail = meLvl >= 75 && meLvl > tgLvl;
     const canKick = meLvl >= 80 && meLvl > tgLvl;
     const canBan = meLvl >= 90 && meLvl > tgLvl;
     const canPoints = meLvl >= 75;
+    const canP = (typeof canPromoteTo === 'function') ? canPromoteTo(me, subj, 'Room Owner') : false;
+    const canD = (typeof canDemoteUser === 'function') ? canDemoteUser(me, subj) : false;
+    const isKing = me.rank === 'King';
+
+    /* ⭐ v16: صلاحيات جديدة */
+    const canTransfer = meLvl >= 90 && meLvl > tgLvl;   /* Master Owner+ */
+    const canMute = meLvl >= 90 && meLvl > tgLvl;       /* Master Owner+ */
+    const canKickFull = meLvl >= 90 && meLvl > tgLvl;   /* Master Owner+ */
+    const canKickFromRoom = meLvl >= 80 && meLvl > tgLvl; /* Grand Owner+ */
 
     let h = '';
+
+    /* ⭐ الملك — مراقبة الخاص */
+    if (isKing) {
+        h += '<div class="action-category">';
+        h += '<div class="action-category-title">👑 صلاحيات الملك</div>';
+        h += '<button class="action-btn" data-action="monitorPM" style="border-color:rgba(168,85,247,0.6);color:#c084fc;"><i class="fas fa-eye" style="color:#c084fc;"></i> 🔍 مراقبة الخاص</button>';
+        h += '</div>';
+    }
+
     h += '<div class="action-category">';
     h += '<div class="action-category-title">💬 التواصل</div>';
     h += '<button class="action-btn" data-action="message"><i class="fas fa-comment"></i> إرسال رسالة</button>';
     h += '</div>';
+
+    /* ترقية/تخفيض */
+    if (canP || canD) {
+        h += '<div class="action-category">';
+        h += '<div class="action-category-title">🎖️ إدارة الرتب</div>';
+        if (canP) h += '<button class="action-btn" data-action="promote"><i class="fas fa-arrow-up"></i> 🎖️ ترقية</button>';
+        if (canD) h += '<button class="action-btn warning" data-action="demote"><i class="fas fa-arrow-down"></i> 📉 تخفيض</button>';
+        h += '</div>';
+    }
+
+    /* ⭐ v16: نقل الأعضاء */
+    if (canTransfer) {
+        h += '<div class="action-category">';
+        h += '<div class="action-category-title">🚪 إدارة الغرف</div>';
+        h += '<button class="action-btn" data-action="transfer" style="border-color:rgba(59,130,246,0.6);color:#93c5fd;"><i class="fas fa-exchange-alt" style="color:#3b82f6;"></i> 🔀 نقل إلى غرفة</button>';
+        h += '</div>';
+    }
+
+    /* نقاط */
     if (canPoints) {
         h += '<div class="action-category">';
-        h += '<div class="action-category-title">🎖️ المكافآت</div>';
+        h += '<div class="action-category-title">🎁 المكافآت</div>';
         h += '<button class="action-btn" data-action="points"><i class="fas fa-star"></i> إهداء نقاط</button>';
         h += '</div>';
     }
-    if (canWarn || canJail || canKick) {
+
+    /* ⭐ v16: كتم */
+    if (canMute) {
+        h += '<div class="action-category">';
+        h += '<div class="action-category-title">🔇 الكتم</div>';
+        h += '<button class="action-btn warning" data-action="muteGlobal" style="border-color:rgba(255,152,0,0.6);color:#ffbb66;"><i class="fas fa-microphone-slash" style="color:#ff9800;"></i> 🔇 كتم كامل (دائم)</button>';
+        h += '<button class="action-btn warning" data-action="muteRoom" style="border-color:rgba(255,152,0,0.6);color:#ffbb66;"><i class="fas fa-volume-mute" style="color:#ff9800;"></i> 🔇 كتم في غرفة (دائم)</button>';
+        h += '</div>';
+    }
+
+    /* العقوبات */
+    if (canWarn || canJail || canKick || canKickFromRoom) {
         h += '<div class="action-category">';
         h += '<div class="action-category-title">🛡️ العقوبات</div>';
         if (canWarn) h += '<button class="action-btn warning" data-action="warn"><i class="fas fa-exclamation-triangle"></i> تحذير</button>';
-        if (canKick) h += '<button class="action-btn warning" data-action="kick"><i class="fas fa-door-closed"></i> طرد</button>';
-        if (canJail) h += '<button class="action-btn danger" data-action="jail"><i class="fas fa-lock"></i> سجن</button>';
+        if (canKickFromRoom) h += '<button class="action-btn warning" data-action="kickFromRoom" style="border-color:rgba(255,68,68,0.5);color:#ff9999;"><i class="fas fa-door-closed" style="color:#ff6666;"></i> 🚪 طرد من غرفة (دائم)</button>';
+        if (canJail) h += '<button class="action-btn danger" data-action="jail"><i class="fas fa-lock"></i> ⛓️ سجن</button>';
         h += '</div>';
     }
+
+    /* ⭐ v16: طرد كامل */
+    if (canKickFull) {
+        h += '<div class="action-category">';
+        h += '<div class="action-category-title">⛔ الطرد النهائي</div>';
+        h += '<button class="action-btn danger" data-action="kickFull" style="border-color:rgba(220,38,38,0.7);background:linear-gradient(135deg,rgba(120,0,0,0.3),rgba(0,0,0,0.4));"><i class="fas fa-skull" style="color:#ff2222;"></i> 🛑 طرد كامل (ban + بصمة + IP)</button>';
+        h += '</div>';
+    }
+
+    /* حظر */
     if (canBan) {
         h += '<div class="action-category">';
-        h += '<div class="action-category-title">⛔ الحظر</div>';
-        h += '<button class="action-btn danger" data-action="ban"><i class="fas fa-ban"></i> حظر</button>';
+        h += '<div class="action-category-title">🚫 الحظر</div>';
+        h += '<button class="action-btn danger" data-action="ban"><i class="fas fa-ban"></i> 🚫 حظر مؤقت</button>';
         h += '</div>';
     }
+
     container.innerHTML = h;
     container.querySelectorAll('[data-action]').forEach(function (btn) {
         btn.onclick = function () {
@@ -2426,9 +2692,31 @@ function renderAdminTab() {
     });
 }
 
+/* ══════════════════════════════════════════════ */
+/* ⭐ v16: _executeAdminAction — موسّع           */
+/* ══════════════════════════════════════════════ */
 function _executeAdminAction(action) {
     const subj = ProfileState.subject;
     if (!subj) return;
+    const me = ProfileState.me;
+    if (!me) return;
+
+    /* ── مراقبة الملك ── */
+    if (action === 'monitorPM') {
+        if (me.rank !== 'King') { _toast('⚠️ للملك فقط'); return; }
+        if (window.PmMonitor && typeof window.PmMonitor.openFor === 'function') {
+            try { window.PmMonitor.openFor(subj.uid); }
+            catch (e) {
+                console.error('PmMonitor.openFor failed:', e);
+                _toast('⚠️ فشل فتح المراقبة');
+            }
+        } else {
+            _toast('⚠️ pm-monitor غير محمّل');
+        }
+        return;
+    }
+
+    /* ── رسالة ── */
     if (action === 'message') {
         try {
             if (window.parent && typeof window.parent.openPrivateChatWith === 'function') {
@@ -2442,6 +2730,96 @@ function _executeAdminAction(action) {
         } catch (e) {}
         return;
     }
+
+    /* ── ترقية ── */
+    if (action === 'promote') {
+        const all = ['User', 'Premium', 'Admin', 'Super Admin', 'Owner', 'Grand Owner', 'Room Owner', 'Master Owner'];
+        if (me.rank === 'King') all.push('Queen');
+        const opts = all.filter(function (r) {
+            return typeof canPromoteTo === 'function' && canPromoteTo(me, subj, r);
+        });
+        if (!opts.length) { _toast('⚠️ لا يمكنك الترقية'); return; }
+        openAppModal({
+            title: '🎖️ ترقية ' + (subj.name || ''),
+            text: 'الحالية: ' + subj.rank,
+            type: 'select',
+            options: opts.map(function (r) { return { value: r, label: r }; }),
+            value: opts[0],
+            onSave: async function (newRank) {
+                if (!newRank) return;
+                if (newRank === 'Queen') {
+                    var order = prompt('رقم الملكة (1-4):', '1');
+                    var n = parseInt(order);
+                    if (!n || n < 1 || n > 4) { _toast('⚠️ رقم غير صحيح'); return; }
+                    try {
+                        var qSnap = await db.ref('users').limitToLast(500).once('value');
+                        var allU = qSnap.val() || {};
+                        var existingUid = null;
+                        Object.keys(allU).forEach(function (k) {
+                            var u = allU[k];
+                            if (u.rank === 'Queen' && u.queenOrder === n) existingUid = k;
+                        });
+                        if (existingUid && existingUid !== subj.uid) {
+                            if (!confirm('رقم ' + n + ' مشغول. تبديل؟')) return;
+                            var used = {};
+                            Object.keys(allU).forEach(function (k) {
+                                var u = allU[k];
+                                if (u.rank === 'Queen' && u.queenOrder) used[u.queenOrder] = true;
+                            });
+                            var free = null;
+                            for (var i = 1; i <= 4; i++) if (!used[i]) { free = i; break; }
+                            if (free) await db.ref('users/' + existingUid).update({ queenOrder: free });
+                        }
+                    } catch (e) {}
+                    await db.ref('users/' + subj.uid).update({
+                        rank: 'Queen', rankLevel: 95, queenOrder: n, customPermissions: null
+                    });
+                } else {
+                    var lvl = (typeof getRankLevel === 'function') ? getRankLevel(newRank) : 50;
+                    await db.ref('users/' + subj.uid).update({
+                        rank: newRank, rankLevel: lvl, queenOrder: null, customPermissions: null
+                    });
+                }
+                _logAudit('promote', {
+                    targetUid: subj.uid, targetName: subj.name,
+                    fromRank: subj.rank, toRank: newRank
+                });
+                _toast('✅ تم');
+                setTimeout(function () { location.reload(); }, 800);
+            }
+        });
+        return;
+    }
+
+    /* ── تخفيض ── */
+    if (action === 'demote') {
+        if (!(typeof canDemoteUser === 'function' && canDemoteUser(me, subj))) { _toast('⚠️ لا صلاحية'); return; }
+        openAppModal({
+            title: '📉 تخفيض ' + (subj.name || ''),
+            text: 'الحالية: ' + subj.rank + '\nسيُنزل إلى User',
+            onSave: async function () {
+                await db.ref('users/' + subj.uid).update({
+                    rank: 'User', rankLevel: 50, queenOrder: null, customPermissions: null
+                });
+                _logAudit('demote', {
+                    targetUid: subj.uid, targetName: subj.name,
+                    fromRank: subj.rank, toRank: 'User'
+                });
+                _toast('✅ تم');
+                setTimeout(function () { location.reload(); }, 800);
+            }
+        });
+        return;
+    }
+
+    /* ⭐ v16: نقل إلى غرفة */
+    if (action === 'transfer') {
+        if ((me.rankLevel || 0) < 90) { _toast('⚠️ Master Owner+ فقط'); return; }
+        _askTransfer(subj);
+        return;
+    }
+
+    /* ── نقاط ── */
     if (action === 'points') {
         openAppModal({
             title: '⭐ إهداء نقاط',
@@ -2451,12 +2829,31 @@ function _executeAdminAction(action) {
                 if (!amt || amt < 1) return;
                 try {
                     await db.ref('bot_data/quiz/scores/' + subj.uid).transaction(function (c) { return (c || 0) + amt; });
+                    _logAudit('give_points', {
+                        targetUid: subj.uid, targetName: subj.name, amount: amt
+                    });
                     _toast('⭐ تم');
                 } catch (e) { _toast('⚠️ فشل'); }
             }
         });
         return;
     }
+
+    /* ⭐ v16: كتم كامل */
+    if (action === 'muteGlobal') {
+        if ((me.rankLevel || 0) < 90) { _toast('⚠️ Master Owner+ فقط'); return; }
+        _askMuteGlobal(subj);
+        return;
+    }
+
+    /* ⭐ v16: كتم في غرفة */
+    if (action === 'muteRoom') {
+        if ((me.rankLevel || 0) < 90) { _toast('⚠️ Master Owner+ فقط'); return; }
+        _askMuteRoom(subj);
+        return;
+    }
+
+    /* ── تحذير ── */
     if (action === 'warn') {
         openAppModal({
             title: '⚠️ تحذير',
@@ -2464,28 +2861,22 @@ function _executeAdminAction(action) {
             onSave: async function () {
                 try {
                     await db.ref('users/' + subj.uid + '/warnings').transaction(function (c) { return (c || 0) + 1; });
+                    _logAudit('warn', { targetUid: subj.uid, targetName: subj.name });
                     _toast('✅ تم');
                 } catch (e) { _toast('⚠️ فشل'); }
             }
         });
         return;
     }
-    if (action === 'kick') {
-        openAppModal({
-            title: '🚪 طرد',
-            text: 'طرد ' + subj.name + ' من الغرفة الحالية؟',
-            onSave: async function () {
-                const roomId = (typeof ChatState !== 'undefined' && ChatState.currentRoom) || 'general';
-                try {
-                    await db.ref('room_kicks/' + roomId + '/' + subj.uid).set({
-                        by: ProfileState.me.uid, byName: ProfileState.me.name, at: Date.now()
-                    });
-                    _toast('🚪 تم');
-                } catch (e) { _toast('⚠️ فشل'); }
-            }
-        });
+
+    /* ⭐ v16: طرد من غرفة (دائم) */
+    if (action === 'kickFromRoom') {
+        if ((me.rankLevel || 0) < 80) { _toast('⚠️ Grand Owner+ فقط'); return; }
+        _askKickFromRoom(subj);
         return;
     }
+
+    /* ── سجن ── */
     if (action === 'jail') {
         openAppModal({
             title: '⛓️ سجن',
@@ -2494,17 +2885,29 @@ function _executeAdminAction(action) {
                 const m = parseInt((document.getElementById('cmd-jm') || {}).value);
                 if (!m || m < 1) return;
                 try {
+                    /* نحفظ الغرفة قبل السجن */
+                    await db.ref('users/' + subj.uid + '/lastRoomBeforeJail').set(subj.currentRoom || 'general').catch(function(){});
                     await db.ref('users/' + subj.uid).update({
                         isJailed: true,
                         jailUntil: Date.now() + m * 60000,
                         jailReason: 'إجراء إداري'
                     });
-                    _toast('⛓️ تم');
+                    _logAudit('jail', { targetUid: subj.uid, targetName: subj.name, minutes: m });
+                    _toast('⛓️ تم — ' + m + ' دقيقة');
                 } catch (e) { _toast('⚠️ فشل'); }
             }
         });
         return;
     }
+
+    /* ⭐ v16: طرد كامل */
+    if (action === 'kickFull') {
+        if ((me.rankLevel || 0) < 90) { _toast('⚠️ Master Owner+ فقط'); return; }
+        _askKickFull(subj);
+        return;
+    }
+
+    /* ── حظر مؤقت ── */
     if (action === 'ban') {
         openAppModal({
             title: '🚫 حظر',
@@ -2524,6 +2927,7 @@ function _executeAdminAction(action) {
                         bannedUntil: Date.now() + d * 60000,
                         banReason: 'إجراء إداري'
                     });
+                    _logAudit('ban', { targetUid: subj.uid, targetName: subj.name, minutes: d });
                     _toast('🚫 تم');
                 } catch (e) { _toast('⚠️ فشل'); }
             }
@@ -2531,7 +2935,329 @@ function _executeAdminAction(action) {
     }
 }
 
-/* ═══ Helpers: pickImageFile ═══ */
+/* ══════════════════════════════════════════════ */
+/* ⭐ v16: دوال الإجراءات الجديدة                 */
+/* ══════════════════════════════════════════════ */
+
+/* ── نقل إلى غرفة ── */
+function _askTransfer(subj) {
+    const me = ProfileState.me;
+    const visibleRooms = Object.values(QAMAR.ROOMS || {}).filter(function (r) {
+        return !r.invisible && r.id !== 'jail';
+    });
+
+    let opts = '';
+    visibleRooms.forEach(function (r) {
+        opts += '<option value="' + _esc(r.id) + '">' + (r.icon || '🚪') + ' ' + _esc(r.name) + '</option>';
+    });
+
+    openAppModal({
+        title: '🔀 نقل ' + (subj.name || ''),
+        html:
+            '<div style="color:#ccc;font-size:12px;line-height:1.6;margin-bottom:12px;padding:10px;background:rgba(59,130,246,0.1);border-radius:8px;border:1px solid rgba(59,130,246,0.3);">' +
+                '🚪 سيُنقل <b style="color:#fff;">' + _esc(subj.name || '') + '</b> قسرياً إلى الغرفة المحددة.' +
+            '</div>' +
+            '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:6px;">اختر الغرفة:</label>' +
+            '<select id="transfer-room" style="width:100%;padding:12px;background:rgba(255,255,255,0.08);border:1px solid #3b82f6;border-radius:10px;color:#fff;font-family:inherit;box-sizing:border-box;">' +
+                opts +
+            '</select>',
+        okLabel: '🔀 نقل',
+        onSave: async function () {
+            const sel = document.getElementById('transfer-room');
+            if (!sel || !sel.value) return;
+            const roomId = sel.value;
+            const room = QAMAR.ROOMS[roomId];
+            const roomName = room ? ((room.icon || '🚪') + ' ' + room.name) : roomId;
+
+            try {
+                await db.ref('user_presence/' + subj.uid).update({
+                    state: 'online',
+                    room: roomId,
+                    lastChanged: Date.now(),
+                    forced: true,
+                    forcedBy: me.uid,
+                    forcedReason: 'admin_transfer'
+                });
+                _logAudit('transfer', {
+                    targetUid: subj.uid, targetName: subj.name,
+                    roomId: roomId, roomName: roomName
+                });
+                _toast('🔀 تم نقله إلى ' + roomName);
+            } catch (e) {
+                console.error('transfer failed:', e);
+                _toast('⚠️ فشل: ' + e.message);
+            }
+        }
+    });
+}
+
+/* ── كتم كامل (دائم) ── */
+function _askMuteGlobal(subj) {
+    const me = ProfileState.me;
+    openAppModal({
+        title: '🔇 كتم كامل',
+        html:
+            '<div style="color:#ffcccc;font-size:12px;line-height:1.6;margin-bottom:12px;padding:10px;background:rgba(255,152,0,0.15);border-radius:8px;border:1px solid rgba(255,152,0,0.4);">' +
+                '🔇 سيُكتم <b style="color:#fff;">' + _esc(subj.name || '') + '</b> من الكتابة في <b style="color:#ff9800;">كل الغرف</b>.<br>' +
+                '⏰ دائم حتى يُلغى يدوياً.' +
+            '</div>' +
+            '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:6px;">السبب (اختياري):</label>' +
+            '<input type="text" id="mute-global-reason" placeholder="سبب الكتم..." style="width:100%;padding:12px;background:rgba(255,255,255,0.08);border:1px solid #ff9800;border-radius:10px;color:#fff;font-family:inherit;text-align:right;box-sizing:border-box;">',
+        okLabel: '🔇 كتم',
+        okCls: 'danger',
+        onSave: async function () {
+            const reason = (document.getElementById('mute-global-reason') || {}).value || '';
+            try {
+                await db.ref('users/' + subj.uid + '/mutes/global').set({
+                    at: Date.now(),
+                    byUid: me.uid,
+                    byName: me.name || 'admin',
+                    reason: reason.trim() || 'كتم إداري'
+                });
+                _logAudit('mute_global', {
+                    targetUid: subj.uid, targetName: subj.name,
+                    reason: reason.trim()
+                });
+                _toast('🔇 تم الكتم الكامل');
+            } catch (e) {
+                console.error('muteGlobal failed:', e);
+                _toast('⚠️ فشل: ' + e.message);
+            }
+        }
+    });
+}
+
+/* ── كتم في غرفة (دائم) ── */
+function _askMuteRoom(subj) {
+    const me = ProfileState.me;
+    const visibleRooms = Object.values(QAMAR.ROOMS || {}).filter(function (r) {
+        return !r.invisible && r.id !== 'jail';
+    });
+
+    let opts = '';
+    visibleRooms.forEach(function (r) {
+        opts += '<option value="' + _esc(r.id) + '">' + (r.icon || '🚪') + ' ' + _esc(r.name) + '</option>';
+    });
+
+    openAppModal({
+        title: '🔇 كتم في غرفة',
+        html:
+            '<div style="color:#ffcccc;font-size:12px;line-height:1.6;margin-bottom:12px;padding:10px;background:rgba(255,152,0,0.15);border-radius:8px;border:1px solid rgba(255,152,0,0.4);">' +
+                '🔇 سيُكتم <b style="color:#fff;">' + _esc(subj.name || '') + '</b> من الكتابة في <b style="color:#ff9800;">الغرفة المحددة فقط</b>.<br>' +
+                '⏰ دائم حتى يُلغى يدوياً.' +
+            '</div>' +
+            '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:6px;">اختر الغرفة:</label>' +
+            '<select id="mute-room-id" style="width:100%;padding:12px;background:rgba(255,255,255,0.08);border:1px solid #ff9800;border-radius:10px;color:#fff;font-family:inherit;box-sizing:border-box;margin-bottom:10px;">' +
+                opts +
+            '</select>' +
+            '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:6px;">السبب (اختياري):</label>' +
+            '<input type="text" id="mute-room-reason" placeholder="سبب الكتم..." style="width:100%;padding:12px;background:rgba(255,255,255,0.08);border:1px solid #ff9800;border-radius:10px;color:#fff;font-family:inherit;text-align:right;box-sizing:border-box;">',
+        okLabel: '🔇 كتم',
+        okCls: 'danger',
+        onSave: async function () {
+            const sel = document.getElementById('mute-room-id');
+            if (!sel || !sel.value) return;
+            const roomId = sel.value;
+            const room = QAMAR.ROOMS[roomId];
+            const roomName = room ? ((room.icon || '🚪') + ' ' + room.name) : roomId;
+            const reason = (document.getElementById('mute-room-reason') || {}).value || '';
+
+            try {
+                await db.ref('users/' + subj.uid + '/mutes/' + roomId).set({
+                    at: Date.now(),
+                    byUid: me.uid,
+                    byName: me.name || 'admin',
+                    reason: reason.trim() || 'كتم إداري',
+                    roomId: roomId,
+                    roomName: roomName
+                });
+                _logAudit('mute_room', {
+                    targetUid: subj.uid, targetName: subj.name,
+                    roomId: roomId, roomName: roomName,
+                    reason: reason.trim()
+                });
+                _toast('🔇 تم كتمه في ' + roomName);
+            } catch (e) {
+                console.error('muteRoom failed:', e);
+                _toast('⚠️ فشل: ' + e.message);
+            }
+        }
+    });
+}
+
+/* ── طرد كامل (ban + بصمة + IP) ── */
+function _askKickFull(subj) {
+    const me = ProfileState.me;
+    openAppModal({
+        title: '🛑 طرد كامل (دائم)',
+        html:
+            '<div style="color:#ffcccc;font-size:12px;line-height:1.8;margin-bottom:12px;padding:12px;background:rgba(220,38,38,0.15);border-radius:8px;border:1px solid rgba(220,38,38,0.5);">' +
+                '⚠️ <b>تحذير خطير!</b><br>' +
+                '👤 الهدف: <b style="color:#fff;">' + _esc(subj.name || '') + '</b><br>' +
+                '🔑 الكود: <b style="color:#ffd700;">' + _esc(subj.code || '—') + '</b><br><br>' +
+                '<b>سيتم:</b><br>' +
+                '🚫 حظر الحساب نهائياً<br>' +
+                '📱 حرق بصمة الجهاز<br>' +
+                '🌐 حرق عنوان IP<br>' +
+                '<br><b style="color:#ff2222;">لا يمكن التراجع!</b>' +
+            '</div>' +
+            '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:6px;">السبب (اختياري):</label>' +
+            '<input type="text" id="kickfull-reason" placeholder="سبب الطرد..." style="width:100%;padding:12px;background:rgba(255,255,255,0.08);border:1px solid #dc2626;border-radius:10px;color:#fff;font-family:inherit;text-align:right;box-sizing:border-box;margin-bottom:10px;">' +
+            '<div style="display:flex;align-items:center;gap:10px;padding:8px;">' +
+                '<input type="checkbox" id="kickfull-confirm" style="width:20px;height:20px;accent-color:#dc2626;">' +
+                '<label for="kickfull-confirm" style="flex:1;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">أؤكد أنني أريد الطرد الكامل</label>' +
+            '</div>',
+        okLabel: '🛑 طرد نهائي',
+        okCls: 'danger',
+        onSave: async function () {
+            const cb = document.getElementById('kickfull-confirm');
+            if (!cb || !cb.checked) {
+                _toast('⚠️ يجب تأكيد العملية');
+                return;
+            }
+            const reason = (document.getElementById('kickfull-reason') || {}).value || '';
+            await _executeKickFull(subj, reason.trim());
+        }
+    });
+}
+
+async function _executeKickFull(subj, reason) {
+    const me = ProfileState.me;
+    _toast('⏳ جاري الطرد...');
+
+    try {
+        const now = Date.now();
+        const PERMANENT_BAN_MS = 365 * 24 * 60 * 60 * 1000;
+
+        /* 1. تحديث المستخدم */
+        await db.ref('users/' + subj.uid).update({
+            isBanned: true,
+            bannedUntil: now + PERMANENT_BAN_MS,
+            permanentBan: true,
+            banReason: reason || 'طرد كامل — إجراء إداري',
+            bannedBy: me.uid,
+            bannedByName: me.name || 'admin',
+            bannedAt: now
+        });
+
+        /* 2. استدعاء DeviceGuard.ban */
+        if (window.DeviceGuard && typeof window.DeviceGuard.ban === 'function') {
+            try {
+                await window.DeviceGuard.ban(
+                    subj.uid,
+                    me.uid,
+                    me.name || 'admin',
+                    reason || 'طرد كامل'
+                );
+                console.log('🛡️ DeviceGuard.ban: success');
+            } catch (e) {
+                console.warn('⚠️ DeviceGuard.ban failed:', e);
+            }
+        }
+
+        /* 3. طرد من الغرفة الحالية */
+        try {
+            var roomId = (typeof ChatState !== 'undefined' && ChatState.currentRoom) || 'general';
+            await db.ref('room_kicks/' + roomId + '/' + subj.uid).set({
+                by: me.uid,
+                byName: me.name || 'admin',
+                at: now,
+                permanent: true
+            });
+        } catch (e) {}
+
+        /* 4. log */
+        _logAudit('kick_full', {
+            targetUid: subj.uid,
+            targetName: subj.name,
+            targetCode: subj.code || '',
+            reason: reason
+        });
+
+        _toast('🛑 تم الطرد الكامل');
+
+        setTimeout(function () {
+            location.reload();
+        }, 1200);
+
+    } catch (e) {
+        console.error('_executeKickFull failed:', e);
+        _toast('⚠️ فشل: ' + e.message);
+    }
+}
+
+/* ── طرد من غرفة (دائم) ── */
+function _askKickFromRoom(subj) {
+    const me = ProfileState.me;
+    const visibleRooms = Object.values(QAMAR.ROOMS || {}).filter(function (r) {
+        return !r.invisible && r.id !== 'jail';
+    });
+
+    let opts = '';
+    visibleRooms.forEach(function (r) {
+        opts += '<option value="' + _esc(r.id) + '">' + (r.icon || '🚪') + ' ' + _esc(r.name) + '</option>';
+    });
+
+    openAppModal({
+        title: '🚪 طرد من غرفة',
+        html:
+            '<div style="color:#ffcccc;font-size:12px;line-height:1.6;margin-bottom:12px;padding:10px;background:rgba(255,68,68,0.1);border-radius:8px;border:1px solid rgba(255,68,68,0.4);">' +
+                '🚪 سيُطرد <b style="color:#fff;">' + _esc(subj.name || '') + '</b> من الغرفة المحددة.<br>' +
+                '⏰ دائم حتى يُلغى يدوياً.' +
+            '</div>' +
+            '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:6px;">اختر الغرفة:</label>' +
+            '<select id="kickroom-id" style="width:100%;padding:12px;background:rgba(255,255,255,0.08);border:1px solid #dc2626;border-radius:10px;color:#fff;font-family:inherit;box-sizing:border-box;margin-bottom:10px;">' +
+                opts +
+            '</select>' +
+            '<label style="display:block;color:#ffd700;font-size:12px;font-weight:900;margin-bottom:6px;">السبب (اختياري):</label>' +
+            '<input type="text" id="kickroom-reason" placeholder="سبب الطرد..." style="width:100%;padding:12px;background:rgba(255,255,255,0.08);border:1px solid #dc2626;border-radius:10px;color:#fff;font-family:inherit;text-align:right;box-sizing:border-box;">',
+        okLabel: '🚪 طرد',
+        okCls: 'danger',
+        onSave: async function () {
+            const sel = document.getElementById('kickroom-id');
+            if (!sel || !sel.value) return;
+            const roomId = sel.value;
+            const room = QAMAR.ROOMS[roomId];
+            const roomName = room ? ((room.icon || '🚪') + ' ' + room.name) : roomId;
+            const reason = (document.getElementById('kickroom-reason') || {}).value || '';
+
+            try {
+                await db.ref('room_kicks/' + roomId + '/' + subj.uid).set({
+                    by: me.uid,
+                    byName: me.name || 'admin',
+                    at: Date.now(),
+                    permanent: true,
+                    reason: reason.trim() || 'طرد إداري'
+                });
+
+                /* لو كان بنفس الغرفة → ينقله للعام */
+                if (subj.currentRoom === roomId) {
+                    await db.ref('user_presence/' + subj.uid).update({
+                        room: 'general',
+                        lastChanged: Date.now(),
+                        forced: true,
+                        forcedBy: me.uid,
+                        forcedReason: 'kick_from_room'
+                    }).catch(function () {});
+                }
+
+                _logAudit('kick_from_room', {
+                    targetUid: subj.uid,
+                    targetName: subj.name,
+                    roomId: roomId,
+                    roomName: roomName,
+                    reason: reason.trim()
+                });
+                _toast('🚪 تم طرده من ' + roomName);
+            } catch (e) {
+                console.error('kickFromRoom failed:', e);
+                _toast('⚠️ فشل: ' + e.message);
+            }
+        }
+    });
+}
+
+/* ═══ Helper: pickImageFile ═══ */
 function pickImageFile(inputId, onFile, opts) {
     opts = opts || {};
     const inp = document.getElementById(inputId);
@@ -2559,6 +3285,19 @@ window.updateVisitorButtons = updateVisitorButtons;
 window.renderInfoGrid = renderInfoGrid;
 window.renderVisitors = renderVisitors;
 window.renderLikers = renderLikers;
+window.renderMomentsTab = renderMomentsTab;
+window.renderFriendsTab = renderFriendsTab;
 window._openUserProfile = _openUserProfile;
+window._loadVisitorSubject = _loadVisitorSubject;
+window._loadOwnerSubject = _loadOwnerSubject;
+window._startSubjectListener = _startSubjectListener;
+window._startPresenceListener = _startPresenceListener;
+/* ⭐ v16: exports جديدة */
+window._executeAdminAction = _executeAdminAction;
+window._askTransfer = _askTransfer;
+window._askMuteGlobal = _askMuteGlobal;
+window._askMuteRoom = _askMuteRoom;
+window._askKickFull = _askKickFull;
+window._askKickFromRoom = _askKickFromRoom;
 
-console.log('✅ profile-core.js v12 loaded — no-video + catbox upload');
+console.log('✅ profile-core.js v16 (TEST) loaded — shuffle + transfer + mutes + kickFull + kickFromRoom');
