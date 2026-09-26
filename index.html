@@ -23,6 +23,7 @@
 <link rel="dns-prefetch" href="https://www.youtube-nocookie.com">
 <link rel="dns-prefetch" href="https://i.ibb.co">
 <link rel="dns-prefetch" href="https://api.imgbb.com">
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -353,12 +354,8 @@ var t = setInterval(function(){
                 console.log('✅ preCheck: deviceId ready after', Date.now() - start, 'ms');
                 break;
             }
-            
             await new Promise(function(r){ setTimeout(r, 200); });
         }
-        
-        var finalDevId = window.DeviceGuard.getDeviceId && window.DeviceGuard.getDeviceId();
-        console.log('🔧 preCheck: final deviceId:', finalDevId ? finalDevId.substring(0,16) : 'NULL');
         
         return origPreCheck.apply(this, arguments);
     };
@@ -368,19 +365,11 @@ var t = setInterval(function(){
         var start = Date.now();
         var maxWait = 15000;
         
-        console.log('🔧 afterAuth: waiting for deviceId...');
-        
         while (Date.now() - start < maxWait) {
             var devId = window.DeviceGuard.getDeviceId && window.DeviceGuard.getDeviceId();
-            if (devId && devId.length > 10) {
-                console.log('✅ afterAuth: deviceId ready after', Date.now() - start, 'ms');
-                break;
-            }
+            if (devId && devId.length > 10) break;
             await new Promise(function(r){ setTimeout(r, 200); });
         }
-        
-        var finalDevId = window.DeviceGuard.getDeviceId && window.DeviceGuard.getDeviceId();
-        console.log('🔧 afterAuth: final deviceId:', finalDevId ? finalDevId.substring(0,16) : 'NULL');
         
         return origAfterAuth.apply(this, arguments);
     };
@@ -549,6 +538,7 @@ window._updateHeaderButtons = _updateHeaderButtons;
 <script defer src="pm-enhanced.js?v=70"></script>
 <script defer src="pm-fixes.js?v=70"></script>
 <script defer src="pm-fixes-2.js?v=70"></script>
+<script defer src="pm-archiver.js?v=1"></script>
 <script defer src="media-picker.js?v=70"></script>
 <script defer src="bots.js?v=70"></script>
 <script defer src="guardian-hide.js?v=70"></script>
@@ -786,20 +776,20 @@ function init(){
     btn.onclick = function(){
         var dg = window.DeviceGuard;
         var devId = dg && dg.getDeviceId ? dg.getDeviceId() : null;
+        var uuid = dg && dg.getUuid ? dg.getUuid() : null;
         var ip = dg && dg.getIp ? dg.getIp() : null;
         var ipHash = dg && dg.getIpHash ? dg.getIpHash() : null;
         var isReady = dg && dg.isReady ? dg.isReady() : false;
-        var cachedDevice = null;
-        try { cachedDevice = localStorage.getItem('qamar_device_id'); } catch(e) {}
+        var version = dg && dg.version ? dg.version : '?';
 
         var html = '<div style="background:#0a0616;border:2px solid #ffd700;border-radius:16px;padding:20px;max-width:340px;width:90vw;direction:rtl;color:#fff;font-family:Cairo,sans-serif;font-size:12px;line-height:1.7;">' +
-            '<h3 style="color:#ffd700;margin:0 0 12px;font-size:15px;">🛡️ حالة DeviceGuard</h3>' +
+            '<h3 style="color:#ffd700;margin:0 0 12px;font-size:15px;">🛡️ DeviceGuard v' + version + '</h3>' +
             '<div style="background:rgba(0,0,0,0.4);border-radius:8px;padding:10px;word-break:break-all;">' +
-            '<div><b style="color:#ffd700;">Ready:</b> ' + (isReady ? '<span style="color:#4ade80;">✅ نعم</span>' : '<span style="color:#ff6666;">❌ لا</span>') + '</div>' +
-            '<div style="margin-top:6px;"><b style="color:#ffd700;">Device ID:</b><br>' + (devId ? '<span style="color:#4ade80;font-size:11px;">' + devId.substring(0,24) + '...</span>' : '<span style="color:#ff6666;">❌ فارغ</span>') + '</div>' +
-            '<div style="margin-top:6px;"><b style="color:#ffd700;">IP:</b> ' + (ip ? ip : '<span style="color:#ff6666;">❌ فارغ</span>') + '</div>' +
-            '<div style="margin-top:6px;"><b style="color:#ffd700;">IP Hash:</b><br>' + (ipHash ? '<span style="color:#4ade80;font-size:11px;">' + ipHash.substring(0,20) + '...</span>' : '<span style="color:#ff6666;">❌ فارغ</span>') + '</div>' +
-            '<div style="margin-top:6px;"><b style="color:#ffd700;">Cache:</b> ' + (cachedDevice ? '<span style="color:#4ade80;">موجود</span>' : '<span style="color:#fbbf24;">غير موجود</span>') + '</div>' +
+            '<div><b style="color:#ffd700;">Ready:</b> ' + (isReady ? '<span style="color:#4ade80;">✅</span>' : '<span style="color:#ff6666;">❌</span>') + '</div>' +
+            '<div style="margin-top:6px;"><b style="color:#ffd700;">Device ID:</b><br>' + (devId ? '<span style="color:#4ade80;font-size:11px;">' + devId.substring(0,24) + '...</span>' : '<span style="color:#ff6666;">❌</span>') + '</div>' +
+            (uuid ? '<div style="margin-top:6px;"><b style="color:#ffd700;">UUID:</b><br><span style="color:#c084fc;font-size:11px;">' + uuid.substring(0,24) + '...</span></div>' : '') +
+            '<div style="margin-top:6px;"><b style="color:#ffd700;">IP:</b> ' + (ip || '<span style="color:#ff6666;">❌</span>') + '</div>' +
+            '<div style="margin-top:6px;"><b style="color:#ffd700;">IP Hash:</b><br>' + (ipHash ? '<span style="color:#4ade80;font-size:11px;">' + ipHash.substring(0,20) + '...</span>' : '<span style="color:#ff6666;">❌</span>') + '</div>' +
             '</div>' +
             '<button onclick="document.getElementById(\'dg-debug-overlay\').remove()" style="width:100%;margin-top:14px;padding:10px;background:#ffd700;color:#000;border:none;border-radius:10px;font-family:inherit;font-weight:900;font-size:13px;cursor:pointer;">إغلاق</button>' +
             '</div>';
