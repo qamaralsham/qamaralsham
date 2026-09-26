@@ -1,19 +1,17 @@
 // ==============================================
-// device-guard.js v4 (TEST)
+// device-guard.js v5 (TEST)
 // ==============================================
-// ✅ v4 (فوق v3):
-//   1. بصمة بسيطة جداً: UA + Screen + Lang
+// ✅ v5 (فوق v4):
+//   1. بصمة تعتمد على IP Hash + Screen + Lang
 //   2. نفس البصمة في Chrome عادي و Incognito
-//   3. بصمة أطول (48 حرف) لتقليل التصادم
-//   4. مقارنة عبر IP أيضاً
-//   5. عدم الاعتماد على Canvas/Audio/Fonts
-//   v3 محفوظ: لا منع + إشعار فقط
+//   3. حذف: UA, platform, hardwareConcurrency
+//   v4 محفوظ: كشف + إشعار + لا منع
 // ==============================================
 
 (function () {
     'use strict';
-    if (window.__deviceGuardV4) return;
-    window.__deviceGuardV4 = true;
+    if (window.__deviceGuardV5) return;
+    window.__deviceGuardV5 = true;
 
     var DG = {
         deviceId: null,
@@ -25,7 +23,7 @@
         _watchingBanned: false
     };
 
-    /* ═══ Hash قوي — ينتج 48 حرف ═══ */
+    /* ═══ Hash قوي — 48 حرف ═══ */
     function _hash(str) {
         if (!str) return '';
         var h1 = 5381, h2 = 52711, h3 = 41999, h4 = 33107;
@@ -40,41 +38,40 @@
         return 'dg_' + out.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 48);
     }
 
-    /* ═══ بصمة بسيطة وحتمية ═══ */
+    /* ═══ بصمة v5 — تعتمد على IP Hash ═══ */
     function _buildDeviceId() {
         var parts = [];
 
-        /* 1. UA — لكن نُزيل معلومات النافذة إن وُجدت */
+        /* ⭐ 1. IP Hash (الأساس — ثابت في نفس الشبكة) */
+        if (DG.ipHash) {
+            parts.push('IP:' + DG.ipHash);
+        }
+
+        /* 2. Screen Width (ثابت في نفس الجهاز) */
+        try { parts.push('SW:' + (screen.width || 0)); } catch (e) {}
+
+        /* 3. Screen Height (ثابت في نفس الجهاز) */
+        try { parts.push('SH:' + (screen.height || 0)); } catch (e) {}
+
+        /* 4. Language (ثابت) */
         try {
-            var ua = navigator.userAgent || '';
-            /* نُزيل أي شيء قد يختلف بين النوافذ */
-            ua = ua.replace(/\s+/g, ' ').trim();
-            parts.push(ua);
+            var lang = (navigator.language || '').substring(0, 2);
+            parts.push('L:' + lang);
         } catch (e) {}
 
-        /* 2. Screen Width (أكثر استقراراً من الارتفاع) */
-        try { parts.push(String(screen.width || 0)); } catch (e) {}
+        /* 5. Timezone (ثابت في نفس المنطقة) */
+        try {
+            parts.push('TZ:' + (Intl.DateTimeFormat().resolvedOptions().timeZone || ''));
+        } catch (e) {}
 
-        /* 3. Color Depth */
-        try { parts.push(String(screen.colorDepth || 0)); } catch (e) {}
+        /* ⚠️ محذوف: UA, platform, hardwareConcurrency, deviceMemory, Canvas, Audio, Fonts */
 
-        /* 4. Language */
-        try { parts.push(navigator.language || ''); } catch (e) {}
-
-        /* 5. Platform */
-        try { parts.push(navigator.platform || ''); } catch (e) {}
-
-        /* 6. Hardware Concurrency */
-        try { parts.push(String(navigator.hardwareConcurrency || 0)); } catch (e) {}
-
-        /* ⚠️ حذف: Canvas، Audio، Fonts، Battery، MediaDevices */
-
-        var sig = parts.join('|||');
-        console.log('🔍 device signature:', sig.substring(0, 100));
+        var sig = parts.join('|');
+        console.log('🔍 device signature:', sig);
         return _hash(sig);
     }
 
-    /* ═══ Device metadata ═══ */
+    /* ═══ Device metadata (للعرض فقط) ═══ */
     function _getDeviceMetadata() {
         var meta = {};
         try { meta.ua = (navigator.userAgent || '').substring(0, 200); } catch (e) {}
@@ -104,30 +101,30 @@
     /* ═══ Init ═══ */
     async function _init() {
         try {
-            /* ⚠️ مهم: لا نستخدم cache إطلاقاً — نبني البصمة في كل مرة */
-            /* لأن البصمة الآن حتمية، ستكون نفسها دائماً */
-
-            DG.deviceId = _buildDeviceId();
-            console.log('🛡️ DeviceGuard v4: deviceId =', DG.deviceId);
-
-            /* IP */
+            /* ⭐ 1. IP أولاً — لأن البصمة تعتمد عليه */
             var ip = await _fetchIp();
             if (ip) {
                 DG.ip = ip;
                 DG.ipHash = _hash('ip_' + ip);
                 try { localStorage.setItem(QAMAR.STORAGE_KEYS.IP_HASH, DG.ipHash); } catch (e) {}
-                console.log('🛡️ DeviceGuard v4: IP =', ip);
+                console.log('🛡️ DeviceGuard v5: IP =', ip, '| hash =', DG.ipHash);
             } else {
                 var cachedIp = localStorage.getItem(QAMAR.STORAGE_KEYS.IP_HASH);
                 if (cachedIp) {
                     DG.ipHash = cachedIp;
-                    console.log('🛡️ DeviceGuard v4: IP من cache');
+                    console.log('🛡️ DeviceGuard v5: IP من cache');
+                } else {
+                    console.warn('🛡️ DeviceGuard v5: لا يوجد IP — سيتم استخدام بصمة محدودة');
                 }
             }
 
+            /* ⭐ 2. الآن نبني البصمة */
+            DG.deviceId = _buildDeviceId();
+            console.log('🛡️ DeviceGuard v5: deviceId =', DG.deviceId);
+
             DG.ready = true;
         } catch (e) {
-            console.error('🛡️ DeviceGuard v4 init failed:', e);
+            console.error('🛡️ DeviceGuard v5 init failed:', e);
             DG.ready = true;
         }
     }
@@ -185,17 +182,17 @@
                 return k.indexOf('_pending_') !== 0;
             });
 
-            console.log('🛡️ DeviceGuard v4: device_registry has', registeredUids.length, 'users');
+            console.log('🛡️ DeviceGuard v5: device_registry has', registeredUids.length, 'users');
 
             if (registeredUids.length === 0) {
                 await register(uid, name);
-                console.log('🛡️ DeviceGuard v4: first user on this device');
+                console.log('🛡️ DeviceGuard v5: first user');
                 return;
             }
 
             if (registeredUids.indexOf(uid) !== -1) {
                 await register(uid, name);
-                console.log('🛡️ DeviceGuard v4: returning user');
+                console.log('🛡️ DeviceGuard v5: returning user');
                 return;
             }
 
@@ -235,13 +232,13 @@
                 }));
             }
             await Promise.all(ops);
-            console.log('🛡️ DeviceGuard v4: registered', uid.substring(0, 8));
+            console.log('🛡️ DeviceGuard v5: registered', uid.substring(0, 8));
         } catch (e) {
             console.warn('🛡️ register error:', e);
         }
     }
 
-    /* ═══ _handleMultiAccount — v4 (يدخل + إشعار) ═══ */
+    /* ═══ _handleMultiAccount — v5 ═══ */
     async function _handleMultiAccount(uid, name, existingUids) {
         try {
             var now = Date.now();
@@ -295,7 +292,7 @@
         }
     }
 
-    /* ═══ _notifyKing — v4 ═══ */
+    /* ═══ _notifyKing — v5 ═══ */
     async function _notifyKing(uid, name, existingUids) {
         try {
             var kingSnap = await db.ref('config/king_uid').once('value');
@@ -415,7 +412,7 @@
             });
             if (allDone || attempts >= 100) {
                 clearInterval(t);
-                console.log('🛡️ DeviceGuard v4: login handlers hooked');
+                console.log('🛡️ DeviceGuard v5: login handlers hooked');
             }
         }, 100);
     }
@@ -445,7 +442,7 @@
             wrapped.__dgWrapped = true;
             window.initChat = wrapped;
             clearInterval(t);
-            console.log('🛡️ DeviceGuard v4: initChat hooked');
+            console.log('🛡️ DeviceGuard v5: initChat hooked');
         }, 100);
     }
 
@@ -531,7 +528,7 @@
         getIpHash: function () { return DG.ipHash; },
         getIp: function () { return DG.ip; },
         isReady: function () { return DG.ready; },
-        version: 4
+        version: 5
     };
 
     /* ═══ Boot ═══ */
@@ -549,5 +546,5 @@
         _boot();
     }
 
-    console.log('🛡️ device-guard.js v4 (TEST) loaded — deterministic fingerprint');
+    console.log('🛡️ device-guard.js v5 (TEST) loaded — IP-based fingerprint');
 })();
