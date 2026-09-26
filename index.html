@@ -323,60 +323,40 @@ input,textarea,select{font-size:16px!important}
 if(window.__dgTimeoutPatch)return;
 window.__dgTimeoutPatch=true;
 
-console.log('🔧 DG patch: starting...');
-
 var attempts = 0;
 var t = setInterval(function(){
     attempts++;
-    
     if (!window.DeviceGuard || typeof window.DeviceGuard.preCheck !== 'function') {
         if (attempts >= 200) clearInterval(t);
         return;
     }
-    
-    if (window.DeviceGuard.__timeoutPatchApplied) {
-        clearInterval(t);
-        return;
-    }
-    
+    if (window.DeviceGuard.__timeoutPatchApplied) { clearInterval(t); return; }
+
     var origPreCheck = window.DeviceGuard.preCheck;
     window.DeviceGuard.preCheck = async function(){
         var start = Date.now();
-        var maxWait = 15000;
-        
-        console.log('🔧 preCheck: waiting for deviceId...');
-        
-        while (Date.now() - start < maxWait) {
+        while (Date.now() - start < 15000) {
             var ready = window.DeviceGuard.isReady && window.DeviceGuard.isReady();
             var devId = window.DeviceGuard.getDeviceId && window.DeviceGuard.getDeviceId();
-            
-            if (ready && devId && devId.length > 10) {
-                console.log('✅ preCheck: deviceId ready after', Date.now() - start, 'ms');
-                break;
-            }
+            if (ready && devId && devId.length > 10) break;
             await new Promise(function(r){ setTimeout(r, 200); });
         }
-        
         return origPreCheck.apply(this, arguments);
     };
-    
+
     var origAfterAuth = window.DeviceGuard.afterAuth;
     window.DeviceGuard.afterAuth = async function(uid, name){
         var start = Date.now();
-        var maxWait = 15000;
-        
-        while (Date.now() - start < maxWait) {
+        while (Date.now() - start < 15000) {
             var devId = window.DeviceGuard.getDeviceId && window.DeviceGuard.getDeviceId();
             if (devId && devId.length > 10) break;
             await new Promise(function(r){ setTimeout(r, 200); });
         }
-        
         return origAfterAuth.apply(this, arguments);
     };
-    
+
     window.DeviceGuard.__timeoutPatchApplied = true;
     clearInterval(t);
-    console.log('✅ DG patch: applied');
 }, 100);
 })();
 </script>
@@ -391,23 +371,19 @@ var t = setInterval(function(){
     function _sanitize(msg) {
         if (typeof msg !== 'string') return msg;
         var cleaned = msg;
-
         cleaned = cleaned.replace(/\b(imgbb|catbox\.moe|catbox|0x0\.st|0x0)\b/gi, '⏳');
         cleaned = cleaned.replace(/\btelegram\b/gi, '⏳');
         cleaned = cleaned.replace(/\bTG\s+(doc|audio|video|getFile)\b/gi, '⏳');
         cleaned = cleaned.replace(/\bTG\b/g, '⏳');
         cleaned = cleaned.replace(/\bimagekit\b/gi, '⏳');
         cleaned = cleaned.replace(/\bImageKit\b/g, '⏳');
-
         cleaned = cleaned.replace(/تم عبر ⏳+/g, '✅ تم الرفع');
         cleaned = cleaned.replace(/عبر ⏳+\s*\.\.\./g, '⏳ جاري...');
         cleaned = cleaned.replace(/جرّب ⏳+\s*\(/g, '⏳ جاري المحاولة (');
         cleaned = cleaned.replace(/جاري الرفع متوازي \(\d+ خدمات\)/g, '⏳ جاري الرفع...');
-
         cleaned = cleaned.replace(/⏳\s+⏳/g, '⏳');
         cleaned = cleaned.replace(/⏳\s+و\s+⏳/g, '⏳');
         cleaned = cleaned.replace(/\s+/g, ' ').trim();
-
         return cleaned;
     }
 
@@ -419,14 +395,12 @@ var t = setInterval(function(){
             return;
         }
         if (window.showToast.__uploadPrivacy) { clearInterval(t); return; }
-
         var _orig = window.showToast;
         window.showToast = function (icon, msg, duration) {
             return _orig.call(this, icon, _sanitize(msg), duration);
         };
         window.showToast.__uploadPrivacy = true;
         clearInterval(t);
-        console.log('🔒 upload-privacy v1: service names hidden (⏳)');
     }, 100);
 })();
 </script>
@@ -748,66 +722,280 @@ window.addEventListener('load',function(){setTimeout(trySet,2000);});
 })();
 </script>
 
-<!-- ⭐⭐ زر تصحيح 🛡️ ⭐⭐ -->
+<!-- ⭐⭐⭐ زر التشخيص الشامل 🐛 (حصري للملك) ⭐⭐⭐ -->
 <script>
 (function(){
 'use strict';
-if(window.__dgDebugBtn)return;
-window.__dgDebugBtn=true;
+if(window.__fullDebugPanel)return;
+window.__fullDebugPanel=true;
 
+/* ═══ اجمع كل الأخطاء ═══ */
+window.__debugErrors = window.__debugErrors || [];
+
+var origWarn = console.warn;
+console.warn = function(){
+    try{
+        window.__debugErrors.push({
+            type:'warn',
+            msg: Array.prototype.slice.call(arguments).join(' ').substring(0,150),
+            at: Date.now()
+        });
+        if(window.__debugErrors.length>50) window.__debugErrors.shift();
+    }catch(e){}
+    return origWarn.apply(console, arguments);
+};
+
+var origError = console.error;
+console.error = function(){
+    try{
+        window.__debugErrors.push({
+            type:'error',
+            msg: Array.prototype.slice.call(arguments).join(' ').substring(0,150),
+            at: Date.now()
+        });
+        if(window.__debugErrors.length>50) window.__debugErrors.shift();
+    }catch(e){}
+    return origError.apply(console, arguments);
+};
+
+/* ═══ فحص حالة السكريبتات ═══ */
+function checkScripts(){
+    var checks = [
+        ['config.js', typeof QAMAR !== 'undefined'],
+        ['ranks.js', typeof RANKS !== 'undefined'],
+        ['new-rank-88.js', typeof RANKS !== 'undefined' && RANKS['ملك'] !== undefined],
+        ['utils.js', typeof getDefaultAvatar === 'function'],
+        ['name-effects.js', typeof NameEffects !== 'undefined'],
+        ['frames-engine.js', typeof applyFrameTo === 'function'],
+        ['uploader.js', typeof UploadService !== 'undefined'],
+        ['connection-optimizer.js', window.__connectionOptimizerV1 === true],
+        ['firebase-persistence.js', window.__firebasePersistenceV2 === true],
+        ['chat-optimizer.js', window.__chatOptimizerV1 === true],
+        ['connection-resilience.js', window.__connectionResilienceV1 === true],
+        ['device-guard.js', typeof DeviceGuard !== 'undefined'],
+        ['auth.js', typeof getCurrentUser === 'function'],
+        ['chat.js', typeof sendMessage === 'function'],
+        ['link-fix.js', window.__linkFixV1 === true],
+        ['video-token-fix.js', window.__videoTokenFix === true],
+        ['youtube-search.js', typeof YouTubeSearch !== 'undefined'],
+        ['islamic-library.js', typeof ISLAMIC_LIBRARY !== 'undefined'],
+        ['pm-enhanced.js', window.__pmEnhancedV10 === true],
+        ['pm-fixes.js', window.__pmFixesV1 === true],
+        ['pm-fixes-2.js', window.__pmFixes2V1 === true],
+        ['pm-archiver.js', window.__pmArchiverV1 === true],
+        ['media-picker.js', typeof MediaPicker !== 'undefined'],
+        ['bots.js', typeof BotsState !== 'undefined'],
+        ['guardian-hide.js', window.__guardianHideV2 === true],
+        ['king-room.js', typeof KingRoom !== 'undefined'],
+        ['king-room-patch.js', window.__kingRoomPatchV2 === true],
+        ['memory-cleaner.js', window.__memoryCleanerV2 === true],
+        ['bot-messages-cleaner.js', window.__botMsgsCleanerV1 === true],
+        ['pc-compat-fixes.js', window.__pcCompatV1 === true],
+        ['multi-account-enhance.js', window.__multiAccountEnhanceV1 === true],
+        ['multi-account-viewer.js', window.__multiAccountViewerV1 === true],
+        ['guest-persist-fix.js', window.__guestPersistFixV1 === true],
+        ['guardian-inbox-reader.js', window.__guardianInboxReaderV1 === true],
+        ['imagekit-upload.js', window.__imgbbPrimaryV1 === true],
+        ['ft-upload-fix.js', window.__ftUploadFixV2 === true],
+        ['ft-remove-audio.js', window.__ftRemoveAudio === true],
+        ['pm-monitor.js', window.__pmMonitorV4 === true],
+        ['room-alerts.js', window.__roomAlertsV5 === true],
+        ['dice.js', typeof Dice !== 'undefined'],
+        ['invisible-mode.js', window.__invisibleModeV5 === true],
+        ['room-picker.js', window.__roomPickerV6 === true],
+        ['stories.js', window.__storiesV6 === true],
+        ['stories-patch.js', window.__storiesPatchV1 === true],
+        ['stories-cleaner.js', window.__storiesCleanerV2 === true],
+        ['final-fixes.js', window.__finalFixesV1 === true],
+        ['guest-restrictions.js', window.__guestRestrictionsV2 === true],
+        ['user-data-optimizer.js', window.__userDataOptimizerV2 === true],
+        ['paint-tool.js', typeof PaintTool !== 'undefined'],
+        ['paint-render.js', window.__paintRenderV2 === true],
+        ['video-render.js', window.__videoRenderV2 === true],
+        ['paint-bg-transparent.js', window.__paintBgTransV1 === true],
+        ['styled-messages.js', typeof StyledMessages !== 'undefined'],
+        ['floating-toolbar-v2.js', window.__floatingToolbarV2 === true],
+        ['pm-ui-fixes.js', window.__pmUiFixesV1 === true]
+    ];
+
+    return checks.map(function(c){
+        return {name: c[0], ok: !!c[1]};
+    });
+}
+
+/* ═══ Build Panel ═══ */
+function buildPanel(){
+    var dg = window.DeviceGuard || {};
+    var me = null;
+    try{ me = getCurrentUser ? getCurrentUser() : null; }catch(e){}
+
+    var scripts = checkScripts();
+    var okCount = scripts.filter(function(s){return s.ok;}).length;
+    var failCount = scripts.length - okCount;
+    var failed = scripts.filter(function(s){return !s.ok;});
+
+    var html = '';
+    html += '<div style="background:#0a0616;border:2px solid #ffd700;border-radius:16px;padding:16px;max-width:380px;width:92vw;max-height:90vh;overflow-y:auto;direction:rtl;color:#fff;font-family:Cairo,sans-serif;font-size:12px;line-height:1.6;">';
+
+    html += '<h3 style="color:#ffd700;margin:0 0 12px;font-size:15px;text-align:center;">🐛 تشخيص شامل</h3>';
+
+    /* المستخدم */
+    html += '<div style="background:rgba(0,0,0,0.4);border-radius:8px;padding:10px;margin-bottom:10px;">';
+    html += '<div style="color:#ffd700;font-weight:900;margin-bottom:6px;">👤 المستخدم</div>';
+    if(me){
+        html += '<div>الاسم: <b>'+ (me.name || '—') +'</b></div>';
+        html += '<div>الرتبة: <b style="color:#ffd700;">'+ (me.rank || '—') +'</b> ('+ (me.rankLevel || 0) +')</div>';
+        html += '<div>UID: <span style="color:#888;font-size:10px;">'+ (me.uid || '').substring(0,16) +'...</span></div>';
+        html += '<div>Guest: <b style="color:'+ (me.isGuest?'#fbbf24':'#4ade80') +';">'+ (me.isGuest ? 'نعم' : 'لا') +'</b></div>';
+    } else {
+        html += '<div style="color:#ff6666;">❌ لا يوجد مستخدم مسجل</div>';
+    }
+    html += '</div>';
+
+    /* DeviceGuard */
+    html += '<div style="background:rgba(0,0,0,0.4);border-radius:8px;padding:10px;margin-bottom:10px;">';
+    html += '<div style="color:#ffd700;font-weight:900;margin-bottom:6px;">🛡️ DeviceGuard (v' + (dg.version || '?') + ')</div>';
+    html += '<div>Ready: <b style="color:'+ (dg.isReady && dg.isReady() ? '#4ade80':'#ff6666') +';">'+ (dg.isReady && dg.isReady() ? '✅' : '❌') +'</b></div>';
+
+    var devId = dg.getDeviceId ? dg.getDeviceId() : null;
+    html += '<div>Device ID:<br><span style="color:'+ (devId ? '#4ade80':'#ff6666') +';font-size:10px;word-break:break-all;">'+ (devId || 'فارغ') +'</span></div>';
+
+    var uuid = dg.getUuid ? dg.getUuid() : null;
+    html += '<div>UUID:<br><span style="color:'+ (uuid ? '#c084fc':'#666') +';font-size:10px;word-break:break-all;">'+ (uuid || 'غير متوفر') +'</span></div>';
+
+    var ip = dg.getIp ? dg.getIp() : null;
+    html += '<div>IP: <b style="color:'+ (ip ? '#4ade80':'#ff6666') +';">'+ (ip || 'فارغ') +'</b></div>';
+
+    var ipHash = dg.getIpHash ? dg.getIpHash() : null;
+    html += '<div>IP Hash:<br><span style="color:'+ (ipHash ? '#4ade80':'#ff6666') +';font-size:10px;word-break:break-all;">'+ (ipHash || 'فارغ') +'</span></div>';
+
+    var uuidHash = dg.getUuidHash ? dg.getUuidHash() : null;
+    if(uuidHash){
+        html += '<div>UUID Hash:<br><span style="color:#c084fc;font-size:10px;word-break:break-all;">'+ uuidHash +'</span></div>';
+    }
+
+    html += '</div>';
+
+    /* Firebase */
+    html += '<div style="background:rgba(0,0,0,0.4);border-radius:8px;padding:10px;margin-bottom:10px;">';
+    html += '<div style="color:#ffd700;font-weight:900;margin-bottom:6px;">🔥 Firebase</div>';
+    html += '<div>db: <b style="color:'+ (typeof db !== 'undefined' && db ? '#4ade80':'#ff6666') +';">'+ (typeof db !== 'undefined' && db ? '✅' : '❌') +'</b></div>';
+    html += '<div>auth: <b style="color:'+ (typeof auth !== 'undefined' && auth ? '#4ade80':'#ff6666') +';">'+ (typeof auth !== 'undefined' && auth ? '✅' : '❌') +'</b></div>';
+
+    /* king_uid */
+    if(typeof db !== 'undefined' && db){
+        db.ref('config/king_uid').once('value').then(function(s){
+            var el = document.getElementById('__dbg_king_uid');
+            if(el){
+                var v = s.val();
+                el.innerHTML = v ? '<span style="color:#4ade80;">✅ '+ v.substring(0,16) +'...</span>' : '<span style="color:#ff6666;">❌ غير موجود</span>';
+            }
+        }).catch(function(){});
+    }
+    html += '<div>king_uid: <span id="__dbg_king_uid">⏳ جاري الفحص...</span></div>';
+    html += '</div>';
+
+    /* Scripts */
+    html += '<div style="background:rgba(0,0,0,0.4);border-radius:8px;padding:10px;margin-bottom:10px;">';
+    html += '<div style="color:#ffd700;font-weight:900;margin-bottom:6px;">📦 الملفات ('+ okCount +'/'+ scripts.length +')</div>';
+
+    if(failCount > 0){
+        html += '<div style="color:#ff9999;font-weight:900;margin-bottom:6px;">❌ فشل: '+ failCount +' ملف</div>';
+        failed.forEach(function(s){
+            html += '<div style="color:#ff6666;font-size:11px;padding:2px 0;">❌ '+ s.name +'</div>';
+        });
+    } else {
+        html += '<div style="color:#4ade80;font-weight:900;">✅ كل الملفات محمّلة</div>';
+    }
+
+    html += '<details style="margin-top:8px;">';
+    html += '<summary style="cursor:pointer;color:#888;font-size:11px;">عرض الكل</summary>';
+    scripts.forEach(function(s){
+        html += '<div style="color:'+ (s.ok ? '#4ade80':'#ff6666') +';font-size:11px;padding:1px 0;">'+ (s.ok?'✅':'❌') +' '+ s.name +'</div>';
+    });
+    html += '</details>';
+    html += '</div>';
+
+    /* الأخطاء */
+    var errs = window.__debugErrors || [];
+    if(errs.length > 0){
+        html += '<div style="background:rgba(255,68,68,0.1);border:1px solid rgba(255,68,68,0.4);border-radius:8px;padding:10px;margin-bottom:10px;">';
+        html += '<div style="color:#ff9999;font-weight:900;margin-bottom:6px;">⚠️ آخر الأخطاء ('+ errs.length +')</div>';
+        var recent = errs.slice(-10).reverse();
+        recent.forEach(function(e){
+            var color = e.type === 'error' ? '#ff6666' : '#fbbf24';
+            html += '<div style="color:'+ color +';font-size:10px;padding:3px 0;border-bottom:1px dashed rgba(255,255,255,0.1);word-break:break-word;">';
+            html += '<b>['+ e.type +']</b> '+ e.msg;
+            html += '</div>';
+        });
+        html += '</div>';
+    } else {
+        html += '<div style="text-align:center;color:#4ade80;padding:8px;font-size:11px;">✅ لا توجد أخطاء</div>';
+    }
+
+    /* أزرار */
+    html += '<button onclick="window.__refreshDebugPanel()" style="width:100%;margin-top:10px;padding:10px;background:#a855f7;color:#fff;border:none;border-radius:10px;font-family:inherit;font-weight:900;font-size:13px;cursor:pointer;">🔄 تحديث</button>';
+    html += '<button onclick="document.getElementById(\'__debug_overlay\').remove()" style="width:100%;margin-top:6px;padding:10px;background:#ffd700;color:#000;border:none;border-radius:10px;font-family:inherit;font-weight:900;font-size:13px;cursor:pointer;">إغلاق</button>';
+
+    html += '</div>';
+    return html;
+}
+
+function openPanel(){
+    var old = document.getElementById('__debug_overlay');
+    if(old) old.remove();
+
+    var ov = document.createElement('div');
+    ov.id = '__debug_overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);backdrop-filter:blur(4px);display:flex;justify-content:center;align-items:center;z-index:9999999;padding:12px;overflow-y:auto;';
+    ov.innerHTML = buildPanel();
+    ov.onclick = function(e){ if(e.target===ov) ov.remove(); };
+    document.body.appendChild(ov);
+}
+
+window.__refreshDebugPanel = function(){
+    var ov = document.getElementById('__debug_overlay');
+    if(!ov) return;
+    ov.innerHTML = buildPanel();
+    ov.onclick = function(e){ if(e.target===ov) ov.remove(); };
+};
+
+/* ═══ زر عائم — يظهر فقط للملك ═══ */
 function init(){
     var btn = document.createElement('button');
-    btn.id = 'dg-debug-btn';
+    btn.id = '__debug_btn';
     btn.type = 'button';
-    btn.innerHTML = '🛡️';
-    btn.title = 'حالة DeviceGuard';
-    btn.style.cssText = 'position:fixed;bottom:60px;left:8px;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,0.8);border:2px solid #ffd700;color:#ffd700;font-size:16px;cursor:pointer;z-index:999998;display:none;';
+    btn.innerHTML = '🐛';
+    btn.title = 'تشخيص (للملك فقط)';
+    btn.style.cssText = 'position:fixed;bottom:60px;left:8px;width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,0.85);border:2px solid #ffd700;color:#ffd700;font-size:18px;cursor:pointer;z-index:999998;display:none;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,0.6);';
     document.body.appendChild(btn);
 
-    setInterval(function(){
-        var u = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
-        if (u && u.rank === 'King') {
-            btn.style.display = 'block';
-        } else {
+    btn.onclick = openPanel;
+
+    /* إظهار الزر للملك فقط */
+    function checkKing(){
+        try{
+            var u = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
+            if(u && u.rank === 'King'){
+                btn.style.display = 'flex';
+            } else {
+                btn.style.display = 'none';
+            }
+        }catch(e){
             btn.style.display = 'none';
         }
-    }, 3000);
+    }
 
-    btn.onclick = function(){
-        var dg = window.DeviceGuard;
-        var devId = dg && dg.getDeviceId ? dg.getDeviceId() : null;
-        var uuid = dg && dg.getUuid ? dg.getUuid() : null;
-        var ip = dg && dg.getIp ? dg.getIp() : null;
-        var ipHash = dg && dg.getIpHash ? dg.getIpHash() : null;
-        var isReady = dg && dg.isReady ? dg.isReady() : false;
-        var version = dg && dg.version ? dg.version : '?';
-
-        var html = '<div style="background:#0a0616;border:2px solid #ffd700;border-radius:16px;padding:20px;max-width:340px;width:90vw;direction:rtl;color:#fff;font-family:Cairo,sans-serif;font-size:12px;line-height:1.7;">' +
-            '<h3 style="color:#ffd700;margin:0 0 12px;font-size:15px;">🛡️ DeviceGuard v' + version + '</h3>' +
-            '<div style="background:rgba(0,0,0,0.4);border-radius:8px;padding:10px;word-break:break-all;">' +
-            '<div><b style="color:#ffd700;">Ready:</b> ' + (isReady ? '<span style="color:#4ade80;">✅</span>' : '<span style="color:#ff6666;">❌</span>') + '</div>' +
-            '<div style="margin-top:6px;"><b style="color:#ffd700;">Device ID:</b><br>' + (devId ? '<span style="color:#4ade80;font-size:11px;">' + devId.substring(0,24) + '...</span>' : '<span style="color:#ff6666;">❌</span>') + '</div>' +
-            (uuid ? '<div style="margin-top:6px;"><b style="color:#ffd700;">UUID:</b><br><span style="color:#c084fc;font-size:11px;">' + uuid.substring(0,24) + '...</span></div>' : '') +
-            '<div style="margin-top:6px;"><b style="color:#ffd700;">IP:</b> ' + (ip || '<span style="color:#ff6666;">❌</span>') + '</div>' +
-            '<div style="margin-top:6px;"><b style="color:#ffd700;">IP Hash:</b><br>' + (ipHash ? '<span style="color:#4ade80;font-size:11px;">' + ipHash.substring(0,20) + '...</span>' : '<span style="color:#ff6666;">❌</span>') + '</div>' +
-            '</div>' +
-            '<button onclick="document.getElementById(\'dg-debug-overlay\').remove()" style="width:100%;margin-top:14px;padding:10px;background:#ffd700;color:#000;border:none;border-radius:10px;font-family:inherit;font-weight:900;font-size:13px;cursor:pointer;">إغلاق</button>' +
-            '</div>';
-
-        var ov = document.createElement('div');
-        ov.id = 'dg-debug-overlay';
-        ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(4px);display:flex;justify-content:center;align-items:center;z-index:9999999;padding:16px;';
-        ov.innerHTML = html;
-        ov.onclick = function(e){ if(e.target===ov) ov.remove(); };
-        document.body.appendChild(ov);
-    };
-
-    console.log('✅ DG debug button: ready');
+    /* فحص كل 3 ثوان */
+    setInterval(checkKing, 3000);
+    checkKing();
 }
 
 if(document.readyState==='loading'){
     document.addEventListener('DOMContentLoaded', init);
-} else { init(); }
+}else{
+    init();
+}
 })();
 </script>
 
