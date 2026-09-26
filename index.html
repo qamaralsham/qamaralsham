@@ -315,6 +315,86 @@ input,textarea,select{font-size:16px!important}
 <script src="connection-resilience.js?v=70"></script>
 <script src="device-guard.js?v=70"></script>
 
+<!-- ⭐⭐ Patch: إجبار DeviceGuard على الانتظار ⭐⭐ -->
+<script>
+(function(){
+'use strict';
+if(window.__dgTimeoutPatch)return;
+window.__dgTimeoutPatch=true;
+
+console.log('🔧 DG patch: starting...');
+
+// انتظر DeviceGuard ثم أضف الإصلاح
+var attempts = 0;
+var t = setInterval(function(){
+    attempts++;
+    
+    if (!window.DeviceGuard || typeof window.DeviceGuard.preCheck !== 'function') {
+        if (attempts >= 200) clearInterval(t);
+        return;
+    }
+    
+    if (window.DeviceGuard.__timeoutPatchApplied) {
+        clearInterval(t);
+        return;
+    }
+    
+    // Patch preCheck — انتظر حتى 15 ثانية
+    var origPreCheck = window.DeviceGuard.preCheck;
+    window.DeviceGuard.preCheck = async function(){
+        var start = Date.now();
+        var maxWait = 15000;
+        
+        console.log('🔧 preCheck: waiting for deviceId...');
+        
+        while (Date.now() - start < maxWait) {
+            var ready = window.DeviceGuard.isReady && window.DeviceGuard.isReady();
+            var devId = window.DeviceGuard.getDeviceId && window.DeviceGuard.getDeviceId();
+            
+            if (ready && devId && devId.length > 10) {
+                console.log('✅ preCheck: deviceId ready after', Date.now() - start, 'ms');
+                break;
+            }
+            
+            await new Promise(function(r){ setTimeout(r, 200); });
+        }
+        
+        var finalDevId = window.DeviceGuard.getDeviceId && window.DeviceGuard.getDeviceId();
+        console.log('🔧 preCheck: final deviceId:', finalDevId ? finalDevId.substring(0,16) : 'NULL');
+        
+        return origPreCheck.apply(this, arguments);
+    };
+    
+    // Patch afterAuth — انتظر حتى 15 ثانية
+    var origAfterAuth = window.DeviceGuard.afterAuth;
+    window.DeviceGuard.afterAuth = async function(uid, name){
+        var start = Date.now();
+        var maxWait = 15000;
+        
+        console.log('🔧 afterAuth: waiting for deviceId...');
+        
+        while (Date.now() - start < maxWait) {
+            var devId = window.DeviceGuard.getDeviceId && window.DeviceGuard.getDeviceId();
+            if (devId && devId.length > 10) {
+                console.log('✅ afterAuth: deviceId ready after', Date.now() - start, 'ms');
+                break;
+            }
+            await new Promise(function(r){ setTimeout(r, 200); });
+        }
+        
+        var finalDevId = window.DeviceGuard.getDeviceId && window.DeviceGuard.getDeviceId();
+        console.log('🔧 afterAuth: final deviceId:', finalDevId ? finalDevId.substring(0,16) : 'NULL');
+        
+        return origAfterAuth.apply(this, arguments);
+    };
+    
+    window.DeviceGuard.__timeoutPatchApplied = true;
+    clearInterval(t);
+    console.log('✅ DG patch: applied (preCheck + afterAuth wait 15s for deviceId)');
+}, 100);
+})();
+</script>
+
 <!-- ⭐⭐ Upload Privacy ⭐⭐ -->
 <script>
 (function () {
@@ -624,10 +704,88 @@ async function handleUpgrade(btn) {
     finally { _resetBtn(btn, orig); }
 }
 
+// ⭐ اجعل الدوال متاحة على window لـ device-guard
+window.handleGuestLogin = handleGuestLogin;
+window.handleMemberLogin = handleMemberLogin;
+window.handleRegister = handleRegister;
+window.handleUpgrade = handleUpgrade;
+window.switchLoginTab = switchLoginTab;
+window.switchToRegister = switchToRegister;
+window.switchToLogin = switchToLogin;
+window.selectGender = selectGender;
+window.selectRegGender = selectRegGender;
+
 window.addEventListener('DOMContentLoaded', () => {
     const user = getCurrentUser();
     if (user) setTimeout(async () => { if (typeof initChat === 'function') await initChat(); }, 150);
 });
+</script>
+
+<!-- ⭐⭐ زر تصحيح 🛡️ — يعرض حالة DeviceGuard ⭐⭐ -->
+<script>
+(function(){
+'use strict';
+if(window.__dgDebugBtn)return;
+window.__dgDebugBtn=true;
+
+function init(){
+    // زر عائم صغير
+    var btn = document.createElement('button');
+    btn.id = 'dg-debug-btn';
+    btn.type = 'button';
+    btn.innerHTML = '🛡️';
+    btn.title = 'حالة DeviceGuard';
+    btn.style.cssText = 'position:fixed;bottom:60px;left:8px;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,0.8);border:2px solid #ffd700;color:#ffd700;font-size:16px;cursor:pointer;z-index:999998;display:none;';
+    document.body.appendChild(btn);
+
+    // أخفِ الزر افتراضياً، أظهره فقط لو المستخدم king
+    setInterval(function(){
+        var u = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
+        if (u && u.rank === 'King') {
+            btn.style.display = 'block';
+        } else {
+            btn.style.display = 'none';
+        }
+    }, 3000);
+
+    // عند الضغط — اعرض النافذة
+    btn.onclick = function(){
+        var dg = window.DeviceGuard;
+        var devId = dg && dg.getDeviceId ? dg.getDeviceId() : null;
+        var ip = dg && dg.getIp ? dg.getIp() : null;
+        var ipHash = dg && dg.getIpHash ? dg.getIpHash() : null;
+        var isReady = dg && dg.isReady ? dg.isReady() : false;
+        var cachedDevice = null;
+        try { cachedDevice = localStorage.getItem('qamar_device_id'); } catch(e) {}
+
+        var html = '<div style="background:#0a0616;border:2px solid #ffd700;border-radius:16px;padding:20px;max-width:340px;width:90vw;direction:rtl;color:#fff;font-family:Cairo,sans-serif;font-size:12px;line-height:1.7;">' +
+            '<h3 style="color:#ffd700;margin:0 0 12px;font-size:15px;">🛡️ حالة DeviceGuard</h3>' +
+            '<div style="background:rgba(0,0,0,0.4);border-radius:8px;padding:10px;word-break:break-all;">' +
+            '<div><b style="color:#ffd700;">Ready:</b> ' + (isReady ? '<span style="color:#4ade80;">✅ نعم</span>' : '<span style="color:#ff6666;">❌ لا</span>') + '</div>' +
+            '<div style="margin-top:6px;"><b style="color:#ffd700;">Device ID:</b><br>' + (devId ? '<span style="color:#4ade80;font-size:11px;">' + devId.substring(0,24) + '...</span>' : '<span style="color:#ff6666;">❌ فارغ</span>') + '</div>' +
+            '<div style="margin-top:6px;"><b style="color:#ffd700;">IP:</b> ' + (ip ? ip : '<span style="color:#ff6666;">❌ فارغ</span>') + '</div>' +
+            '<div style="margin-top:6px;"><b style="color:#ffd700;">IP Hash:</b><br>' + (ipHash ? '<span style="color:#4ade80;font-size:11px;">' + ipHash.substring(0,20) + '...</span>' : '<span style="color:#ff6666;">❌ فارغ</span>') + '</div>' +
+            '<div style="margin-top:6px;"><b style="color:#ffd700;">Cache:</b> ' + (cachedDevice ? '<span style="color:#4ade80;">موجود</span>' : '<span style="color:#fbbf24;">غير موجود</span>') + '</div>' +
+            '</div>' +
+            '<div style="color:#888;font-size:10px;margin-top:12px;text-align:center;">اقرأ هذه القيم — هذا ما يُرسل لقاعدة البيانات</div>' +
+            '<button onclick="document.getElementById(\'dg-debug-overlay\').remove()" style="width:100%;margin-top:14px;padding:10px;background:#ffd700;color:#000;border:none;border-radius:10px;font-family:inherit;font-weight:900;font-size:13px;cursor:pointer;">إغلاق</button>' +
+            '</div>';
+
+        var ov = document.createElement('div');
+        ov.id = 'dg-debug-overlay';
+        ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(4px);display:flex;justify-content:center;align-items:center;z-index:9999999;padding:16px;';
+        ov.innerHTML = html;
+        ov.onclick = function(e){ if(e.target===ov) ov.remove(); };
+        document.body.appendChild(ov);
+    };
+
+    console.log('✅ DG debug button: ready');
+}
+
+if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded', init);
+} else { init(); }
+})();
 </script>
 
 <script>
