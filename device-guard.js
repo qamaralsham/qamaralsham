@@ -1,19 +1,19 @@
 // ==============================================
-// device-guard.js v1 (TEST) — بصمة + IP + منع تعدد
+// device-guard.js v2 (TEST)
 // ==============================================
-// ✅ v1:
-//   1. بصمة متقدمة (Canvas + WebGL + Audio + Fonts + Battery + Media)
-//   2. IP من ipwho.is
-//   3. فحص banned_devices + banned_ips قبل الدخول
-//   4. منع الحسابات المكرّرة من نفس الجهاز
-//   5. حظر + إشعار الملك عند المحاولة
-//   6. listener للبان أثناء الجلسة
+// ✅ v2 (فوق v1):
+//   1. حذف البطارية من البصمة (كانت تجعلها متغيرة!)
+//   2. mediaDevices → فئات بدل أعداد
+//   3. _handleMultiAccount: لا يحاول الحظر (rules تمنع)
+//      فقط: audit_log + multi_account_alerts + notifyKing
+//   4. إضافة device metadata (شاشة + UA) للملك
+//   5. afterAuth & preCheck محسّنان
 // ==============================================
 
 (function () {
     'use strict';
-    if (window.__deviceGuardV1) return;
-    window.__deviceGuardV1 = true;
+    if (window.__deviceGuardV2) return;
+    window.__deviceGuardV2 = true;
 
     var DG = {
         deviceId: null,
@@ -25,9 +25,7 @@
         _watchingBanned: false
     };
 
-    /* ══════════════════════════════════════════════ */
-    /* Hash                                           */
-    /* ══════════════════════════════════════════════ */
+    /* ═══ Hash ═══ */
     function _hash(str) {
         if (!str) return '';
         var h1 = 5381, h2 = 52711;
@@ -41,30 +39,28 @@
         return 'dg_' + out.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 32);
     }
 
-    /* ══════════════════════════════════════════════ */
-    /* بناء بصمة الجهاز                               */
-    /* ══════════════════════════════════════════════ */
+    /* ═══ بناء بصمة الجهاز (v2 - بدون بطارية) ═══ */
     async function _buildDeviceId() {
         var parts = [];
 
         /* 1. UA + language + platform */
-        try { parts.push(navigator.userAgent || ''); } catch (e) { parts.push(''); }
-        try { parts.push(navigator.language || ''); } catch (e) { parts.push(''); }
-        try { parts.push(navigator.platform || ''); } catch (e) { parts.push(''); }
-        try { parts.push(String(navigator.hardwareConcurrency || 0)); } catch (e) { parts.push(''); }
-        try { parts.push(String(navigator.deviceMemory || 0)); } catch (e) { parts.push(''); }
+        try { parts.push(navigator.userAgent || ''); } catch (e) {}
+        try { parts.push(navigator.language || ''); } catch (e) {}
+        try { parts.push(navigator.platform || ''); } catch (e) {}
+        try { parts.push(String(navigator.hardwareConcurrency || 0)); } catch (e) {}
+        try { parts.push(String(navigator.deviceMemory || 0)); } catch (e) {}
 
         /* 2. Screen */
         try {
             var s = window.screen || {};
             parts.push([s.width || 0, s.height || 0, s.colorDepth || 0, s.pixelDepth || 0].join('x'));
             parts.push(String(window.devicePixelRatio || 1));
-        } catch (e) { parts.push(''); }
+        } catch (e) {}
 
         /* 3. Timezone */
         try {
             parts.push(Intl.DateTimeFormat().resolvedOptions().timeZone || '');
-        } catch (e) { parts.push(''); }
+        } catch (e) {}
 
         /* 4. Canvas */
         try {
@@ -83,7 +79,7 @@
                 ctx.fillText('Qamar🌙 الشام', 4, 17);
                 parts.push(canvas.toDataURL().substring(0, 200));
             }
-        } catch (e) { parts.push(''); }
+        } catch (e) {}
 
         /* 5. WebGL */
         try {
@@ -98,7 +94,7 @@
                 parts.push(String(gl.getParameter(gl.VERSION) || ''));
                 parts.push(String(gl.getParameter(gl.SHADING_LANGUAGE_VERSION) || ''));
             }
-        } catch (e) { parts.push(''); }
+        } catch (e) {}
 
         /* 6. AudioContext */
         try {
@@ -128,7 +124,7 @@
                 ]);
                 parts.push(audioHash);
             }
-        } catch (e) { parts.push(''); }
+        } catch (e) {}
 
         /* 7. Fonts */
         try {
@@ -149,35 +145,22 @@
             });
             document.body.removeChild(span);
             parts.push(detected.join(','));
-        } catch (e) { parts.push(''); }
-
-        /* 8. Battery */
-        try {
-            if (navigator.getBattery) {
-                var bat = await Promise.race([
-                    navigator.getBattery(),
-                    new Promise(function (r) { setTimeout(function () { r(null); }, 800); })
-                ]);
-                if (bat) {
-                    parts.push(bat.charging ? '1' : '0');
-                    if (typeof bat.level === 'number') parts.push(bat.level.toFixed(2));
-                }
-            }
         } catch (e) {}
 
-        /* 9. Media Devices */
+        /* 8. Battery — REMOVED (كان يجعل البصمة متغيرة) */
+
+        /* 9. Media Devices (فئات بدل أعداد دقيقة) */
         try {
             if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
                 var devs = await Promise.race([
                     navigator.mediaDevices.enumerateDevices(),
                     new Promise(function (r) { setTimeout(function () { r([]); }, 800); })
                 ]);
-                if (Array.isArray(devs)) {
-                    var cnt = { audioinput: 0, audiooutput: 0, videoinput: 0 };
-                    devs.forEach(function (d) {
-                        if (cnt[d.kind] !== undefined) cnt[d.kind]++;
-                    });
-                    parts.push(cnt.audioinput + '_' + cnt.audiooutput + '_' + cnt.videoinput);
+                if (Array.isArray(devs) && devs.length > 0) {
+                    var hasAudioIn = devs.some(function (d) { return d.kind === 'audioinput'; });
+                    var hasAudioOut = devs.some(function (d) { return d.kind === 'audiooutput'; });
+                    var hasVideoIn = devs.some(function (d) { return d.kind === 'videoinput'; });
+                    parts.push((hasAudioIn ? '1' : '0') + (hasAudioOut ? '1' : '0') + (hasVideoIn ? '1' : '0'));
                 }
             }
         } catch (e) {}
@@ -185,9 +168,18 @@
         return _hash(parts.join('|||'));
     }
 
-    /* ══════════════════════════════════════════════ */
-    /* جلب IP                                         */
-    /* ══════════════════════════════════════════════ */
+    /* ═══ Device metadata (للعرض فقط، لا يدخل في البصمة) ═══ */
+    function _getDeviceMetadata() {
+        var meta = {};
+        try { meta.ua = (navigator.userAgent || '').substring(0, 200); } catch (e) {}
+        try { meta.screen = (screen.width || 0) + 'x' + (screen.height || 0); } catch (e) {}
+        try { meta.lang = navigator.language || ''; } catch (e) {}
+        try { meta.tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
+        try { meta.platform = navigator.platform || ''; } catch (e) {}
+        return meta;
+    }
+
+    /* ═══ IP ═══ */
     async function _fetchIp() {
         try {
             var controller = new AbortController();
@@ -203,38 +195,34 @@
         return null;
     }
 
-    /* ══════════════════════════════════════════════ */
-    /* Init                                           */
-    /* ══════════════════════════════════════════════ */
+    /* ═══ Init ═══ */
     async function _init() {
         try {
-            /* deviceId — من cache أو بناء جديد */
             var cachedDevice = localStorage.getItem(QAMAR.STORAGE_KEYS.DEVICE_ID);
             if (cachedDevice && cachedDevice.length > 10) {
                 DG.deviceId = cachedDevice;
-                console.log('🛡️ DeviceGuard: deviceId من cache');
+                console.log('🛡️ DeviceGuard v2: deviceId من cache');
             } else {
                 try {
                     DG.deviceId = await _buildDeviceId();
                     try { localStorage.setItem(QAMAR.STORAGE_KEYS.DEVICE_ID, DG.deviceId); } catch (e) {}
-                    console.log('🛡️ DeviceGuard: deviceId جديد');
+                    console.log('🛡️ DeviceGuard v2: deviceId جديد:', DG.deviceId);
                 } catch (e) {
                     console.warn('🛡️ deviceId build failed:', e);
                 }
             }
 
-            /* IP */
             var ip = await _fetchIp();
             if (ip) {
                 DG.ip = ip;
                 DG.ipHash = _hash('ip_' + ip);
                 try { localStorage.setItem(QAMAR.STORAGE_KEYS.IP_HASH, DG.ipHash); } catch (e) {}
-                console.log('🛡️ DeviceGuard: IP محمّل');
+                console.log('🛡️ DeviceGuard v2: IP محمّل:', ip);
             } else {
                 var cachedIp = localStorage.getItem(QAMAR.STORAGE_KEYS.IP_HASH);
                 if (cachedIp) {
                     DG.ipHash = cachedIp;
-                    console.log('🛡️ DeviceGuard: IP من cache');
+                    console.log('🛡️ DeviceGuard v2: IP من cache');
                 }
             }
 
@@ -245,28 +233,23 @@
         }
     }
 
-    /* ══════════════════════════════════════════════ */
-    /* preCheck (قبل الدخول)                          */
-    /* ══════════════════════════════════════════════ */
+    /* ═══ preCheck ═══ */
     async function preCheck() {
-        /* ننتظر الـ init */
         if (!DG.ready) {
             await new Promise(function (r) {
                 var t = setInterval(function () {
                     if (DG.ready) { clearInterval(t); r(); }
                 }, 100);
-                setTimeout(function () { clearInterval(t); r(); }, 4000);
+                setTimeout(function () { clearInterval(t); r(); }, 8000);
             });
         }
         if (!DG.deviceId) return { allowed: true, reason: null };
 
         try {
-            /* banned_devices */
             var banSnap = await db.ref(QAMAR.PATHS.BANNED_DEVICES + '/' + DG.deviceId).once('value');
             if (banSnap.exists()) {
                 return { allowed: false, reason: '🚫 هذا الجهاز محظور من الدخول' };
             }
-            /* banned_ips */
             if (DG.ipHash) {
                 var ipBanSnap = await db.ref(QAMAR.PATHS.BANNED_IPS + '/' + DG.ipHash).once('value');
                 if (ipBanSnap.exists()) {
@@ -279,19 +262,16 @@
         return { allowed: true, reason: null };
     }
 
-    /* ══════════════════════════════════════════════ */
-    /* afterAuth (بعد نجاح الدخول)                    */
-    /* ══════════════════════════════════════════════ */
+    /* ═══ afterAuth ═══ */
     async function afterAuth(uid, name) {
         if (!uid || !DG.deviceId) return;
 
-        /* منع التكرار خلال 10 ثواني لنفس الـ uid */
         var last = DG._afterAuthDone[uid] || 0;
         if (Date.now() - last < 10000) return;
         DG._afterAuthDone[uid] = Date.now();
 
         try {
-            /* فحص البان مرة ثانية */
+            /* فحص البان */
             var banSnap = await db.ref(QAMAR.PATHS.BANNED_DEVICES + '/' + DG.deviceId).once('value');
             if (banSnap.exists()) {
                 if (typeof showToast === 'function') showToast('fa-ban', '🚫 تم حظر جهازك');
@@ -310,22 +290,21 @@
             /* فحص device_registry */
             var regSnap = await db.ref(QAMAR.PATHS.DEVICE_REGISTRY + '/' + DG.deviceId).once('value');
             var registered = regSnap.val() || {};
-            var registeredUids = Object.keys(registered);
+            var registeredUids = Object.keys(registered).filter(function (k) {
+                return k.indexOf('_pending_') !== 0;
+            });
 
             if (registeredUids.length === 0) {
-                /* أول مرة على هذا الجهاز */
                 await register(uid, name);
                 return;
             }
 
             if (registeredUids.indexOf(uid) !== -1) {
-                /* مستخدم عائد */
-                await register(uid, name);   /* تحديث lastSeen */
+                await register(uid, name);
                 return;
             }
 
-            /* حساب ثانٍ! */
-            console.warn('🛡️ multi-account detected:', uid, 'vs', registeredUids);
+            console.warn('🛡️ multi-account detected:', uid.substring(0, 8), 'vs', registeredUids.length);
             await _handleMultiAccount(uid, name, registeredUids);
 
         } catch (e) {
@@ -333,19 +312,19 @@
         }
     }
 
-    /* ══════════════════════════════════════════════ */
-    /* register                                       */
-    /* ══════════════════════════════════════════════ */
+    /* ═══ register ═══ */
     async function register(uid, name) {
         if (!uid || !DG.deviceId) return;
         try {
             var now = Date.now();
-            var ua = (navigator.userAgent || '').substring(0, 120);
+            var meta = _getDeviceMetadata();
             var ops = [
                 db.ref(QAMAR.PATHS.DEVICE_REGISTRY + '/' + DG.deviceId + '/' + uid).set({
                     name: name || 'مجهول',
                     at: now,
-                    ua: ua
+                    ua: meta.ua || '',
+                    screen: meta.screen || '',
+                    platform: meta.platform || ''
                 }),
                 db.ref('users/' + uid + '/devices/' + DG.deviceId).set({ at: now })
             ];
@@ -361,18 +340,15 @@
                 }));
             }
             await Promise.all(ops);
-            console.log('🛡️ DeviceGuard: registered', uid.substring(0, 8));
+            console.log('🛡️ DeviceGuard v2: registered', uid.substring(0, 8));
         } catch (e) {
             console.warn('🛡️ register error:', e);
         }
     }
 
-    /* ══════════════════════════════════════════════ */
-    /* _handleMultiAccount                            */
-    /* ══════════════════════════════════════════════ */
+    /* ═══ _handleMultiAccount — v2 (بدون محاولة حظر) ═══ */
     async function _handleMultiAccount(uid, name, existingUids) {
         try {
-            /* فحص رتبة المستخدم الجديد */
             var snap = await db.ref('users/' + uid).once('value');
             var d = snap.val() || {};
 
@@ -383,62 +359,42 @@
                 return;
             }
 
-            /* حظر الحساب الجديد */
             var now = Date.now();
-            await db.ref('users/' + uid).update({
-                isBanned: true,
-                bannedUntil: now + 365 * 24 * 60 * 60 * 1000,
-                permanentBan: true,
-                banReason: 'multi_account_same_device'
-            });
+            var meta = _getDeviceMetadata();
 
-            /* تسجيل في audit_log */
+            /* 1. audit_log */
             try {
-                db.ref(QAMAR.PATHS.AUDIT_LOG).push({
+                await db.ref(QAMAR.PATHS.AUDIT_LOG).push({
                     type: 'multi_account_block',
                     uid: uid,
                     name: name || '',
                     deviceId: DG.deviceId,
                     ipHash: DG.ipHash || '',
+                    ip: DG.ip || '',
                     existingUids: existingUids,
                     at: firebase.database.ServerValue.TIMESTAMP
-                }).catch(function () {});
-            } catch (e) {}
+                });
+            } catch (e) { console.warn('audit_log failed:', e); }
 
-            /* إضافة في multi_account_alerts */
+            /* 2. multi_account_alerts */
             try {
-                db.ref(QAMAR.PATHS.MULTI_ACCOUNT_ALERTS).push({
+                await db.ref(QAMAR.PATHS.MULTI_ACCOUNT_ALERTS).push({
                     uid: uid,
                     name: name || 'مجهول',
                     deviceId: DG.deviceId,
                     ipHash: DG.ipHash || '',
                     ip: DG.ip || '',
                     existingUids: existingUids,
+                    meta: meta,
                     at: now,
                     status: 'pending'
-                }).catch(function () {});
-            } catch (e) {}
+                });
+            } catch (e) { console.warn('multi_account_alerts failed:', e); }
 
-            /* إشعار الملك */
-            await _notifyKing(uid, name, existingUids);
+            /* 3. إشعار الملك */
+            try { await _notifyKing(uid, name, existingUids); } catch (e) { console.warn('notify failed:', e); }
 
-            /* حذف بيانات الحساب الجديد */
-            try {
-                var code = d.code;
-                await db.ref('users/' + uid).remove();
-                await db.ref('user_presence/' + uid).remove();
-                if (name) await db.ref('user_names/' + name).remove().catch(function () {});
-                if (code) await db.ref('user_codes/' + code).remove().catch(function () {});
-            } catch (e) { console.warn('cleanup failed:', e); }
-
-            /* حذف Firebase auth user */
-            try {
-                if (typeof auth !== 'undefined' && auth && auth.currentUser && auth.currentUser.uid === uid) {
-                    await auth.currentUser.delete().catch(function () {});
-                }
-            } catch (e) {}
-
-            /* إشعار + خروج */
+            /* 4. خروج */
             alert('🚫 هذا الجهاز مرتبط بحساب آخر.\n\nتم رفض الدخول وإبلاغ الإدارة.');
             _forceLogout();
 
@@ -447,14 +403,15 @@
         }
     }
 
-    /* ══════════════════════════════════════════════ */
-    /* إشعار الملك                                    */
-    /* ══════════════════════════════════════════════ */
+    /* ═══ _notifyKing — v2 (3 قنوات) ═══ */
     async function _notifyKing(uid, name, existingUids) {
         try {
             var kingSnap = await db.ref('config/king_uid').once('value');
             var kingUid = kingSnap.val();
-            if (!kingUid) return;
+            if (!kingUid) {
+                console.warn('🛡️ _notifyKing: config/king_uid غير موجود');
+                return;
+            }
 
             /* أسماء الحسابات الموجودة */
             var names = [];
@@ -467,55 +424,60 @@
 
             var text = '🚨 محاولة حساب ثانٍ من نفس الجهاز\n\n' +
                        '👤 الحساب الجديد: ' + (name || 'مجهول') + '\n' +
-                       '🆔 الجهاز: ' + DG.deviceId.substring(0, 15) + '...\n' +
+                       '🆔 الجهاز: ' + (DG.deviceId || '').substring(0, 15) + '...\n' +
                        '🌐 الشبكة: ' + (DG.ip || '—') + '\n' +
                        '👥 حسابات موجودة: ' + (names.length ? names.join('، ') : '—') + '\n\n' +
                        '🕐 ' + new Date().toLocaleString('ar-EG');
 
-            var msgKey = db.ref('user_private_messages/' + kingUid + '/bot_guardian').push().key;
-            await Promise.all([
-                db.ref('user_private_messages/' + kingUid + '/bot_guardian/' + msgKey).set({
-                    fromUid: 'bot_guardian',
-                    toUid: kingUid,
+            var now = Date.now();
+
+            /* القناة 1: guardian_inbox */
+            try {
+                var inboxKey = db.ref('guardian_inbox/' + kingUid).push().key;
+                await db.ref('guardian_inbox/' + kingUid + '/' + inboxKey).set({
+                    from: 'bot_guardian',
+                    type: 'multi_account',
                     text: text,
-                    time: firebase.database.ServerValue.TIMESTAMP,
-                    read: false,
-                    deleted: false,
-                    isGuardianCall: true,
-                    guardianCallType: 'multi_account',
                     suspectUid: uid,
                     suspectName: name || '',
                     deviceId: DG.deviceId,
-                    ipHash: DG.ipHash || '',
-                    at: Date.now()
-                }),
-                db.ref('user_private_chats/' + kingUid + '/bot_guardian').update({
-                    otherUid: 'bot_guardian',
-                    otherName: '🚔 السجان',
-                    otherAvatar: 'https://ui-avatars.com/api/?name=%D8%A7%D9%84%D8%B3%D8%AC%D8%A7%D9%86&background=111&color=ff4444&bold=true&size=64',
-                    lastMessage: '🚨 محاولة حساب ثانٍ',
-                    lastTime: Date.now()
-                })
-            ]);
+                    ip: DG.ip || '',
+                    existingUids: existingUids,
+                    at: now,
+                    read: false
+                });
+                console.log('✅ guardian_inbox: sent');
+            } catch (e) { console.warn('guardian_inbox failed:', e); }
 
-            /* user_notifications للملك */
-            db.ref('user_notifications/' + kingUid).push({
-                fromUid: 'bot_guardian',
-                fromName: '🚔 السجان',
-                fromAvatar: '',
-                type: 'private',
-                preview: '🚨 محاولة حساب ثانٍ',
-                time: Date.now(),
-                read: false
-            }).catch(function () {});
+            /* القناة 2: user_notifications */
+            try {
+                await db.ref('user_notifications/' + kingUid).push({
+                    fromUid: 'bot_guardian',
+                    fromName: '🚔 السجان',
+                    fromAvatar: '',
+                    type: 'multi_account',
+                    preview: '🚨 محاولة حساب ثانٍ: ' + (name || 'مجهول'),
+                    icon: '🚨',
+                    urgent: true,
+                    read: false,
+                    time: now,
+                    data: {
+                        suspectUid: uid,
+                        suspectName: name,
+                        deviceId: DG.deviceId,
+                        ip: DG.ip,
+                        existingUids: existingUids
+                    }
+                });
+                console.log('✅ user_notifications: sent');
+            } catch (e) { console.warn('user_notifications failed:', e); }
+
         } catch (e) {
             console.warn('🛡️ _notifyKing error:', e);
         }
     }
 
-    /* ══════════════════════════════════════════════ */
-    /* _forceLogout                                   */
-    /* ══════════════════════════════════════════════ */
+    /* ═══ _forceLogout ═══ */
     function _forceLogout() {
         if (DG._forceLogout) return;
         DG._forceLogout = true;
@@ -529,9 +491,7 @@
         } catch (e) { location.reload(); }
     }
 
-    /* ══════════════════════════════════════════════ */
-    /* hook login buttons                             */
-    /* ══════════════════════════════════════════════ */
+    /* ═══ hook login buttons ═══ */
     function _hookLoginButtons() {
         var names = ['handleGuestLogin', 'handleMemberLogin', 'handleRegister'];
         var attempts = 0;
@@ -561,16 +521,14 @@
                 wrapped.__dgWrapped = true;
                 window[name] = wrapped;
             });
-            if (allDone || attempts >= 60) {
+            if (allDone || attempts >= 100) {
                 clearInterval(t);
-                console.log('🛡️ DeviceGuard: login handlers hooked');
+                console.log('🛡️ DeviceGuard v2: login handlers hooked');
             }
         }, 100);
     }
 
-    /* ══════════════════════════════════════════════ */
-    /* hook initChat                                  */
-    /* ══════════════════════════════════════════════ */
+    /* ═══ hook initChat ═══ */
     function _hookInitChat() {
         var attempts = 0;
         var t = setInterval(function () {
@@ -595,13 +553,11 @@
             wrapped.__dgWrapped = true;
             window.initChat = wrapped;
             clearInterval(t);
-            console.log('🛡️ DeviceGuard: initChat hooked');
+            console.log('🛡️ DeviceGuard v2: initChat hooked');
         }, 100);
     }
 
-    /* ══════════════════════════════════════════════ */
-    /* watch banned (mid-session)                     */
-    /* ══════════════════════════════════════════════ */
+    /* ═══ watch banned ═══ */
     function _watchBanned() {
         if (DG._watchingBanned) return;
         if (!DG.deviceId || typeof db === 'undefined' || !db) return;
@@ -618,9 +574,7 @@
         } catch (e) {}
     }
 
-    /* ══════════════════════════════════════════════ */
-    /* ban / unban (للملك)                            */
-    /* ══════════════════════════════════════════════ */
+    /* ═══ ban / unban ═══ */
     async function ban(targetUid, byUid, byName, reason) {
         if (!targetUid) return false;
         try {
@@ -674,9 +628,7 @@
         }
     }
 
-    /* ══════════════════════════════════════════════ */
-    /* Public API                                     */
-    /* ══════════════════════════════════════════════ */
+    /* ═══ Public API ═══ */
     window.DeviceGuard = {
         preCheck: preCheck,
         afterAuth: afterAuth,
@@ -687,17 +639,14 @@
         getIpHash: function () { return DG.ipHash; },
         getIp: function () { return DG.ip; },
         isReady: function () { return DG.ready; },
-        version: 1
+        version: 2
     };
 
-    /* ══════════════════════════════════════════════ */
-    /* Init                                           */
-    /* ══════════════════════════════════════════════ */
+    /* ═══ Boot ═══ */
     function _boot() {
         _init().then(function () {
             _hookLoginButtons();
             _hookInitChat();
-            /* نبدأ watch بعد 3 ثواني (نضمن auth جاهز) */
             setTimeout(_watchBanned, 3000);
         });
     }
@@ -708,5 +657,5 @@
         _boot();
     }
 
-    console.log('🛡️ device-guard.js v1 (TEST) loaded');
+    console.log('🛡️ device-guard.js v2 (TEST) loaded — stable fingerprint + no-ban-handler');
 })();
