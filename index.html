@@ -541,7 +541,7 @@ window._updateHeaderButtons = _updateHeaderButtons;
 <script defer src="user-data-optimizer.js?v=70"></script>
 <script defer src="paint-tool.js?v=70"></script>
 <script defer src="paint-render.js?v=70"></script>
-<script defer src="video-render.js?v=1"></script>
+<script defer src="video-render.js?v=2"></script>
 <script defer src="paint-bg-transparent.js?v=70"></script>
 <script defer src="styled-messages.js?v=70"></script>
 <script defer src="floating-toolbar-v2.js?v=70"></script>
@@ -695,20 +695,11 @@ if(!me||!me.uid)return;
 if(me.rank!=='King')return;
 
 db.ref('config/king_uid').once('value').then(function(s){
-if(s.exists()&&s.val()){
-console.log('✅ config/king_uid موجود مسبقاً:',s.val());
-return;
-}
-
+if(s.exists()&&s.val())return;
 return db.ref('config/king_uid').set(me.uid).then(function(){
-console.log('👑 config/king_uid: written =',me.uid);
-if(typeof showToast==='function')showToast('fa-crown','👑 تم تعيينك ملكاً في قاعدة البيانات');
-}).catch(function(e){
-console.warn('⚠️ تعذّر كتابة king_uid:',e.message);
-});
-}).catch(function(e){
-console.warn('⚠️ فحص king_uid فشل:',e.message);
-});
+if(typeof showToast==='function')showToast('fa-crown','👑 تم تعيينك ملكاً');
+}).catch(function(){});
+}).catch(function(){});
 }
 
 var attempts=0;
@@ -729,17 +720,12 @@ window.addEventListener('load',function(){setTimeout(trySet,2000);});
 if(window.__fullDebugPanel)return;
 window.__fullDebugPanel=true;
 
-/* ═══ اجمع كل الأخطاء ═══ */
 window.__debugErrors = window.__debugErrors || [];
 
 var origWarn = console.warn;
 console.warn = function(){
     try{
-        window.__debugErrors.push({
-            type:'warn',
-            msg: Array.prototype.slice.call(arguments).join(' ').substring(0,150),
-            at: Date.now()
-        });
+        window.__debugErrors.push({type:'warn',msg: Array.prototype.slice.call(arguments).join(' ').substring(0,150),at: Date.now()});
         if(window.__debugErrors.length>50) window.__debugErrors.shift();
     }catch(e){}
     return origWarn.apply(console, arguments);
@@ -748,17 +734,12 @@ console.warn = function(){
 var origError = console.error;
 console.error = function(){
     try{
-        window.__debugErrors.push({
-            type:'error',
-            msg: Array.prototype.slice.call(arguments).join(' ').substring(0,150),
-            at: Date.now()
-        });
+        window.__debugErrors.push({type:'error',msg: Array.prototype.slice.call(arguments).join(' ').substring(0,150),at: Date.now()});
         if(window.__debugErrors.length>50) window.__debugErrors.shift();
     }catch(e){}
     return origError.apply(console, arguments);
 };
 
-/* ═══ فحص حالة السكريبتات ═══ */
 function checkScripts(){
     var checks = [
         ['config.js', typeof QAMAR !== 'undefined'],
@@ -817,13 +798,9 @@ function checkScripts(){
         ['floating-toolbar-v2.js', window.__floatingToolbarV2 === true],
         ['pm-ui-fixes.js', window.__pmUiFixesV1 === true]
     ];
-
-    return checks.map(function(c){
-        return {name: c[0], ok: !!c[1]};
-    });
+    return checks.map(function(c){ return {name: c[0], ok: !!c[1]}; });
 }
 
-/* ═══ Build Panel ═══ */
 function buildPanel(){
     var dg = window.DeviceGuard || {};
     var me = null;
@@ -836,10 +813,8 @@ function buildPanel(){
 
     var html = '';
     html += '<div style="background:#0a0616;border:2px solid #ffd700;border-radius:16px;padding:16px;max-width:380px;width:92vw;max-height:90vh;overflow-y:auto;direction:rtl;color:#fff;font-family:Cairo,sans-serif;font-size:12px;line-height:1.6;">';
-
     html += '<h3 style="color:#ffd700;margin:0 0 12px;font-size:15px;text-align:center;">🐛 تشخيص شامل</h3>';
 
-    /* المستخدم */
     html += '<div style="background:rgba(0,0,0,0.4);border-radius:8px;padding:10px;margin-bottom:10px;">';
     html += '<div style="color:#ffd700;font-weight:900;margin-bottom:6px;">👤 المستخدم</div>';
     if(me){
@@ -852,7 +827,6 @@ function buildPanel(){
     }
     html += '</div>';
 
-    /* DeviceGuard */
     html += '<div style="background:rgba(0,0,0,0.4);border-radius:8px;padding:10px;margin-bottom:10px;">';
     html += '<div style="color:#ffd700;font-weight:900;margin-bottom:6px;">🛡️ DeviceGuard (v' + (dg.version || '?') + ')</div>';
     html += '<div>Ready: <b style="color:'+ (dg.isReady && dg.isReady() ? '#4ade80':'#ff6666') +';">'+ (dg.isReady && dg.isReady() ? '✅' : '❌') +'</b></div>';
@@ -876,13 +850,11 @@ function buildPanel(){
 
     html += '</div>';
 
-    /* Firebase */
     html += '<div style="background:rgba(0,0,0,0.4);border-radius:8px;padding:10px;margin-bottom:10px;">';
     html += '<div style="color:#ffd700;font-weight:900;margin-bottom:6px;">🔥 Firebase</div>';
     html += '<div>db: <b style="color:'+ (typeof db !== 'undefined' && db ? '#4ade80':'#ff6666') +';">'+ (typeof db !== 'undefined' && db ? '✅' : '❌') +'</b></div>';
     html += '<div>auth: <b style="color:'+ (typeof auth !== 'undefined' && auth ? '#4ade80':'#ff6666') +';">'+ (typeof auth !== 'undefined' && auth ? '✅' : '❌') +'</b></div>';
 
-    /* king_uid */
     if(typeof db !== 'undefined' && db){
         db.ref('config/king_uid').once('value').then(function(s){
             var el = document.getElementById('__dbg_king_uid');
@@ -895,7 +867,6 @@ function buildPanel(){
     html += '<div>king_uid: <span id="__dbg_king_uid">⏳ جاري الفحص...</span></div>';
     html += '</div>';
 
-    /* Scripts */
     html += '<div style="background:rgba(0,0,0,0.4);border-radius:8px;padding:10px;margin-bottom:10px;">';
     html += '<div style="color:#ffd700;font-weight:900;margin-bottom:6px;">📦 الملفات ('+ okCount +'/'+ scripts.length +')</div>';
 
@@ -916,7 +887,6 @@ function buildPanel(){
     html += '</details>';
     html += '</div>';
 
-    /* الأخطاء */
     var errs = window.__debugErrors || [];
     if(errs.length > 0){
         html += '<div style="background:rgba(255,68,68,0.1);border:1px solid rgba(255,68,68,0.4);border-radius:8px;padding:10px;margin-bottom:10px;">';
@@ -933,10 +903,8 @@ function buildPanel(){
         html += '<div style="text-align:center;color:#4ade80;padding:8px;font-size:11px;">✅ لا توجد أخطاء</div>';
     }
 
-    /* أزرار */
     html += '<button onclick="window.__refreshDebugPanel()" style="width:100%;margin-top:10px;padding:10px;background:#a855f7;color:#fff;border:none;border-radius:10px;font-family:inherit;font-weight:900;font-size:13px;cursor:pointer;">🔄 تحديث</button>';
     html += '<button onclick="document.getElementById(\'__debug_overlay\').remove()" style="width:100%;margin-top:6px;padding:10px;background:#ffd700;color:#000;border:none;border-radius:10px;font-family:inherit;font-weight:900;font-size:13px;cursor:pointer;">إغلاق</button>';
-
     html += '</div>';
     return html;
 }
@@ -960,19 +928,26 @@ window.__refreshDebugPanel = function(){
     ov.onclick = function(e){ if(e.target===ov) ov.remove(); };
 };
 
-/* ═══ زر عائم — يظهر فقط للملك ═══ */
+/* ⭐ زر عائم دائم — للملك فقط ⭐ */
 function init(){
+    /* لا تنشئه مرتين */
+    if(document.getElementById('__debug_btn')) return;
+
     var btn = document.createElement('button');
     btn.id = '__debug_btn';
     btn.type = 'button';
     btn.innerHTML = '🐛';
     btn.title = 'تشخيص (للملك فقط)';
-    btn.style.cssText = 'position:fixed;bottom:60px;left:8px;width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,0.85);border:2px solid #ffd700;color:#ffd700;font-size:18px;cursor:pointer;z-index:999998;display:none;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,0.6);';
+    btn.style.cssText = 'position:fixed;bottom:60px;left:8px;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,0.9);border:2px solid #ffd700;color:#ffd700;font-size:20px;cursor:pointer;z-index:9999998;display:none;align-items:center;justify-content:center;box-shadow:0 4px 15px rgba(255,215,0,0.4);transition:transform 0.15s;';
     document.body.appendChild(btn);
 
     btn.onclick = openPanel;
 
-    /* إظهار الزر للملك فقط */
+    /* تأثير hover */
+    btn.onmouseenter = function(){ btn.style.transform = 'scale(1.1)'; };
+    btn.onmouseleave = function(){ btn.style.transform = 'scale(1)'; };
+
+    /* فحص دوري — الملك فقط يرى الزر */
     function checkKing(){
         try{
             var u = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
@@ -980,15 +955,21 @@ function init(){
                 btn.style.display = 'flex';
             } else {
                 btn.style.display = 'none';
+                /* إغلاق اللوحة إذا فُتحت */
+                var ov = document.getElementById('__debug_overlay');
+                if(ov) ov.remove();
             }
         }catch(e){
             btn.style.display = 'none';
         }
     }
 
-    /* فحص كل 3 ثوان */
-    setInterval(checkKing, 3000);
+    /* فحص كل ثانيتين — دائم */
+    setInterval(checkKing, 2000);
     checkKing();
+
+    /* أعد الفحص عند تغيير حالة الحساب */
+    window.addEventListener('storage', checkKing);
 }
 
 if(document.readyState==='loading'){
