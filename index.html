@@ -315,7 +315,7 @@ input,textarea,select{font-size:16px!important}
 <script src="connection-resilience.js?v=70"></script>
 <script src="device-guard.js?v=70"></script>
 
-<!-- ⭐⭐ Patch: إجبار DeviceGuard على الانتظار ⭐⭐ -->
+<!-- ⭐ Patch: إجبار DeviceGuard على الانتظار -->
 <script>
 (function(){
 'use strict';
@@ -324,7 +324,6 @@ window.__dgTimeoutPatch=true;
 
 console.log('🔧 DG patch: starting...');
 
-// انتظر DeviceGuard ثم أضف الإصلاح
 var attempts = 0;
 var t = setInterval(function(){
     attempts++;
@@ -339,7 +338,6 @@ var t = setInterval(function(){
         return;
     }
     
-    // Patch preCheck — انتظر حتى 15 ثانية
     var origPreCheck = window.DeviceGuard.preCheck;
     window.DeviceGuard.preCheck = async function(){
         var start = Date.now();
@@ -365,7 +363,6 @@ var t = setInterval(function(){
         return origPreCheck.apply(this, arguments);
     };
     
-    // Patch afterAuth — انتظر حتى 15 ثانية
     var origAfterAuth = window.DeviceGuard.afterAuth;
     window.DeviceGuard.afterAuth = async function(uid, name){
         var start = Date.now();
@@ -390,7 +387,7 @@ var t = setInterval(function(){
     
     window.DeviceGuard.__timeoutPatchApplied = true;
     clearInterval(t);
-    console.log('✅ DG patch: applied (preCheck + afterAuth wait 15s for deviceId)');
+    console.log('✅ DG patch: applied');
 }, 100);
 })();
 </script>
@@ -704,7 +701,6 @@ async function handleUpgrade(btn) {
     finally { _resetBtn(btn, orig); }
 }
 
-// ⭐ اجعل الدوال متاحة على window لـ device-guard
 window.handleGuestLogin = handleGuestLogin;
 window.handleMemberLogin = handleMemberLogin;
 window.handleRegister = handleRegister;
@@ -721,7 +717,48 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<!-- ⭐⭐ زر تصحيح 🛡️ — يعرض حالة DeviceGuard ⭐⭐ -->
+<!-- ⭐⭐⭐ كتابة config/king_uid تلقائياً ⭐⭐⭐ -->
+<script>
+(function(){
+'use strict';
+if(window.__kingUidSet)return;
+window.__kingUidSet=true;
+
+function trySet(){
+var me=null;
+try{if(typeof getCurrentUser==='function')me=getCurrentUser();}catch(e){}
+if(!me||!me.uid)return;
+if(me.rank!=='King')return;
+
+db.ref('config/king_uid').once('value').then(function(s){
+if(s.exists()&&s.val()){
+console.log('✅ config/king_uid موجود مسبقاً:',s.val());
+return;
+}
+
+return db.ref('config/king_uid').set(me.uid).then(function(){
+console.log('👑 config/king_uid: written =',me.uid);
+if(typeof showToast==='function')showToast('fa-crown','👑 تم تعيينك ملكاً في قاعدة البيانات');
+}).catch(function(e){
+console.warn('⚠️ تعذّر كتابة king_uid:',e.message);
+});
+}).catch(function(e){
+console.warn('⚠️ فحص king_uid فشل:',e.message);
+});
+}
+
+var attempts=0;
+var t=setInterval(function(){
+attempts++;
+trySet();
+if(attempts>=30)clearInterval(t);
+},1000);
+
+window.addEventListener('load',function(){setTimeout(trySet,2000);});
+})();
+</script>
+
+<!-- ⭐⭐ زر تصحيح 🛡️ ⭐⭐ -->
 <script>
 (function(){
 'use strict';
@@ -729,7 +766,6 @@ if(window.__dgDebugBtn)return;
 window.__dgDebugBtn=true;
 
 function init(){
-    // زر عائم صغير
     var btn = document.createElement('button');
     btn.id = 'dg-debug-btn';
     btn.type = 'button';
@@ -738,7 +774,6 @@ function init(){
     btn.style.cssText = 'position:fixed;bottom:60px;left:8px;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,0.8);border:2px solid #ffd700;color:#ffd700;font-size:16px;cursor:pointer;z-index:999998;display:none;';
     document.body.appendChild(btn);
 
-    // أخفِ الزر افتراضياً، أظهره فقط لو المستخدم king
     setInterval(function(){
         var u = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
         if (u && u.rank === 'King') {
@@ -748,7 +783,6 @@ function init(){
         }
     }, 3000);
 
-    // عند الضغط — اعرض النافذة
     btn.onclick = function(){
         var dg = window.DeviceGuard;
         var devId = dg && dg.getDeviceId ? dg.getDeviceId() : null;
@@ -767,7 +801,6 @@ function init(){
             '<div style="margin-top:6px;"><b style="color:#ffd700;">IP Hash:</b><br>' + (ipHash ? '<span style="color:#4ade80;font-size:11px;">' + ipHash.substring(0,20) + '...</span>' : '<span style="color:#ff6666;">❌ فارغ</span>') + '</div>' +
             '<div style="margin-top:6px;"><b style="color:#ffd700;">Cache:</b> ' + (cachedDevice ? '<span style="color:#4ade80;">موجود</span>' : '<span style="color:#fbbf24;">غير موجود</span>') + '</div>' +
             '</div>' +
-            '<div style="color:#888;font-size:10px;margin-top:12px;text-align:center;">اقرأ هذه القيم — هذا ما يُرسل لقاعدة البيانات</div>' +
             '<button onclick="document.getElementById(\'dg-debug-overlay\').remove()" style="width:100%;margin-top:14px;padding:10px;background:#ffd700;color:#000;border:none;border-radius:10px;font-family:inherit;font-weight:900;font-size:13px;cursor:pointer;">إغلاق</button>' +
             '</div>';
 
