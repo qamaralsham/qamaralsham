@@ -1,6 +1,8 @@
 // ==============================================
-// pm-monitor.js v4 — الملك يرى الأرشيف + الحديث
+// pm-monitor.js v4.1 — الملك يرى الأرشيف + الحديث
 // ==============================================
+// ✅ v4.1 (فوق v4):
+//   - FIX: showConversations — حماية من null في archiveSnap
 // ✅ v4:
 //   1. الملك يرى الرسائل الحديثة (user_private_messages)
 //   2. الملك يرى الأرشيف (private_archive)
@@ -315,12 +317,13 @@ body.innerHTML='<div class="pmm-loading">⏳ جاري التحميل...</div>';
 
 try{
 var [recentSnap, archiveSnap]=await Promise.all([
-db.ref('user_private_messages/'+member.uid).once('value'),
+db.ref('user_private_messages/'+member.uid).once('value').catch(function(){return null;}),
 db.ref('private_archive/'+member.uid).once('value').catch(function(){return null;})
 ]);
 
-var recent=recentSnap.val()||{};
-var archive=archiveSnap?archiveSnap.val():{};
+/* ⭐ FIX v4.1: حماية من null في الحالتين */
+var recent=(recentSnap && recentSnap.val()) || {};
+var archive=(archiveSnap && archiveSnap.val()) || {};
 
 /* اجمع كل otherUids */
 var allOthers={};
@@ -396,8 +399,6 @@ img.src=r.otherAvatar;
 
 var info=document.createElement('div');
 info.className='pmm-row-info';
-
-var archiveBadge=r.archiveCount>0?'<div style="color:#c084fc;font-size:10px;font-weight:900;margin-top:2px;">📦 '+r.archiveCount+' مؤرشف</div>':'';
 
 info.innerHTML=
 '<div class="pmm-row-name">'+esc(r.otherName)+'</div>'+
@@ -486,7 +487,7 @@ body.innerHTML='<div class="pmm-loading">⏳ جاري التحميل...</div>';
 try{
 var path = PM.viewMode==='archive' ? 'private_archive' : 'user_private_messages';
 var snap=await db.ref(path+'/'+member.uid+'/'+other.otherUid).once('value');
-var msgs=snap.val()||{};
+var msgs=(snap && snap.val()) || {};
 
 var arr=Object.keys(msgs).map(function(k){
 var m=msgs[k];
@@ -818,8 +819,8 @@ window.PmMonitor={
 open:open,
 openFor:openFor,
 close:close,
-version:4
+version:4.1
 };
 
-console.log('📨 pm-monitor.js v4 loaded — archive support');
+console.log('📨 pm-monitor.js v4.1 loaded — archive fix');
 })();
