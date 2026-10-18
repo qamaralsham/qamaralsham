@@ -39,6 +39,8 @@
 <link rel="stylesheet" href="dice.css?v=70">
 <link rel="stylesheet" href="qamar-glass.css?v=70">
 <link rel="stylesheet" href="chat-ui.css?v=70">
+<!-- ⭐ ملف تصميم إدارة الغرف الجديد -->
+<link rel="stylesheet" href="room-manager.css?v=1">
 
 <style id="qamar-boot-css">
 #qamar-boot-loader{position:fixed;inset:0;background:radial-gradient(ellipse at top,rgba(212,175,55,.15) 0%,transparent 55%),radial-gradient(ellipse at bottom,rgba(100,50,150,.2) 0%,transparent 55%),linear-gradient(to bottom,#050508,#0a0a15);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:9999999;color:#ffd700;font-family:'Cairo',system-ui,sans-serif;gap:22px;transition:opacity .4s ease;padding:20px;text-align:center}
@@ -525,7 +527,7 @@ window._updateHeaderButtons = _updateHeaderButtons;
 <script defer src="invisible-mode.js?v=70"></script>
 <script defer src="room-picker.js?v=70"></script>
 
-<!-- ⭐ نظام طلبات الدخول (تم تحديث الإصدار إلى 5 لتجاوز الكاش) -->
+<!-- ⭐ NEW: نظام طلبات الدخول (Join Approval System) — 8 ملفات -->
 <script defer src="join-queue.js?v=5"></script>
 <script defer src="join-watcher.js?v=5"></script>
 <script defer src="join-hooks.js?v=5"></script>
@@ -535,6 +537,9 @@ window._updateHeaderButtons = _updateHeaderButtons;
 <script defer src="join-admin-ui.js?v=5"></script>
 <script defer src="join-admin-boot.js?v=5"></script>
 <!-- ⭐ END: نظام طلبات الدخول -->
+
+<!-- ⭐ NEW: نظام إدارة الغرف -->
+<script defer src="room-manager.js?v=1"></script>
 
 <script defer src="stories.js?v=70"></script>
 <script defer src="stories-patch.js?v=70"></script>
@@ -791,6 +796,7 @@ function checkScripts(){
         ['join-admin-actions.js', typeof JoinAdminActions !== 'undefined'],
         ['join-admin-ui.js', typeof JoinAdminUI !== 'undefined'],
         ['join-admin-boot.js', window.__joinAdminBootV1 === true],
+        ['room-manager.js', window.__roomManagerV1 === true],
         ['stories.js', window.__storiesV6 === true],
         ['stories-patch.js', window.__storiesPatchV1 === true],
         ['stories-cleaner.js', window.__storiesCleanerV2 === true],
