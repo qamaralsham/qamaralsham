@@ -3,625 +3,1755 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>📘 قمر الشام — الحالة الشاملة v3</title>
+<title>📘 قمر الشام v2 — الوثيقة الكاملة</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
-:root{--gold:#d4af37;--gold-light:#ffd700;--bg:#050508;--bg-card:#0a0a15;--text:#f3f4f6;--text-dim:#9ca3af;--border:rgba(212,175,55,0.3);--border-light:rgba(255,255,255,0.08);--success:#22c55e;--danger:#ef4444;--warning:#f59e0b;--info:#3b82f6;--purple:#a855f7}
+:root{
+  --gold:#d4af37;--gold-light:#ffd700;--gold-dark:#b8860b;
+  --bg:#050508;--bg-card:#0a0a15;--bg-deep:#110724;
+  --text:#f3f4f6;--text-dim:#9ca3af;--text-muted:#6b7280;
+  --border:rgba(212,175,55,0.3);--border-light:rgba(255,255,255,0.08);
+  --success:#4ade80;--danger:#ff4444;--warning:#ff9800;
+  --info:#3b82f6;--purple:#a855f7;
+  --radius:12px;--radius-lg:20px;
+}
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{font-family:'Cairo','Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;direction:rtl}
-.header{background:linear-gradient(135deg,#0a0a15 0%,#1a0e2e 50%,#0a0a15 100%);border-bottom:2px solid var(--gold);padding:40px 20px 30px;text-align:center;position:relative;overflow:hidden}
-.header::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 15% 20%,rgba(255,215,0,.15) 2px,transparent 3px),radial-gradient(circle at 85% 80%,rgba(255,215,0,.1) 1px,transparent 2px);background-size:200px 200px,180px 180px;pointer-events:none}
-.header h1{font-size:30px;color:var(--gold-light);font-weight:900;margin-bottom:8px;text-shadow:0 0 30px rgba(255,215,0,.5);position:relative}
+body{
+  font-family:'Cairo',system-ui,sans-serif;
+  background:linear-gradient(180deg,#050508 0%,#0a0a15 50%,#050508 100%);
+  color:var(--text);line-height:1.7;direction:rtl;
+  padding:20px 12px 80px;min-height:100vh;
+}
+.container{max-width:1000px;margin:0 auto}
+
+/* Header */
+.header{
+  background:linear-gradient(135deg,#0a0a15 0%,#1a0e2e 50%,#0a0a15 100%);
+  border:2px solid var(--gold);border-radius:var(--radius-lg);
+  padding:36px 24px 28px;text-align:center;margin-bottom:24px;
+  position:relative;overflow:hidden;
+}
+.header::before{
+  content:'';position:absolute;inset:0;
+  background-image:
+    radial-gradient(circle at 15% 20%,rgba(255,215,0,.15) 2px,transparent 3px),
+    radial-gradient(circle at 85% 80%,rgba(255,215,0,.1) 1px,transparent 2px);
+  background-size:200px 200px,180px 180px;pointer-events:none;
+}
+.header h1{
+  font-size:28px;color:var(--gold-light);font-weight:900;
+  margin-bottom:8px;text-shadow:0 0 30px rgba(255,215,0,.5);
+  position:relative;
+}
 .header .subtitle{color:var(--text-dim);font-size:13px;position:relative}
-.header .badge{display:inline-block;padding:5px 14px;background:rgba(255,215,0,.15);border:1px solid var(--gold);border-radius:20px;color:var(--gold-light);font-size:12px;font-weight:900;margin-top:12px;position:relative}
-.container{max-width:1000px;margin:0 auto;padding:24px 16px 80px}
-.toc{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:24px}
-.toc h2{color:var(--gold-light);font-size:18px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
-.toc ol{list-style:none;counter-reset:toc;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px}
-.toc ol li{counter-increment:toc;padding:6px 10px;background:rgba(255,255,255,.03);border-radius:6px;border-right:3px solid transparent;transition:all .2s}
-.toc ol li::before{content:counter(toc) ". ";color:var(--gold);font-weight:900;margin-left:5px}
+.header .badge{
+  display:inline-block;padding:5px 14px;background:rgba(255,215,0,.15);
+  border:1px solid var(--gold);border-radius:20px;color:var(--gold-light);
+  font-size:12px;font-weight:900;margin-top:12px;position:relative;
+}
+
+/* TOC */
+.toc{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:14px;padding:20px;margin-bottom:24px;
+}
+.toc h2{
+  color:var(--gold-light);font-size:18px;margin-bottom:14px;
+  display:flex;align-items:center;gap:8px;
+}
+.toc ol{
+  list-style:none;counter-reset:toc;
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:6px;
+}
+.toc ol li{
+  counter-increment:toc;padding:6px 10px;
+  background:rgba(255,255,255,.03);border-radius:6px;
+  border-right:3px solid transparent;transition:all .2s;
+}
+.toc ol li::before{
+  content:counter(toc) ". ";color:var(--gold);font-weight:900;margin-left:5px;
+}
 .toc ol li:hover{background:rgba(255,215,0,.08);border-right-color:var(--gold)}
-.toc ol li a{color:var(--text);text-decoration:none;font-weight:700;font-size:13px}
-.toc ol li a:hover{color:var(--gold-light)}
-.section{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:22px}
-.section h2{color:var(--gold-light);font-size:20px;font-weight:900;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid rgba(255,215,0,.2);display:flex;align-items:center;gap:10px}
-.section h3{color:var(--gold);font-size:15px;margin:18px 0 10px;display:flex;align-items:center;gap:6px}
+.toc ol li a{
+  color:var(--text);text-decoration:none;font-weight:700;font-size:13px;
+}
+
+/* Section */
+.section{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:14px;padding:22px;margin-bottom:22px;
+}
+.section h2{
+  color:var(--gold-light);font-size:20px;font-weight:900;
+  margin-bottom:16px;padding-bottom:12px;
+  border-bottom:2px solid rgba(255,215,0,.2);
+  display:flex;align-items:center;gap:10px;
+}
+.section h3{
+  color:var(--gold);font-size:15px;margin:18px 0 10px;
+  display:flex;align-items:center;gap:6px;
+}
+.section h4{
+  color:var(--gold-light);font-size:13px;margin:14px 0 8px;
+}
 .section p{color:var(--text-dim);font-size:13px;margin-bottom:10px}
-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:12.5px;background:rgba(0,0,0,.3);border-radius:10px;overflow:hidden}
-th{background:linear-gradient(135deg,rgba(255,215,0,.2),rgba(212,175,55,.1));color:var(--gold-light);padding:10px 12px;text-align:right;font-weight:900;font-size:11.5px;border-bottom:1px solid var(--border)}
-td{padding:9px 12px;border-bottom:1px solid var(--border-light);vertical-align:top}
+.section ul,.section ol{padding-right:22px;margin:10px 0}
+.section li{color:var(--text-dim);margin-bottom:5px;font-size:13px}
+.section li strong{color:var(--text)}
+
+/* Tables */
+table{
+  width:100%;border-collapse:collapse;margin:12px 0;font-size:12.5px;
+  background:rgba(0,0,0,.3);border-radius:10px;overflow:hidden;
+}
+th{
+  background:linear-gradient(135deg,rgba(255,215,0,.2),rgba(212,175,55,.1));
+  color:var(--gold-light);padding:10px 12px;text-align:right;
+  font-weight:900;font-size:11.5px;border-bottom:1px solid var(--border);
+}
+td{
+  padding:9px 12px;border-bottom:1px solid var(--border-light);
+  vertical-align:top;font-size:12px;
+}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:rgba(255,215,0,.03)}
-.badge-status{display:inline-block;padding:2px 9px;border-radius:12px;font-size:10px;font-weight:900;white-space:nowrap}
-.badge-bug{background:rgba(239,68,68,.2);color:#ff8888;border:1px solid rgba(239,68,68,.5)}
-.badge-new{background:rgba(168,85,247,.2);color:#c084fc;border:1px solid rgba(168,85,247,.5)}
-.badge-pending{background:rgba(245,158,11,.2);color:#fbbf24;border:1px solid rgba(245,158,11,.5)}
-.badge-done{background:rgba(34,197,94,.2);color:#4ade80;border:1px solid rgba(34,197,94,.5)}
-.badge-question{background:rgba(59,130,246,.2);color:#93c5fd;border:1px solid rgba(59,130,246,.5)}
-.badge-fail{background:rgba(107,114,128,.2);color:#9ca3af;border:1px solid rgba(107,114,128,.5)}
-.alert{padding:12px 16px;border-radius:10px;margin:12px 0;border-right:4px solid;font-size:13px;line-height:1.6}
+
+/* Alerts */
+.alert{
+  padding:12px 16px;border-radius:10px;margin:12px 0;
+  border-right:4px solid;font-size:13px;line-height:1.6;
+}
 .alert-info{background:rgba(59,130,246,.1);border-color:var(--info);color:#bfdbfe}
 .alert-warning{background:rgba(245,158,11,.1);border-color:var(--warning);color:#fde68a}
 .alert-danger{background:rgba(239,68,68,.1);border-color:var(--danger);color:#fecaca}
 .alert-success{background:rgba(34,197,94,.1);border-color:var(--success);color:#bbf7d0}
 .alert-purple{background:rgba(168,85,247,.1);border-color:var(--purple);color:#e9d5ff}
-ul.list{padding-right:22px;margin:10px 0}
-ul.list li{color:var(--text-dim);margin-bottom:5px;font-size:12.5px}
-ul.list li strong{color:var(--text)}
-.inline-code{background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.3);padding:1px 6px;border-radius:5px;color:#c084fc;font-family:'Courier New',monospace;font-size:11px;direction:ltr;display:inline-block}
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:14px 0}
-.stat-box{background:linear-gradient(135deg,rgba(255,215,0,.08),rgba(255,215,0,.02));border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center}
-.stat-box .val{font-size:24px;font-weight:900;color:var(--gold-light);line-height:1.1}
-.stat-box .lbl{font-size:11px;color:var(--text-dim);margin-top:4px;font-weight:700}
-.footer{text-align:center;padding:30px 20px;color:#666;font-size:11px;border-top:1px solid var(--border-light)}
+
+/* Code */
+.code{
+  background:rgba(0,0,0,.5);border:1px solid rgba(168,85,247,.3);
+  border-radius:8px;padding:12px;margin:10px 0;
+  font-family:'Courier New',monospace;font-size:11.5px;
+  color:#c084fc;direction:ltr;text-align:left;
+  overflow-x:auto;white-space:pre;line-height:1.5;
+  max-height:400px;overflow-y:auto;
+}
+.inline-code{
+  background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.3);
+  padding:1px 6px;border-radius:5px;color:#c084fc;
+  font-family:'Courier New',monospace;font-size:11px;
+  direction:ltr;display:inline-block;
+}
+
+/* Stats Grid */
+.stats-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
+  gap:10px;margin:14px 0;
+}
+.stat-box{
+  background:linear-gradient(135deg,rgba(255,215,0,.08),rgba(255,215,0,.02));
+  border:1px solid var(--border);border-radius:10px;
+  padding:14px;text-align:center;
+}
+.stat-box .val{
+  font-size:24px;font-weight:900;color:var(--gold-light);line-height:1.1;
+}
+.stat-box .lbl{
+  font-size:11px;color:var(--text-dim);margin-top:4px;font-weight:700;
+}
+
+/* Badges */
+.badge-status{
+  display:inline-block;padding:2px 9px;border-radius:12px;
+  font-size:10px;font-weight:900;white-space:nowrap;
+}
+.badge-done{background:rgba(34,197,94,.2);color:#4ade80;border:1px solid rgba(34,197,94,.5)}
+.badge-pending{background:rgba(245,158,11,.2);color:#fbbf24;border:1px solid rgba(245,158,11,.5)}
+.badge-bug{background:rgba(239,68,68,.2);color:#ff8888;border:1px solid rgba(239,68,68,.5)}
+.badge-new{background:rgba(168,85,247,.2);color:#c084fc;border:1px solid rgba(168,85,247,.5)}
+
+.footer{
+  text-align:center;padding:30px 20px;color:#666;font-size:11px;
+  border-top:1px solid var(--border-light);margin-top:40px;
+}
+
+/* Copy Button */
+.copy-btn{
+  display:inline-block;padding:6px 12px;
+  background:rgba(168,85,247,.2);border:1px solid var(--purple);
+  color:#e9d5ff;border-radius:8px;font-size:11px;font-weight:900;
+  cursor:pointer;font-family:inherit;margin:4px 0;
+}
+.copy-btn:hover{background:rgba(168,85,247,.35)}
+.copy-btn:active{transform:scale(0.96)}
 </style>
 </head>
 <body>
 
-<header class="header">
-    <h1>📘 قمر الشام — الحالة الشاملة v3</h1>
-    <p class="subtitle">تقرير مفصّل — كل ما تم إنجازه من البداية حتى اليوم</p>
-    <div class="badge">📅 2026-09-26</div>
-</header>
-
 <div class="container">
 
+<!-- ═══ Header ═══ -->
+<div class="header">
+  <h1>📘 قمر الشام v2 — الوثيقة الكاملة</h1>
+  <p class="subtitle">منصة دردشة عربية — Firebase مجاني — يعمل في سوريا</p>
+  <div class="badge">📅 نسخة 1.0 — جاهزة للبناء</div>
+</div>
+
+<!-- ═══ TOC ═══ -->
 <div class="toc">
-    <h2>📋 الفهرس</h2>
-    <ol>
-        <li><a href="#s1">نظرة سريعة</a></li>
-        <li><a href="#s2">البنية التقنية</a></li>
-        <li><a href="#s3">قائمة الملفات الكاملة</a></li>
-        <li><a href="#s4">Firebase Rules الجديدة</a></li>
-        <li><a href="#s5">نظام الحماية (DeviceGuard)</a></li>
-        <li><a href="#s6">نظام أرشفة الرسائل الخاصة</a></li>
-        <li><a href="#s7">نظام الملفات (imgbb)</a></li>
-        <li><a href="#s8">نظام الإطارات (jsDelivr)</a></li>
-        <li><a href="#s9">أدوات التنظيف الذاتي</a></li>
-        <li><a href="#s10">زر التشخيص 🐛</a></li>
-        <li><a href="#s11">المشاكل المعروفة</a></li>
-        <li><a href="#s12">الخطة القادمة</a></li>
-    </ol>
+  <h2>📋 الفهرس</h2>
+  <ol>
+    <li><a href="#s1">القواعد الصارمة</a></li>
+    <li><a href="#s2">البنية النهائية</a></li>
+    <li><a href="#s3">خطة المراحل</a></li>
+    <li><a href="#s4">core/ — الأكواد الكاملة</a></li>
+    <li><a href="#s5">البروفايل + التأثيرات</a></li>
+    <li><a href="#s6">الشات + الأزرار</a></li>
+    <li><a href="#s7">الرتب + الملك + المراقبة</a></li>
+    <li><a href="#s8">البوتات + الزوار + Stories</a></li>
+    <li><a href="#s9">الصوت + الاستوديو</a></li>
+    <li><a href="#s10">Firebase Paths</a></li>
+    <li><a href="#s11">Firebase Rules</a></li>
+    <li><a href="#s12">القياسات المرجعية</a></li>
+    <li><a href="#s13">الخطة المجانية</a></li>
+    <li><a href="#s14">المقترحات</a></li>
+    <li><a href="#s15">ملاحظات التنفيذ</a></li>
+  </ol>
 </div>
 
-<!-- ═══ 1. نظرة سريعة ═══ -->
+<!-- ═══ 1. القواعد ═══ -->
 <div class="section" id="s1">
-    <h2>📊 1. نظرة سريعة</h2>
-    <div class="stats-grid">
-        <div class="stat-box"><div class="val">~57</div><div class="lbl">ملف JavaScript</div></div>
-        <div class="stat-box"><div class="val">9</div><div class="lbl">ملف CSS</div></div>
-        <div class="stat-box"><div class="val">2</div><div class="lbl">ملف HTML</div></div>
-        <div class="stat-box"><div class="val" style="color:#4ade80;">54/55</div><div class="lbl">ملفات تعمل</div></div>
-        <div class="stat-box"><div class="val" style="color:#4ade80;">✅</div><div class="lbl">DeviceGuard</div></div>
-        <div class="stat-box"><div class="val" style="color:#4ade80;">✅</div><div class="lbl">Firebase</div></div>
-        <div class="stat-box"><div class="val" style="color:#ff8888;">1</div><div class="lbl">ملف معطل</div></div>
-    </div>
+  <h2>⚠️ 1. القواعد الصارمة (Must-Have)</h2>
 
-    <div class="alert alert-success">
-        <strong>🎉 الحالة الحالية:</strong> المشروع يعمل بكفاءة عالية. كل الأنظمة الأساسية فعّالة: الحماية، الرفع، الأرشفة، Firebase، الإطارات، التنظيف الذاتي.
-    </div>
+  <h3>القاعدة 1: 0$ تكلفة — دائماً</h3>
+  <table>
+    <thead><tr><th>الخدمة</th><th>الحد المجاني</th><th>الاستخدام</th></tr></thead>
+    <tbody>
+      <tr><td>Firebase Realtime DB</td><td>1GB + 10GB/شهر</td><td>الدردشة</td></tr>
+      <tr><td>Firebase Auth</td><td>لا حد</td><td>المصادقة</td></tr>
+      <tr><td>GitHub Pages</td><td>لا حد</td><td>الاستضافة</td></tr>
+      <tr><td>Telegram Bot</td><td>لا حد</td><td>رفع الملفات</td></tr>
+      <tr><td>imgbb</td><td>لا حد</td><td>الصور</td></tr>
+      <tr><td>jsDelivr</td><td>لا حد</td><td>الإطارات + CDN</td></tr>
+      <tr><td>OpenRelay TURN</td><td>20GB/شهر</td><td>WebRTC</td></tr>
+    </tbody>
+  </table>
+
+  <h3>القاعدة 2: يعمل في سوريا</h3>
+  <ul>
+    <li>✅ Firebase متاح</li>
+    <li>✅ GitHub Pages متاح</li>
+    <li>✅ Telegram متاح</li>
+    <li>✅ imgbb متاح</li>
+    <li>✅ jsDelivr متاح</li>
+    <li>❌ ممنوع: Agora، Cloudflare TURN</li>
+  </ul>
+
+  <h3>القاعدة 3: العمل على الجوال</h3>
+  <ul>
+    <li>❌ لا F12 / DevTools / Console</li>
+    <li>✅ كل شيء بالإيماءات واللمس</li>
+    <li>✅ كل زر ≥ 40×40 بكسل</li>
+    <li>✅ التشخيص عبر زر 🐛 (للملك)</li>
+    <li>✅ Toast للرسائل</li>
+  </ul>
+
+  <h3>القاعدة 4: دعم الإنترنت الضعيف</h3>
+  <ul>
+    <li>حجم كل ملف JS &lt; 30 KB</li>
+    <li>ضغط الصور تلقائياً قبل الرفع</li>
+    <li>Cache قوي (Service Worker)</li>
+    <li>Retry تلقائي عند الفشل</li>
+    <li>شريط "جاري إعادة الاتصال"</li>
+    <li>Timeouts مرنة (30-60s)</li>
+  </ul>
+
+  <h3>القاعدة 5: رقابة الملك — أولوية قصوى</h3>
+  <ul>
+    <li>✅ تعمل بدون الملك متصلاً (بوت موزّع)</li>
+    <li>✅ محمية بـ Firebase Rules</li>
+    <li>✅ مخفية عن غير الملك</li>
+    <li>✅ كل عملية في audit_log</li>
+  </ul>
+
+  <h3>القاعدة 6: الكود الكامل — دائماً</h3>
+  <div class="alert alert-danger">
+    <strong>❌ ممنوع:</strong> "أضف هذا السطر" أو "استبدل هذا"<br>
+    <strong>✅ المسموح:</strong> الملف كامل جاهز للنسخ
+  </div>
+
+  <h3>القاعدة 7: مراجعة قبل البناء</h3>
+  <ul>
+    <li>📖 اقرأ فصل الملف في هذه الوثيقة</li>
+    <li>✅ تأكد من القيم والقياسات</li>
+    <li>🔍 اسأل عن الغامض</li>
+    <li>🎯 ثم ابدأ البناء</li>
+  </ul>
 </div>
 
-<!-- ═══ 2. البنية التقنية ═══ -->
+<!-- ═══ 2. البنية ═══ -->
 <div class="section" id="s2">
-    <h2>🏗️ 2. البنية التقنية</h2>
+  <h2>📁 2. البنية النهائية (72 ملف)</h2>
 
-    <h3>2.1 البيئة</h3>
-    <table>
-        <thead><tr><th>العنصر</th><th>القيمة</th></tr></thead>
-        <tbody>
-            <tr><td>Firebase</td><td><span class="inline-code">qamaralshamtest</span> (مشروع تجريبي)</td></tr>
-            <tr><td>قاعدة البيانات</td><td>Realtime Database (Belgium - europe-west1)</td></tr>
-            <tr><td>الاستضافة</td><td>GitHub Pages (iralsham.github.io)</td></tr>
-            <tr><td>المستودع</td><td><span class="inline-code">github.com/qamaralsham/qamaralsham</span></td></tr>
-            <tr><td>ملك_uid</td><td><span class="inline-code">QyxWw5khJJSUCLInAD7ZA5toNqz2</span></td></tr>
-        </tbody>
-    </table>
+  <div class="stats-grid">
+    <div class="stat-box"><div class="val">72</div><div class="lbl">إجمالي الملفات</div></div>
+    <div class="stat-box"><div class="val">19</div><div class="lbl">مجلد</div></div>
+    <div class="stat-box"><div class="val">58</div><div class="lbl">ملفات JS</div></div>
+    <div class="stat-box"><div class="val">8</div><div class="lbl">ملفات CSS</div></div>
+  </div>
 
-    <h3>2.2 خدمات الرفع</h3>
-    <table>
-        <thead><tr><th>النوع</th><th>الخدمة</th><th>الحالة</th></tr></thead>
-        <tbody>
-            <tr><td>🖼️ صور</td><td>imgbb (أساسي) → 0x0 → Telegram</td><td><span class="badge-status badge-done">✅</span></td></tr>
-            <tr><td>🎥 فيديو</td><td>Telegram</td><td><span class="badge-status badge-done">✅</span></td></tr>
-            <tr><td>🎵 صوت</td><td>catbox → 0x0 → Telegram (Race)</td><td><span class="badge-status badge-done">✅</span></td></tr>
-        </tbody>
-    </table>
-
-    <h3>2.3 CDN والموارد</h3>
-    <ul class="list">
-        <li><strong>Font Awesome:</strong> cdnjs.cloudflare.com</li>
-        <li><strong>Google Fonts:</strong> Cairo + Amiri</li>
-        <li><strong>الإطارات:</strong> cdn.jsdelivr.net (لا rate limit)</li>
-        <li><strong>الإيموجيات:</strong> cdn.jsdelivr.net</li>
-    </ul>
+  <h3>الهيكل الكامل:</h3>
+  <div class="code">qamaralsham/
+├── index.html
+├── profile.html
+├── manifest.json
+├── sw.js
+├── sitemap.xml
+│
+├── core/            (5 ملفات)
+│   ├── config.js
+│   ├── constants.js
+│   ├── utils.js
+│   ├── state.js
+│   └── boot.js
+│
+├── auth/            (4 ملفات)
+│   ├── auth.js
+│   ├── session.js
+│   ├── identity.js
+│   └── ranks.js
+│
+├── firebase/        (4 ملفات)
+│   ├── firebase.js
+│   ├── optimizers.js
+│   ├── resilience.js
+│   └── cleaners.js
+│
+├── security/        (5 ملفات)
+│   ├── device-guard.js
+│   ├── audit.js
+│   ├── bans.js
+│   ├── reports.js
+│   └── suspects.js
+│
+├── chat/            (4 ملفات)
+│   ├── chat.js
+│   ├── chat-input.js
+│   ├── chat-ui.js
+│   └── chat-effects.js
+│
+├── rooms/           (3 ملفات)
+│   ├── rooms.js
+│   ├── room-settings.js
+│   └── room-voice.js
+│
+├── pm/              (4 ملفات)
+│   ├── pm.js
+│   ├── pm-archiver.js
+│   ├── pm-monitor.js
+│   └── pm-voice.js
+│
+├── voice/           (3 ملفات)
+│   ├── voice-system.js
+│   ├── voice-studio.js
+│   └── voice-monitor.js
+│
+├── bots/            (4 ملفات)
+│   ├── bots.js
+│   ├── bot-commands.js
+│   ├── bot-training.js
+│   └── guardian-inbox.js
+│
+├── king/            (3 ملفات)
+│   ├── king-room.js
+│   ├── king-actions.js
+│   └── king-queens.js
+│
+├── stories/         (2 ملفات)
+│   ├── stories.js
+│   └── stories-cleaner.js
+│
+├── media/           (4 ملفات)
+│   ├── uploader.js
+│   ├── media-picker.js
+│   ├── paint.js
+│   └── styled-messages.js
+│
+├── effects/         (2 ملفات)
+│   ├── name-effects.js
+│   └── frames-engine.js
+│
+├── notifications/   (2 ملفات)
+│   ├── notifications.js
+│   └── room-alerts.js
+│
+├── ui/              (4 ملفات)
+│   ├── ui-core.js
+│   ├── ui-nav.js
+│   ├── ui-input.js
+│   └── ui-mobile.js
+│
+├── guest/           (1 ملف)
+│   └── guest.js
+│
+├── social/          (2 ملفات)
+│   ├── social.js
+│   └── profiles.js
+│
+├── misc/            (4 ملفات)
+│   ├── dice.js
+│   ├── youtube.js
+│   ├── invisible.js
+│   └── islamic-library.js
+│
+├── debug/           (1 ملف)
+│   └── debug.js
+│
+└── styles/          (8 ملفات)
+    ├── base.css
+    ├── layout.css
+    ├── components.css
+    ├── chat.css
+    ├── profile.css
+    ├── king.css
+    ├── effects.css
+    └── mobile.css</div>
 </div>
 
-<!-- ═══ 3. قائمة الملفات ═══ -->
+<!-- ═══ 3. المراحل ═══ -->
 <div class="section" id="s3">
-    <h2>📁 3. قائمة الملفات الكاملة</h2>
+  <h2>🚀 3. خطة المراحل</h2>
 
-    <h3>3.1 الملفات الأساسية (12 ملف)</h3>
-    <table>
-        <thead><tr><th>#</th><th>الملف</th><th>الدور</th></tr></thead>
-        <tbody>
-            <tr><td>1</td><td><span class="inline-code">index.html</span></td><td>الصفحة الرئيسية</td></tr>
-            <tr><td>2</td><td><span class="inline-code">profile.html</span></td><td>صفحة البروفايل</td></tr>
-            <tr><td>3</td><td><span class="inline-code">config.js</span></td><td>Firebase + ثوابت</td></tr>
-            <tr><td>4</td><td><span class="inline-code">ranks.js</span></td><td>10 رتب + can()</td></tr>
-            <tr><td>5</td><td><span class="inline-code">new-rank-88.js</span></td><td>رتبة "ملك" (88)</td></tr>
-            <tr><td>6</td><td><span class="inline-code">utils.js</span></td><td>helpers</td></tr>
-            <tr><td>7</td><td><span class="inline-code">auth.js</span></td><td>تسجيل + جلسة</td></tr>
-            <tr><td>8</td><td><span class="inline-code">chat.js</span></td><td>الرسائل + listeners</td></tr>
-            <tr><td>9</td><td><span class="inline-code">uploader.js</span></td><td>رفع الملفات (Race)</td></tr>
-            <tr><td>10</td><td><span class="inline-code">device-guard.js</span></td><td>بصمة + IP + كشف التكرار v6</td></tr>
-            <tr><td>11</td><td><span class="inline-code">link-fix.js</span></td><td>تجاوز isLink</td></tr>
-            <tr><td>12</td><td><span class="inline-code">youtube-search.js</span></td><td>بحث يوتيوب</td></tr>
-        </tbody>
-    </table>
+  <table>
+    <thead><tr><th>المرحلة</th><th>المحتوى</th><th>الملفات</th><th>الحالة</th></tr></thead>
+    <tbody>
+      <tr><td>0</td><td>التخطيط</td><td>—</td><td><span class="badge-status badge-done">✅</span></td></tr>
+      <tr><td>1</td><td>Core</td><td>5 ملفات</td><td><span class="badge-status badge-done">✅</span></td></tr>
+      <tr><td>2</td><td>Firebase + Auth</td><td>8 ملفات</td><td><span class="badge-status badge-pending">⏳</span></td></tr>
+      <tr><td>3</td><td>Security + Guest</td><td>6 ملفات</td><td><span class="badge-status badge-pending">⏳</span></td></tr>
+      <tr><td>4</td><td>Chat + Rooms</td><td>7 ملفات</td><td><span class="badge-status badge-pending">⏳</span></td></tr>
+      <tr><td>5</td><td>PM + Voice</td><td>7 ملفات</td><td><span class="badge-status badge-pending">⏳</span></td></tr>
+      <tr><td>6</td><td>Bots + King</td><td>7 ملفات</td><td><span class="badge-status badge-pending">⏳</span></td></tr>
+      <tr><td>7</td><td>Social + Media</td><td>6 ملفات</td><td><span class="badge-status badge-pending">⏳</span></td></tr>
+      <tr><td>8</td><td>Stories + Effects + Notif</td><td>6 ملفات</td><td><span class="badge-status badge-pending">⏳</span></td></tr>
+      <tr><td>9</td><td>UI + Misc + Debug</td><td>9 ملفات</td><td><span class="badge-status badge-pending">⏳</span></td></tr>
+      <tr><td>10</td><td>CSS</td><td>8 ملفات</td><td><span class="badge-status badge-pending">⏳</span></td></tr>
+      <tr><td>11</td><td>HTML + Integration</td><td>5 ملفات</td><td><span class="badge-status badge-pending">⏳</span></td></tr>
+      <tr><td>12</td><td>Testing + Polish</td><td>—</td><td><span class="badge-status badge-pending">⏳</span></td></tr>
+    </tbody>
+  </table>
 
-    <h3>3.2 الميزات (35 ملف)</h3>
-    <table>
-        <thead><tr><th>#</th><th>الملف</th><th>الوظيفة</th></tr></thead>
-        <tbody>
-            <tr><td>13</td><td><span class="inline-code">name-effects.js</span></td><td>40 نمط سينمائي</td></tr>
-            <tr><td>14</td><td><span class="inline-code">frames-engine.js</span></td><td>40+ إطار (jsDelivr)</td></tr>
-            <tr><td>15</td><td><span class="inline-code">pm-enhanced.js</span></td><td>الرسائل الخاصة v10</td></tr>
-            <tr><td>16</td><td><span class="inline-code">pm-fixes.js</span></td><td>دمج الإشعارات</td></tr>
-            <tr><td>17</td><td><span class="inline-code">pm-fixes-2.js</span></td><td>PM list + إشعار بصري</td></tr>
-            <tr><td>18</td><td><span class="inline-code">pm-archiver.js</span></td><td>أرشفة بعد 100 رسالة</td></tr>
-            <tr><td>19</td><td><span class="inline-code">pm-monitor.js</span></td><td>مراقبة الملك v4 + أرشيف</td></tr>
-            <tr><td>20</td><td><span class="inline-code">pm-ui-fixes.js</span></td><td>ترتيب PM input</td></tr>
-            <tr><td>21</td><td><span class="inline-code">stories.js</span></td><td>الحالات v6</td></tr>
-            <tr><td>22</td><td><span class="inline-code">stories-patch.js</span></td><td>pause/resume</td></tr>
-            <tr><td>23</td><td><span class="inline-code">stories-cleaner.js</span></td><td>تنظيف الحالات</td></tr>
-            <tr><td>24</td><td><span class="inline-code">king-room.js</span></td><td>غرفة الملك v10</td></tr>
-            <tr><td>25</td><td><span class="inline-code">king-room-patch.js</span></td><td>إخفاء السجان</td></tr>
-            <tr><td>26</td><td><span class="inline-code">memory-cleaner.js</span></td><td>تبويب الذاكرة + مؤشر</td></tr>
-            <tr><td>27</td><td><span class="inline-code">bot-messages-cleaner.js</span></td><td>حذف رسائل البوت (ساعة)</td></tr>
-            <tr><td>28</td><td><span class="inline-code">bots.js</span></td><td>5 بوتات v30</td></tr>
-            <tr><td>29</td><td><span class="inline-code">guardian-hide.js</span></td><td>إخفاء الكلمات</td></tr>
-            <tr><td>30</td><td><span class="inline-code">multi-account-enhance.js</span></td><td>إشعار الملك بالتكرار</td></tr>
-            <tr><td>31</td><td><span class="inline-code">multi-account-viewer.js</span></td><td>عرض الأسماء والصور</td></tr>
-            <tr><td>32</td><td><span class="inline-code">guest-persist-fix.js</span></td><td>حفظ الزائر الدائم</td></tr>
-            <tr><td>33</td><td><span class="inline-code">guardian-inbox-reader.js</span></td><td>قارئ صندوق السجان</td></tr>
-            <tr><td>34</td><td><span class="inline-code">imagekit-upload.js</span></td><td>imgbb أساسي</td></tr>
-            <tr><td>35</td><td><span class="inline-code">ft-upload-fix.js</span></td><td>زر الرفع المباشر</td></tr>
-            <tr><td>36</td><td><span class="inline-code">ft-remove-audio.js</span></td><td>حذف زر الصوتيات</td></tr>
-            <tr><td>37</td><td><span class="inline-code">video-render.js</span></td><td>عرض الفيديو + حماية</td></tr>
-            <tr><td>38</td><td><span class="inline-code">video-token-fix.js</span></td><td>[video:] آمن</td></tr>
-            <tr><td>39</td><td><span class="inline-code">media-picker.js</span></td><td>الإيموجي المتعدد</td></tr>
-            <tr><td>40</td><td><span class="inline-code">paint-tool.js</span></td><td>الرسام</td></tr>
-            <tr><td>41</td><td><span class="inline-code">paint-render.js</span></td><td>عرض الرسمات</td></tr>
-            <tr><td>42</td><td><span class="inline-code">paint-bg-transparent.js</span></td><td>شفافية الرسام</td></tr>
-            <tr><td>43</td><td><span class="inline-code">styled-messages.js</span></td><td>نص مميز + 16 خط</td></tr>
-            <tr><td>44</td><td><span class="inline-code">floating-toolbar-v2.js</span></td><td>الشريط العائم</td></tr>
-            <tr><td>45</td><td><span class="inline-code">dice.js</span></td><td>النرد 3D</td></tr>
-            <tr><td>46</td><td><span class="inline-code">invisible-mode.js</span></td><td>الوضع المخفي v5</td></tr>
-            <tr><td>47</td><td><span class="inline-code">room-alerts.js</span></td><td>التنبيهات v5</td></tr>
-            <tr><td>48</td><td><span class="inline-code">room-picker.js</span></td><td>اختيار الغرفة</td></tr>
-        </tbody>
-    </table>
-
-    <h3>3.3 Optimizers + Patches (10 ملفات)</h3>
-    <table>
-        <thead><tr><th>#</th><th>الملف</th><th>الدور</th></tr></thead>
-        <tbody>
-            <tr><td>49</td><td><span class="inline-code">connection-optimizer.js</span></td><td>تخفيف Firebase</td></tr>
-            <tr><td>50</td><td><span class="inline-code">firebase-persistence.js</span></td><td>keepSynced</td></tr>
-            <tr><td>51</td><td><span class="inline-code">chat-optimizer.js</span></td><td>تأجيل listeners</td></tr>
-            <tr><td>52</td><td><span class="inline-code">connection-resilience.js</span></td><td>إعادة الاتصال</td></tr>
-            <tr><td>53</td><td><span class="inline-code">user-data-optimizer.js</span></td><td>14 حقل بدل النود</td></tr>
-            <tr><td>54</td><td><span class="inline-code">final-fixes.js</span></td><td>إصلاحات Stories</td></tr>
-            <tr><td>55</td><td><span class="inline-code">guest-restrictions.js</span></td><td>قيود الزوار</td></tr>
-            <tr><td>56</td><td><span class="inline-code">guest-badge.js</span></td><td>شارة الزائر/العضو</td></tr>
-            <tr><td>57</td><td><span class="inline-code">pc-compat-fixes.js</span></td><td>إصلاحات الكمبيوتر</td></tr>
-        </tbody>
-    </table>
+  <div class="alert alert-info">
+    <strong>⏱️ الوقت المتوقع:</strong> ~4 أسابيع للانتهاء الكامل (بمعدل 3-4 ملفات/يوم)
+  </div>
 </div>
 
-<!-- ═══ 4. Firebase Rules ═══ -->
+<!-- ═══ 4. Core الأكواد ═══ -->
 <div class="section" id="s4">
-    <h2>🔥 4. Firebase Rules — الجديدة</h2>
+  <h2>💾 4. core/ — الأكواد الكاملة (5 ملفات)</h2>
 
-    <div class="alert alert-success">
-        <strong>✅ مرفوعة على qamaralshamtest</strong> — تم إضافة مسارات جديدة للحماية والأرشفة.
-    </div>
+  <div class="alert alert-success">
+    <strong>✅ المرحلة 1 مكتملة</strong> — هذه الأكواد جاهزة، موجودة في المستودع
+  </div>
 
-    <h3>4.1 المسارات الجديدة المضافة</h3>
-    <table>
-        <thead><tr><th>#</th><th>المسار</th><th>الغرض</th></tr></thead>
-        <tbody>
-            <tr><td>1</td><td><span class="inline-code">guardian_inbox/$kingUid</span></td><td>صندوق السجان (الكتابة مفتوحة، القراءة للملك)</td></tr>
-            <tr><td>2</td><td><span class="inline-code">device_uuid_map/$uuid/uids/$uid</span></td><td>خريطة UUID (كشف VPN)</td></tr>
-            <tr><td>3</td><td><span class="inline-code">device_ip_map/$ipHash/uids/$uid</span></td><td>خريطة IP (كشف Incognito)</td></tr>
-            <tr><td>4</td><td><span class="inline-code">private_archive/$uid/$other</span></td><td>أرشيف PM (فقط الملك يقرأ)</td></tr>
-            <tr><td>5</td><td><span class="inline-code">pm_archive_index/$uid/$other</span></td><td>فهرس الأرشيف</td></tr>
-            <tr><td>6</td><td><span class="inline-code">system/pm_archiver_lock</span></td><td>قفل الأرشفة الموزّع</td></tr>
-            <tr><td>7</td><td><span class="inline-code">system/bot_msgs_cleaner_lock</span></td><td>قفل تنظيف البوتات</td></tr>
-        </tbody>
-    </table>
+  <h3>الملف 1: <span class="inline-code">core/config.js</span></h3>
+  <p><strong>الوظيفة:</strong> Firebase init + exports</p>
+  <p><strong>الحجم:</strong> ~100 سطر</p>
+  <p><strong>الواجهة:</strong> <span class="inline-code">waitForFirebase(timeout)</span> + <span class="inline-code">window.auth/db/storage</span></p>
+  <p><strong>الاعتماديات:</strong> Firebase SDK</p>
 
-    <h3>4.2 الميزات الأمنية</h3>
-    <ul class="list">
-        <li>🔒 <strong>device_uuid_map</strong> — كتابة فقط لصاحب الـ uid</li>
-        <li>🔒 <strong>private_archive</strong> — قراءة للمالك أو الملك فقط، كتابة للملك فقط</li>
-        <li>🔒 <strong>multi_account_alerts</strong> — قراءة للملك فقط</li>
-        <li>🔒 <strong>guardian_inbox</strong> — قراءة للملك فقط، كتابة مفتوحة (لأي مسجّل)</li>
-        <li>🔒 <strong>audit_log</strong> — قراءة لـ Master Owner+ فقط</li>
-    </ul>
+  <div class="code">// ==============================================
+// core/config.js
+// Firebase initialization + exports
+// ==============================================
+
+(function () {
+    'use strict';
+
+    const FIREBASE_CONFIG = {
+        apiKey: "AIzaSyCWh4rv__7DKqXUHXaPbNv4xGqJdoMbsCg",
+        authDomain: "qamaralshamtest.firebaseapp.com",
+        databaseURL: "https://qamaralshamtest-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "qamaralshamtest",
+        storageBucket: "qamaralshamtest.firebasestorage.app",
+        messagingSenderId: "204010808393",
+        appId: "1:204010808393:web:6a83f5b179dcff44120b98"
+    };
+
+    let _auth = null;
+    let _db = null;
+    let _storage = null;
+    let _ready = false;
+    let _readyPromise = null;
+
+    function _init() {
+        if (typeof firebase === 'undefined') {
+            console.error('[config] Firebase SDK not loaded');
+            return false;
+        }
+        try {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(FIREBASE_CONFIG);
+            }
+            _auth = firebase.auth();
+            _db = firebase.database();
+            _storage = firebase.storage();
+            _ready = true;
+            console.log('🔥 [config] Firebase initialized:', FIREBASE_CONFIG.projectId);
+            return true;
+        } catch (e) {
+            console.error('[config] Firebase init failed:', e);
+            return false;
+        }
+    }
+
+    function _waitReady(timeoutMs) {
+        timeoutMs = timeoutMs || 10000;
+        if (_readyPromise) return _readyPromise;
+        _readyPromise = new Promise(function (resolve, reject) {
+            if (_init()) { resolve(true); return; }
+            const start = Date.now();
+            const t = setInterval(function () {
+                if (_init()) { clearInterval(t); resolve(true); return; }
+                if (Date.now() - start > timeoutMs) {
+                    clearInterval(t);
+                    reject(new Error('Firebase timeout'));
+                }
+            }, 100);
+        });
+        return _readyPromise;
+    }
+
+    window.FIREBASE_CONFIG = FIREBASE_CONFIG;
+    window.waitForFirebase = _waitReady;
+
+    Object.defineProperty(window, 'auth', {
+        get: function () { return _auth; },
+        configurable: true
+    });
+    Object.defineProperty(window, 'db', {
+        get: function () { return _db; },
+        configurable: true
+    });
+    Object.defineProperty(window, 'storage', {
+        get: function () { return _storage; },
+        configurable: true
+    });
+
+    _init();
+    console.log('📦 [config] loaded');
+})();</div>
+
+  <button class="copy-btn" onclick="copyCode(this)">📋 نسخ الكود</button>
+
+  <h3>الملف 2: <span class="inline-code">core/constants.js</span></h3>
+  <p><strong>الوظيفة:</strong> كل الثوابت (rooms, ranks, colors, paths...)</p>
+  <p><strong>الحجم:</strong> ~350 سطر</p>
+  <p><strong>الواجهة:</strong> <span class="inline-code">window.QAMAR</span> + <span class="inline-code">window.getRankLevel</span></p>
+
+  <div class="alert alert-info">
+    <strong>📌 المحتوى:</strong> VERSION، RANK_LEVELS (11 رتبة)، RANKS_ORDERED، ROOMS (10 غرف)، isRoomVisible()، getVisibleRooms()، COLORS، DEFAULT_BIO، BACKGROUNDS، RATE_LIMIT، JAIL، BOTS (5 بوتات)، STORAGE_KEYS (30 مفتاح)، SETTINGS، QUEEN_ORDERS (4)، IDENTITY_FIELDS (22)، PROFILE_GLOWS (12)، NAME_BG_COLORS (24)، PATHS (14)، MUTE_TYPES، BAN_TYPES، TRANSFER، JAIL_BEHAVIOR، MULTI_ACCOUNT، ARABIC_EQUIVALENTS (~80 حرف)
+  </div>
+
+  <div class="alert alert-warning">
+    <strong>📌 ملاحظة:</strong> الكود الكامل موجود في المستودع — <span class="inline-code">core/constants.js</span>
+  </div>
+
+  <h3>الملف 3: <span class="inline-code">core/utils.js</span></h3>
+  <p><strong>الوظيفة:</strong> كل الـ helpers (30+ دالة)</p>
+  <p><strong>الحجم:</strong> ~400 سطر</p>
+
+  <table>
+    <thead><tr><th>الفئة</th><th>الدوال</th></tr></thead>
+    <tbody>
+      <tr><td>Security</td><td>escapeHtml, sanitizeAttr, sanitizeText</td></tr>
+      <tr><td>Toast</td><td>showToast</td></tr>
+      <tr><td>Time</td><td>formatTime, formatDate, formatDateTime, formatTimeShort, timeAgo, formatLastSeen</td></tr>
+      <tr><td>Files</td><td>formatFileSize, truncate</td></tr>
+      <tr><td>Links</td><td>isLink (with tokens), extractLinks</td></tr>
+      <tr><td>Validation</td><td>isValidEmail, isValidName, isValidCountry, isValidFamily</td></tr>
+      <tr><td>Mentions</td><td>extractMentions, buildMentionHTML</td></tr>
+      <tr><td>Avatars</td><td>getDefaultAvatar</td></tr>
+      <tr><td>Performance</td><td>debounce, throttle</td></tr>
+      <tr><td>Storage</td><td>safeGetJSON, safeSetJSON</td></tr>
+      <tr><td>Environment</td><td>isMobile, isIOS</td></tr>
+      <tr><td>User Code</td><td>generateUserCode, extractUserCode</td></tr>
+      <tr><td>URL</td><td>buildProfileUrl</td></tr>
+      <tr><td>Stars</td><td>generateStars</td></tr>
+      <tr><td>Vibrate</td><td>vibrate</td></tr>
+    </tbody>
+  </table>
+
+  <h3>الملف 4: <span class="inline-code">core/state.js</span></h3>
+  <p><strong>الوظيفة:</strong> حالة عالمية + Event bus</p>
+  <p><strong>الحجم:</strong> ~150 سطر</p>
+
+  <div class="alert alert-success">
+    <strong>المكونات:</strong><br>
+    • EventBus: on/off/once/emit/clear<br>
+    • AppState: user, currentRoom, isGuest, listeners<br>
+    • setUser, clearUser, getUser, isKing, isQueen, isRoyal<br>
+    • setRoom, getRoom, registerListener, cleanupListeners, reset<br>
+    • Aliases: getCurrentUser, iAmKing, iAmQueen, iAmRoyal, isGuest
+  </div>
+
+  <h3>الملف 5: <span class="inline-code">core/boot.js</span></h3>
+  <p><strong>الوظيفة:</strong> Startup + orchestration</p>
+  <p><strong>الحجم:</strong> ~150 سطر</p>
+
+  <div class="alert alert-success">
+    <strong>التسلسل:</strong><br>
+    1. Wait for Firebase (10s timeout)<br>
+    2. Wait for auth (5s timeout)<br>
+    3. Load session from localStorage<br>
+    4. Run registered modules<br>
+    5. Set ready status<br>
+    6. Hide loader<br>
+    7. Emit <span class="inline-code">boot:ready</span>
+  </div>
 </div>
 
-<!-- ═══ 5. DeviceGuard ═══ -->
+<!-- ═══ 5. البروفايل ═══ -->
 <div class="section" id="s5">
-    <h2>🛡️ 5. نظام الحماية — DeviceGuard v6</h2>
+  <h2>👤 5. البروفايل + التأثيرات</h2>
 
-    <div class="alert alert-purple">
-        <strong>🎯 الحل النهائي:</strong> بصمة مزدوجة = UUID (localStorage) + IP (شبكة).
-    </div>
+  <h3>5.1 حقول البروفايل (24 حقل)</h3>
+  <table>
+    <thead><tr><th>#</th><th>الحقل</th><th>النوع</th><th>المكان</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>name</td><td>string</td><td>الهيدر</td></tr>
+      <tr><td>2</td><td>bio</td><td>string</td><td>الهيدر</td></tr>
+      <tr><td>3</td><td>avatar</td><td>url</td><td>cover</td></tr>
+      <tr><td>4</td><td>cover</td><td>url</td><td>cover</td></tr>
+      <tr><td>5</td><td>coverType</td><td>string</td><td>cover</td></tr>
+      <tr><td>6</td><td>age</td><td>number</td><td>info-grid</td></tr>
+      <tr><td>7</td><td>gender</td><td>string</td><td>info-grid</td></tr>
+      <tr><td>8</td><td>country</td><td>string</td><td>info-grid</td></tr>
+      <tr><td>9</td><td>family</td><td>string</td><td>info-grid</td></tr>
+      <tr><td>10</td><td>color</td><td>hex</td><td>fallback</td></tr>
+      <tr><td>11</td><td>nameColor</td><td>hex</td><td>username</td></tr>
+      <tr><td>12</td><td>nameGradient</td><td>array[2]</td><td>username</td></tr>
+      <tr><td>13</td><td>nameBgColor</td><td>hex</td><td>username bg</td></tr>
+      <tr><td>14</td><td>nameBgGradient</td><td>array[2]</td><td>username bg</td></tr>
+      <tr><td>15</td><td>cinemaTextStyle</td><td>string</td><td>username</td></tr>
+      <tr><td>16</td><td>cinemaBgStyle</td><td>string</td><td>username bg</td></tr>
+      <tr><td>17</td><td>avatarFrame</td><td>string</td><td>avatar</td></tr>
+      <tr><td>18</td><td>profileGlow</td><td>hex</td><td>container</td></tr>
+      <tr><td>19</td><td>profileBgType</td><td>string</td><td>bg layer</td></tr>
+      <tr><td>20</td><td>profileBgValue</td><td>string</td><td>bg layer</td></tr>
+      <tr><td>21</td><td>musicURL</td><td>url</td><td>music btn</td></tr>
+      <tr><td>22</td><td>poetry</td><td>string</td><td>poetry section</td></tr>
+      <tr><td>23</td><td>poetryBg</td><td>url</td><td>poetry bg</td></tr>
+      <tr><td>24</td><td>poetryAttachment</td><td>url</td><td>poetry attachment</td></tr>
+    </tbody>
+  </table>
 
-    <h3>5.1 المكونات</h3>
-    <table>
-        <thead><tr><th>المكون</th><th>المصدر</th><th>الحماية ضد</th></tr></thead>
-        <tbody>
-            <tr><td><strong>UUID</strong></td><td>localStorage (ثابت)</td><td>VPN، تغيير IP</td></tr>
-            <tr><td><strong>IP Hash</strong></td><td>ipwho.is</td><td>Incognito، مسح cache</td></tr>
-            <tr><td><strong>Device ID</strong></td><td>IP + Screen + Lang + TZ</td><td>عرض سريع</td></tr>
-            <tr><td><strong>UUID Hash</strong></td><td>hash(UUID)</td><td>مفتاح للخريطة</td></tr>
-        </tbody>
-    </table>
+  <h3>5.2 القياسات الدقيقة</h3>
+  <table>
+    <thead><tr><th>العنصر</th><th>القياس</th><th>موبايل</th></tr></thead>
+    <tbody>
+      <tr><td>.profile radius</td><td>28px</td><td>—</td></tr>
+      <tr><td>.cover min-height</td><td>260px</td><td>240px</td></tr>
+      <tr><td>.cover-moon</td><td>78×78px</td><td>68×68px</td></tr>
+      <tr><td>.avatar-box</td><td>120×120px</td><td>108×108px</td></tr>
+      <tr><td>.avatar-cont margin-top</td><td>60px</td><td>52px</td></tr>
+      <tr><td>.username font-size</td><td>26px</td><td>24px</td></tr>
+      <tr><td>.bio font-size</td><td>13.5px</td><td>12.5px</td></tr>
+      <tr><td>.interact-btns button</td><td>52×46px</td><td>—</td></tr>
+      <tr><td>.tabs .tab</td><td>8px 4px</td><td>—</td></tr>
+      <tr><td>.info-item</td><td>2 cols</td><td>—</td></tr>
+      <tr><td>.poetry-section</td><td>16px font</td><td>—</td></tr>
+    </tbody>
+  </table>
 
-    <h3>5.2 السلوك الحالي (v6)</h3>
-    <ul class="list">
-        <li>✅ <strong>لا يمنع</strong> الحساب الثاني — يدخل بسلام</li>
-        <li>✅ يرسل إشعار للملك (3 قنوات)</li>
-        <li>✅ يسجل في device_uuid_map + device_ip_map</li>
-        <li>✅ عند الكشف: يجمع كل الحسابات ويرسلها للملك</li>
-        <li>✅ الملك يقرر يدوياً (حظر / تجاهل)</li>
-    </ul>
+  <h3>5.3 التأثيرات (40 نمط)</h3>
+  <div class="alert alert-purple">
+    <strong>قائمة الأنماط:</strong><br>
+    <strong>قديمة (22):</strong> multicolor, spiral, nebula, storm, fireworks, sugar, snow, volcano, waves, gold, sunset, aurora, ocean, galaxy, fire, neon, emerald, diamond, blood, cyber, rainbowtext, royal<br>
+    <strong>جديدة (19):</strong> hue-rotate, breathe, shimmer-gold, shimmer-rainbow, glow-breathe, neon-flicker, diagonal-flow, radial-pulse, saturate-breathe, brightness-pulse, skew-wave, tilt-swing, sunrise, candle, electric, twinkle, liquid, silk, spin-slow, contrast-flash
+  </div>
 
-    <h3>5.3 قنوات الإشعار</h3>
-    <table>
-        <thead><tr><th>القناة</th><th>المسار</th><th>الوصول</th></tr></thead>
-        <tbody>
-            <tr><td>1</td><td><span class="inline-code">guardian_inbox/$kingUid</span></td><td>رسالة خاصة من السجان</td></tr>
-            <tr><td>2</td><td><span class="inline-code">user_notifications/$kingUid</span></td><td>إشعار 🔔</td></tr>
-            <tr><td>3</td><td><span class="inline-code">multi_account_alerts</span></td><td>تبويب المكررة في غرفة الملك</td></tr>
-        </tbody>
-    </table>
+  <h3>5.4 قياسات خلفية الاسم</h3>
+  <div class="code">.name-styled {
+    padding: 1px 6px;
+    line-height: 1.05;
+    border-radius: 8px;
+    font-weight: 900;
+}
 
-    <h3>5.4 البيانات المتتبَّعة لكل جهاز</h3>
-    <ul class="list">
-        <li><strong>UUID:</strong> المعرّف الفريد الثابت</li>
-        <li><strong>IP:</strong> عنوان الشبكة</li>
-        <li><strong>Screen:</strong> دقة الشاشة</li>
-        <li><strong>Platform:</strong> النظام (Android/iOS/Windows)</li>
-        <li><strong>User Agent:</strong> تفاصيل المتصفح</li>
-        <li><strong>Timezone:</strong> المنطقة الزمنية</li>
-        <li><strong>Language:</strong> اللغة</li>
-    </ul>
+.name-styled.has-bg::before {
+    box-shadow:
+        0 0 4px 1px var(--name-bg-glow),
+        0 0 10px 2px var(--name-bg-glow);
+}
+
+.name-styled.has-gradient::after {
+    background-size: 400% 100%;
+    animation: nameGradientSlide 3s linear infinite;
+}</div>
+
+  <h3>5.5 التوهج — 12 لون</h3>
+  <table>
+    <thead><tr><th>اللون</th><th>الاسم</th></tr></thead>
+    <tbody>
+      <tr><td>#ffd700</td><td>ذهبي</td></tr>
+      <tr><td>#ff69b4</td><td>وردي</td></tr>
+      <tr><td>#00f3ff</td><td>سماوي</td></tr>
+      <tr><td>#39ff14</td><td>أخضر فسفوري</td></tr>
+      <tr><td>#a855f7</td><td>بنفسجي</td></tr>
+      <tr><td>#ff0066</td><td>أحمر وردي</td></tr>
+      <tr><td>#ffffff</td><td>أبيض</td></tr>
+      <tr><td>#ff4444</td><td>أحمر</td></tr>
+      <tr><td>#ff8c00</td><td>برتقالي</td></tr>
+      <tr><td>#00ff88</td><td>أخضر نعناعي</td></tr>
+      <tr><td>#8b00ff</td><td>بنفسجي داكن</td></tr>
+      <tr><td>#feca57</td><td>أصفر ذهبي</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.6 الإطارات</h3>
+  <ul>
+    <li>jsDelivr API: <span class="inline-code">data.jsdelivr.com/v1/package/gh/qamaralsham/qamaralsham@main/flat</span></li>
+    <li>CDN: <span class="inline-code">cdn.jsdelivr.net/gh/qamaralsham/qamaralsham@main/frames/</span></li>
+    <li>Cache: 48 ساعة</li>
+    <li>Fallback: 12 إطار</li>
+    <li>--frame-inset: -8%</li>
+    <li>الحركات: royal-glow (2.5s), wing-flutter (3s), flame-flicker (0.5s), celestial-spin (12s)</li>
+    <li>للصور المتحركة: opacity-pulse (2s), opacity-gentle (3.5s)</li>
+  </ul>
+
+  <h3>5.7 الإطار الافتراضي</h3>
+  <table>
+    <thead><tr><th>الرتبة</th><th>الإطار</th><th>المدة</th></tr></thead>
+    <tbody>
+      <tr><td>King</td><td>gold</td><td>5s</td></tr>
+      <tr><td>Queen</td><td>pink</td><td>5s</td></tr>
+      <tr><td>Master+</td><td>silver</td><td>6s</td></tr>
+      <tr><td>Premium/User</td><td>gray</td><td>8s</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.8 24 لون خلفية الاسم</h3>
+  <p>من <span class="inline-code">QAMAR.NAME_BG_COLORS</span>: أسود، أبيض، 22 لون آخر</p>
+
+  <h3>5.9 64 تدرج</h3>
+  <p>10 ذهبي + 4 وردي + 7 أزرق + 5 أخضر + 5 أحمر + 7 متنوع + باقي الفئات</p>
 </div>
 
-<!-- ═══ 6. PM Archiver ═══ -->
+<!-- ═══ 6. الشات ═══ -->
 <div class="section" id="s6">
-    <h2>📦 6. نظام أرشفة الرسائل الخاصة</h2>
+  <h2>💬 6. الشات + الأزرار</h2>
 
-    <div class="alert alert-info">
-        <strong>الهدف:</strong> لا تُحذف الرسائل أبداً. الأقدم من 100 → تُنقل للأرشيف الذي يراه الملك.
-    </div>
+  <h3>6.1 قياسات الشات</h3>
+  <table>
+    <thead><tr><th>العنصر</th><th>القياس</th></tr></thead>
+    <tbody>
+      <tr><td>.header</td><td>42px height</td></tr>
+      <tr><td>.header-btn</td><td>30×30px</td></tr>
+      <tr><td>.bottom-nav</td><td>46px height</td></tr>
+      <tr><td>.input-area padding</td><td>6px 10px</td></tr>
+      <tr><td>input font-size</td><td>13px</td></tr>
+      <tr><td>.send-btn</td><td>34×34px</td></tr>
+      <tr><td>.emoji-btn, .plus-btn</td><td>30×30px</td></tr>
+      <tr><td>.mic-btn</td><td>34×34px</td></tr>
+      <tr><td>.mics-bar padding</td><td>6px 10px</td></tr>
+      <tr><td>.sidebar width</td><td>45vw (mobile 55vw)</td></tr>
+      <tr><td>.sidebar top / bottom</td><td>42px / 46px</td></tr>
+    </tbody>
+  </table>
 
-    <h3>6.1 آلية العمل</h3>
-    <table>
-        <thead><tr><th>الخطوة</th><th>التفصيل</th></tr></thead>
-        <tbody>
-            <tr><td>1. المسح</td><td>كل 6 ساعات (أول تشغيل بعد 3 دقائق)</td></tr>
-            <tr><td>2. العد</td><td>يقرأ كل الرسائل في المحادثة</td></tr>
-            <tr><td>3. الفرز</td><td>ترتيب حسب <span class="inline-code">time</span></td></tr>
-            <tr><td>4. النقل</td><td>الأقدم من 100 → <span class="inline-code">private_archive</span></td></tr>
-            <tr><td>5. الإبقاء</td><td>آخر 100 → تبقى في <span class="inline-code">user_private_messages</span></td></tr>
-            <tr><td>6. الفهرس</td><td>تحديث <span class="inline-code">pm_archive_index</span></td></tr>
-            <tr><td>7. السجل</td><td>كتابة في <span class="inline-code">audit_log</span></td></tr>
-        </tbody>
-    </table>
+  <h3>6.2 أزرار الهيدر</h3>
+  <table>
+    <thead><tr><th>الزر</th><th>الوظيفة</th><th>الظهور</th></tr></thead>
+    <tbody>
+      <tr><td>🚪 Rooms</td><td>toggleRooms</td><td>الكل</td></tr>
+      <tr><td>🔔 Notif</td><td>toggleNotifications</td><td>الكل</td></tr>
+      <tr><td>💬 PM</td><td>togglePrivateMessages</td><td>الكل</td></tr>
+      <tr><td>👁️ Invisible</td><td>toggleInvisible</td><td>King+Queen</td></tr>
+      <tr><td>🚪 Logout</td><td>handleLogout</td><td>الكل</td></tr>
+      <tr><td>⚙️ Settings</td><td>toggleSettings</td><td>الكل</td></tr>
+      <tr><td>🔧 Room Settings</td><td>openRoomSettings</td><td>80+</td></tr>
+      <tr><td>🚨 Reports</td><td>openReportsPanel</td><td>90+</td></tr>
+    </tbody>
+  </table>
 
-    <h3>6.2 مزايا الملك (pm-monitor v4)</h3>
-    <ul class="list">
-        <li>✅ يرى <strong>الرسائل الحديثة</strong> (آخر 100)</li>
-        <li>✅ يرى <strong>الأرشيف</strong> (كل ما هو أقدم)</li>
-        <li>✅ <strong>تبديل</strong> بين الحديث والأرشيف</li>
-        <li>✅ <strong>حذف</strong> الأرشيف يدوياً حسب الذاكرة</li>
-        <li>✅ <strong>استرجاع</strong> الرسائل المحذوفة (خلال 100 الأخيرة)</li>
-        <li>✅ عرض <strong>count</strong> لكل محادثة (حديث + أرشيف + محذوف)</li>
-    </ul>
+  <h3>6.3 الشريط السفلي</h3>
+  <table>
+    <thead><tr><th>الزر</th><th>الوظيفة</th><th>الظهور</th></tr></thead>
+    <tbody>
+      <tr><td>🆔 بروفايلي</td><td>openProfile</td><td>الكل</td></tr>
+      <tr><td>👥 المتواجدين</td><td>showOnlineUsers</td><td>الكل</td></tr>
+      <tr><td>🔑 عضوية</td><td>openUpgradeModal</td><td>الزوار فقط (مخفي للأعضاء)</td></tr>
+      <tr><td>👥 الأصدقاء</td><td>showFriends</td><td>الكل</td></tr>
+      <tr><td>🛒 المتجر</td><td>showStore</td><td>الكل</td></tr>
+      <tr><td>💬 PM Slot</td><td>openMinimizedChat</td><td>الكل</td></tr>
+    </tbody>
+  </table>
 
-    <h3>6.3 قفل موزّع</h3>
-    <ul class="list">
-        <li>يضمن أن <strong>مستخدماً واحداً فقط</strong> يقوم بالأرشفة</li>
-        <li>TTL = 5 دقائق</li>
-        <li>المسار: <span class="inline-code">system/pm_archiver_lock</span></li>
-    </ul>
+  <h3>6.4 الشريط العائم</h3>
+  <p><strong>الظهور:</strong> عند الضغط على +</p>
+  <table>
+    <thead><tr><th>الزر</th><th>الوظيفة</th><th>الظهور</th></tr></thead>
+    <tbody>
+      <tr><td>📁 ملفات</td><td>MediaPicker.open</td><td>الأعضاء فقط</td></tr>
+      <tr><td>😀 إيموجي</td><td>MediaPicker.open</td><td>الكل</td></tr>
+      <tr><td>🎵 صوتيات</td><td>محذوف (ft-remove-audio)</td><td>—</td></tr>
+      <tr><td>🎨 رسام</td><td>PaintTool.open</td><td>الأعضاء فقط</td></tr>
+      <tr><td>✨ نص مميز</td><td>StyledMessages.open</td><td>الأعضاء فقط</td></tr>
+      <tr><td>▶️ يوتيوب</td><td>searchYouTube</td><td>الأعضاء فقط</td></tr>
+      <tr><td>🎲 نرد</td><td>rollDice</td><td>الأعضاء فقط</td></tr>
+    </tbody>
+  </table>
+
+  <div class="alert alert-danger">
+    <strong>❌ الزائر:</strong> الشريط العائم كامل مخفي (لا يراه أصلاً)
+  </div>
+
+  <h3>6.5 زر 🐛 (التشخيص)</h3>
+  <ul>
+    <li><strong>الظهور:</strong> الملك فقط</li>
+    <li><strong>الموقع:</strong> bottom:60px، left:8px</li>
+    <li><strong>الحجم:</strong> 44×44px</li>
+    <li><strong>يحتوي:</strong> حالة كل ملف + آخر 10 أخطاء + DeviceGuard + Firebase</li>
+  </ul>
+
+  <h3>6.6 أزرار الصوت</h3>
+  <table>
+    <thead><tr><th>الزر</th><th>الظهور</th></tr></thead>
+    <tbody>
+      <tr><td>🎙️ Studio</td><td>80+ فقط</td></tr>
+      <tr><td>👁️ Suspects</td><td>الملك فقط</td></tr>
+      <tr><td>📋 Alerts</td><td>الملك فقط</td></tr>
+    </tbody>
+  </table>
 </div>
 
-<!-- ═══ 7. الملفات ═══ -->
+<!-- ═══ 7. الرتب + الملك ═══ -->
 <div class="section" id="s7">
-    <h2>📤 7. نظام الملفات (imgbb أساسي)</h2>
+  <h2>👑 7. الرتب + الملك + المراقبة</h2>
 
-    <div class="alert alert-warning">
-        <strong>⚠️ تغيير مهم:</strong> ImageKit غير مدعوم في الخطة المجانية (Unsigned Uploads). تم الانتقال إلى imgbb.
-    </div>
+  <h3>7.1 الرتب الـ 11</h3>
+  <table>
+    <thead><tr><th>الرتبة</th><th>المستوى</th><th>الرمز</th><th>اللون</th></tr></thead>
+    <tbody>
+      <tr><td>King</td><td>100</td><td>👑</td><td>#ffd700</td></tr>
+      <tr><td>Queen</td><td>95</td><td>👸</td><td>#ff69b4</td></tr>
+      <tr><td>Master Owner</td><td>90</td><td>🌟</td><td>#ffa500</td></tr>
+      <tr><td>Room Owner</td><td>85</td><td>🛡️</td><td>#3498db</td></tr>
+      <tr><td>Grand Owner</td><td>80</td><td>💎</td><td>#9b59b6</td></tr>
+      <tr><td>Owner</td><td>75</td><td>🏆</td><td>#e67e22</td></tr>
+      <tr><td>Super Admin</td><td>70</td><td>🎖️</td><td>#f1c40f</td></tr>
+      <tr><td>Admin</td><td>65</td><td>🛠️</td><td>#1abc9c</td></tr>
+      <tr><td>Premium</td><td>60</td><td>💠</td><td>#e84393</td></tr>
+      <tr><td>User</td><td>50</td><td>👤</td><td>#ffffff</td></tr>
+      <tr><td>ملك (خاص)</td><td>88</td><td>🤴</td><td>#c084fc</td></tr>
+    </tbody>
+  </table>
 
-    <h3>7.1 المسار الحالي</h3>
-    <table>
-        <thead><tr><th>النوع</th><th>الأساسي</th><th>الاحتياطي</th></tr></thead>
-        <tbody>
-            <tr><td>🖼️ صور</td><td><strong>imgbb</strong></td><td>0x0 → Telegram</td></tr>
-            <tr><td>🎥 فيديو</td><td>Telegram</td><td>—</td></tr>
-            <tr><td>🎵 صوت</td><td>catbox</td><td>0x0 + Telegram (Race)</td></tr>
-        </tbody>
-    </table>
+  <h3>7.2 الأوامر الملكية (15)</h3>
+  <ol>
+    <li>عرض البروفايل</li>
+    <li>إهداء نقاط</li>
+    <li>ترقية (رتبة أو ملكة)</li>
+    <li>تخفيض</li>
+    <li>تحذير</li>
+    <li>سجن (مدة)</li>
+    <li>طرد من غرفة</li>
+    <li>حظر مؤقت (ساعة/6 ساعات/يوم/أسبوع)</li>
+    <li>طرد كامل (permanent ban + DeviceGuard.ban)</li>
+    <li>حذف حساب</li>
+    <li>إزالة الرتبة</li>
+    <li>نقل إلى غرفة (forced)</li>
+    <li>كتم كامل (دائم)</li>
+    <li>كتم في غرفة (دائم)</li>
+    <li>إضافة للمشبوهين</li>
+  </ol>
 
-    <h3>7.2 الميزات</h3>
-    <ul class="list">
-        <li>✅ رفع تلقائي — بمجرد اختيار الملف</li>
-        <li>✅ لا حاجة للضغط على إرسال (ft-upload-fix)</li>
-        <li>✅ إخفاء أسماء الخدمات بـ ⏳ (Upload Privacy)</li>
-        <li>✅ حد الصورة: 32 MB (imgbb)</li>
-        <li>✅ حد الفيديو: 50 MB (Telegram)</li>
-        <li>✅ حد الصوت: 30 MB</li>
-    </ul>
+  <h3>7.3 الملكات (4)</h3>
+  <ul>
+    <li>King يعيّن بأمر "تعيين ملكة"</li>
+    <li>يختار الرقم (1-4)</li>
+    <li>يختار الصلاحيات المخصصة من ~40 صلاحية</li>
+    <li>ترتيب الملكة شرفي فقط</li>
+    <li>كل الملكات = Master Owner base + custom permissions</li>
+  </ul>
 
-    <h3>7.3 الحماية</h3>
-    <ul class="list">
-        <li>🔒 زر 🎵 (صوتيات) تم حذفه من الشريط العائم</li>
-        <li>🔒 الفيديو بدون قائمة السياق</li>
-        <li>🔒 الفيديو بدون زر التنزيل (controlsList)</li>
-        <li>🔒 توكن Telegram مخفي في العرض</li>
-    </ul>
+  <h3>7.4 غرفة الملك (14 تبويب)</h3>
+  <ol>
+    <li>📊 نظرة</li>
+    <li>👥 المستخدمون</li>
+    <li>🎖️ الرتب</li>
+    <li>👸 الملكات</li>
+    <li>🚫 المعاقبون</li>
+    <li>🚨 الإبلاغات</li>
+    <li>🚨 المكرّرة</li>
+    <li>🛡️ البان</li>
+    <li>🚪 الغرف</li>
+    <li>🤖 البوتات</li>
+    <li>🚔 السجان</li>
+    <li>🚪 الترحيب</li>
+    <li>📢 التنبيهات</li>
+    <li>⚙️ الإعدادات</li>
+  </ol>
+
+  <h3>7.5 pm-monitor (مراقبة الملك)</h3>
+  <ul>
+    <li>زر 💬 في غرفة الملك</li>
+    <li>قائمة الأعضاء → قائمة المحادثات → قائمة الرسائل</li>
+    <li>الملك يرى: الحديث + الأرشيف</li>
+    <li>أزرار: استرجاع، حذف، حذف المحذوفات، حذف المحادثة كاملة</li>
+    <li>يحفظ النص الأصلي عند الحذف (originalText, originalAttachment)</li>
+  </ul>
+
+  <h3>7.6 المراقبة الأمنية</h3>
+  <ul>
+    <li><strong>DeviceGuard:</strong> UUID + IP + Metadata</li>
+    <li><strong>قائمة مشبوهين:</strong> الملك يحددها</li>
+    <li><strong>مراقبة تلقائية:</strong> أي متصفح يراقب → عند انضمام مشبوه للمايك → تسجيل تلقائي</li>
+    <li><strong>قفل موزّع:</strong> متصفح واحد يسجّل</li>
+    <li><strong>رفع فوري:</strong> على Telegram</li>
+    <li><strong>سجل التنبيهات:</strong> في king_alerts</li>
+  </ul>
+
+  <h3>7.7 وضعية الشبح (Invisible)</h3>
+  <ul>
+    <li>للملك + الملكة فقط (canInvisible)</li>
+    <li>عند التفعيل:
+      <ul>
+        <li>يصبح مخفياً في قائمة المتواجدين</li>
+        <li>الملك يرى الكل (حتى المخفيين)</li>
+        <li>الملكة **لا ترى** المخفيين</li>
+        <li>بقية المستخدمين لا يرون المخفيين</li>
+      </ul>
+    </li>
+    <li>يُخزَّن في: <span class="inline-code">users/$uid/invisible</span></li>
+  </ul>
 </div>
 
-<!-- ═══ 8. الإطارات ═══ -->
+<!-- ═══ 8. البوتات ═══ -->
 <div class="section" id="s8">
-    <h2>🖼️ 8. نظام الإطارات (jsDelivr)</h2>
+  <h2>🤖 8. البوتات + الزوار + Stories</h2>
 
-    <div class="alert alert-success">
-        <strong>✅ الحل النهائي:</strong> jsDelivr بدل GitHub API — لا rate limit أبداً.
-    </div>
+  <h3>8.1 البوتات الخمسة</h3>
+  <table>
+    <thead><tr><th>البوت</th><th>الدور</th><th>المدة</th></tr></thead>
+    <tbody>
+      <tr><td>🚔 السجان</td><td>حماية + عقوبات</td><td>فوري</td></tr>
+      <tr><td>🌙 قمر الشام</td><td>أدعية + أذكار</td><td>كل 2 دقيقة</td></tr>
+      <tr><td>🎯 الشاطر</td><td>مسابقات</td><td>كل 5 دقائق</td></tr>
+      <tr><td>📖 حكواتي الشام</td><td>مساعد</td><td>عند النداء</td></tr>
+      <tr><td>🚪 السفير</td><td>ترحيب</td><td>عند انضمام</td></tr>
+    </tbody>
+  </table>
 
-    <h3>8.1 الفرق</h3>
-    <table>
-        <thead><tr><th>قبل</th><th>بعد</th></tr></thead>
-        <tbody>
-            <tr><td>GitHub API (60 طلب/ساعة)</td><td>jsDelivr (غير محدود)</td></tr>
-            <tr><td>يتعطل بعد ساعة</td><td>يعمل دائماً</td></tr>
-            <tr><td>CDN: raw.githubusercontent</td><td>CDN: cdn.jsdelivr.net</td></tr>
-            <tr><td>8 إطارات fallback</td><td>12 إطار fallback</td></tr>
-            <tr><td>Cache: 24 ساعة</td><td>Cache: 48 ساعة</td></tr>
-        </tbody>
-    </table>
+  <h3>8.2 سلوك السجان</h3>
+  <ul>
+    <li>يراقب الرسائل في الغرف</li>
+    <li>يكشف الكلمات الممنوعة (badWords)</li>
+    <li>عقوبات تصاعدية: تحذير → سجن (2/4/8/15 دقيقة) → طرد</li>
+    <li>عند 3 سجنات = طرد دائم</li>
+    <li>يحفظ كل عملية في audit_log</li>
+    <li>يخفي الرسالة المسيئة تلقائياً</li>
+  </ul>
 
-    <h3>8.2 المسار</h3>
-    <ul class="list">
-        <li><strong>API:</strong> <span class="inline-code">data.jsdelivr.com/v1/package/gh/qamaralsham/qamaralsham@main/flat</span></li>
-        <li><strong>CDN:</strong> <span class="inline-code">cdn.jsdelivr.net/gh/qamaralsham/qamaralsham@main/frames/</span></li>
-        <li><strong>المجلد:</strong> <span class="inline-code">/frames/</span> في المستودع</li>
-    </ul>
+  <h3>8.3 سلوك السفير (الترحيب)</h3>
+  <ul>
+    <li>عند انضمام عضو لغرفة</li>
+    <li>يرسل رسالة ترحيب</li>
+    <li>يُشغِّل صوت طائر</li>
+    <li>يُظهر نافذة ترحيب للعضو الجديد</li>
+    <li>cooldown 5 دقائق لكل عضو/غرفة</li>
+  </ul>
+
+  <h3>8.4 قيود الزوار — النهائية</h3>
+  <div class="alert alert-danger">
+    <strong>❌ ممنوع تماماً:</strong><br>
+    • تغيير أي شيء (اسم، بايو، صورة، إطارات، ألوان)<br>
+    • الشريط العائم كامل<br>
+    • الرسائل الخاصة (PM)<br>
+    • الاستوديو (80+ فقط)<br>
+    • الترقية<br>
+    • الإيموجي المتعدد<br>
+    • اليوتيوب، النرد، الرسام، النص المميز<br>
+    • الحالات (Stories)<br>
+    • التفاعلات (إعجاب، صديق، حظر، إبلاغ)
+  </div>
+
+  <div class="alert alert-success">
+    <strong>✅ مسموح فقط:</strong><br>
+    • الدردشة النصية في الروم العام<br>
+    • التنقل بين الغرف المتاحة حسب خصوصية كل غرفة
+  </div>
+
+  <h3>8.5 صورة الزائر</h3>
+  <ul>
+    <li>SVG قمر ذهبي موحّد (مدمج في الكود)</li>
+    <li>لا تحتاج إنترنت</li>
+    <li>لا يمكن تغييرها</li>
+    <li>تُكتَب تلقائياً في Firebase عند أول دخول</li>
+  </ul>
+
+  <h3>8.6 Stories</h3>
+  <ul>
+    <li>حد أقصى: 24 ساعة</li>
+    <li>خصوصية: public / friends / online / private</li>
+    <li>تفاعلات: reactions + replies</li>
+    <li>Live stats لصاحب الحالة</li>
+    <li>تنظيف تلقائي كل 6 ساعات</li>
+  </ul>
 </div>
 
-<!-- ═══ 9. التنظيف ═══ -->
+<!-- ═══ 9. الصوت ═══ -->
 <div class="section" id="s9">
-    <h2>🧹 9. أدوات التنظيف الذاتي</h2>
+  <h2>🎙️ 9. الصوت + الاستوديو</h2>
 
-    <h3>9.1 memory-cleaner.js v2</h3>
-    <ul class="list">
-        <li>تبويب "🧹 الذاكرة" في غرفة الملك</li>
-        <li>مؤشر مستوى الذاكرة (شريط ملوّن + نسبة)</li>
-        <li>8 تصنيفات تنظيف:
-            <ul>
-                <li>🔒 bot_locks (آمن)</li>
-                <li>🚨 multi_resolved (آمن)</li>
-                <li>📸 stories_expired (آمن)</li>
-                <li>📜 audit_old 14 يوم (متوسط)</li>
-                <li>📬 notifs_read 7 أيام (متوسط)</li>
-                <li>📦 reports_archive 30 يوم (متوسط)</li>
-                <li>🤖 bot_learning 30 يوم (متوسط)</li>
-                <li>💬 room_messages_trim (خطير)</li>
-            </ul>
-        </li>
-    </ul>
+  <h3>9.1 نظام المايكات (WebRTC Mesh)</h3>
+  <ul>
+    <li>الحل: P2P مباشر بين المتصلين</li>
+    <li>Signaling: Firebase</li>
+    <li>ICE: Google STUN + OpenRelay TURN</li>
+    <li>كل من في الغرفة يسمع تلقائياً (listener)</li>
+    <li>Speakers يبثون للكل</li>
+    <li>كشف "يتكلم": AudioContext Analyzer (threshold 15)</li>
+    <li>كتم/فتح + طرد من المايك (65+)</li>
+    <li>موسيقى في الغرفة (URL أو ملف مرفوع)</li>
+    <li>onDisconnect تلقائي</li>
+  </ul>
 
-    <h3>9.2 bot-messages-cleaner.js</h3>
-    <ul class="list">
-        <li>يعمل كل 60 ثانية</li>
-        <li>يحذف رسائل البوت الأقدم من ساعة</li>
-        <li>لا يلمس رسائل المستخدمين</li>
-        <li>قفل موزّع</li>
-    </ul>
+  <h3>9.2 البنية Firebase</h3>
+  <div class="code">room_voice/$roomId/
+  participants/$uid/  → heartbeat
+  speakers/$slot/
+    uid, name, avatar
+    muted, speaking, mode
+    music: { url, title }
+  signals/$toUid/$rid/
+    fromUid, type, payload</div>
 
-    <h3>9.3 stories-cleaner.js v2</h3>
-    <ul class="list">
-        <li>يعمل كل 6 ساعات</li>
-        <li>يحذف الحالات المنتهية (24 ساعة)</li>
-        <li>Batch 100 حالة/دورة</li>
-    </ul>
+  <h3>9.3 الاستوديو الشخصي</h3>
+  <ul>
+    <li>الصلاحية: 80+ فقط</li>
+    <li>بوت "موسيقار الشام" يشرح 13 رسالة</li>
+    <li>6 مؤثرات: Bass, Mid, Treble, Echo, Reverb, Volume</li>
+    <li>حد أقصى: 5 دقائق</li>
+    <li>معاينة + تحميل + مشاركة + حذف</li>
+    <li>منع تسجيلين متتاليين</li>
+    <li>تنظيف تلقائي عند الإغلاق</li>
+  </ul>
 
-    <h3>9.4 pm-archiver.js</h3>
-    <ul class="list">
-        <li>يعمل كل 6 ساعات</li>
-        <li>ينقل الأقدم من 100 رسالة إلى الأرشيف</li>
-    </ul>
+  <h3>9.4 مشاركة التسجيلات</h3>
+  <table>
+    <thead><tr><th>النوع</th><th>الأثر</th></tr></thead>
+    <tbody>
+      <tr><td>في الروم</td><td>يبقى ساعة → يُحذف تلقائياً</td></tr>
+      <tr><td>على الخاص</td><td>يعمل مرة واحدة → يُحذف فوراً</td></tr>
+    </tbody>
+  </table>
 
-    <h3>9.5 استخدام Firebase الحالي</h3>
-    <table>
-        <thead><tr><th>المقياس</th><th>القيمة</th><th>الحالة</th></tr></thead>
-        <tbody>
-            <tr><td>Storage</td><td>~200 KB</td><td>✅ ممتاز</td></tr>
-            <tr><td>Downloads</td><td>~22 MB/شهر</td><td>✅ ممتاز (2% من 10GB)</td></tr>
-            <tr><td>Connections</td><td>10/100</td><td>✅ ممتاز</td></tr>
-        </tbody>
-    </table>
+  <h3>9.5 المراقبة الصوتية (للملك)</h3>
+  <ul>
+    <li>قائمة مشبوهين يديرها الملك</li>
+    <li>أي متصفح يراقب المايكات</li>
+    <li>عند انضمام مشبوه للمايك → تسجيل تلقائي</li>
+    <li>قفل موزّع (Firebase)</li>
+    <li>رفع إلى Telegram</li>
+    <li>سجل في king_alerts</li>
+  </ul>
+
+  <h3>9.6 حدود WebRTC</h3>
+  <div class="alert alert-warning">
+    <strong>⚠️ مهم:</strong> المراقبة التلقائية تعمل فقط عندما يوجد متصفح مفتوح في الغرفة (الملك أو أي مستخدم).
+    <br>لتشغيل 24/7 بدون أي متصفح → يحتاج خادم SFU (LiveKit) — خارج نطاق 0$.
+  </div>
 </div>
 
-<!-- ═══ 10. زر التشخيص ═══ -->
+<!-- ═══ 10. Firebase Paths ═══ -->
 <div class="section" id="s10">
-    <h2>🐛 10. زر التشخيص الشامل (للملك)</h2>
+  <h2>🔥 10. Firebase Paths</h2>
 
-    <h3>10.1 الاستخدام</h3>
-    <ul class="list">
-        <li>يظهر فقط للملك (rank === 'King')</li>
-        <li>العنوان: أسفل يسار الشاشة</li>
-        <li>الأيقونة: 🐛</li>
-        <li>يعمل على جميع الأحجام</li>
-    </ul>
+  <h3>المستخدمون والهوية</h3>
+  <div class="code">users/$uid/
+  name, code, age, gender, email
+  rank, rankLevel, queenOrder
+  isGuest, createdAt, lastSeen, identityUpdatedAt
+  avatar, cover, coverType
+  bio, color, country, family
+  nameColor, nameGradient, nameBgColor, nameBgGradient
+  cinemaTextStyle, cinemaBgStyle
+  avatarFrame, profileGlow
+  profileBgType, profileBgValue
+  musicURL, poetry, poetryBg, poetryAttachment
+  privacy, invisible, currentRoom
+  isBanned, bannedUntil, permanentBan, banReason
+  isJailed, jailUntil, jailReason, jailCount
+  lastRoomBeforeJail
+  warnings, kickCount, customPermissions
+  friends/$uid, friend_requests/$uid
+  likes/$uid, visitors/$uid, blocked/$uid
+  devices/$deviceId, ipHashes/$ipHash
+  mutes/global, mutes/$roomId
 
-    <h3>10.2 ما يعرضه</h3>
-    <ul class="list">
-        <li><strong>المستخدم:</strong> الاسم + الرتبة + UID + Guest</li>
-        <li><strong>DeviceGuard v6:</strong> Ready + Device ID + UUID + IP + IP Hash + UUID Hash</li>
-        <li><strong>Firebase:</strong> db + auth + king_uid</li>
-        <li><strong>الملفات:</strong> 55 ملف (✅/❌) مع تفاصيل كل ملف</li>
-        <li><strong>الأخطاء:</strong> آخر 10 أخطاء (warn + error)</li>
-    </ul>
+user_codes/$code  → uid
+user_names/$name  → uid
+user_presence/$uid/  → { state, lastChanged, room, forced }</div>
 
-    <h3>10.3 الفحص يشمل 55 ملف</h3>
-    <ul class="list">
-        <li>كل ملف يتحقق من وجود مؤشر تحميله الخاص</li>
-        <li>مثال: <span class="inline-code">window.__pmArchiverV1 === true</span></li>
-        <li>يوفر رؤية فورية لكل السكريبتات</li>
-    </ul>
+  <h3>الرسائل</h3>
+  <div class="code">room_messages/$roomId/$msgId/
+  senderUid, senderName, senderCode, senderAvatar
+  senderColor, senderRank, senderFrame
+  senderNameColor, senderNameGradient
+  senderNameBgColor, senderNameBgGradient
+  senderCinemaText, senderCinemaBg
+  text, mentions, replyTo, time
+  edited, deleted, reactions
+  hidden, hiddenBy, hiddenAt, hiddenReason
+  attachment
+
+user_private_messages/$uid/$otherUid/$msgId/
+  fromUid, toUid, text, time, read, deleted
+  attachment, replyTo, reactions
+  originalText, originalAttachment
+
+user_private_chats/$uid/$otherUid/
+  otherUid, otherName, otherAvatar
+  lastMessage, lastTime, unread, deletedAt
+
+private_archive/$uid/$otherUid/$msgId/
+  (نفس بنية user_private_messages)
+
+pm_archive_index/$uid/$otherUid/
+  count, lastArchive, keepRecent
+
+user_private_blocks/$uid/$otherUid/</div>
+
+  <h3>الأمان والمراقبة</h3>
+  <div class="code">device_registry/$deviceId/$uid/
+  name, at, uuid, ua, screen, platform
+
+device_uuid_map/$uuidHash/uids/$uid/
+  name, at
+
+device_ip_map/$ipHash/uids/$uid/
+  name, at
+
+ip_registry/$ipHash/$uid/
+  name, at, ip
+
+banned_devices/$deviceId/
+  uid, by, byName, reason, at
+
+banned_ips/$ipHash/
+  (نفس بنية banned_devices)
+
+multi_account_alerts/$rid/
+  uid, name, deviceId, uuidHash, ipHash, ip
+  existingUids, meta, at, status, type
+
+king_suspects/$uid/
+  name, avatar, code
+  addedAt, addedBy, addedByName
+
+king_alerts/$rid/
+  type, suspects, byUid, byName
+  room, duration, size
+  tgMessageId, tgFileId, title
+  createdAt
+
+guardian_inbox/$kingUid/$rid/
+  from, type, text, at, read
+  suspectUid, suspectName, deviceId, uuidHash, ip
+
+guardian_calls/$rid/
+  callerUid, callerName, targetUid, targetName
+  messageText, messageKey, status, time
+
+audit_log/$rid/
+  type, byUid, byName, at
+  (data حسب النوع)
+
+reports/$rid/
+  reporterUid, reporterName, reporterAvatar
+  targetUid, targetName, targetAvatar
+  reason, messageText, messageKey
+  roomId, isPrivate, time, status
+
+reports_archive/$rid/ (نفس البنية)</div>
+
+  <h3>الصوت</h3>
+  <div class="code">room_voice/$roomId/
+  participants/$uid/ → heartbeat
+  speakers/$slot/ → speaker data
+  signals/$toUid/$rid/ → offer/answer/ice
+
+studio_sessions/$uid/
+  active, startedAt
+
+studio_recordings/$uid/
+  audio, duration, size, mime, effects, createdAt
+
+room_voice_msgs/$roomId/$rid/
+  audio, byUid, byName, byAvatar
+  duration, size, mime
+  createdAt, expiresAt
+
+pm_voice_msgs/$uid/$rid/
+  audio, fromUid, fromName, fromAvatar
+  duration, size, mime
+  createdAt, viewed
+
+voice_monitor_lock/$roomId/
+  sessionId, byUid, byName, at</div>
+
+  <h3>النظام</h3>
+  <div class="code">config/king_uid  → uid
+
+bot_memory/
+  badWords, kickWords
+  hakawati, hakawati_auto
+  quiz, islamic
+
+bot_locks/
+  msgs, welcome, quiz_current
+  auto_islamic, auto_quiz
+
+bot_data/quiz/scores/$uid/  → نقاط
+
+bot_learning/pending/$rid/
+
+room_settings/$roomId/
+  name, icon, iconImage
+  bgType, bgValue, bgImage
+  nameColor, fontColor, fontSize
+  welcome: { text, enabled }
+
+room_alerts/$roomId/current/
+  text, color, bgColor, size, position
+  icon, sound, hidden, senderUid, senderName
+  target, roomId, createdAt
+
+room_kicks/$roomId/$uid/
+
+stories/$uid/$sid/
+  uid, userName, userAvatar
+  type, text, bgColor
+  imageUrl, videoUrl
+  privacy, createdAt, expiresAt
+  views/$uid/, reactions/$emoji/$uid/
+  replies/$rid/
+
+system/
+  stories_cleaner_lock
+  pm_archiver_lock
+  bot_msgs_cleaner_lock</div>
 </div>
 
-<!-- ═══ 11. المشاكل ═══ -->
+<!-- ═══ 11. Firebase Rules ═══ -->
 <div class="section" id="s11">
-    <h2>⚠️ 11. المشاكل المعروفة</h2>
+  <h2>🔐 11. Firebase Rules — الكاملة</h2>
 
-    <h3>11.1 مشاكل حالية</h3>
-    <table>
-        <thead><tr><th>#</th><th>المشكلة</th><th>الملف</th><th>الأولوية</th></tr></thead>
-        <tbody>
-            <tr>
-                <td>1</td>
-                <td>زر 🎵 صوتيات يفتح الإيموجي (بدل ملف صوتي)</td>
-                <td><span class="inline-code">floating-toolbar-v2.js</span></td>
-                <td><span class="badge-status badge-bug">🔴</span></td>
-            </tr>
-            <tr>
-                <td>2</td>
-                <td>Stories شريط التقدم يقفز عند pause/resume</td>
-                <td><span class="inline-code">stories.js</span></td>
-                <td><span class="badge-status badge-pending">🟡</span></td>
-            </tr>
-            <tr>
-                <td>3</td>
-                <td>توكن Telegram مكشوف في الرسائل القديمة</td>
-                <td><span class="inline-code">uploader.js</span></td>
-                <td><span class="badge-status badge-pending">🟡</span></td>
-            </tr>
-            <tr>
-                <td>4</td>
-                <td>Firebase Bandwidth يبقى مستهلكاً</td>
-                <td>جميع listeners</td>
-                <td><span class="badge-status badge-pending">🟡</span></td>
-            </tr>
-        </tbody>
-    </table>
+  <div class="alert alert-success">
+    <strong>✅ القواعد الحالية معتمدة</strong> — تحتوي على كل المسارات بما فيها room_voice, king_suspects, king_alerts
+  </div>
 
-    <h3>11.2 المشاكل التي تم حلها حديثاً</h3>
-    <ul class="list">
-        <li>✅ <strong>الإطارات</strong> لا تظهر (كانت GitHub API rate limit) → jsDelivr</li>
-        <li>✅ <strong>الفيديو</strong> كان نصاً → video-render.js</li>
-        <li>✅ <strong>الـ UUID</strong> لم يكن مستخدماً → DeviceGuard v6</li>
-        <li>✅ <strong>الملك</strong> لم يكن يتلقى إشعارات التكرار → 3 قنوات</li>
-        <li>✅ <strong>الزوار</strong> يُفقدون → guest-persist-fix</li>
-    </ul>
+  <p>القواعد الكاملة موجودة في سجل المحادثة. عند بناء v2 → استخدمها كما هي.</p>
+
+  <h3>11.1 الأقسام الرئيسية</h3>
+  <table>
+    <thead><tr><th>القسم</th><th>القراءة</th><th>الكتابة</th></tr></thead>
+    <tbody>
+      <tr><td>users/$uid</td><td>auth != null</td><td>صاحب uid أو 65+</td></tr>
+      <tr><td>users/$uid/rank</td><td>auth != null</td><td>75+ فقط</td></tr>
+      <tr><td>users/$uid/queenOrder</td><td>auth != null</td><td>King فقط</td></tr>
+      <tr><td>room_messages</td><td>auth != null</td><td>auth != null</td></tr>
+      <tr><td>user_private_messages</td><td>صاحب أو King</td><td>صاحب أو King</td></tr>
+      <tr><td>king_suspects</td><td>auth != null</td><td>King فقط</td></tr>
+      <tr><td>king_alerts</td><td>King فقط</td><td>auth != null</td></tr>
+      <tr><td>room_voice</td><td>auth != null</td><td>حسب المسار</td></tr>
+      <tr><td>banned_devices</td><td>true</td><td>90+</td></tr>
+      <tr><td>audit_log</td><td>90+</td><td>auth != null</td></tr>
+    </tbody>
+  </table>
+
+  <h3>11.2 ملاحظات حرجة</h3>
+  <div class="alert alert-warning">
+    <strong>⚠️ قاعدة مهمة:</strong> في Firebase — <span class="inline-code">.read</span> و <span class="inline-code">.write</span> 
+    يجب أن يكونا على نفس المستوى أو أعلى.
+    <br>عند <span class="inline-code">.once('value')</span> على مسار → يُفحص <span class="inline-code">.read</span> على ذلك المسار بالضبط.
+  </div>
+
+  <h3>11.3 القواعد المقترحة لـ v2</h3>
+  <p>نفس القواعد الحالية — لا تغيير. مع إمكانية تشديد لاحق:</p>
+  <ul>
+    <li>بعد 100 مستخدم → تشديد <span class="inline-code">banned_devices</span> و <span class="inline-code">banned_ips</span></li>
+    <li>بعد 500 مستخدم → تشديد <span class="inline-code">user_notifications</span> (كتابة)</li>
+    <li>بعد 1000 مستخدم → تشديد <span class="inline-code">audit_log</span> و <span class="inline-code">bot_memory</span></li>
+  </ul>
 </div>
 
-<!-- ═══ 12. الخطة ═══ -->
+<!-- ═══ 12. القياسات ═══ -->
 <div class="section" id="s12">
-    <h2>🚀 12. الخطة القادمة</h2>
+  <h2>📏 12. القياسات المرجعية (تجمع كل الأرقام)</h2>
 
-    <h3>12.1 المهام المتبقية</h3>
-    <table>
-        <thead><tr><th>#</th><th>المهمة</th><th>الأولوية</th></tr></thead>
-        <tbody>
-            <tr>
-                <td>1</td>
-                <td>إصلاح زر 🎵 صوتيات</td>
-                <td><span class="badge-status badge-bug">عالية</span></td>
-            </tr>
-            <tr>
-                <td>2</td>
-                <td>رتبة "ملك" (88) — التحقق من ظهورها</td>
-                <td><span class="badge-status badge-new">عالية</span></td>
-            </tr>
-            <tr>
-                <td>3</td>
-                <td>إصلاح Stories progress pause</td>
-                <td><span class="badge-status badge-pending">متوسطة</span></td>
-            </tr>
-            <tr>
-                <td>4</td>
-                <td>رسائل نظام للترقية/تخفيض</td>
-                <td><span class="badge-status badge-new">متوسطة</span></td>
-            </tr>
-            <tr>
-                <td>5</td>
-                <td>تصغير بطاقات الرسام/يوتيوب 60%</td>
-                <td><span class="badge-status badge-question">منخفضة</span></td>
-            </tr>
-            <tr>
-                <td>6</td>
-                <td>إزالة 4 أزرار من الشريط العلوي</td>
-                <td><span class="badge-status badge-question">منخفضة</span></td>
-            </tr>
-            <tr>
-                <td>7</td>
-                <td>تجديد توكن Telegram</td>
-                <td><span class="badge-status badge-warning">عند الطلب</span></td>
-            </tr>
-        </tbody>
-    </table>
+  <h3>12.1 الهيدر</h3>
+  <table>
+    <thead><tr><th>العنصر</th><th>القيمة</th></tr></thead>
+    <tbody>
+      <tr><td>height</td><td>42px</td></tr>
+      <tr><td>padding</td><td>0 10px</td></tr>
+      <tr><td>header-btn</td><td>30×30px</td></tr>
+      <tr><td>header-btn font</td><td>13px</td></tr>
+      <tr><td>room-title</td><td>13px</td></tr>
+    </tbody>
+  </table>
 
-    <h3>12.2 التحسينات المستقبلية</h3>
-    <ul class="list">
-        <li>🔮 نظام الغرف الديناميكي (Room Manager)</li>
-        <li>🔮 نظام المايكات الصوتية</li>
-        <li>🔮 قائمة المتواجدين المحسّنة</li>
-        <li>🔮 قائمة الأصدقاء مع الحالة</li>
-        <li>🔮 لوجو مخصص لرسائل الترقية</li>
+  <h3>12.2 الشريط السفلي</h3>
+  <table>
+    <thead><tr><th>العنصر</th><th>القيمة</th></tr></thead>
+    <tbody>
+      <tr><td>height</td><td>46px</td></tr>
+      <tr><td>nav-item padding</td><td>2px</td></tr>
+      <tr><td>nav-item icon</td><td>15px</td></tr>
+      <tr><td>nav-item span</td><td>9px</td></tr>
+    </tbody>
+  </table>
+
+  <h3>12.3 الشات</h3>
+  <table>
+    <thead><tr><th>العنصر</th><th>القيمة</th></tr></thead>
+    <tbody>
+      <tr><td>input padding</td><td>8px 14px</td></tr>
+      <tr><td>input font</td><td>13px</td></tr>
+      <tr><td>input radius</td><td>20px</td></tr>
+      <tr><td>send-btn</td><td>34×34px</td></tr>
+      <tr><td>emoji-btn, plus-btn</td><td>30×30px</td></tr>
+    </tbody>
+  </table>
+
+  <h3>12.4 القوائم الجانبية</h3>
+  <table>
+    <thead><tr><th>العنصر</th><th>القيمة</th></tr></thead>
+    <tbody>
+      <tr><td>width</td><td>45vw (mobile 55vw)</td></tr>
+      <tr><td>top</td><td>42px</td></tr>
+      <tr><td>bottom</td><td>46px</td></tr>
+      <tr><td>max-height</td><td>calc(100vh - 88px)</td></tr>
+      <tr><td>z-index</td><td>550</td></tr>
+      <tr><td>overlay z</td><td>450</td></tr>
+    </tbody>
+  </table>
+
+  <h3>12.5 الشريط العائم</h3>
+  <table>
+    <thead><tr><th>العنصر</th><th>القيمة</th></tr></thead>
+    <tbody>
+      <tr><td>bottom (default)</td><td>100px</td></tr>
+      <tr><td>bottom (keyboard)</td><td>70px</td></tr>
+      <tr><td>bottom (PM open)</td><td>50vh+8px</td></tr>
+      <tr><td>z-index</td><td>9500</td></tr>
+      <tr><td>padding</td><td>12px</td></tr>
+      <tr><td>tool-btn</td><td>44×44px</td></tr>
+    </tbody>
+  </table>
+
+  <h3>12.6 المايكات</h3>
+  <table>
+    <thead><tr><th>العنصر</th><th>القيمة</th></tr></thead>
+    <tbody>
+      <tr><td>mic-btn</td><td>34×34px</td></tr>
+      <tr><td>vs-slot</td><td>42×42px</td></tr>
+      <tr><td>vs-slot (mobile)</td><td>36×36px</td></tr>
+      <tr><td>mics-toggle-btn</td><td>26×16px</td></tr>
+      <tr><td>SPEAKING_THRESHOLD</td><td>15</td></tr>
+      <tr><td>SPEAKING_CHECK_MS</td><td>200</td></tr>
+    </tbody>
+  </table>
+
+  <h3>12.7 PM</h3>
+  <table>
+    <thead><tr><th>العنصر</th><th>القيمة</th></tr></thead>
+    <tbody>
+      <tr><td>height</td><td>50vh</td></tr>
+      <tr><td>border radius</td><td>20px 20px 0 0</td></tr>
+      <tr><td>input font</td><td>13px</td></tr>
+    </tbody>
+  </table>
+
+  <h3>12.8 البروفايل</h3>
+  <table>
+    <thead><tr><th>العنصر</th><th>القيمة</th></tr></thead>
+    <tbody>
+      <tr><td>avatar-box</td><td>120×120px</td></tr>
+      <tr><td>cover min-height</td><td>260px</td></tr>
+      <tr><td>cover-moon</td><td>78×78px</td></tr>
+      <tr><td>username</td><td>26px</td></tr>
+      <tr><td>bio</td><td>13.5px</td></tr>
+      <tr><td>profile radius</td><td>28px</td></tr>
+    </tbody>
+  </table>
+
+  <h3>12.9 التأثيرات</h3>
+  <table>
+    <thead><tr><th>العنصر</th><th>القيمة</th></tr></thead>
+    <tbody>
+      <tr><td>name padding</td><td>1px 6px</td></tr>
+      <tr><td>name line-height</td><td>1.05</td></tr>
+      <tr><td>name radius</td><td>8px</td></tr>
+      <tr><td>gradient duration</td><td>3s</td></tr>
+      <tr><td>glow duration</td><td>2s</td></tr>
+      <tr><td>frame-inset</td><td>-8%</td></tr>
+      <tr><td>frame royal-glow</td><td>2.5s</td></tr>
+      <tr><td>frame wing-flutter</td><td>3s</td></tr>
+      <tr><td>frame flame-flicker</td><td>0.5s</td></tr>
+      <tr><td>frame celestial-spin</td><td>12s</td></tr>
+    </tbody>
+  </table>
+
+  <h3>12.10 الألوان</h3>
+  <table>
+    <thead><tr><th>المتغير</th><th>القيمة</th></tr></thead>
+    <tbody>
+      <tr><td>--gold</td><td>#d4af37</td></tr>
+      <tr><td>--gold-light</td><td>#ffd700</td></tr>
+      <tr><td>--bg</td><td>#050508</td></tr>
+      <tr><td>--bg-card</td><td>#0a0a15</td></tr>
+      <tr><td>--text</td><td>#f3f4f6</td></tr>
+      <tr><td>--text-dim</td><td>#9ca3af</td></tr>
+      <tr><td>--success</td><td>#4ade80</td></tr>
+      <tr><td>--danger</td><td>#ff4444</td></tr>
+      <tr><td>--warning</td><td>#ff9800</td></tr>
+      <tr><td>--purple</td><td>#a855f7</td></tr>
+    </tbody>
+  </table>
+
+  <h3>12.11 Rate Limits</h3>
+  <table>
+    <thead><tr><th>النوع</th><th>القيمة</th></tr></thead>
+    <tbody>
+      <tr><td>MESSAGE_INTERVAL_MS</td><td>5000</td></tr>
+      <tr><td>PRIVATE_MESSAGE_INTERVAL_MS</td><td>3000</td></tr>
+      <tr><td>MAX_MESSAGE_LENGTH</td><td>2000</td></tr>
+      <tr><td>MAX_FILE_SIZE.image</td><td>5 MB</td></tr>
+      <tr><td>MAX_FILE_SIZE.audio</td><td>10 MB</td></tr>
+      <tr><td>MAX_FILE_SIZE.video</td><td>20 MB</td></tr>
+    </tbody>
+  </table>
+
+  <h3>12.12 الـ Timeouts</h3>
+  <table>
+    <thead><tr><th>العملية</th><th>Timeout</th></tr></thead>
+    <tbody>
+      <tr><td>Firebase init</td><td>10s</td></tr>
+      <tr><td>Auth wait</td><td>8s</td></tr>
+      <tr><td>imgbb upload</td><td>30s</td></tr>
+      <tr><td>catbox upload</td><td>25s</td></tr>
+      <tr><td>0x0.st upload</td><td>25s</td></tr>
+      <tr><td>Telegram upload</td><td>60s</td></tr>
+      <tr><td>Audio race</td><td>30s</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══ 13. الخطة المجانية ═══ -->
+<div class="section" id="s13">
+  <h2>💰 13. الخطة المجانية — التزام</h2>
+
+  <div class="alert alert-success">
+    <strong>✅ المشروع كامل بـ 0$ شهرياً</strong>
+  </div>
+
+  <h3>13.1 الخدمات المستخدمة</h3>
+  <table>
+    <thead><tr><th>الخدمة</th><th>الحد المجاني</th><th>تكلفتنا</th></tr></thead>
+    <tbody>
+      <tr><td>Firebase Realtime DB</td><td>1GB + 10GB/شهر</td><td>~200KB + ~22MB/شهر</td></tr>
+      <tr><td>Firebase Auth</td><td>Unlimited</td><td>~10 مستخدمين</td></tr>
+      <tr><td>GitHub Pages</td><td>Unlimited</td><td>~10MB</td></tr>
+      <tr><td>Telegram Bot</td><td>Unlimited</td><td>~50 ملف</td></tr>
+      <tr><td>imgbb</td><td>Unlimited</td><td>~20 صورة</td></tr>
+      <tr><td>jsDelivr</td><td>Unlimited</td><td>~40 إطار</td></tr>
+      <tr><td>OpenRelay TURN</td><td>20GB/شهر</td><td>~500MB/شهر</td></tr>
+    </tbody>
+  </table>
+
+  <h3>13.2 القيود</h3>
+  <ul>
+    <li>❌ لا بطاقة ائتمان في أي خدمة</li>
+    <li>❌ لا خدمة محجوبة في سوريا</li>
+    <li>❌ لا rate limits حقيقية</li>
+    <li>❌ لا تجاوز 1GB storage</li>
+    <li>❌ لا تجاوز 10GB bandwidth/شهر</li>
+  </ul>
+
+  <h3>13.3 القياس الحالي (v1)</h3>
+  <table>
+    <thead><tr><th>المقياس</th><th>القيمة</th><th>من الحد</th></tr></thead>
+    <tbody>
+      <tr><td>Storage</td><td>~200 KB</td><td>0.02%</td></tr>
+      <tr><td>Downloads</td><td>~22 MB/شهر</td><td>0.2%</td></tr>
+      <tr><td>Connections</td><td>10/100</td><td>10%</td></tr>
+    </tbody>
+  </table>
+
+  <h3>13.4 عند التوسع</h3>
+  <ul>
+    <li>حتى 100 مستخدم → لا مشاكل</li>
+    <li>حتى 500 مستخدم → قد نحتاج تنظيف أشد</li>
+    <li>1000+ مستخدم → قد نصل للحدود</li>
+    <li>الحد العملي: ~1000 مستخدم نشط</li>
+  </ul>
+</div>
+
+<!-- ═══ 14. المقترحات ═══ -->
+<div class="section" id="s14">
+  <h2>💡 14. المقترحات (لم تُعتمد بعد)</h2>
+
+  <h3>14.1 تقنية</h3>
+  <ul>
+    <li>Service Worker محسّن (Offline-first)</li>
+    <li>IndexedDB بدل localStorage (مساحة أكبر)</li>
+    <li>Virtual scrolling للقوائم الطويلة</li>
+    <li>Web Workers للمعالجة الثقيلة</li>
+    <li>Web Push Notifications</li>
+    <li>PWA Installation prompt</li>
+    <li>Deep linking للرسائل</li>
+    <li>Voice messages في PM</li>
+    <li>Screen sharing في الغرف</li>
+    <li>Photo editing قبل الإرسال</li>
+  </ul>
+
+  <h3>14.2 جمالية</h3>
+  <ul>
+    <li>نظام Themes (فاتح/داكن/ذهبي)</li>
+    <li>Dark Mode يتبع النظام</li>
+    <li>Custom Branding (الملك يغيّر الشعار)</li>
+    <li>Sound Design للتفاعلات</li>
+    <li>Micro-animations</li>
+    <li>Loading skeletons</li>
+    <li>Empty states مصممة</li>
+    <li>Custom emojis (40+)</li>
+    <li>Animated avatars (GIF)</li>
+    <li>Rich preview للروابط</li>
+  </ul>
+
+  <h3>14.3 إدارية</h3>
+  <ul>
+    <li>Moderation Log مفصل</li>
+    <li>Appeal System (استئناف الحظر)</li>
+    <li>Report Categories</li>
+    <li>Auto-moderation</li>
+    <li>Trust Levels (اجتماعية)</li>
+    <li>Announcements Board</li>
+    <li>Poll System</li>
+    <li>Event Calendar</li>
+    <li>King Dashboard Analytics</li>
+    <li>Backup System</li>
+  </ul>
+
+  <h3>14.4 أمنية</h3>
+  <ul>
+    <li>2FA للملك</li>
+    <li>Session Management</li>
+    <li>IP Whitelist للملك</li>
+    <li>Action Confirmation للحساس</li>
+    <li>Rate Limiting شامل</li>
+    <li>Spam Detection</li>
+    <li>Link Scanner</li>
+    <li>Encrypted PM (E2E)</li>
+    <li>Automatic Backups</li>
+    <li>Security Score</li>
+  </ul>
+
+  <h3>14.5 تحسينات على v1</h3>
+  <ul>
+    <li>إصلاح bug "cinema effects on old messages" (يُطبّق الجديد على القديم)</li>
+    <li>دمج PM (6 ملفات → 4)</li>
+    <li>دمج Guest (4 ملفات → 1)</li>
+    <li>دمج Voice fixes</li>
+    <li>دمج Uploaders (4 ملفات → 1)</li>
+    <li>دمج Optimizers (4 ملفات → 1)</li>
+    <li>تقسيم chat.js (3000 → 4 ملفات)</li>
+    <li>تقسيم profile-core.js (2000 → 3 ملفات)</li>
+    <li>تقسيم bots.js (1500 → 2 ملفات)</li>
+  </ul>
+</div>
+
+<!-- ═══ 15. ملاحظات التنفيذ ═══ -->
+<div class="section" id="s15">
+  <h2>📝 15. ملاحظات التنفيذ</h2>
+
+  <h3>15.1 مبادئ التصميم</h3>
+  <ul>
+    <li>✅ كل ملف ≤ 800 سطر (المثالي 300-500)</li>
+    <li>✅ كل ملف يعتمد على ≤ 3 ملفات</li>
+    <li>✅ لا circular dependencies</li>
+    <li>✅ لا patches</li>
+    <li>✅ تسمية وظيفية فقط</li>
+    <li>✅ التعليقات في الأعلى</li>
+  </ul>
+
+  <h3>15.2 ترتيب التحميل في HTML</h3>
+  <div class="code">1. Firebase SDK (4 ملفات)
+2. core/* (config, constants, utils, state)
+3. firebase/* (firebase, optimizers, resilience, cleaners)
+4. auth/* (auth, session, identity, ranks)
+5. security/* (device-guard, audit, bans, reports, suspects)
+6. chat/* (chat, chat-input, chat-ui, chat-effects)
+7. rooms/* (rooms, room-settings, room-voice)
+8. pm/* (pm, pm-archiver, pm-monitor, pm-voice)
+9. voice/* (voice-system, voice-studio, voice-monitor)
+10. bots/* (bots, bot-commands, bot-training, guardian-inbox)
+11. king/* (king-room, king-actions, king-queens)
+12. stories/* (stories, stories-cleaner)
+13. media/* (uploader, media-picker, paint, styled-messages)
+14. effects/* (name-effects, frames-engine)
+15. notifications/* (notifications, room-alerts)
+16. ui/* (ui-core, ui-nav, ui-input, ui-mobile)
+17. guest/* (guest)
+18. social/* (social, profiles)
+19. misc/* (dice, youtube, invisible, islamic-library)
+20. debug/* (debug)
+21. boot.js (آخر شيء)</div>
+
+  <h3>15.3 الملفات المشتركة</h3>
+  <table>
+    <thead><tr><th>الملف</th><th>يستقبل من</th><th>يعطي لـ</th></tr></thead>
+    <tbody>
+      <tr><td>config.js</td><td>Firebase SDK</td><td>الكل</td></tr>
+      <tr><td>constants.js</td><td>لا شيء</td><td>الكل</td></tr>
+      <tr><td>utils.js</td><td>لا شيء</td><td>الكل</td></tr>
+      <tr><td>state.js</td><td>لا شيء</td><td>الكل</td></tr>
+      <tr><td>boot.js</td><td>الكل</td><td>لا شيء (نقطة البداية)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>15.4 الخطوة التالية في المحادثة الجديدة</h3>
+  <div class="alert alert-info">
+    <strong>📌 افتح محادثة جديدة → الصق هذه الوثيقة → اكتب:</strong><br><br>
+    "نكمل مشروع قمر الشام v2. الوثيقة الكاملة معك.<br>
+    الوضع الحالي: 5 ملفات core مبنية.<br>
+    نريد نبدأ المرحلة 2: Firebase + Auth.<br>
+    أرسل لي ملفات المرحلة 2 واحداً واحداً مع review قبل البناء."
+  </div>
+
+  <h3>15.5 تحذيرات</h3>
+  <div class="alert alert-warning">
+    <strong>⚠️ لا تنسَ:</strong>
+    <ul>
+      <li>البناء متوازٍ — v1 يعمل + v2 يُبنى</li>
+      <li>لا تعطيل v1</li>
+      <li>لا تعديل Firebase Rules حتى يكتمل v2</li>
+      <li>لا نقل بيانات المستخدمين حالياً</li>
+      <li>v2 على نفس مشروع Firebase</li>
+      <li>GitHub Pages على مستودع جديد</li>
     </ul>
+  </div>
+
+  <h3>15.6 روابط مهمة</h3>
+  <ul>
+    <li>المستودع: <span class="inline-code">github.com/emaanalsead-png/qamaralsham</span></li>
+    <li>Firebase: <span class="inline-code">console.firebase.google.com/project/qamaralshamtest</span></li>
+    <li>GitHub Pages: <span class="inline-code">emaanalsead-png.github.io/qamaralsham/</span></li>
+  </ul>
+
+  <h3>15.7 ما تم بناؤه فعلاً (v2)</h3>
+  <table>
+    <thead><tr><th>الملف</th><th>الحالة</th><th>السطور</th></tr></thead>
+    <tbody>
+      <tr><td>core/config.js</td><td><span class="badge-status badge-done">✅</span></td><td>~100</td></tr>
+      <tr><td>core/constants.js</td><td><span class="badge-status badge-done">✅</span></td><td>~350</td></tr>
+      <tr><td>core/utils.js</td><td><span class="badge-status badge-done">✅</span></td><td>~400</td></tr>
+      <tr><td>core/state.js</td><td><span class="badge-status badge-done">✅</span></td><td>~150</td></tr>
+      <tr><td>core/boot.js</td><td><span class="badge-status badge-done">✅</span></td><td>~150</td></tr>
+      <tr><td>core/test-badge.js</td><td><span class="badge-status badge-done">✅ (اختياري)</span></td><td>~80</td></tr>
+      <tr><td>index.html (اختبار)</td><td><span class="badge-status badge-done">✅</span></td><td>~60</td></tr>
+    </tbody>
+  </table>
+
+  <h3>15.8 حالة GitHub Pages</h3>
+  <div class="alert alert-warning">
+    <strong>⚠️ لم يُفعَّل بعد</strong> — الرابط لا يعمل حالياً.<br>
+    <strong>الحل:</strong> Settings → Pages → Source: main / (root) → Save.
+  </div>
+
+  <div class="alert alert-info">
+    <strong>📌 إذا لم يعمل:</strong> تأكد أن المستودع Public، وأن index.html في الجذر، وأن الملفات مرفوعة.
+  </div>
+
+  <h3>15.9 خطوات المحادثة الجديدة</h3>
+  <ol>
+    <li>افتح محادثة جديدة</li>
+    <li>الصق هذه الوثيقة (HTML كامل)</li>
+    <li>الصق طلب البدء</li>
+    <li>سيطلب المساعد review للمرحلة 2 → وافق</li>
+    <li>ابنِ 8 ملفات المرحلة 2 واحداً واحداً</li>
+    <li>اختبر كل ملف قبل التالي</li>
+    <li>ثم انتقل للمرحلة 3</li>
+  </ol>
 </div>
 
 <!-- ═══ الخاتمة ═══ -->
 <div class="section">
-    <h2>🎯 الخلاصة</h2>
+  <h2>🎯 الخلاصة</h2>
 
-    <div class="alert alert-success">
-        <strong>✅ المشروع في حالة ممتازة:</strong>
-        <ul class="list" style="margin-top:8px">
-            <li>54/55 ملف يعمل</li>
-            <li>Firebase مستقر (2% من الحد المسموح)</li>
-            <li>الحماية مزدوجة (UUID + IP)</li>
-            <li>الأرشفة تعمل تلقائياً</li>
-            <li>التنظيف الذاتي فعّال</li>
-        </ul>
-    </div>
+  <div class="alert alert-success">
+    <strong>✅ المشروع جاهز للمتابعة:</strong>
+    <ul>
+      <li>الوثيقة الكاملة في ملف واحد</li>
+      <li>5 ملفات core مبنية ومُختبَرة</li>
+      <li>المرحلة 2 جاهزة للبدء</li>
+      <li>كل الميزات موثّقة</li>
+      <li>لا شيء سيُفقد</li>
+    </ul>
+  </div>
 
-    <h3>الأرقام النهائية</h3>
-    <div class="stats-grid">
-        <div class="stat-box"><div class="val">57</div><div class="lbl">ملف JS</div></div>
-        <div class="stat-box"><div class="val">9</div><div class="lbl">ملف CSS</div></div>
-        <div class="stat-box"><div class="val">54/55</div><div class="lbl">يعمل</div></div>
-        <div class="stat-box"><div class="val">2%</div><div class="lbl">استهلاك Firebase</div></div>
-    </div>
+  <h3>الأرقام النهائية</h3>
+  <div class="stats-grid">
+    <div class="stat-box"><div class="val">72</div><div class="lbl">ملف كامل</div></div>
+    <div class="stat-box"><div class="val">5</div><div class="lbl">مبني</div></div>
+    <div class="stat-box"><div class="val">8</div><div class="lbl">مرحلة</div></div>
+    <div class="stat-box"><div class="val">0$</div><div class="lbl">تكلفة</div></div>
+  </div>
+</div>
+
+<!-- ═══ Footer ═══ -->
+<div class="footer">
+  <p>🌙 قمر الشام v2 — الوثيقة الكاملة</p>
+  <p>2026-09-27 — احفظ هذا الملف في جهازك</p>
 </div>
 
 </div>
 
-<footer class="footer">
-    <p>🌙 قمر الشام — الحالة الشاملة v3</p>
-    <p>2026-09-26 — تقرير مفصّل لكامل المشروع</p>
-</footer>
+<script>
+function copyCode(btn){
+  var codeBlock = btn.previousElementSibling;
+  if(!codeBlock) return;
+  var text = codeBlock.textContent;
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){
+      btn.textContent = '✅ تم النسخ';
+      setTimeout(function(){ btn.textContent = '📋 نسخ الكود'; }, 1500);
+    }).catch(function(){
+      btn.textContent = '⚠️ فشل النسخ';
+      setTimeout(function(){ btn.textContent = '📋 نسخ الكود'; }, 1500);
+    });
+  } else {
+    try{
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      btn.textContent = '✅ تم النسخ';
+      setTimeout(function(){ btn.textContent = '📋 نسخ الكود'; }, 1500);
+    }catch(e){
+      btn.textContent = '⚠️ انسخ يدوياً';
+    }
+  }
+}
+</script>
 
 </body>
 </html>
