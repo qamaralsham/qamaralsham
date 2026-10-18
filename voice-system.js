@@ -1,30 +1,18 @@
 // ==============================================
-// voice-system.js v2.1a — broadcast + music + hooks
-// ==============================================
-// ✅ v2.1a (فوق v2.1):
-//   1. exposed API for voice-monitor
-//   2. speakers callback
-// ✅ v2.1:
-//   1. Speaker دائماً البادئ
-//   2. ICE queue
-//   3. زر unmute
-//   4. logging كامل
-// ✅ v2:
-//   1. listener يسمع تلقائياً
-//   2. speakers يبثّون للكل
-//   3. موسيقى + كتم + طرد
+// voice-system.js v2.2a — broadcast + music + fixes
 // ==============================================
 
 (function () {
     'use strict';
-    if (window.__voiceSystemV21) return;
-    window.__voiceSystemV21 = true;
-    window.__voiceSystemV1 = true;
+    if (window.__voiceSystemV22) return;
+    window.__voiceSystemV22 = true;
 
     const ICE_SERVERS = [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun.cloudflare.com:3478' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' },
         { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
         { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
         { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
@@ -39,69 +27,23 @@
     const AUDIO_UNLOCKED_KEY = 'vs_audio_unlocked';
 
     const VS = {
-        me: null,
-        room: null,
-        role: 'none',
-        mySlot: null,
-        micStream: null,
-        musicStream: null,
-        musicEl: null,
-        musicCtx: null,
-        micMuted: false,
-        musicMode: false,
-        musicInfo: null,
-        speaking: false,
-        audioCtx: null,
-        analyser: null,
-        analyserBuf: null,
-        speakTimer: null,
-        peers: {},
-        remoteAudios: {},
-        participantsRef: null,
-        participantRef: null,
-        participantDisc: null,
-        speakersRef: null,
-        signalRef: null,
-        speakersData: {},
-        participantsData: {},
-        uiObserver: null,
-        lastHash: '',
-        joining: false,
-        _lastRoomCheck: null,
-        _roomWatcherTimer: null,
-        _hbTimer: null,
-        _iceQueue: {},
-        _unlockBtn: null,
-        _autoplayBlocked: false,
-        _onSpeakersChange: null
+        me: null, room: null, role: 'none', mySlot: null,
+        micStream: null, musicStream: null, musicEl: null, musicCtx: null,
+        micMuted: false, musicMode: false, musicInfo: null, speaking: false,
+        audioCtx: null, analyser: null, analyserBuf: null, speakTimer: null,
+        peers: {}, remoteAudios: {}, participantsRef: null, participantRef: null,
+        participantDisc: null, speakersRef: null, signalRef: null,
+        speakersData: {}, participantsData: {}, uiObserver: null,
+        lastHash: '', joining: false, _lastRoomCheck: null,
+        _roomWatcherTimer: null, _hbTimer: null, _iceQueue: {},
+        _unlockBtn: null, _autoplayBlocked: false, _onSpeakersChange: null
     };
 
-    function getMe() {
-        try { if (typeof getCurrentUser === 'function') { var u = getCurrentUser(); if (u && u.uid) return u; } } catch (e) {}
-        try { return JSON.parse(localStorage.getItem('qamar_current_user') || 'null'); } catch (e) { return null; }
-    }
-    function getRoom() {
-        try { if (typeof ChatState !== 'undefined' && ChatState.currentRoom) return ChatState.currentRoom; } catch (e) {}
-        return 'general';
-    }
-    function getRoomConfig() {
-        try {
-            var r = getRoom();
-            if (typeof QAMAR !== 'undefined' && QAMAR.ROOMS && QAMAR.ROOMS[r]) return QAMAR.ROOMS[r];
-        } catch (e) {}
-        return { micCount: 0, allowMic: false };
-    }
-    function myLevel() {
-        var u = getMe();
-        if (!u) return 0;
-        if (typeof u.rankLevel === 'number') return u.rankLevel;
-        try { if (typeof getRankLevel === 'function') return getRankLevel(u.rank) || 0; } catch (e) {}
-        return 0;
-    }
-    function toast(icon, msg) {
-        if (typeof showToast === 'function') showToast(icon, msg);
-        else console.log('[Voice]', msg);
-    }
+    function getMe() { try { if (typeof getCurrentUser === 'function') { var u = getCurrentUser(); if (u && u.uid) return u; } } catch (e) {} try { return JSON.parse(localStorage.getItem('qamar_current_user') || 'null'); } catch (e) { return null; } }
+    function getRoom() { try { if (typeof ChatState !== 'undefined' && ChatState.currentRoom) return ChatState.currentRoom; } catch (e) {} return 'general'; }
+    function getRoomConfig() { try { var r = getRoom(); if (typeof QAMAR !== 'undefined' && QAMAR.ROOMS && QAMAR.ROOMS[r]) return QAMAR.ROOMS[r]; } catch (e) {} return { micCount: 0, allowMic: false }; }
+    function myLevel() { var u = getMe(); if (!u) return 0; if (typeof u.rankLevel === 'number') return u.rankLevel; try { if (typeof getRankLevel === 'function') return getRankLevel(u.rank) || 0; } catch (e) {} return 0; }
+    function toast(icon, msg) { if (typeof showToast === 'function') showToast(icon, msg); else console.log('[Voice]', msg); }
     function log() { console.log('[VoiceSystem]', ...arguments); }
 
     function pParticipants(roomId) { return db.ref(BASE_PATH + '/' + roomId + '/participants'); }
@@ -198,6 +140,7 @@
             });
             var Ctx = window.AudioContext || window.webkitAudioContext;
             var ctx = new Ctx();
+            if (ctx.state === 'suspended') await ctx.resume();
             var src = ctx.createMediaElementSource(el);
             var dest = ctx.createMediaStreamDestination();
             src.connect(dest);
@@ -228,6 +171,7 @@
             if (!Ctx) return;
             if (VS.audioCtx) { try { VS.audioCtx.close(); } catch (e) {} }
             VS.audioCtx = new Ctx();
+            if (VS.audioCtx.state === 'suspended') VS.audioCtx.resume();
             var src = VS.audioCtx.createMediaStreamSource(stream);
             var an = VS.audioCtx.createAnalyser();
             an.fftSize = 512;
@@ -267,10 +211,7 @@
     }
 
     function showUnmuteButton() {
-        if (VS._unlockBtn) {
-            VS._unlockBtn.classList.add('show');
-            return;
-        }
+        if (VS._unlockBtn) { VS._unlockBtn.classList.add('show'); return; }
         var btn = document.createElement('button');
         btn.className = 'vs-unmute-btn';
         btn.type = 'button';
@@ -310,9 +251,7 @@
         if (VS._unlockBtn && VS._unlockBtn.classList.contains('show')) unlockAllAudio();
     }, { passive: true });
 
-    function getActiveStream() {
-        return VS.musicMode ? VS.musicStream : VS.micStream;
-    }
+    function getActiveStream() { return VS.musicMode ? VS.musicStream : VS.micStream; }
 
     function createPeer(remoteUid, isInitiator) {
         if (VS.peers[remoteUid]) return VS.peers[remoteUid];
@@ -337,8 +276,6 @@
             if (e.candidate) {
                 log('ICE candidate →', remoteUid.substring(0, 6));
                 sendSignal(remoteUid, 'ice', { candidate: e.candidate });
-            } else {
-                log('ICE complete for', remoteUid.substring(0, 6));
             }
         };
         pc.oniceconnectionstatechange = function () {
@@ -366,7 +303,6 @@
                     .then(function (off) { return pc.setLocalDescription(off); })
                     .then(function () {
                         sendSignal(remoteUid, 'offer', { sdp: pc.localDescription });
-                        log('→ offer sent to', remoteUid.substring(0, 6));
                     })
                     .catch(function (e) { console.warn('offer fail:', e); });
             };
@@ -424,6 +360,14 @@
             VS._autoplayBlocked = true;
             showUnmuteButton();
         });
+
+        // ⭐ التعديل: فتح الصوت عند أول نقرة في الشاشة
+        document.addEventListener('click', function unlock() {
+            Object.keys(VS.remoteAudios).forEach(function(uid) {
+                var audio = VS.remoteAudios[uid];
+                if (audio && audio.paused) audio.play().catch(function(){});
+            });
+        }, { once: true });
     }
 
     function sendSignal(toUid, type, payload) {
@@ -447,7 +391,6 @@
                 snap.ref.remove().catch(function () {});
                 return;
             }
-            log('← signal', sig.type, 'from', sig.fromUid.substring(0, 6));
             handleSignal(sig).then(function () {
                 snap.ref.remove().catch(function () {});
             });
@@ -472,7 +415,6 @@
                 var ans = await pc.createAnswer();
                 await pc.setLocalDescription(ans);
                 sendSignal(from, 'answer', { sdp: pc.localDescription });
-                log('→ answer sent to', from.substring(0, 6));
             } else if (sig.type === 'answer') {
                 var pc2 = VS.peers[from];
                 if (pc2 && pc2.signalingState !== 'stable') {
@@ -508,7 +450,6 @@
         VS.participantsRef = ref;
         ref.on('value', function (snap) {
             VS.participantsData = snap.val() || {};
-            log('participants update:', Object.keys(VS.participantsData).length);
             syncPeerConnections();
         });
     }
@@ -525,7 +466,6 @@
         VS.speakersRef = ref;
         ref.on('value', function (snap) {
             VS.speakersData = snap.val() || {};
-            log('speakers update:', Object.keys(VS.speakersData).length);
             onSpeakersChange(VS.speakersData);
         });
     }
@@ -537,16 +477,12 @@
 
     function onSpeakersChange(data) {
         renderSlots(data);
-
-        // ⭐ hook for voice-monitor
         if (typeof VS._onSpeakersChange === 'function') {
             try { VS._onSpeakersChange(data); } catch (e) { console.warn('monitor callback:', e); }
         }
-
         if (VS.role === 'speaker' && VS.mySlot !== null) {
             var my = data[VS.mySlot];
             if (!my || my.uid !== VS.me.uid) {
-                log('kicked from mic');
                 toast('fa-user-slash', '🚪 تم إنزالك من المايك');
                 stopSpeakDetect();
                 destroyMusicStream();
@@ -605,7 +541,6 @@
 
         Object.keys(VS.peers).forEach(function (uid) {
             if (!shouldConnect[uid]) {
-                log('closing peer', uid.substring(0, 6));
                 closePeer(uid);
             }
         });
@@ -650,7 +585,6 @@
 
             startSpeakersListener();
             startSignalListener();
-            log('✅ joined as listener in', room);
         } catch (e) {
             console.error('joinAsListener:', e);
         } finally {
@@ -719,7 +653,6 @@
             VS.lastHash = '';
             renderSlots(VS.speakersData);
             toast('fa-microphone', '🎤 أنت على المايك ' + (slot + 1) + ' — الكل يسمعك');
-            log('✅ speaker in slot', slot);
         } catch (e) {
             console.error('joinAsSpeaker:', e);
             toast('fa-times', '⚠️ فشل: ' + (e.message || ''));
@@ -1152,7 +1085,6 @@
         isMusicMode: function () { return VS.musicMode; },
         getMySlot: function () { return VS.mySlot; },
         getRole: function () { return VS.role; },
-        // ⭐ مكشوفة للـ voice-monitor
         _getRemoteAudios: function () { return VS.remoteAudios; },
         _getMicStream: function () { return VS.micStream; },
         _getSpeakersData: function () { return VS.speakersData; },
@@ -1172,7 +1104,7 @@
                 speakers: Object.keys(VS.speakersData)
             };
         },
-        version: '2.1a'
+        version: '2.2a'
     };
 
     function init() {
@@ -1192,7 +1124,6 @@
                     startUIObserver();
                     renderSlots({});
                     startRoomWatcher();
-                    log('✅ v2.1a ready | role:', VS.role, '| room:', VS.room);
                     try {
                         if (localStorage.getItem(AUDIO_UNLOCKED_KEY) === '1') {
                             log('audio previously unlocked');
@@ -1211,5 +1142,5 @@
         init();
     }
 
-    console.log('🎤 voice-system.js v2.1a loaded — broadcast + music + hooks');
+    console.log('🎤 voice-system.js v2.2a loaded — with autoplay fix + better ICE');
 })();
