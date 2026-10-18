@@ -1,8 +1,8 @@
-// room-manager.js v1
+// room-manager.js v2
 (function () {
     'use strict';
-    if (window.__roomManagerV1) return;
-    window.__roomManagerV1 = true;
+    if (window.__roomManagerV2) return;
+    window.__roomManagerV2 = true;
 
     function getMe() { try { return JSON.parse(localStorage.getItem('qamar_current_user') || 'null'); } catch (e) { return null; } }
     function myLevel() { var u = getMe(); return u ? (u.rankLevel || QAMAR.getRankLevel(u.rank)) : 0; }
@@ -11,13 +11,11 @@
 
     var currentRoomId = null;
 
-    // 1. حقن الزر في الإعدادات وإزالة الخلفيات المعطلة
     function injectSettingsBtn() {
         var settingsContent = document.querySelector('#settings-sidebar .sidebar-content');
         if (!settingsContent) return;
         if (document.getElementById('rm-settings-btn')) return;
 
-        // إخفاء خيارات الخلفيات القديمة
         var bgTitle = settingsContent.querySelector('h4');
         var bgOptions = document.getElementById('bg-options');
         if (bgTitle && bgTitle.innerText.includes('خلفيات')) bgTitle.style.display = 'none';
@@ -35,7 +33,6 @@
         else settingsContent.appendChild(btn);
     }
 
-    // 2. شاشة قائمة الغرف
     function ensureListModal() {
         var m = document.getElementById('rm-modal');
         if (m) return m;
@@ -84,7 +81,6 @@
         } catch(e) { body.innerHTML = '<div style="color:#ff6666;text-align:center;">⚠️ خطأ في التحميل</div>'; }
     }
 
-    // 3. شاشة تفاصيل الغرفة
     function ensureDetailsModal() {
         var m = document.getElementById('rm-details-modal');
         if (m) return m;
@@ -153,7 +149,6 @@
 
             body.innerHTML = html;
 
-            // ربط الدوال
             window.__rmEdit = () => editRoom(s);
             window.__rmMute = () => toggleMute(s);
             window.__rmPurge = () => purgeRoom();
@@ -163,7 +158,6 @@
         } catch(e) { body.innerHTML = '<div style="color:#ff6666;text-align:center;">⚠️ خطأ</div>'; }
     }
 
-    // 4. دوال الأزرار
     async function editRoom(s) {
         var newName = prompt('اسم الغرفة:', s.name || QAMAR.ROOMS[currentRoomId].name);
         if (newName === null) return;
@@ -213,7 +207,7 @@
         } catch(e) { toast('fa-times', '⚠️ فشل'); }
     }
 
-    // 5. إدارة المسؤولين (Search)
+    // ⭐ إدارة المسؤولين (البحث والرتب)
     function ensureManagersModal() {
         var m = document.getElementById('rm-managers-modal');
         if (m) return m;
@@ -236,7 +230,7 @@
         document.getElementById('rm-mng-body').innerHTML = `
             <div class="rm-section-title">🔍 إضافة مسؤول جديد (بالاسم أو UID)</div>
             <div class="rm-search-bar">
-                <input type="text" id="rm-search-input" class="rm-search-input" placeholder="ابحث هنا...">
+                <input type="text" id="rm-search-input" class="rm-search-input" placeholder="اكتب الاسم أو الكود أو UID...">
                 <button class="rm-search-btn" onclick="window.__rmSearch()">بحث</button>
             </div>
             <div id="rm-search-results" style="margin-bottom:20px;"></div>
@@ -244,38 +238,43 @@
         `;
         
         window.__rmSearch = async function() {
-            var q = document.getElementById('rm-search-input').value.trim().toLowerCase();
+            var q = document.getElementById('rm-search-input').value.trim();
             if (!q) return;
             var resBox = document.getElementById('rm-search-results');
-            resBox.innerHTML = '<div style="color:#c084fc;text-align:center;padding:10px;">⏳</div>';
+            resBox.innerHTML = '<div style="color:#c084fc;text-align:center;padding:10px;">⏳ جاري البحث...</div>';
             
             try {
                 var snap = await db.ref('users').once('value');
                 var users = snap.val() || {};
                 var results = [];
+                var ql = q.toLowerCase();
+                
                 Object.keys(users).forEach(uid => {
-                    var u = users[uid];
-                    if (u.name && u.name.toLowerCase().includes(q) || uid === q || u.code === q) results.push({uid, ...u});
+                    var u = users[uid] || {};
+                    if (uid === q || (u.code && u.code.toLowerCase() === ql) || (u.name && u.name.toLowerCase().includes(ql))) {
+                        results.push({uid: uid, data: u});
+                    }
                 });
 
                 resBox.innerHTML = '';
                 if (results.length === 0) resBox.innerHTML = '<div style="color:#666;text-align:center;">لا نتائج</div>';
                 
-                results.slice(0, 5).forEach(u => {
+                results.slice(0, 5).forEach(r => {
+                    var u = r.data;
                     var div = document.createElement('div');
                     div.className = 'rm-search-result';
                     div.innerHTML = `
                         <img src="${u.avatar || 'https://ui-avatars.com/api/?name=U'}">
-                        <div class="rm-sr-info"><div class="rm-sr-name">${esc(u.name)}</div><div class="rm-sr-code">${esc(u.code || u.uid)}</div></div>
-                        <button class="rm-add-btn" onclick="window.__rmAddUser('${u.uid}', '${esc(u.name)}', 'grand')">➕ جراند</button>
-                        <button class="rm-add-btn" style="background:#3b82f6;" onclick="window.__rmAddUser('${u.uid}', '${esc(u.name)}', 'room')">➕ روم</button>
+                        <div class="rm-sr-info"><div class="rm-sr-name">${esc(u.name)}</div><div class="rm-sr-code">${esc(u.code || r.uid)}</div></div>
+                        <button class="rm-add-btn" onclick="window.__rmAddUser('${r.uid}', '${esc(u.name)}', '${u.avatar||''}', 'grand')">➕ جراند</button>
+                        <button class="rm-add-btn" style="background:#3b82f6;" onclick="window.__rmAddUser('${r.uid}', '${esc(u.name)}', '${u.avatar||''}', 'room')">➕ روم</button>
                     `;
                     resBox.appendChild(div);
                 });
             } catch(e) { resBox.innerHTML = 'خطأ في البحث'; }
         };
 
-        window.__rmAddUser = async function(uid, name, type) {
+        window.__rmAddUser = async function(uid, name, avatar, type) {
             var isGrand = type === 'grand';
             var path = isGrand ? 'grandManagers' : 'roomManagers';
             
@@ -287,10 +286,36 @@
             if (count >= max) { alert('⚠️ وصلت للحد الأقصى (' + max + ')'); return; }
             if (currentList[uid]) { alert('⚠️ هذا المستخدم مضاف مسبقاً'); return; }
 
-            if (!confirm('هل تريد إضافة ' + name + ' كمسؤول؟')) return;
-            await db.ref('room_settings/' + currentRoomId + '/' + path + '/' + uid).set(true);
-            toast('fa-check', '✅ تمت الإضافة');
-            renderManagersList();
+            if (!confirm('هل تريد تعيين ' + name + ' كمسؤول؟ سيتم ترقيته تلقائياً إذا لزم الأمر.')) return;
+            
+            try {
+                // 1. ترقية رتبة المستخدم
+                var uSnap = await db.ref('users/' + uid).once('value');
+                var uData = uSnap.val() || {};
+                var originalRank = uData.rank || 'User';
+                var originalLevel = uData.rankLevel || 50;
+                var targetRank = isGrand ? 'Grand Owner' : 'Room Owner';
+                var targetLevel = isGrand ? 80 : 85;
+
+                if (originalLevel < targetLevel) {
+                    await db.ref('users/' + uid).update({
+                        rank: targetRank,
+                        rankLevel: targetLevel
+                    });
+                }
+
+                // 2. حفظه في قائمة المسؤولين
+                await db.ref('room_settings/' + currentRoomId + '/' + path + '/' + uid).set({
+                    name: name,
+                    avatar: avatar,
+                    at: Date.now(),
+                    originalRank: originalRank,
+                    originalLevel: originalLevel
+                });
+
+                toast('fa-check', '✅ تم التعيين بنجاح');
+                renderManagersList();
+            } catch(e) { toast('fa-times', '⚠️ حدث خطأ'); }
         };
 
         async function renderManagersList() {
@@ -301,47 +326,58 @@
             
             var html = '<div class="rm-section-title">👑 الجراند مانيجر (' + Object.keys(grand).length + '/4)</div>';
             Object.keys(grand).forEach(uid => {
-                html += `<div class="rm-manager-row"><span class="rm-manager-name">${uid}</span><button class="rm-manager-remove" onclick="window.__rmRemoveUser('${uid}', 'grand')">إزالة</button></div>`;
+                var m = grand[uid];
+                html += `<div class="rm-manager-row"><span class="rm-manager-name">${esc(m.name || uid)}</span><button class="rm-manager-remove" onclick="window.__rmRemoveUser('${uid}', 'grand')">إزالة</button></div>`;
             });
 
             html += '<div class="rm-section-title" style="margin-top:20px;">🛡️ الروم مانيجر (' + Object.keys(room).length + '/2)</div>';
             Object.keys(room).forEach(uid => {
-                html += `<div class="rm-manager-row"><span class="rm-manager-name">${uid}</span><button class="rm-manager-remove" onclick="window.__rmRemoveUser('${uid}', 'room')">إزالة</button></div>`;
+                var m = room[uid];
+                html += `<div class="rm-manager-row"><span class="rm-manager-name">${esc(m.name || uid)}</span><button class="rm-manager-remove" onclick="window.__rmRemoveUser('${uid}', 'room')">إزالة</button></div>`;
             });
 
             document.getElementById('rm-current-managers').innerHTML = html;
         }
 
         window.__rmRemoveUser = async function(uid, type) {
-            if (!confirm('هل أنت متأكد من إزالة هذا المسؤول؟ سيعود لرتبته العادية.')) return;
+            if (!confirm('هل أنت متأكد من إزالة هذا المسؤول؟ ستعود رتبته السابقة.')) return;
             var path = type === 'grand' ? 'grandManagers' : 'roomManagers';
-            await db.ref('room_settings/' + currentRoomId + '/' + path + '/' + uid).remove();
-            toast('fa-check', '✅ تمت الإزالة');
-            renderManagersList();
+            
+            try {
+                var snap = await db.ref('room_settings/' + currentRoomId + '/' + path + '/' + uid).once('value');
+                var mData = snap.val();
+                
+                // إرجاع الرتبة الأصلية
+                if (mData && mData.originalRank) {
+                    await db.ref('users/' + uid).update({
+                        rank: mData.originalRank,
+                        rankLevel: mData.originalLevel
+                    });
+                }
+                
+                await db.ref('room_settings/' + currentRoomId + '/' + path + '/' + uid).remove();
+                toast('fa-check', '✅ تمت الإزالة');
+                renderManagersList();
+            } catch(e) { toast('fa-times', '⚠️ فشل'); }
         };
 
         renderManagersList();
     }
 
-    // 6. الطرد الفوري عند حذف الغرفة
     function watchDeletedRooms() {
         db.ref('room_settings').on('value', snap => {
             var settings = snap.val() || {};
             var myRoom = (typeof ChatState !== 'undefined' && ChatState.currentRoom) || 'general';
             if (settings[myRoom] && settings[myRoom].isDeleted) {
-                if (typeof showRoomPicker === 'function') {
-                    showRoomPicker();
-                }
+                if (typeof showRoomPicker === 'function') showRoomPicker();
             }
         });
     }
 
     setInterval(function() {
-        if (typeof getCurrentUser === 'function' && getCurrentUser()) {
-            injectSettingsBtn();
-        }
+        if (typeof getCurrentUser === 'function' && getCurrentUser()) injectSettingsBtn();
     }, 2000);
 
     watchDeletedRooms();
-    console.log('✅ room-manager.js v1 loaded');
+    console.log('✅ room-manager.js v2 loaded');
 })();
