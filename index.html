@@ -39,7 +39,7 @@
 <link rel="stylesheet" href="dice.css?v=70">
 <link rel="stylesheet" href="qamar-glass.css?v=70">
 <link rel="stylesheet" href="chat-ui.css?v=70">
-<!-- ⭐ ملف تصميم إدارة الغرف الجديد -->
+<!-- ⭐ ملف تصميم إدارة الغرف -->
 <link rel="stylesheet" href="room-manager.css?v=1">
 
 <style id="qamar-boot-css">
@@ -527,7 +527,7 @@ window._updateHeaderButtons = _updateHeaderButtons;
 <script defer src="invisible-mode.js?v=70"></script>
 <script defer src="room-picker.js?v=70"></script>
 
-<!-- ⭐ NEW: نظام طلبات الدخول (Join Approval System) — 8 ملفات -->
+<!-- ⭐ نظام طلبات الدخول (Join Approval System) -->
 <script defer src="join-queue.js?v=5"></script>
 <script defer src="join-watcher.js?v=5"></script>
 <script defer src="join-hooks.js?v=5"></script>
@@ -536,9 +536,8 @@ window._updateHeaderButtons = _updateHeaderButtons;
 <script defer src="join-admin-actions.js?v=5"></script>
 <script defer src="join-admin-ui.js?v=5"></script>
 <script defer src="join-admin-boot.js?v=5"></script>
-<!-- ⭐ END: نظام طلبات الدخول -->
 
-<!-- ⭐ NEW: نظام إدارة الغرف -->
+<!-- ⭐ نظام إدارة الغرف -->
 <script defer src="room-manager.js?v=2"></script>
 
 <script defer src="stories.js?v=70"></script>
@@ -767,7 +766,7 @@ function checkScripts(){
         ['pm-enhanced.js', window.__pmEnhancedV10 === true],
         ['pm-fixes.js', window.__pmFixesV1 === true],
         ['pm-fixes-2.js', window.__pmFixes2V1 === true],
-        ['pm-archiver.js', window.__pmArchiverV1 === true],
+        ['pm-archiver.js', window.__pmArchiverV2 === true],
         ['media-picker.js', typeof MediaPicker !== 'undefined'],
         ['bots.js', typeof BotsState !== 'undefined'],
         ['guardian-hide.js', window.__guardianHideV2 === true],
@@ -796,7 +795,7 @@ function checkScripts(){
         ['join-admin-actions.js', typeof JoinAdminActions !== 'undefined'],
         ['join-admin-ui.js', typeof JoinAdminUI !== 'undefined'],
         ['join-admin-boot.js', window.__joinAdminBootV1 === true],
-        ['room-manager.js', window.__roomManagerV1 === true],
+        ['room-manager.js', window.__roomManagerV2 === true],
         ['stories.js', window.__storiesV6 === true],
         ['stories-patch.js', window.__storiesPatchV1 === true],
         ['stories-cleaner.js', window.__storiesCleanerV2 === true],
@@ -810,8 +809,8 @@ function checkScripts(){
         ['styled-messages.js', typeof StyledMessages !== 'undefined'],
         ['floating-toolbar-v2.js', window.__floatingToolbarV2 === true],
         ['pm-ui-fixes.js', window.__pmUiFixesV1 === true],
-        ['voice-system.js', window.__voiceSystemV21 === true],
-        ['voice-extras.js', window.__voiceExtrasV1 === true],
+        ['voice-system.js', window.__voiceSystemV22 === true],
+        ['voice-extras.js', window.__voiceExtrasV2 === true],
         ['voice-share-fix.js', window.__voiceShareFixV1 === true],
         ['qamar-fixes-v2.js', window.__qamarFixesV2 === true]
     ];
