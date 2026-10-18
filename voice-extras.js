@@ -614,4 +614,380 @@
             var rid = db.ref(PATHS.pmVoiceMsg + '/' + uid).push().key;
             await db.ref(PATHS.pmVoiceMsg + '/' + uid + '/' + rid).set({ audio: b64, fromUid: me.uid, fromName: me.name || 'مستخدم', fromAvatar: me.avatar || '', duration: VX.studio.recordedDuration, size: VX.studio.recordedBlob.size, mime: VX.studio.recordedMime, createdAt: firebase.database.ServerValue.TIMESTAMP, viewed: false });
             toast('fa-check', '✅ أُرسل إلى ' + name);
-        } catch (e) {
+        } catch (e) { console.error('share to pm:', e); toast('fa-times', '⚠️ فشل: ' + (e.message || '')); }
+    }
+
+    async function deleteStudioRecording() {
+        if (!VX.studio.recordedBlob) return;
+        if (!confirm('🗑️ حذف التسجيل الحالي؟\n\nلا يمكن التراجع.')) return;
+        VX.studio.recordedBlob = null; VX.studio.recordedDuration = 0;
+        updateStudioActions();
+        var me = getMe();
+        if (me && me.uid) { try { await db.ref(PATHS.studioRec + '/' + me.uid).remove(); } catch (e) {} }
+        var t = document.getElementById('vx-record-timer');
+        if (t) { t.textContent = '00:00'; t.className = 'vx-record-timer'; }
+        toast('fa-check', '🗑️ تم الحذف');
+        addBotMessage('🗑️ تم حذف التسجيل — يمكنك البدء من جديد.');
+    }
+
+    function startRoomMsgCleaner() { setInterval(function () { cleanupRoomMsgs(); }, 60000); setTimeout(cleanupRoomMsgs, 5000); }
+    async function cleanupRoomMsgs() {
+        if (typeof db === 'undefined' || !db) return;
+        var now = Date.now();
+        try {
+            var snap = await db.ref(PATHS.roomVoiceMsg).once('value');
+            var all = snap.val() || {};
+            var removes = [];
+            Object.keys(all).forEach(function (roomId) {
+                var roomData = all[roomId] || {};
+                Object.keys(roomData).forEach(function (rid) {
+                    var msg = roomData[rid];
+                    if (!msg) return;
+                    if (msg.expiresAt && msg.expiresAt < now) removes.push(db.ref(PATHS.roomVoiceMsg + '/' + roomId + '/' + rid).remove());
+                });
+            });
+            if (removes.length) { await Promise.all(removes); log('cleaned', removes.length, 'expired room msgs'); }
+        } catch (e) {}
+    }
+
+    function startPmVoiceListener() {
+        var me = getMe(); if (!me || !me.uid) return;
+        var ref = db.ref(PATHS.pmVoiceMsg + '/' + me.uid);
+        ref.on('value', function (snap) {
+            var data = snap.val() || {};
+            Object.keys(data).forEach(function (rid) {
+                var msg = data[rid]; if (!msg) return;
+                if (msg.viewed) return;
+                showPmVoiceNotification(rid, msg);
+                db.ref(PATHS.pmVoiceMsg + '/' + me.uid + '/' + rid + '/viewed').set(true).catch(function () {});
+            });
+        });
+    }
+
+    function showPmVoiceNotification(rid, msg) {
+        if (document.getElementById('vx-pm-voice-' + rid)) return;
+        var overlay = document.createElement('div');
+        overlay.id = 'vx-pm-voice-' + rid;
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);backdrop-filter:blur(6px);z-index:9999999;display:flex;align-items:center;justify-content:center;padding:20px;direction:rtl;font-family:Cairo,sans-serif;';
+        overlay.innerHTML = '<div style="background:#0a0616;border:2px solid #a855f7;border-radius:18px;padding:24px;max-width:340px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.9),0 0 40px rgba(168,85,247,0.4);"><div style="font-size:56px;margin-bottom:12px;">🎤</div><div style="color:#c084fc;font-size:16px;font-weight:900;margin-bottom:8px;">رسالة صوتية</div><div style="color:#fff;font-size:13px;margin-bottom:14px;">من: <b>' + (msg.fromName || 'مستخدم') + '</b></div><div style="color:#888;font-size:11px;margin-bottom:18px;">⏱️ ' + fmtTime(msg.duration || 0) + ' · 💾 ' + fmtBytes(msg.size || 0) + '</div><div style="color:#ff9999;font-size:11px;line-height:1.6;margin-bottom:16px;padding:8px;background:rgba(255,68,68,0.1);border-radius:8px;">⚠️ يعمل مرة واحدة فقط — بعد فتحه يُحذف نهائياً.</div><button id="vx-pm-play" style="width:100%;padding:12px;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:14px;font-weight:900;cursor:pointer;margin-bottom:8px;">▶️ تشغيل</button><button id="vx-pm-ignore" style="width:100%;padding:10px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(168,85,247,0.3);border-radius:10px;font-family:inherit;font-size:12px;font-weight:900;cursor:pointer;">تجاهل</button></div>';
+        document.body.appendChild(overlay);
+        overlay.querySelector('#vx-pm-play').onclick = function () { playPmVoice(rid, msg, overlay); };
+        overlay.querySelector('#vx-pm-ignore').onclick = function () { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); };
+    }
+
+    async function playPmVoice(rid, msg, overlay) {
+        try {
+            var blob = base64ToBlob(msg.audio, msg.mime);
+            if (!blob) throw new Error('bad');
+            var url = URL.createObjectURL(blob);
+            var audio = new Audio(url);
+            audio.play();
+            toast('fa-play', '▶️ جاري التشغيل...');
+            var me = getMe();
+            if (me && me.uid) await db.ref(PATHS.pmVoiceMsg + '/' + me.uid + '/' + rid).remove();
+            setTimeout(function () { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 300);
+        } catch (e) { console.error('play pm voice:', e); toast('fa-times', '⚠️ فشل'); }
+    }
+
+    function registerMonitorCallback() {
+        if (VX.callbackRegistered) return;
+        if (!window.VoiceSystem || typeof window.VoiceSystem._registerSpeakersCallback !== 'function') return;
+        window.VoiceSystem._registerSpeakersCallback(function (data) { try { onSpeakersUpdate(data); } catch (e) { console.warn(e); } });
+        VX.callbackRegistered = true;
+        log('monitor callback registered');
+    }
+
+    function loadSuspects() {
+        if (VX.monitor.suspectsRef) { try { VX.monitor.suspectsRef.off(); } catch (e) {} }
+        VX.monitor.suspectsRef = db.ref(PATHS.suspects);
+        VX.monitor.suspectsRef.on('value', function (snap) { VX.monitor.suspects = snap.val() || {}; });
+    }
+
+    async function onSpeakersUpdate(data) {
+        if (!VX.initDone) return;
+        if (VX.monitor.active) {
+            var stillThere = checkSuspectsOnMic(data);
+            if (!stillThere && VX.monitor.lockedByMe) stopMonitorSession();
+            return;
+        }
+        var suspectsOnMic = checkSuspectsOnMic(data);
+        if (suspectsOnMic.length === 0) return;
+        await tryStartMonitorSession(suspectsOnMic);
+    }
+
+    function checkSuspectsOnMic(data) {
+        var suspects = VX.monitor.suspects || {};
+        var result = [];
+        Object.keys(data || {}).forEach(function (slot) {
+            var s = data[slot];
+            if (!s || !s.uid) return;
+            if (suspects[s.uid]) result.push({ uid: s.uid, slot: slot, name: s.name });
+        });
+        return result;
+    }
+
+    async function tryStartMonitorSession(suspectsOnMic) {
+        var me = getMe(); if (!me) return;
+        var room = getRoom();
+        var sessionId = 's_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
+        try {
+            var lockRef = db.ref(PATHS.monitorLock + '/' + room);
+            var result = await lockRef.transaction(function (cur) {
+                var now = Date.now();
+                if (cur && cur.sessionId && (now - (cur.at || 0)) < LOCK_TTL_MS) return;
+                return { sessionId: sessionId, byUid: me.uid, byName: me.name || '', at: now };
+            });
+            if (!result.committed) return;
+            VX.monitor.lockedByMe = true;
+            VX.monitor.sessionId = sessionId;
+            VX.monitor.lockRef = lockRef;
+            startMonitorRecording(room, suspectsOnMic);
+        } catch (e) { console.warn('lock:', e); }
+    }
+
+    async function startMonitorRecording(room, suspectsOnMic) {
+        var Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return;
+        var ctx = new Ctx();
+        if (ctx.state === 'suspended') await ctx.resume();
+        var dest = ctx.createMediaStreamDestination();
+        var VS = window.VoiceSystem || {};
+        var sources = []; var count = 0;
+        var micStream = VS._getMicStream && VS._getMicStream();
+        if (micStream) { try { sources.push(ctx.createMediaStreamSource(micStream)); count++; } catch (e) {} }
+        var remotes = (VS._getRemoteAudios && VS._getRemoteAudios()) || {};
+        Object.keys(remotes).forEach(function (uid) {
+            var a = remotes[uid]; if (!a || !a.srcObject) return;
+            try { sources.push(ctx.createMediaStreamSource(a.srcObject)); count++; } catch (e) {}
+        });
+        if (count === 0) { try { ctx.close(); } catch (e) {} releaseMonitorLock(); return; }
+
+        sources.forEach(function (s) { try { s.connect(dest); } catch (e) {} });
+        var mime = pickMime();
+        var rec;
+        try { rec = new MediaRecorder(dest.stream, { mimeType: mime }); }
+        catch (e) { try { ctx.close(); } catch (e2) {} releaseMonitorLock(); return; }
+
+        VX.monitor.ctx = ctx; VX.monitor.dest = dest; VX.monitor.sources = sources; VX.monitor.recorder = rec;
+        VX.monitor.chunks = []; VX.monitor.startTime = Date.now(); VX.monitor.mime = mime.split(';')[0];
+        VX.monitor.active = { room: room, suspects: suspectsOnMic };
+
+        rec.ondataavailable = function (e) { if (e.data && e.data.size > 0) VX.monitor.chunks.push(e.data); };
+        rec.onstop = onMonitorStop;
+        rec.start(1000);
+
+        VX.monitor.maxTimer = setTimeout(function () { stopMonitorSession(); }, MONITOR_MAX_SESSION_MS);
+        VX.monitor.lockRef.child('at').set(Date.now()).catch(function () {});
+        VX.monitor.lockInterval = setInterval(function () { if (VX.monitor.lockRef) VX.monitor.lockRef.child('at').set(Date.now()).catch(function () {}); }, 15000);
+        showMonitorBadge(suspectsOnMic);
+    }
+
+    function stopMonitorSession() {
+        if (!VX.monitor.active) return;
+        if (VX.monitor.maxTimer) { clearTimeout(VX.monitor.maxTimer); VX.monitor.maxTimer = null; }
+        if (VX.monitor.lockInterval) { clearInterval(VX.monitor.lockInterval); VX.monitor.lockInterval = null; }
+        try { VX.monitor.recorder && VX.monitor.recorder.stop(); } catch (e) {}
+        hideMonitorBadge();
+    }
+
+    async function onMonitorStop() {
+        var mon = VX.monitor; var sessionInfo = mon.active; var chunks = mon.chunks || [];
+        mon.sources.forEach(function (s) { try { s.disconnect(); } catch (e) {} });
+        if (mon.ctx) { try { mon.ctx.close(); } catch (e) {} }
+        var duration = sessionInfo ? Math.round((Date.now() - mon.startTime) / 1000) : 0;
+        mon.active = null; mon.ctx = null; mon.dest = null; mon.sources = []; mon.recorder = null; mon.chunks = []; mon.startTime = 0; mon.mime = null;
+        releaseMonitorLock();
+        if (!chunks.length || duration < 3) return;
+
+        var blob = new Blob(chunks, { type: (mon.mime || 'audio/webm') });
+        var me = getMe() || {};
+        var names = (sessionInfo.suspects || []).map(function (s) { return s.name || '?'; }).join(', ');
+        var filename = 'مراقبة_' + sessionInfo.room + '_' + fmtTime(duration).replace(':', '-') + '.' + extFromMime(mon.mime);
+        var caption = '🚨 <b>تسجيل مراقبة</b>\n👥 ' + names + '\n🚪 ' + sessionInfo.room + '\n⏱️ ' + fmtTime(duration) + '\n📅 ' + new Date().toLocaleString('ar-EG');
+
+        try {
+            var result = await uploadToTelegram(blob, filename, caption);
+            var rid = db.ref(PATHS.alerts).push().key;
+            await db.ref(PATHS.alerts + '/' + rid).set({ type: 'auto_monitor', suspects: sessionInfo.suspects, byUid: me.uid || null, byName: me.name || 'مستخدم', room: sessionInfo.room, duration: duration, size: blob.size, tgMessageId: result.messageId, tgFileId: result.fileId, title: filename, createdAt: firebase.database.ServerValue.TIMESTAMP });
+        } catch (e) { console.warn('monitor upload failed:', e); }
+    }
+
+    function releaseMonitorLock() {
+        if (VX.monitor.lockRef) { try { VX.monitor.lockRef.remove(); } catch (e) {} VX.monitor.lockRef = null; }
+        VX.monitor.lockedByMe = false; VX.monitor.sessionId = null;
+    }
+
+    function showMonitorBadge(suspectsOnMic) {
+        hideMonitorBadge();
+        var badge = document.createElement('div');
+        badge.id = 'vx-monitor-badge'; badge.className = 'vx-monitor-badge';
+        var names = suspectsOnMic.map(function (s) { return s.name || '?'; }).slice(0, 3).join(', ');
+        badge.textContent = '🔴 مراقبة: ' + names;
+        document.body.appendChild(badge);
+    }
+
+    function hideMonitorBadge() { var el = document.getElementById('vx-monitor-badge'); if (el) el.remove(); }
+
+    async function uploadToTelegram(blob, filename, caption) {
+        if (!blob || blob.size < 100) throw new Error('ملف فارغ');
+        if (blob.size / (1024 * 1024) > MAX_UPLOAD_MB) throw new Error('كبير جداً');
+        var fd = new FormData();
+        fd.append('chat_id', TG_CHAT_ID);
+        fd.append('audio', blob, filename);
+        if (caption) fd.append('caption', caption.substring(0, 1024));
+        fd.append('parse_mode', 'HTML');
+        var res = await fetch(TG_API + '/sendAudio', { method: 'POST', body: fd });
+        if (!res.ok) throw new Error('TG HTTP ' + res.status);
+        var data = await res.json();
+        if (!data.ok || !data.result) throw new Error('TG: ' + (data.description || 'bad'));
+        var r = data.result; var fileId = null;
+        if (r.audio) fileId = r.audio.file_id;
+        else if (r.voice) fileId = r.voice.file_id;
+        else if (r.document) fileId = r.document.file_id;
+        return { messageId: r.message_id, fileId: fileId };
+    }
+
+    function injectButtons() {
+        var wrapper = document.querySelector('.mics-bar-wrapper');
+        if (!wrapper) return;
+        if (wrapper.querySelector('.vx-btn-bar')) return;
+        if (!getMe()) return;
+
+        var bar = document.createElement('div');
+        bar.className = 'vx-btn-bar';
+        bar.style.cssText = 'display:inline-flex; align-items:center; gap:0; margin:0 6px;';
+
+        var studioBtn = document.createElement('button');
+        studioBtn.type = 'button'; studioBtn.className = 'vx-btn studio'; studioBtn.title = 'استوديو التسجيل'; studioBtn.textContent = '🎙️';
+        studioBtn.onclick = openStudio; bar.appendChild(studioBtn);
+
+        if (isKing()) {
+            var monBtn = document.createElement('button');
+            monBtn.type = 'button'; monBtn.className = 'vx-btn monitor'; monBtn.title = 'إدارة المشبوهين'; monBtn.textContent = '👁️';
+            monBtn.onclick = openSuspects; bar.appendChild(monBtn);
+
+            var alertsBtn = document.createElement('button');
+            alertsBtn.type = 'button'; alertsBtn.className = 'vx-btn alerts'; alertsBtn.title = 'سجل المراقبة'; alertsBtn.textContent = '📋';
+            alertsBtn.onclick = openAlerts; bar.appendChild(alertsBtn);
+        }
+        wrapper.appendChild(bar);
+        setInterval(function () { if (!document.querySelector('.vx-btn-bar')) { var w = document.querySelector('.mics-bar-wrapper'); if (w) injectButtons(); } }, 3000);
+    }
+
+    function ensureSuspectsModal() {
+        var m = document.getElementById('vx-suspects-modal');
+        if (m) return m;
+        m = document.createElement('div'); m.id = 'vx-suspects-modal'; m.className = 'vx-modal';
+        m.innerHTML = '<div class="vx-box"><div class="vx-head"><h3>👁️ إدارة المشبوهين</h3><button type="button" class="vx-close" id="vx-susp-close">✕</button></div><div class="vx-body"><div class="vx-search-bar"><input type="text" id="vx-susp-input" placeholder="ابحث بالاسم أو الكود..." autocomplete="off"><button id="vx-susp-search">🔍 بحث</button></div><div id="vx-susp-results"></div><div style="border-top:1px dashed rgba(168,85,247,0.3);margin:16px 0;padding-top:12px;"><div style="color:#c084fc;font-size:12px;font-weight:900;margin-bottom:10px;">📋 القائمة الحالية</div><div id="vx-susp-list"><div class="vx-loading">⏳</div></div></div></div></div>';
+        document.body.appendChild(m);
+        m.querySelector('#vx-susp-close').onclick = function () { m.classList.remove('active'); };
+        m.addEventListener('click', function (e) { if (e.target === m) m.classList.remove('active'); });
+        m.querySelector('#vx-susp-search').onclick = doSuspectSearch;
+        m.querySelector('#vx-susp-input').addEventListener('keydown', function (e) { if (e.key === 'Enter') doSuspectSearch(); });
+        return m;
+    }
+
+    function openSuspects() {
+        if (!isKing()) { toast('fa-lock', '👑 للملك فقط'); return; }
+        var m = ensureSuspectsModal(); m.classList.add('active'); renderSuspectsList();
+    }
+
+    async function renderSuspectsList() {
+        var listEl = document.getElementById('vx-susp-list'); if (!listEl) return;
+        listEl.innerHTML = '<div class="vx-loading">⏳</div>';
+        try {
+            var suspects = VX.monitor.suspects || {}; var uids = Object.keys(suspects);
+            if (uids.length === 0) { listEl.innerHTML = '<div class="vx-empty" style="padding:20px;">لا مشبوهين</div>'; return; }
+            listEl.innerHTML = '';
+            uids.forEach(function (uid) {
+                var s = suspects[uid] || {};
+                var row = document.createElement('div'); row.className = 'vx-row';
+                row.innerHTML = '<img src="' + (s.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(s.name || 'U') + '&background=333&color=fff') + '"><div class="vx-row-info"><div class="vx-row-name">' + (s.name || 'مجهول') + '</div><div class="vx-row-sub">أُضيف ' + (s.addedAt ? new Date(s.addedAt).toLocaleDateString('ar-EG') : '—') + '</div></div><div class="vx-row-actions"><button class="vx-action del" data-uid="' + uid + '">🗑️</button></div>';
+                listEl.appendChild(row);
+            });
+            listEl.querySelectorAll('[data-uid]').forEach(function (b) {
+                b.onclick = function () { var uid = b.getAttribute('data-uid'); if (confirm('إزالة من قائمة المشبوهين؟')) db.ref(PATHS.suspects + '/' + uid).remove(); };
+            });
+        } catch (e) {}
+    }
+
+    async function doSuspectSearch() {
+        var inp = document.getElementById('vx-susp-input'); var resultsEl = document.getElementById('vx-susp-results');
+        if (!inp || !resultsEl) return;
+        var q = (inp.value || '').trim();
+        if (q.length < 2) { toast('fa-info-circle', 'اكتب حرفين على الأقل'); return; }
+        resultsEl.innerHTML = '<div class="vx-loading">⏳</div>';
+        try {
+            var snap = await db.ref('users').limitToLast(500).once('value'); var all = snap.val() || {};
+            var ql = q.toLowerCase(); var me = getMe() || {}; var matches = [];
+            Object.keys(all).forEach(function (uid) {
+                if (uid === me.uid) return; var u = all[uid] || {}; if (u.isBot) return;
+                var name = (u.name || '').toLowerCase(); var code = (u.code || '').toLowerCase();
+                if (name.indexOf(ql) !== -1 || code.indexOf(ql) !== -1) matches.push({ uid: uid, name: u.name, avatar: u.avatar, code: u.code });
+            });
+            resultsEl.innerHTML = '';
+            if (matches.length === 0) { resultsEl.innerHTML = '<div class="vx-empty" style="padding:20px;">لا نتائج</div>'; return; }
+            matches.slice(0, 15).forEach(function (m) {
+                var row = document.createElement('div'); row.className = 'vx-row';
+                row.innerHTML = '<img src="' + (m.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(m.name || 'U') + '&background=333&color=fff') + '"><div class="vx-row-info"><div class="vx-row-name">' + (m.name || 'مجهول') + '</div><div class="vx-row-sub">🔑 ' + (m.code || '—') + '</div></div><div class="vx-row-actions"><button class="vx-action add">➕ إضافة</button></div>';
+                row.querySelector('.add').onclick = async function () {
+                    var me2 = getMe() || {};
+                    try { await db.ref(PATHS.suspects + '/' + m.uid).set({ name: m.name || 'مجهول', avatar: m.avatar || '', code: m.code || '', addedAt: Date.now(), addedBy: me2.uid || null }); toast('fa-check', '✅ أُضيف'); row.remove(); } catch (e) { toast('fa-times', '⚠️ ' + e.message); }
+                };
+                resultsEl.appendChild(row);
+            });
+        } catch (e) { resultsEl.innerHTML = '<div class="vx-empty" style="color:#ff6666;">⚠️ ' + e.message + '</div>'; }
+    }
+
+    function ensureAlertsModal() {
+        var m = document.getElementById('vx-alerts-modal'); if (m) return m;
+        m = document.createElement('div'); m.id = 'vx-alerts-modal'; m.className = 'vx-modal';
+        m.innerHTML = '<div class="vx-box"><div class="vx-head"><h3>📋 سجل المراقبة</h3><button type="button" class="vx-close" id="vx-alerts-close">✕</button></div><div class="vx-body" id="vx-alerts-body"><div class="vx-loading">⏳</div></div></div>';
+        document.body.appendChild(m);
+        m.querySelector('#vx-alerts-close').onclick = function () { m.classList.remove('active'); };
+        m.addEventListener('click', function (e) { if (e.target === m) m.classList.remove('active'); });
+        return m;
+    }
+
+    function openAlerts() { if (!isKing()) { toast('fa-lock', '👑 للملك فقط'); return; } var m = ensureAlertsModal(); m.classList.add('active'); renderAlerts(); }
+
+    async function renderAlerts() {
+        var body = document.getElementById('vx-alerts-body'); if (!body) return;
+        body.innerHTML = '<div class="vx-loading">⏳</div>';
+        try {
+            var snap = await db.ref(PATHS.alerts).limitToLast(100).once('value'); var data = snap.val() || {};
+            var items = Object.keys(data).map(function (k) { var v = data[k]; v._id = k; return v; }).sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+            body.innerHTML = '';
+            if (!items.length) { body.innerHTML = '<div class="vx-empty">📋<br><br>لا تسجيلات</div>'; return; }
+            items.forEach(function (it) {
+                var row = document.createElement('div'); row.className = 'vx-row';
+                var names = (it.suspects || []).map(function (s) { return s.name || '?'; }).join(', ') || it.byName;
+                row.innerHTML = '<div style="flex:1;min-width:0;"><div class="vx-row-name">' + (it.type === 'auto_monitor' ? '🚨' : '🎙️') + ' ' + names + '</div><div class="vx-row-sub">🚪 ' + (it.room || '—') + ' · ⏱️ ' + fmtTime(it.duration || 0) + ' · 💾 ' + fmtBytes(it.size || 0) + '</div><div class="vx-row-sub">📅 ' + new Date(it.createdAt || 0).toLocaleString('ar-EG') + '</div></div><div class="vx-row-actions"><button class="vx-action del" data-id="' + it._id + '">🗑️</button></div>';
+                row.querySelector('.del').onclick = function () { if (confirm('حذف من السجل؟')) { db.ref(PATHS.alerts + '/' + it._id).remove(); renderAlerts(); } };
+                body.appendChild(row);
+            });
+        } catch (e) { body.innerHTML = '<div class="vx-empty" style="color:#ff6666;">⚠️ ' + e.message + '</div>'; }
+    }
+
+    function init() {
+        var tries = 0;
+        var t = setInterval(function () {
+            tries++;
+            var me = getMe(); var hasUser = !!(me && me.uid); var hasDb = typeof db !== 'undefined' && db; var hasBar = document.querySelector('.mics-bar-wrapper');
+            if (hasUser && hasDb && hasBar) {
+                clearInterval(t); VX.me = me; VX.room = getRoom(); VX.initDone = true;
+                injectButtons(); registerMonitorCallback(); loadSuspects(); startRoomMsgCleaner(); startPmVoiceListener();
+                log('✅ ready');
+            }
+            if (tries >= 60) clearInterval(t);
+        }, 500);
+    }
+
+    function cleanup() { if (VX.studio.open) {} if (VX.monitor.active) stopMonitorSession(); }
+    window.addEventListener('beforeunload', cleanup); window.addEventListener('pagehide', cleanup);
+
+    window.VoiceExtras = { openStudio: openStudio, closeStudio: closeStudio, openSuspects: openSuspects, openAlerts: openAlerts, version: 2 };
+
+    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
+    console.log('🎙️ voice-extras.js v2 loaded — studio fixed + monitor');
+})();
