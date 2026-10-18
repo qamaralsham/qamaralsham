@@ -1,7 +1,11 @@
+// ==============================================
+// pm-archiver.js v2 — أرشفة الرسائل الخاصة
+// ==============================================
+
 (function(){
 'use strict';
-if(window.__pmArchiverV1)return;
-window.__pmArchiverV1=true;
+if(window.__pmArchiverV2)return;
+window.__pmArchiverV2=true;
 
 var KEEP_RECENT = 100;
 var RUN_INTERVAL_MS = 6 * 60 * 60 * 1000;
@@ -90,6 +94,12 @@ return {moved:0,total:0,error:e.message};
 async function _runCycle(){
 log('start');
 
+// ⭐ التعديل: الملك فقط هو من يقوم بالأرشفة لتجنب أخطاء الصلاحيات
+var me = getMe();
+if (!me || me.rank !== 'King') {
+    return {moved: 0}; 
+}
+
 var usersSnap=await db.ref('user_private_messages').once('value');
 if(!usersSnap.exists()){log('لا توجد محادثات');return {moved:0};}
 
@@ -160,7 +170,7 @@ if(getMe())runArchiver();
 
 window.PMArchiver={
 run:runArchiver,
-version:1,
+version:2,
 KEEP_RECENT:KEEP_RECENT
 };
 
@@ -182,5 +192,5 @@ if(document.readyState==='loading'){
 document.addEventListener('DOMContentLoaded',init);
 }else{init();}
 
-console.log('📦 pm-archiver.js v1 loaded — archive after 100 msgs');
+console.log('📦 pm-archiver.js v2 loaded — King only');
 })();
