@@ -1,7 +1,6 @@
 // ==============================================
 // join-hooks.js v1 — تغليف دوال auth + initChat
 // ==============================================
-// ⚠️ يعتمد على JoinQueue + JoinWatcher
 
 (function () {
     'use strict';
@@ -15,7 +14,6 @@
         origRegisterMember: null
     };
 
-    /* ═══ Wrap registerGuest ═══ */
     async function wrappedRegisterGuest(name, age, gender) {
         if (!H.origRegisterGuest) return { success: false, error: 'registerGuest غير محمّل' };
 
@@ -33,21 +31,13 @@
             var uid = credential.user.uid;
             var now = Date.now();
 
-            // 1. اكتب pending أولاً (قاعدة البيانات تسمح)
-            var tempData = {
-                uid: uid,
-                name: trimmedName,
-                code: '',
-                age: parseInt(age),
-                gender: gender,
-                email: null,
+            await JoinQueue.create({
+                uid: uid, name: trimmedName, code: '',
+                age: parseInt(age), gender: gender, email: null,
                 avatar: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(trimmedName) + '&background=555&color=fff',
-                isGuest: true,
-                now: now
-            };
-            await JoinQueue.create(tempData);
+                isGuest: true, now: now
+            });
 
-            // 2. حجز الاسم والكود
             var nameRes = await reserveName(trimmedName, uid);
             var codeRes = await ensureUniqueCode(trimmedName, uid);
 
@@ -62,39 +52,32 @@
                 return { success: false, error: 'تعذّر إنشاء كود' };
             }
 
-            // 3. بناء userData كامل
             var userData = buildNewUserData({
                 uid: uid, name: trimmedName, code: codeRes.code,
                 age: parseInt(age), gender: gender, email: null,
                 isGuest: true, now: now
             });
 
-            // 4. حدّث pending بالكود والـ avatar الصحيح
             await db.ref('pending_users/' + uid).update({
                 code: codeRes.code,
                 avatar: userData.avatar
             });
 
-            // 5. اكتب users (القاعدة تسمح لأن pending موجود)
             await db.ref('users/' + uid).set(userData);
             await db.ref('user_presence/' + uid).set({ state: 'online', lastChanged: now }).catch(function(){});
 
-            // 6. session
             if (typeof currentUser !== 'undefined') currentUser = userData;
             if (typeof isUserGuest !== 'undefined') isUserGuest = true;
             if (typeof saveSession === 'function') saveSession(userData, true);
 
-            console.log('✅ registerGuest (pending):', trimmedName);
             return { success: true, user: userData, pending: true };
 
         } catch (e) {
-            console.error('wrapped registerGuest error:', e);
             try { await auth.signOut(); } catch (err) {}
             return { success: false, error: 'حدث خطأ: ' + (e.message || '') };
         }
     }
 
-    /* ═══ Wrap registerMember ═══ */
     async function wrappedRegisterMember(name, age, gender, email, password) {
         if (!H.origRegisterMember) return { success: false, error: 'registerMember غير محمّل' };
 
@@ -113,16 +96,13 @@
             var uid = cred.user.uid;
             var now = Date.now();
 
-            // 1. اكتب pending أولاً
             await JoinQueue.create({
                 uid: uid, name: trimmedName, code: '',
-                age: parseInt(age), gender: gender,
-                email: email,
+                age: parseInt(age), gender: gender, email: email,
                 avatar: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(trimmedName) + '&background=random&color=fff',
                 isGuest: false, now: now
             });
 
-            // 2. حجز
             var nameRes = await reserveName(trimmedName, uid);
             var codeRes = await ensureUniqueCode(trimmedName, uid);
 
@@ -137,33 +117,27 @@
                 return { success: false, error: 'تعذّر إنشاء كود' };
             }
 
-            // 3. userData
             var userData = buildNewUserData({
                 uid: uid, name: trimmedName, code: codeRes.code,
                 age: parseInt(age), gender: gender, email: email,
                 isGuest: false, now: now
             });
 
-            // 4. حدّث pending
             await db.ref('pending_users/' + uid).update({
                 code: codeRes.code,
                 avatar: userData.avatar
             });
 
-            // 5. users
             await db.ref('users/' + uid).set(userData);
             await db.ref('user_presence/' + uid).set({ state: 'online', lastChanged: now }).catch(function(){});
 
-            // 6. session
             if (typeof currentUser !== 'undefined') currentUser = userData;
             if (typeof isUserGuest !== 'undefined') isUserGuest = false;
             if (typeof saveSession === 'function') saveSession(userData, false);
 
-            console.log('✅ registerMember (pending):', trimmedName);
             return { success: true, user: userData, pending: true };
 
         } catch (e) {
-            console.error('wrapped registerMember error:', e);
             var msg = 'فشل التسجيل';
             if (e.code === 'auth/email-already-in-use') msg = 'الإيميل مستخدم';
             else if (e.code === 'auth/invalid-email') msg = 'إيميل غير صحيح';
@@ -172,20 +146,25 @@
         }
     }
 
-    /* ═══ Wrap initChat ═══ */
+    // ⭐ هنا التعديل: الملك والإدارة يتجاوزون الفحص
     async function wrappedInitChat() {
         var me = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
         if (!me || !me.uid) {
-            // لا مستخدم — دع الأصلي يعرض شاشة الدخول
             if (H.origInitChat) return H.origInitChat.apply(this, arguments);
             return;
+        }
+
+        var lvl = me.rankLevel || (typeof getRankLevel === 'function' ? getRankLevel(me.rank) : 0);
+        
+        // تخطي الفحص للملك والمشرفين (90+)
+        if (me.rank === 'King' || lvl >= 90) {
+            return H.origInitChat ? H.origInitChat.apply(this, arguments) : undefined;
         }
 
         try {
             var status = await JoinQueue.checkStatus(me.uid);
 
             if (status === 'approved') {
-                // ✓ مرر للأصلي
                 return H.origInitChat ? H.origInitChat.apply(this, arguments) : undefined;
             }
             if (status === 'pending') {
@@ -201,15 +180,12 @@
                 JoinWatcher.showUnauthorized();
                 return;
             }
-            // unknown (خطأ شبكة) → دع الأصلي
             return H.origInitChat ? H.origInitChat.apply(this, arguments) : undefined;
         } catch (e) {
-            console.warn('join-hooks initChat check failed:', e);
             return H.origInitChat ? H.origInitChat.apply(this, arguments) : undefined;
         }
     }
 
-    /* ═══ Hook — ينتظر توفر الدوال ثم يغلّفها ═══ */
     function doHook() {
         if (H.hooked) return true;
         var ready = true;
@@ -234,7 +210,7 @@
             H.origInitChat = window.initChat;
             window.initChat = wrappedInitChat;
             window.initChat.__joinHooked = true;
-            window.initChat.__joinOriginal = true; // علامة
+            window.initChat.__joinOriginal = true;
         } else if (!window.initChat) {
             ready = false;
         }
