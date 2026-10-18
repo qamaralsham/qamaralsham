@@ -72,7 +72,7 @@
             var allowedSnap = await db.ref('config/allowedUids/' + uid).once('value');
             if (allowedSnap.exists() && allowedSnap.val() === true) return 'approved';
 
-            var pendingSnap = await db.ref('pending_users/' + uid).once('value');
+            var pendingSnap = await db.ref('pending_users/' + uid).once('value').catch(function(){ return { val: function(){ return null; } }; });
             var p = pendingSnap.val();
             if (p) {
                 if (p.status === 'rejected') return 'rejected';
